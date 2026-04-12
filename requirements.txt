@@ -1,0 +1,6 @@
+flask
+flask-cors
+celery
+redis
+python-dotenv
+cloudinary
