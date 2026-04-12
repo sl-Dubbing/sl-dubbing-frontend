@@ -1,6 +1,10 @@
 'use strict';
 
-const API_BASE = 'http://127.0.0.1:5000';
+// الربط الذكي: يتصل بـ Railway إذا كان الموقع مرفوعاً، وبـ Localhost إذا كنت تبرمج محلياً
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://127.0.0.1:5000' 
+    : 'https://sl-dubbing-frontend-production.up.railway.app';
+
 let selectedLangs = [];
 let srtSegments = [];
 let activeSpeakerId = 'muhammad';
@@ -14,6 +18,7 @@ const SUPPORTED_LANGS = [
     { code: 'ru', name: 'Russian', flag: '🇷🇺' }, { code: 'zh-cn', name: 'Chinese', flag: '🇨🇳' }
 ];
 
+// --- إظهار التنبيهات (Toast) ---
 function showToast(msg, type = 'info') {
     const toast = document.createElement('div');
     toast.style.cssText = `
@@ -33,6 +38,7 @@ function showToast(msg, type = 'info') {
     }, 4000);
 }
 
+// --- بناء شبكة اللغات ---
 function buildLangGrid() {
     const grid = document.getElementById('langGrid');
     if (!grid) return;
@@ -51,6 +57,7 @@ function buildLangGrid() {
     });
 }
 
+// --- بناء بطاقة المتحدث ---
 function createSpeakerCard(s) {
     const card = document.createElement('div');
     card.className = `spk-card ${activeSpeakerId === s.speaker_id ? 'active' : ''}`;
@@ -68,6 +75,7 @@ function createSpeakerCard(s) {
     return card;
 }
 
+// --- تحميل قائمة الأصوات من السيرفر ---
 async function loadSpeakers() {
     try {
         const res = await fetch(`${API_BASE}/api/speakers`);
@@ -81,9 +89,12 @@ async function loadSpeakers() {
         addCard.innerHTML = '<i class="fas fa-plus"></i><span>رفع عيّنة</span>';
         addCard.onclick = () => document.getElementById('spkFile').click();
         grid.appendChild(addCard);
-    } catch (e) {}
+    } catch (e) {
+        console.error("خطأ في تحميل الأصوات:", e);
+    }
 }
 
+// --- رفع عينة صوت جديدة ---
 document.getElementById('spkFile').addEventListener('change', async (e) => {
     const f = e.target.files[0];
     if (!f) return;
@@ -105,6 +116,7 @@ document.getElementById('spkFile').addEventListener('change', async (e) => {
     e.target.value = '';
 });
 
+// --- تحويل النص إلى ثواني ---
 function toSec(t) {
     t = String(t).trim()
         .replace(/[\u0660-\u0669]/g, d => d.charCodeAt(0) - 0x0660)
@@ -116,6 +128,7 @@ function toSec(t) {
     return p[0]||0;
 }
 
+// --- معالجة ملف SRT ---
 function parseSRT(data) {
     data = data.replace(/^\uFEFF/, '');
     const norm = []; for (let i=0;i<data.length;i++) {
@@ -170,7 +183,7 @@ function parseSRT(data) {
     return segments.filter((s,i,a) => i===0 || s.start !== a[i-1].start);
 }
 
-// القفل الذكي: يتغير شكل الزر بناءً على الجاهزية بدلاً من تعطيله بالكامل
+// --- التحقق من جاهزية زر البدء ---
 function checkReady() {
     const isXttsReady = document.getElementById('dot').classList.contains('on');
     const btn = document.getElementById('startBtn');
@@ -183,6 +196,7 @@ function checkReady() {
     }
 }
 
+// --- مستمع لرفع ملف الترجمة ---
 document.getElementById('srtFile').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -225,6 +239,7 @@ document.getElementById('srtFile').addEventListener('change', (e) => {
     tryRead('utf-8');
 });
 
+// --- مراقبة المهمة (Job Monitor) ---
 function monitorJob(jobId, label) {
     return new Promise((resolve, reject) => {
         let isDone = false;
@@ -257,10 +272,11 @@ function monitorJob(jobId, label) {
     });
 }
 
+// --- زر بدء العملية ---
 async function start() {
     const isXttsReady = document.getElementById('dot').classList.contains('on');
     if (!isXttsReady) {
-        return showToast("المحرك (XTTS) لم يجهز بعد! تأكد من حل خطأ coqpit في شاشة CMD السوداء.", "error");
+        return showToast("المحرك (XTTS) لم يجهز بعد!", "error");
     }
 
     const url = document.getElementById('ytUrl').value.trim();
@@ -318,33 +334,41 @@ async function start() {
     setTimeout(() => { document.getElementById('progressArea').style.display = 'none'; }, 5000);
 }
 
+// --- تحديث الواجهة بنسبة التقدم ---
 function updateProgress(pct, msg) {
     document.getElementById('progBar').style.width = `${pct}%`;
     document.getElementById('statusTxt').innerText = msg;
     document.getElementById('pctTxt').innerText = `${pct}%`;
 }
 
+// --- حساب الوقت المتبقي ---
 function updateETA(prog) {
     if (prog < 5 || !jobStartTime) { document.getElementById('etaTxt').textContent = ''; return; }
     const remain = Math.round(((Date.now() - jobStartTime) / 1000 / prog) * (100 - prog));
     document.getElementById('etaTxt').textContent = 'الوقت المتبقي: ~' + (remain > 60 ? Math.round(remain / 60) + ' دقيقة' : remain + ' ثانية');
 }
 
+// --- إضافة النتيجة للواجهة ---
 function addResult(url, label) {
     const card = document.getElementById('resCard');
     card.style.display = 'block';
     const item = document.createElement('div');
     item.className = 'res-item';
+    
+    // تصحيح الرابط للتعامل مع الروابط السحابية (Cloudinary/R2) والروابط المحلية
+    const finalUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+    
     item.innerHTML = `
         <div class="res-hd">
             <span class="res-lang">${label}</span>
-            <a href="${API_BASE}${url}" download class="btn2"><i class="fas fa-download"></i> تحميل</a>
+            <a href="${finalUrl}" target="_blank" download class="btn2"><i class="fas fa-download"></i> تحميل</a>
         </div>
-        <audio controls src="${API_BASE}${url}?t=${Date.now()}"></audio>
+        <audio controls src="${finalUrl}?t=${Date.now()}"></audio>
     `;
     document.getElementById('resList').appendChild(item);
 }
 
+// --- معالجة روابط يوتيوب ---
 async function onUrl(url) {
     if (!url.includes('youtu')) { document.getElementById('ytInfo').style.display='none'; return; }
     const vid = (url.split('v=')[1]||'').split('&')[0] || url.split('.be/')[1] || '';
@@ -353,6 +377,7 @@ async function onUrl(url) {
     document.getElementById('ytInfo').style.display = 'flex';
 }
 
+// --- التهيئة عند التحميل ---
 document.addEventListener('DOMContentLoaded', () => {
     buildLangGrid();
     loadSpeakers();
