@@ -1,6 +1,6 @@
 'use strict';
 
-// 🌍 تأكد أن هذا الرابط هو رابط Railway الخاص بك بالضبط
+// 🌍 الرابط العالمي لـ Railway
 const API_BASE = 'https://sl-dubbing-frontend-production.up.railway.app';
 
 let selectedLangs = [];
@@ -20,59 +20,98 @@ const SUPPORTED_LANGS = [
     { code: 'zh-cn', name: 'Chinese', flag: '🇨🇳' }
 ];
 
-// --- بناء شبكة اللغات الكاملة ---
-function buildLangGrid() {
-    const grid = document.getElementById('langGrid');
-    if (!grid) return;
-    grid.innerHTML = '';
-    SUPPORTED_LANGS.forEach(l => {
-        const box = document.createElement('div');
-        box.className = 'lang-box';
-        box.innerHTML = `${l.flag} <span>${l.name}</span>`;
-        if (selectedLangs.includes(l.code)) box.classList.add('active');
-        box.onclick = () => {
-            if (selectedLangs.includes(l.code)) selectedLangs = selectedLangs.filter(c => c !== l.code);
-            else selectedLangs.push(l.code);
-            box.classList.toggle('active');
-            checkReady();
-        };
-        grid.appendChild(box);
-    });
+// --- محرك تنظيف وتحليل الوقت ---
+function toSec(t) {
+    if (!t) return 0;
+    let parts = t.trim().replace(',', '.').split(':');
+    if (parts.length === 3) {
+        return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+    } else if (parts.length === 2) {
+        return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+    }
+    return parseFloat(parts[0]) || 0;
 }
 
-// --- تحميل الأصوات من السيرفر ---
-async function loadSpeakers() {
-    const grid = document.getElementById('spkGrid');
-    if (!grid) return;
-    grid.innerHTML = '';
-    // إضافة الخيار التلقائي دائماً
-    const autoCard = document.createElement('div');
-    autoCard.className = `spk-card ${activeSpeakerId === 'auto' ? 'active' : ''}`;
-    autoCard.innerHTML = '<i class="fas fa-magic"></i><div class="spk-nm">تلقائي (المصدر)</div>';
-    autoCard.onclick = () => {
-        activeSpeakerId = 'auto';
-        document.querySelectorAll('.spk-card').forEach(c => c.classList.remove('active'));
-        autoCard.classList.add('active');
-    };
-    grid.appendChild(autoCard);
+// --- محرك تحليل الملفات الشامل (SRT / SBV / VTT) ---
+function parseSubtitle(data) {
+    const segments = [];
+    const lines = data.replace(/\r/g, '').split('\n');
+    
+    // Regex مرن جداً للتعرف على التوقيتات في أي صيغة
+    const timeRegex = /(\d+:?\d*:\d+[.,]\d+)\s*(-->|,)\s*(\d+:?\d*:\d+[.,]\d+)/;
 
-    try {
-        const res = await fetch(`${API_BASE}/api/speakers`);
-        if (res.ok) {
-            const list = await res.json();
-            list.forEach(s => {
-                const card = document.createElement('div');
-                card.className = 'spk-card';
-                card.innerHTML = `<i class="fas fa-microphone"></i><div class="spk-nm">${s.label}</div>`;
-                card.onclick = () => {
-                    activeSpeakerId = s.speaker_id;
-                    document.querySelectorAll('.spk-card').forEach(c => c.classList.remove('active'));
-                    card.classList.add('active');
-                };
-                grid.appendChild(card);
-            });
+    let currentSegment = null;
+
+    lines.forEach(line => {
+        const match = timeRegex.exec(line);
+        if (match) {
+            if (currentSegment) segments.push(currentSegment);
+            currentSegment = {
+                start: toSec(match[1]),
+                end: toSec(match[3]),
+                text: ""
+            };
+        } else if (currentSegment && line.trim() !== "" && !/^\d+$/.test(line.trim())) {
+            currentSegment.text += line.trim() + " ";
         }
-    } catch (e) { console.log("السيرفر لا يزال أوفلاين"); }
+    });
+
+    if (currentSegment) segments.push(currentSegment);
+    return segments.map(s => ({ ...s, text: s.text.trim() })).filter(s => s.text.length > 0);
+}
+
+// --- التعامل مع رفع الملف ---
+document.getElementById('srtFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        const segs = parseSubtitle(ev.target.result);
+        if (segs.length > 0) {
+            srtSegments = segs;
+            document.getElementById('srtZone').innerHTML = `✅ ${file.name} (${segs.length} مقطع)`;
+            checkReady();
+        } else {
+            alert("فشل قراءة الملف. تأكد أن الملف يحتوي على توقيتات ونصوص واضحة.");
+        }
+    };
+    // نقرأ الملف بترميز UTF-8 لضمان دعم اللغة العربية
+    reader.readAsText(file, 'UTF-8');
+});
+
+// --- تحديث حالة النظام ---
+async function updateStatus() {
+    try {
+        const res = await fetch(`${API_BASE}/api/status`);
+        const data = await res.json();
+        if (data.status === 'online') {
+            document.getElementById('dot').classList.add('on');
+            document.getElementById('dotLbl').innerText = "System Online";
+        }
+    } catch (e) {
+        document.getElementById('dot').classList.remove('on');
+        document.getElementById('dotLbl').innerText = "System Offline";
+    }
+    checkReady();
+}
+
+// --- فحص جاهزية الزر ---
+function checkReady() {
+    const btn = document.getElementById('startBtn');
+    const isOnline = document.getElementById('dot').classList.contains('on');
+    const hasSrt = srtSegments.length > 0;
+    const hasLang = selectedLangs.length > 0;
+
+    if (btn) {
+        btn.disabled = !(isOnline && hasSrt && hasLang);
+        btn.style.opacity = btn.disabled ? "0.5" : "1";
+        
+        if (!isOnline) btn.innerText = "في انتظار اتصال النظام...";
+        else if (!hasSrt) btn.innerText = "يرجى رفع ملف الترجمة";
+        else if (!hasLang) btn.innerText = "اختر لغة الدبلجة";
+        else btn.innerText = "ابدأ الدبلجة الآن 🚀";
+    }
 }
 
 // --- وظيفة يوتيوب ---
@@ -87,31 +126,52 @@ window.onUrl = function(url) {
     }
 };
 
-function checkReady() {
-    const btn = document.getElementById('startBtn');
-    const isOnline = document.getElementById('dot').classList.contains('on');
-    if (btn) {
-        btn.disabled = !(isOnline && selectedLangs.length > 0);
-        btn.style.opacity = btn.disabled ? "0.5" : "1";
-        btn.innerText = isOnline ? "ابدأ الدبلجة" : "في انتظار اتصال النظام...";
-    }
-}
-
+// --- تشغيل النظام عند التحميل ---
 document.addEventListener('DOMContentLoaded', () => {
-    buildLangGrid();
-    loadSpeakers();
-    setInterval(async () => {
-        try {
-            const res = await fetch(`${API_BASE}/api/status`);
-            const data = await res.json();
-            if (data.status === 'online') {
-                document.getElementById('dot').classList.add('on');
-                document.getElementById('dotLbl').innerText = "System Online";
-            }
-        } catch (e) {
-            document.getElementById('dot').classList.remove('on');
-            document.getElementById('dotLbl').innerText = "System Offline";
-        }
-        checkReady();
-    }, 5000);
+    // بناء شبكة اللغات
+    const grid = document.getElementById('langGrid');
+    SUPPORTED_LANGS.forEach(l => {
+        const box = document.createElement('div');
+        box.className = 'lang-box';
+        box.innerHTML = `${l.flag} <span>${l.name}</span>`;
+        box.onclick = () => {
+            if (selectedLangs.includes(l.code)) selectedLangs = selectedLangs.filter(c => c !== l.code);
+            else selectedLangs.push(l.code);
+            box.classList.toggle('active');
+            checkReady();
+        };
+        grid.appendChild(box);
+    });
+
+    // تحديث الحالة كل 5 ثوانٍ
+    updateStatus();
+    setInterval(updateStatus, 5000);
 });
+
+// --- إرسال المهمة ---
+async function start() {
+    const btn = document.getElementById('startBtn');
+    btn.disabled = true;
+    btn.innerText = "جاري الإرسال...";
+    
+    const ytUrl = document.getElementById('ytUrl').value;
+    
+    try {
+        const res = await fetch(`${API_BASE}/api/dub`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                segments: srtSegments,
+                lang: selectedLangs[0], // نأخذ أول لغة مختارة كمثال
+                url: ytUrl,
+                speaker_id: activeSpeakerId
+            })
+        });
+        const data = await res.json();
+        alert("تم إرسال المهمة بنجاح! راقب جهازك في المنزل.");
+    } catch (e) {
+        alert("حدث خطأ أثناء الإرسال للسيرفر.");
+    }
+    btn.disabled = false;
+    checkReady();
+}
