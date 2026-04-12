@@ -1,6 +1,6 @@
 'use strict';
 
-// الربط الذكي: يتصل بـ Railway إذا كان الموقع مرفوعاً، وبـ Localhost إذا كنت تبرمج محلياً
+// تم تحديث الرابط هنا بناءً على الرابط الذي أرسلته من Railway
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? 'http://127.0.0.1:5000' 
     : 'https://sl-dubbing-frontend-production.up.railway.app';
