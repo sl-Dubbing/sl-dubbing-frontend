@@ -8,79 +8,85 @@ let srtSegments = [];
 let activeSpeakerId = 'auto';
 
 const SUPPORTED_LANGS = [
-    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'fr', name: 'French', flag: '🇫🇷' },
-    { code: 'de', name: 'German', flag: '🇩🇪' },
-    { code: 'es', name: 'Spanish', flag: '🇪🇸' },
-    { code: 'it', name: 'Italian', flag: '🇮🇹' },
-    { code: 'pt', name: 'Portuguese', flag: '🇵🇹' },
-    { code: 'tr', name: 'Turkish', flag: '🇹🇷' },
-    { code: 'ru', name: 'Russian', flag: '🇷🇺' },
-    { code: 'zh-cn', name: 'Chinese', flag: '🇨🇳' }
+    { code: 'ar', name: 'العربية', flag: '🇸🇦' }, { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'fr', name: 'French', flag: '🇫🇷' }, { code: 'de', name: 'German', flag: '🇩🇪' },
+    { code: 'es', name: 'Spanish', flag: '🇪🇸' }, { code: 'it', name: 'Italian', flag: '🇮🇹' },
+    { code: 'pt', name: 'Portuguese', flag: '🇵🇹' }, { code: 'tr', name: 'Turkish', flag: '🇹🇷' },
+    { code: 'ru', name: 'Russian', flag: '🇷🇺' }, { code: 'zh-cn', name: 'Chinese', flag: '🇨🇳' }
 ];
 
-// --- محرك تنظيف وتحليل الوقت ---
-function toSec(t) {
-    if (!t) return 0;
-    let parts = t.trim().replace(',', '.').split(':');
-    if (parts.length === 3) {
-        return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
-    } else if (parts.length === 2) {
-        return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
-    }
-    return parseFloat(parts[0]) || 0;
-}
-
-// --- محرك تحليل الملفات الشامل (SRT / SBV / VTT) ---
-function parseSubtitle(data) {
-    const segments = [];
-    const lines = data.replace(/\r/g, '').split('\n');
+// --- 🎙️ بناء بطاقة المتحدث ---
+function createSpeakerCard(s) {
+    const card = document.createElement('div');
+    card.className = `spk-card ${activeSpeakerId === s.speaker_id ? 'active' : ''}`;
+    card.setAttribute('data-id', s.speaker_id);
     
-    // Regex مرن جداً للتعرف على التوقيتات في أي صيغة
-    const timeRegex = /(\d+:?\d*:\d+[.,]\d+)\s*(-->|,)\s*(\d+:?\d*:\d+[.,]\d+)/;
-
-    let currentSegment = null;
-
-    lines.forEach(line => {
-        const match = timeRegex.exec(line);
-        if (match) {
-            if (currentSegment) segments.push(currentSegment);
-            currentSegment = {
-                start: toSec(match[1]),
-                end: toSec(match[3]),
-                text: ""
-            };
-        } else if (currentSegment && line.trim() !== "" && !/^\d+$/.test(line.trim())) {
-            currentSegment.text += line.trim() + " ";
-        }
-    });
-
-    if (currentSegment) segments.push(currentSegment);
-    return segments.map(s => ({ ...s, text: s.text.trim() })).filter(s => s.text.length > 0);
-}
-
-// --- التعامل مع رفع الملف ---
-document.getElementById('srtFile').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-        const segs = parseSubtitle(ev.target.result);
-        if (segs.length > 0) {
-            srtSegments = segs;
-            document.getElementById('srtZone').innerHTML = `✅ ${file.name} (${segs.length} مقطع)`;
-            checkReady();
+    let iconClass = s.icon || 'fa-microphone';
+    
+    card.innerHTML = `
+        <i class="fas fa-check-circle chk"></i>
+        <div class="spk-av"><i class="fas ${iconClass}"></i></div>
+        <div class="spk-nm">${s.label}</div>
+    `;
+    
+    card.onclick = () => {
+        if (s.isAdd) {
+            document.getElementById('spkFile').click();
         } else {
-            alert("فشل قراءة الملف. تأكد أن الملف يحتوي على توقيتات ونصوص واضحة.");
+            activeSpeakerId = s.speaker_id;
+            document.querySelectorAll('.spk-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
         }
     };
-    // نقرأ الملف بترميز UTF-8 لضمان دعم اللغة العربية
-    reader.readAsText(file, 'UTF-8');
-});
+    return card;
+}
 
-// --- تحديث حالة النظام ---
+// --- 🎙️ تحميل الأصوات (تم تعديله لضمان الظهور الفوري) ---
+async function loadSpeakers() {
+    const grid = document.getElementById('spkGrid');
+    if (!grid) return;
+    
+    // 1. مسح وإضافة الخيارات الأساسية "فورًا" لكي لا تظهر الخانة فارغة
+    grid.innerHTML = '';
+    grid.appendChild(createSpeakerCard({ speaker_id: 'auto', label: 'تلقائي (المصدر)', icon: 'fa-magic' }));
+    grid.appendChild(createSpeakerCard({ speaker_id: 'add', label: 'استنساخ صوت', icon: 'fa-plus', isAdd: true }));
+
+    // 2. محاولة جلب الأصوات المرفوعة من السيرفر وإضافتها "بين" الخيارين السابقين
+    try {
+        const res = await fetch(`${API_BASE}/api/speakers`);
+        if (res.ok) {
+            const list = await res.json();
+            const addButton = grid.lastChild; // حفظ زر الإضافة
+            list.forEach(s => {
+                // نمنع التكرار إذا كان الصوت موجوداً بالفعل
+                if (!document.querySelector(`[data-id="${s.speaker_id}"]`)) {
+                    const card = createSpeakerCard({ speaker_id: s.speaker_id, label: s.label, icon: 'fa-microphone' });
+                    grid.insertBefore(card, addButton);
+                }
+            });
+        }
+    } catch (e) { console.log("السيرفر لا يرسل أصواتًا حاليًا"); }
+}
+
+// --- 🌐 إدارة حالة النظام واللغات ---
+function buildLangGrid() {
+    const grid = document.getElementById('langGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    SUPPORTED_LANGS.forEach(l => {
+        const box = document.createElement('div');
+        box.className = 'lang-box';
+        box.innerHTML = `${l.flag} <span>${l.name}</span>`;
+        box.onclick = () => {
+            if (selectedLangs.includes(l.code)) selectedLangs = selectedLangs.filter(c => c !== l.code);
+            else selectedLangs.push(l.code);
+            box.classList.toggle('active');
+            checkReady();
+        };
+        grid.appendChild(box);
+    });
+}
+
 async function updateStatus() {
     try {
         const res = await fetch(`${API_BASE}/api/status`);
@@ -96,65 +102,64 @@ async function updateStatus() {
     checkReady();
 }
 
-// --- فحص جاهزية الزر ---
+// --- 📁 معالجة ملفات الترجمة ---
+function toSec(t) {
+    if (!t) return 0;
+    let parts = t.trim().replace(',', '.').split(':');
+    if (parts.length === 3) return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+    if (parts.length === 2) return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+    return parseFloat(parts[0]) || 0;
+}
+
+function parseSubtitle(data) {
+    const segments = [];
+    const lines = data.replace(/\r/g, '').split('\n');
+    const timeRegex = /(\d+:?\d*:\d+[.,]\d+)\s*(-->|,)\s*(\d+:?\d*:\d+[.,]\d+)/;
+    let current = null;
+    lines.forEach(line => {
+        const match = timeRegex.exec(line);
+        if (match) {
+            if (current) segments.push(current);
+            current = { start: toSec(match[1]), end: toSec(match[3]), text: "" };
+        } else if (current && line.trim() !== "" && !/^\d+$/.test(line.trim())) {
+            current.text += line.trim() + " ";
+        }
+    });
+    if (current) segments.push(current);
+    return segments.filter(s => s.text.trim().length > 0);
+}
+
+document.getElementById('srtFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        srtSegments = parseSubtitle(ev.target.result);
+        if (srtSegments.length > 0) {
+            document.getElementById('srtZone').innerHTML = `<i class="fas fa-check-circle" style="color:#22c55e"></i> ${file.name} (${srtSegments.length} مقطع)`;
+            checkReady();
+        }
+    };
+    reader.readAsText(file, 'UTF-8');
+});
+
 function checkReady() {
     const btn = document.getElementById('startBtn');
     const isOnline = document.getElementById('dot').classList.contains('on');
-    const hasSrt = srtSegments.length > 0;
-    const hasLang = selectedLangs.length > 0;
-
     if (btn) {
-        btn.disabled = !(isOnline && hasSrt && hasLang);
+        btn.disabled = !(isOnline && srtSegments.length > 0 && selectedLangs.length > 0);
         btn.style.opacity = btn.disabled ? "0.5" : "1";
-        
         if (!isOnline) btn.innerText = "في انتظار اتصال النظام...";
-        else if (!hasSrt) btn.innerText = "يرجى رفع ملف الترجمة";
-        else if (!hasLang) btn.innerText = "اختر لغة الدبلجة";
+        else if (srtSegments.length === 0) btn.innerText = "يرجى رفع ملف الترجمة";
+        else if (selectedLangs.length === 0) btn.innerText = "اختر لغة الدبلجة";
         else btn.innerText = "ابدأ الدبلجة الآن 🚀";
     }
 }
 
-// --- وظيفة يوتيوب ---
-window.onUrl = function(url) {
-    const ytInfo = document.getElementById('ytInfo');
-    const ytThumb = document.getElementById('ytThumb');
-    if (!url.includes('youtu')) { if(ytInfo) ytInfo.style.display = 'none'; return; }
-    const vid = (url.split('v=')[1]||'').split('&')[0] || url.split('.be/')[1] || '';
-    if (vid && ytThumb) {
-        ytThumb.src = `https://img.youtube.com/vi/${vid}/mqdefault.jpg`;
-        if(ytInfo) ytInfo.style.display = 'flex';
-    }
-};
-
-// --- تشغيل النظام عند التحميل ---
-document.addEventListener('DOMContentLoaded', () => {
-    // بناء شبكة اللغات
-    const grid = document.getElementById('langGrid');
-    SUPPORTED_LANGS.forEach(l => {
-        const box = document.createElement('div');
-        box.className = 'lang-box';
-        box.innerHTML = `${l.flag} <span>${l.name}</span>`;
-        box.onclick = () => {
-            if (selectedLangs.includes(l.code)) selectedLangs = selectedLangs.filter(c => c !== l.code);
-            else selectedLangs.push(l.code);
-            box.classList.toggle('active');
-            checkReady();
-        };
-        grid.appendChild(box);
-    });
-
-    // تحديث الحالة كل 5 ثوانٍ
-    updateStatus();
-    setInterval(updateStatus, 5000);
-});
-
-// --- إرسال المهمة ---
+// --- 🚀 بدء العملية ---
 async function start() {
     const btn = document.getElementById('startBtn');
     btn.disabled = true;
-    btn.innerText = "جاري الإرسال...";
-    
-    const ytUrl = document.getElementById('ytUrl').value;
+    btn.innerText = "جاري الإرسال للسحاب...";
     
     try {
         const res = await fetch(`${API_BASE}/api/dub`, {
@@ -162,16 +167,35 @@ async function start() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 segments: srtSegments,
-                lang: selectedLangs[0], // نأخذ أول لغة مختارة كمثال
-                url: ytUrl,
+                lang: selectedLangs[0],
+                url: document.getElementById('ytUrl').value,
                 speaker_id: activeSpeakerId
             })
         });
-        const data = await res.json();
-        alert("تم إرسال المهمة بنجاح! راقب جهازك في المنزل.");
-    } catch (e) {
-        alert("حدث خطأ أثناء الإرسال للسيرفر.");
-    }
+        if (res.ok) alert("تم إرسال المهمة بنجاح! راقب جهازك في المنزل.");
+        else alert("فشل الإرسال.");
+    } catch (e) { alert("خطأ في الاتصال."); }
+    
     btn.disabled = false;
     checkReady();
 }
+
+// --- رفع عينة صوت ---
+document.getElementById('spkFile').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('label', file.name.split('.')[0]);
+    try {
+        const res = await fetch(`${API_BASE}/api/upload_speaker`, { method: 'POST', body: fd });
+        if (res.ok) { await loadSpeakers(); alert("تم رفع العينة بنجاح!"); }
+    } catch (e) { alert("فشل رفع العينة"); }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    buildLangGrid();
+    loadSpeakers();
+    updateStatus();
+    setInterval(updateStatus, 5000);
+});
