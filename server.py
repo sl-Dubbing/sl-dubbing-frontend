@@ -1,11 +1,12 @@
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from celery import Celery  # ⬅️ تأكد من وجود هذا السطر!
 
 app = Flask(__name__)
 
-# هذا السطر هو "تصريح الدخول" العالمي لجميع المواقع
-CORS(app, support_credentials=True, resources={r"/*": {"origins": "*"}})
+# إعدادات CORS الشاملة للسماح لموقع Vercel بالوصول للسيرفر
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 # إعدادات Upstash (الرابط المشفر)
 REDIS_URL = "rediss://default:gQAAAAAAAXrOAAIncDIyYWIyMzA5NTE2NTU0M2YzYjk0MGM0ZTVjZjRiZjA5M3AyOTY5NzQ@primary-muskrat-96974.upstash.io:6379"
@@ -15,29 +16,34 @@ celery_app.conf.update(
     broker_use_ssl={'ssl_cert_reqs': 'none'},
     redis_backend_use_ssl={'ssl_cert_reqs': 'none'},
     task_track_started=True,
-    task_ignore_result=False
+    task_ignore_result=False,
+    broker_connection_retry_on_startup=True
 )
 
 # ----------------------------------------------------
 # 1. مسارات الواجهة الأساسية (لإضاءة اللمبة الخضراء)
 # ----------------------------------------------------
-@app.route('/api/status', methods=['GET'])
+
+@app.route('/api/status', methods=['GET', 'OPTIONS'])
 def system_status():
     return jsonify({"status": "online"})
 
-@app.route('/api/speakers', methods=['GET'])
+@app.route('/api/speakers', methods=['GET', 'OPTIONS'])
 def get_speakers():
     return jsonify([])
 
-@app.route('/api/upload_speaker', methods=['POST'])
+@app.route('/api/upload_speaker', methods=['POST', 'OPTIONS'])
 def upload_speaker():
     return jsonify({"message": "تمت العملية"})
 
 # ----------------------------------------------------
-# 2. مسارات الدبلجة السحابية مع دعم النسبة المئوية
+# 2. مسارات الدبلجة السحابية
 # ----------------------------------------------------
-@app.route('/dub', methods=['POST'])
+
+@app.route('/dub', methods=['POST', 'OPTIONS'])
 def start_dubbing():
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
     try:
         data = request.json
         # إرسال المهمة للـ Worker في RunPod
@@ -50,33 +56,29 @@ def start_dubbing():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/status/<task_id>', methods=['GET'])
+@app.route('/status/<task_id>', methods=['GET', 'OPTIONS'])
 def get_status(task_id):
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
+        
     task = celery_app.AsyncResult(task_id)
     
-    # 1. في حالة النجاح النهائي
     if task.state == 'SUCCESS':
         return jsonify({
             "status": "done", 
             "audio_url": task.result.get('audio_url') if task.result else None
         })
-    
-    # 2. في حالة الفشل
     elif task.state == 'FAILURE':
         return jsonify({
             "status": "error", 
             "message": str(task.info)
         })
-    
-    # 3. في حالة التقدم (هنا السحر!)
     elif task.state == 'PROGRESS':
         return jsonify({
             "status": "processing",
             "percent": task.info.get('percent', 0),
             "msg": task.info.get('msg', 'جاري العمل...')
         })
-    
-    # 4. أي حالة أخرى (انتظار أو بدء)
     else:
         return jsonify({
             "status": "processing",
