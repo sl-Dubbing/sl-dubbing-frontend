@@ -192,7 +192,7 @@ async function start() {
     }
 }
 
-// --- 🔄 دالة الاستعلام المستمر التي تمنع انقطاع Vercel ---
+// --- 🔄 دالة الاستعلام المستمر مع شريط التقدم ---
 function pollTaskStatus(taskId, btn) {
     const checkInterval = setInterval(async () => {
         try {
@@ -202,23 +202,27 @@ function pollTaskStatus(taskId, btn) {
             if (data.status === 'done') {
                 clearInterval(checkInterval);
                 btn.innerText = "✅ تمت الدبلجة بنجاح!";
-                btn.style.backgroundColor = "#22c55e"; // تلوين الزر بالأخضر
-                showAudioPlayer(data.audio_url); // إظهار المشغل فوراً
+                btn.style.background = "#22c55e"; 
+                showAudioPlayer(data.audio_url); 
             } else if (data.status === 'error') {
                 clearInterval(checkInterval);
                 alert("❌ حدث خطأ في السيرفر: " + data.message);
                 btn.innerText = "حدث خطأ، حاول مجدداً";
                 btn.disabled = false;
+            } else if (data.status === 'processing' && data.total) {
+                // حساب النسبة المئوية وتحديث الزر ليعمل كـ "شريط تقدم"
+                let percent = Math.round((data.current / data.total) * 100);
+                btn.innerText = `⚙️ جاري الدبلجة: ${percent}% (${data.current} من ${data.total} مقطع)`;
+                btn.style.background = `linear-gradient(to left, #22c55e ${percent}%, #374151 ${percent}%)`;
             } else {
-                // إضافة حركة للنص ليعرف المستخدم أن السيرفر يعمل
                 let dots = btn.innerText.match(/\./g);
                 let dotCount = dots ? dots.length : 0;
-                btn.innerText = "⚙️ السيرفر السحابي يعمل الآن" + ".".repeat((dotCount + 1) % 4);
+                btn.innerText = "⚙️ السيرفر السحابي يجهز الملفات" + ".".repeat((dotCount + 1) % 4);
             }
         } catch (e) {
             console.error("خطأ في الاستعلام:", e);
         }
-    }, 5000); // السؤال يتم كل 5 ثوانٍ
+    }, 5000); 
 }
 
 // --- 🎧 دالة ذكية لإظهار مشغل الصوت تلقائياً للمستخدم ---
