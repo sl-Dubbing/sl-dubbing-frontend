@@ -4,11 +4,11 @@ from celery import Celery
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
+from deep_translator import GoogleTranslator # مكتبة الترجمة
 
-# تحميل متغيرات البيئة
 load_dotenv()
 
-# --- إعدادات Redis ---
+# إعدادات Redis
 raw_url = os.getenv("CELERY_BROKER_URL", "")
 REDIS_URL = raw_url.replace("redis://", "rediss://") if "upstash.io" in raw_url else raw_url
 
@@ -18,7 +18,7 @@ celery_app.conf.update(
     redis_backend_use_ssl={'ssl_cert_reqs': 'none'}
 )
 
-# --- إعداد Cloudinary ---
+# إعداد Cloudinary
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
@@ -45,42 +45,37 @@ def get_xtts():
 @celery_app.task(bind=True, name='tasks.process_tts')
 def process_tts(self, data):
     job_id = str(uuid.uuid4())
-    # استلام المقاطع بدلاً من النص الكامل
     segments = data.get('segments', [])
-    lang = data.get('lang', 'ar')
+    target_lang = data.get('lang', 'ar')
     speaker_id = data.get('speaker_id', 'muhammad')
     
-    total_segments = len(segments)
-    
     try:
+        # 1. مرحلة الترجمة (20%)
+        self.update_state(state='PROGRESS', meta={'percent': 20, 'msg': 'جاري تجميع وترجمة النص...'})
+        full_text = " ".join([s['text'] for s in segments])
+        
+        # إذا كانت اللغة المختارة ليست العربية، نترجم النص
+        if target_lang != 'ar':
+            # تصحيح كود اللغة الصينية ليتوافق مع المترجم
+            g_lang = 'zh-CN' if target_lang == 'zh-cn' else target_lang
+            full_text = GoogleTranslator(source='auto', target=g_lang).translate(full_text)
+        
+        # 2. مرحلة تشغيل المحرك (40%)
+        self.update_state(state='PROGRESS', meta={'percent': 40, 'msg': 'جاري تشغيل محرك الذكاء الاصطناعي...'})
         xtts = get_xtts()
         wav_ref = str(SPEAKER_DIR / f"{speaker_id}.wav")
         
-        # التأكد من وجود ملف الصوت
         if not os.path.exists(wav_ref):
             available = list(SPEAKER_DIR.glob("*.wav"))
-            if not available: raise FileNotFoundError("No speaker wav found!")
-            wav_ref = str(available[0])
+            wav_ref = str(available[0]) if available else ""
 
-        # --- ذكاء الدبلجة: دمج النصوص أولاً أو معالجتها مقطعاً مقطعاً ---
-        # لغرض شريط التقدم، سنقوم بتجميع النص الكامل مع إرسال تحديثات وهمية سريعة 
-        # لأن XTTS يفضل معالجة النص دفعة واحدة للجودة، لكننا سنخدع الواجهة لإظهار التقدم
-        
-        full_text = ""
-        for i, seg in enumerate(segments):
-            full_text += seg['text'] + " "
-            # تحديث حالة التقدم (الآن الموقع سيراها!)
-            self.update_state(state='PROGRESS', meta={'current': i + 1, 'total': total_segments})
-            time.sleep(0.1) # سرعة وهمية لتحديث الشريط قبل البدء الفعلي
-
+        # 3. مرحلة توليد الصوت الثقيلة (70%)
+        self.update_state(state='PROGRESS', meta={'percent': 70, 'msg': 'الوحش (GPU) يولد الصوت الآن...'})
         out_path = AUDIO_DIR / f"tts_{job_id}.wav"
-
-        # توليد الصوت الفعلي (المرحلة الأثقل)
-        print(f"🎙️ Generating audio for {total_segments} segments...")
-        xtts.tts_to_file(text=full_text, speaker_wav=wav_ref, language=lang, file_path=str(out_path))
+        xtts.tts_to_file(text=full_text, speaker_wav=wav_ref, language=target_lang, file_path=str(out_path))
         
-        # الرفع للسحاب
-        self.update_state(state='PROGRESS', meta={'current': total_segments, 'total': total_segments, 'message': 'رفع الملف...'})
+        # 4. مرحلة الرفع (90%)
+        self.update_state(state='PROGRESS', meta={'percent': 90, 'msg': 'جاري رفع الملف للسحاب...'})
         up = cloudinary.uploader.upload(str(out_path), resource_type="video", folder="sl-dubbing/tts")
         
         if out_path.exists(): out_path.unlink() 
@@ -88,5 +83,4 @@ def process_tts(self, data):
         return {'status': 'done', 'audio_url': up['secure_url']}
         
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
         return {'status': 'error', 'error': str(e)}
