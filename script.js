@@ -1,6 +1,6 @@
 'use strict';
 
-// 🌍 الرابط العالمي لـ Railway
+// 🌍 الرابط العالمي لـ Railway (السيرفر الخلفي)
 const API_BASE = 'https://sl-dubbing-frontend-production.up.railway.app';
 
 let selectedLangs = [];
@@ -41,24 +41,21 @@ function createSpeakerCard(s) {
     return card;
 }
 
-// --- 🎙️ تحميل الأصوات (تم تعديله لضمان الظهور الفوري) ---
+// --- 🎙️ تحميل الأصوات ---
 async function loadSpeakers() {
     const grid = document.getElementById('spkGrid');
     if (!grid) return;
     
-    // 1. مسح وإضافة الخيارات الأساسية "فورًا" لكي لا تظهر الخانة فارغة
     grid.innerHTML = '';
     grid.appendChild(createSpeakerCard({ speaker_id: 'auto', label: 'تلقائي (المصدر)', icon: 'fa-magic' }));
     grid.appendChild(createSpeakerCard({ speaker_id: 'add', label: 'استنساخ صوت', icon: 'fa-plus', isAdd: true }));
 
-    // 2. محاولة جلب الأصوات المرفوعة من السيرفر وإضافتها "بين" الخيارين السابقين
     try {
         const res = await fetch(`${API_BASE}/api/speakers`);
         if (res.ok) {
             const list = await res.json();
-            const addButton = grid.lastChild; // حفظ زر الإضافة
+            const addButton = grid.lastChild;
             list.forEach(s => {
-                // نمنع التكرار إذا كان الصوت موجوداً بالفعل
                 if (!document.querySelector(`[data-id="${s.speaker_id}"]`)) {
                     const card = createSpeakerCard({ speaker_id: s.speaker_id, label: s.label, icon: 'fa-microphone' });
                     grid.insertBefore(card, addButton);
@@ -145,7 +142,7 @@ document.getElementById('srtFile').addEventListener('change', (e) => {
 function checkReady() {
     const btn = document.getElementById('startBtn');
     const isOnline = document.getElementById('dot').classList.contains('on');
-    if (btn) {
+    if (btn && btn.innerText !== "✅ تمت الدبلجة بنجاح!") {
         btn.disabled = !(isOnline && srtSegments.length > 0 && selectedLangs.length > 0);
         btn.style.opacity = btn.disabled ? "0.5" : "1";
         if (!isOnline) btn.innerText = "في انتظار اتصال النظام...";
@@ -155,29 +152,105 @@ function checkReady() {
     }
 }
 
-// --- 🚀 بدء العملية ---
+// --- 🚀 بدء العملية ومتابعة الحالة (النظام الجديد) ---
 async function start() {
     const btn = document.getElementById('startBtn');
     btn.disabled = true;
-    btn.innerText = "جاري الإرسال للسحاب...";
+    btn.innerText = "⏳ جاري الإرسال للسحاب...";
+    
+    // إخفاء أي مشغل صوت قديم إذا كان المستخدم يدبلج ملفاً جديداً
+    const oldPlayer = document.getElementById('playerContainer');
+    if (oldPlayer) oldPlayer.style.display = 'none';
     
     try {
-        const res = await fetch(`${API_BASE}/api/dub`, {
+        // نستخدم /dub ليتوافق مع كود Python الجديد
+        const res = await fetch(`${API_BASE}/dub`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 segments: srtSegments,
                 lang: selectedLangs[0],
-                url: document.getElementById('ytUrl').value,
+                url: document.getElementById('ytUrl') ? document.getElementById('ytUrl').value : '',
                 speaker_id: activeSpeakerId
             })
         });
-        if (res.ok) alert("تم إرسال المهمة بنجاح! راقب جهازك في المنزل.");
-        else alert("فشل الإرسال.");
-    } catch (e) { alert("خطأ في الاتصال."); }
+        
+        const data = await res.json();
+        
+        if (data.task_id) {
+            btn.innerText = "⚙️ السيرفر السحابي يعمل الآن... يرجى الانتظار";
+            pollTaskStatus(data.task_id, btn); // البدء بسؤال السيرفر
+        } else {
+            alert("فشل الإرسال.");
+            btn.disabled = false;
+            checkReady();
+        }
+    } catch (e) { 
+        alert("خطأ في الاتصال."); 
+        btn.disabled = false;
+        checkReady();
+    }
+}
+
+// --- 🔄 دالة الاستعلام المستمر التي تمنع انقطاع Vercel ---
+function pollTaskStatus(taskId, btn) {
+    const checkInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`${API_BASE}/status/${taskId}`);
+            const data = await res.json();
+
+            if (data.status === 'done') {
+                clearInterval(checkInterval);
+                btn.innerText = "✅ تمت الدبلجة بنجاح!";
+                btn.style.backgroundColor = "#22c55e"; // تلوين الزر بالأخضر
+                showAudioPlayer(data.audio_url); // إظهار المشغل فوراً
+            } else if (data.status === 'error') {
+                clearInterval(checkInterval);
+                alert("❌ حدث خطأ في السيرفر: " + data.message);
+                btn.innerText = "حدث خطأ، حاول مجدداً";
+                btn.disabled = false;
+            } else {
+                // إضافة حركة للنص ليعرف المستخدم أن السيرفر يعمل
+                let dots = btn.innerText.match(/\./g);
+                let dotCount = dots ? dots.length : 0;
+                btn.innerText = "⚙️ السيرفر السحابي يعمل الآن" + ".".repeat((dotCount + 1) % 4);
+            }
+        } catch (e) {
+            console.error("خطأ في الاستعلام:", e);
+        }
+    }, 5000); // السؤال يتم كل 5 ثوانٍ
+}
+
+// --- 🎧 دالة ذكية لإظهار مشغل الصوت تلقائياً للمستخدم ---
+function showAudioPlayer(audioUrl) {
+    let playerContainer = document.getElementById('playerContainer');
     
-    btn.disabled = false;
-    checkReady();
+    // إذا لم يكن هناك مكان مخصص للصوت، نصنعه بأنفسنا!
+    if (!playerContainer) {
+        playerContainer = document.createElement('div');
+        playerContainer.id = 'playerContainer';
+        playerContainer.style.marginTop = '20px';
+        playerContainer.style.padding = '15px';
+        playerContainer.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
+        playerContainer.style.borderRadius = '10px';
+        playerContainer.style.textAlign = 'center';
+        
+        const btn = document.getElementById('startBtn');
+        btn.parentNode.insertBefore(playerContainer, btn.nextSibling); // وضعه تحت زر البدء
+    }
+
+    playerContainer.style.display = 'block';
+    playerContainer.innerHTML = `
+        <h3 style="color: #22c55e; margin-bottom: 15px; font-size: 1.1rem;">🎉 مقطعك جاهز للاستماع!</h3>
+        <audio controls autoplay style="width: 100%; max-width: 400px; border-radius: 8px;">
+            <source src="${audioUrl}" type="audio/wav">
+            متصفحك لا يدعم مشغل الصوت.
+        </audio>
+        <br>
+        <a href="${audioUrl}" target="_blank" style="display: inline-block; margin-top: 15px; color: #fff; background: #3b82f6; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+            <i class="fas fa-download"></i> تحميل المقطع
+        </a>
+    `;
 }
 
 // --- رفع عينة صوت ---
