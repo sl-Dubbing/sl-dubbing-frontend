@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log In - sl-Dubbing</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* ── ElevenLabs Light Theme ── */
+:root {
+  --bg-page: #fafafa;
+  --bg-card: #ffffff;
+  --border-color: #e5e7eb;
+  --text-main: #0f0f10;
+  --text-muted: #6b7280;
+  --primary: #0f0f10;
+  --primary-hover: #27272a;
+  --radius-md: 12px;
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+
+.login-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 24px; padding: 48px; width: 100%; max-width: 440px; box-shadow: var(--shadow-lg); text-align: center; }
+.login-card h2 { font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }
+.login-card .sub { color: var(--text-muted); font-size: .95rem; margin-bottom: 32px; }
+.login-card .sub a { color: #2563eb; text-decoration: none; font-weight: 600; }
+
+.gaccounts { margin-bottom: 24px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-page); overflow: hidden; text-align: left; }
+.gacc-item { display: flex; align-items: center; gap: 12px; padding: 16px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background .2s; }
+.gacc-item:last-child { border-bottom: none; }
+.gacc-item:hover { background: #f3f4f6; }
+.gacc-avatar { width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-main); flex-shrink: 0; }
+.gacc-name { font-weight: 600; color: var(--text-main); font-size: .95rem; }
+.gacc-email { font-size: .85rem; color: var(--text-muted); }
+
+.divider { display: flex; align-items: center; margin: 24px 0; color: var(--text-muted); }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border-color); }
+.divider span { padding: 0 16px; font-size: .85rem; font-weight: 500; }
+
+.fg { margin-bottom: 16px; text-align: left; }
+.fg label { display: block; font-weight: 600; color: var(--text-main); font-size: .9rem; margin-bottom: 8px; }
+.fg input { width: 100%; padding: 14px 16px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-main); font-size: .95rem; outline: none; transition: border .2s; }
+.fg input:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+
+.submit-btn { width: 100%; padding: 14px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 8px; transition: background .2s; }
+.submit-btn:hover { background: var(--primary-hover); }
+
+.footer-links { display: flex; justify-content: space-between; margin-top: 20px; font-size: .85rem; }
+.footer-links a { color: #2563eb; text-decoration: none; font-weight: 500; }
+.back-link { display: inline-block; margin-top: 32px; color: var(--text-muted); text-decoration: none; font-size: .9rem; font-weight: 500; }
+.back-link:hover { color: var(--text-main); }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div style="margin-bottom: 24px;">
+    <i class="fas fa-cube" style="font-size: 3rem; color: var(--primary);"></i>
+  </div>
+  <h2>Welcome back</h2>
+  <p class="sub">New user? <a href="#">Create an account</a></p>
+
+  <div class="gaccounts" id="gaccounts"></div>
+
+  <div class="divider"><span>Or continue with email</span></div>
+
+  <form onsubmit="handleLogin(event)">
+    <div class="fg">
+      <label>Email address</label>
+      <input type="email" id="em" placeholder="you@example.com" required>
+    </div>
+    <div class="fg">
+      <label>Password</label>
+      <input type="password" id="pw" placeholder="••••••••" required>
+    </div>
+    <button type="submit" class="submit-btn">Log In</button>
+  </form>
+
+  <div class="footer-links">
+    <a href="#">Forgot password?</a>
+    <label style="color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+      <input type="checkbox"> Remember me
+    </label>
+  </div>
+  
+  <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
+</div>
+
+<script>
+const ACCOUNTS=[
+  {name:'Mona Alhil',email:'ahlil.ma@gmail.com',i:'M'},
+  {name:'ALHASHMI Design',email:'abd199641@gmail.com',i:'A'},
+  {name:'Rhf Alhil',email:'rhfalhil@gmail.com',i:'R'}
+];
+
+function saveAndGo(user){
+  localStorage.setItem('sl_user',JSON.stringify(user));
+  const r=sessionStorage.getItem('returnUrl')||'index.html';
+  sessionStorage.removeItem('returnUrl');
+  location.href=r;
+}
+
+document.getElementById('gaccounts').innerHTML=ACCOUNTS.map(a=>`
+  <div class="gacc-item" onclick="googleLogin('${a.email}','${a.name}','${a.i}')">
+    <div class="gacc-avatar">${a.i}</div>
+    <div><div class="gacc-name">${a.name}</div><div class="gacc-email">${a.email}</div></div>
+  </div>`).join('');
+
+function googleLogin(email,name,i){
+  saveAndGo({email,name,avatar:i,method:'google'});
+}
+
+function handleLogin(e){
+  e.preventDefault();
+  const email=document.getElementById('em').value;
+  saveAndGo({email, name:email.split('@')[0], avatar:email[0].toUpperCase(), method:'email'});
+}
+</script>
+</body>
+</html>

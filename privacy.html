@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سياسة الخصوصية – sl-Dubbing</title>
+<style>
+/* ================================================================
+   sl-Dubbing & Translation — style.css (shared)
+   ================================================================ */
+:root{
+  --bg:#0d0d1f;
+  --card:rgba(255,255,255,.06);
+  --border:rgba(167,139,250,.18);
+  --text:#e0e0ff;
+  --muted:#9ca3af;
+  --dim:#6b7280;
+  --purple:#7c3aed;
+  --blue:#2563eb;
+  --green:#10b981;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Segoe UI',Tahoma,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  direction:rtl;
+  overflow-x:hidden
+}
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(ellipse at 20% 20%,rgba(124,58,237,.14) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 80%,rgba(37,99,235,.11) 0%,transparent 60%);
+  pointer-events:none;
+  z-index:0
+}
+.page{
+  position:relative;
+  z-index:1;
+  max-width:1100px;
+  margin:0 auto;
+  padding:20px 16px
+}
+
+/* ── Header ── */
+.top-bar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:18px 0 30px;
+  flex-wrap:wrap;
+  gap:12px
+}
+.logo{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:1.25rem;
+  font-weight:900;
+  text-decoration:none
+}
+.logo span{
+  background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent
+}
+.logo img{
+  width:46px;
+  height:46px;
+  object-fit:contain;
+  filter:drop-shadow(0 0 8px rgba(167,139,250,.5))
+}
+.user-zone{
+  display:flex;
+  align-items:center;
+  gap:10px
+}
+.btn-login{
+  padding:10px 22px;
+  background:linear-gradient(135deg,#7c3aed,#2563eb);
+  border:none;
+  border-radius:10px;
+  color:white;
+  font-weight:700;
+  cursor:pointer;
+  text-decoration:none;
+  font-size:.9rem;
+  box-shadow:0 4px 14px rgba(124,58,237,.4);
+  transition:all .3s
+}
+.btn-login:hover{
+  transform:translateY(-2px);
+  box-shadow:0 7px 22px rgba(124,58,237,.6)
+}
+.btn-logout{
+  padding:8px 16px;
+  background:rgba(239,68,68,.2);
+  border:1px solid rgba(239,68,68,.3);
+  border-radius:8px;
+  color:#f87171;
+  cursor:pointer;
+  font-weight:600;
+  transition:all .3s
+}
+.avatar{
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#a78bfa,#2563eb);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  color:white
+}
+.username{color:#9ca3af;font-size:.9rem}
+
+/* ── Server badge ── */
+.srv-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 15px;
+  background:rgba(248,113,113,.12);
+  border:1px solid rgba(248,113,113,.3);
+  border-radius:20px;
+  font-size:.78rem;
+  color:#f87171;
+  cursor:pointer;
+  margin-bottom:32px;
+  transition:all .3s
+}
+.srv-badge.on{
+  background:rgba(52,211,153,.12);
+  border-color:rgba(52,211,153,.3);
+  color:#34d399
+}
+.dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:currentColor;
+  animation:blink 2s infinite
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Main layout ── */
+.priv{
+  max-width:760px;
+  margin:0 auto;
+  padding:40px 16px
+}
+.priv h1{
+  font-size:2rem;
+  font-weight:900;
+  background:linear-gradient(135deg,#a78bfa,#60a5fa);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  margin-bottom:6px
+}
+.priv .date{
+  color:#6b7280;
+  margin-bottom:30px;
+  font-size:.85rem
+}
+.priv h2{
+  color:#60a5fa;
+  font-size:1.1rem;
+  margin:28px 0 10px
+}
+.priv p{
+  color:#9ca3af;
+  line-height:1.8;
+  font-size:.92rem;
+  margin-bottom:1rem
+}
+.priv a{
+  color:#60a5fa;
+  text-decoration:none
+}
+
+/* ── Footer ── */
+footer{
+  text-align:center;
+  padding:30px 0 20px;
+  border-top:1px solid rgba(255,255,255,.07);
+  color:#6b7280;
+  font-size:.82rem;
+  margin-top:50px
+}
+footer a{
+  color:#9ca3af;
+  text-decoration:none;
+  margin:0 8px
+}
+footer a:hover{color:#a78bfa}
+
+/* ── Toast (إشعارات مؤقتة) ── */
+.toast{
+  position:fixed;
+  bottom:28px;
+  left:50%;
+  transform:translateX(-50%) translateY(120px);
+  background:linear-gradient(135deg,#7c3aed,#2563eb);
+  color:#fff;
+  padding:14px 28px;
+  border-radius:12px;
+  font-weight:600;
+  box-shadow:0 10px 35px rgba(0,0,0,.4);
+  transition:transform .3s;
+  z-index:9999
+}
+.toast.show{
+  transform:translateX(-50%) translateY(0)
+}
+
+/* ── Responsive ── */
+@media(max-width:720px){
+  .top-bar{flex-direction:column;align-items:flex-start}
+  .priv{padding:30px 12px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ====== Header ====== -->
+  <div class="top-bar">
+    <a class="logo" href="index.html">
+      <img src="logo.gif" onerror="this.src='logo.png'" alt="logo">
+      <span>sl-Dubbing & Translation</span>
+    </a>
+    <div class="user-zone" id="hdr">
+      <a href="login.html" class="btn-login">تسجيل الدخول</a>
+    </div>
+  </div>
+
+  <!-- ====== Privacy Content ====== -->
+  <section class="priv">
+    <h1>سياسة الخصوصية</h1>
+    <p class="date">آخر تحديث: مارس 2026</p>
+
+    <p>في منصة <strong>sl-Dubbing & Translation</strong>، نولي أهمية قصوى لخصوصية زوارنا ومستخدمينا.</p>
+
+    <h2>1. المعلومات التي نجمعها</h2>
+    <p>
+      نجمع المعلومات التي تقدمها مباشرة عند التسجيل أو استخدام الخدمات، كالبريد
+      الإلكتروني، ملفات SRT، والنصوص المُدخلة، لغرض المعالجة التقنية فقط.
+    </p>
+
+    <h2>2. إعلانات Google AdSense</h2>
+    <p>
+      نستخدم <a href="https://ads.google.com" target="_blank">Google AdSense</a> لعرض إعلانات.
+      تستخدم Google ملفات تعريف الارتباط لتخصيص الإعلانات. يمكنك إدارتها من
+      <a href="https://adssettings.google.com" target="_blank">إعدادات إعلانات Google</a>.
+    </p>
+
+    <h2>3. المدفوعات عبر Lemon Squeezy</h2>
+    <p>
+      جميع عمليات الدفع تتم عبر بوابة <strong>Lemon Squeezy</strong> الآمنة.
+      لا نخزن أي بيانات بطاقة ائتمانية على خوادمنا – كل شيء يُعالج من قبل الطرف
+      الثالث المتخصص في المدفوعات.
+    </p>
+
+    <h2>4. حقوقك (GDPR / KVKK)</h2>
+    <p>
+      يحق لك في أي وقت طلب الاطلاع على بياناتك، تعديلها أو حذفها.
+      للتواصل بخصوص هذه الحقوق يُرجى مراسلة فريق الدعم عبر البريد الإلكتروني
+      الموجود أسفل الصفحة.
+    </p>
+
+    <h2>5. التواصل معنا</h2>
+    <p>
+      البريد الإلكتروني:
+      <a href="mailto:support@sl-dubbing.com">support@sl-dubbing.com</a>
+    </p>
+
+    <p>
+      إذا كان لديك أي سؤال أو ملاحظة بخصوص سياسة الخصوصية، نرحب بتواصلك معنا.
+    </p>
+  </section>
+
+  <!-- ====== Footer ====== -->
+  <footer>
+    <p>ALHASHMI © 2026 — جميع الحقوق محفوظة</p>
+    <p style="margin-top:8px">
+      <a href="index.html">← الرئيسية</a>
+      <a href="privacy.html">سياسة الخصوصية</a>
+      <a href="https://github.com/alhlilma-jpg" target="_blank">GitHub</a>
+    </p>
+  </footer>
+</div>
+
+<!-- Toast container (يُستَخدم من auth.js) -->
+<div class="toast" id="toast"></div>
+
+</body>
+</html>
