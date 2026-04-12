@@ -4,16 +4,18 @@ from flask_cors import CORS
 from celery import Celery
 
 app = Flask(__name__)
-# السماح للواجهة بالاتصال
+# السماح للواجهة بالاتصال من أي مكان
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# إعدادات Upstash
+# إعدادات Upstash (الرابط المشفر)
 REDIS_URL = "rediss://default:gQAAAAAAAXrOAAIncDIyYWIyMzA5NTE2NTU0M2YzYjk0MGM0ZTVjZjRiZjA5M3AyOTY5NzQ@primary-muskrat-96974.upstash.io:6379"
 
 celery_app = Celery('tasks', broker=REDIS_URL, backend=REDIS_URL)
 celery_app.conf.update(
     broker_use_ssl={'ssl_cert_reqs': 'none'},
-    redis_backend_use_ssl={'ssl_cert_reqs': 'none'}
+    redis_backend_use_ssl={'ssl_cert_reqs': 'none'},
+    task_track_started=True,
+    task_ignore_result=False
 )
 
 # ----------------------------------------------------
@@ -21,12 +23,10 @@ celery_app.conf.update(
 # ----------------------------------------------------
 @app.route('/api/status', methods=['GET'])
 def system_status():
-    # هذا المسار يخبر الواجهة أن السيرفر متصل
     return jsonify({"status": "online"})
 
 @app.route('/api/speakers', methods=['GET'])
 def get_speakers():
-    # نعيد قائمة فارغة حالياً حتى لا يظهر خطأ 404 في الواجهة
     return jsonify([])
 
 @app.route('/api/upload_speaker', methods=['POST'])
@@ -34,7 +34,7 @@ def upload_speaker():
     return jsonify({"message": "تمت العملية"})
 
 # ----------------------------------------------------
-# 2. مسارات الدبلجة السحابية (التي برمجناها للتو)
+# 2. مسارات الدبلجة السحابية مع دعم النسبة المئوية
 # ----------------------------------------------------
 @app.route('/dub', methods=['POST'])
 def start_dubbing():
@@ -54,12 +54,35 @@ def start_dubbing():
 def get_status(task_id):
     task = celery_app.AsyncResult(task_id)
     
+    # 1. في حالة النجاح النهائي
     if task.state == 'SUCCESS':
-        return jsonify({"status": "done", "audio_url": task.result.get('audio_url')})
+        return jsonify({
+            "status": "done", 
+            "audio_url": task.result.get('audio_url') if task.result else None
+        })
+    
+    # 2. في حالة الفشل
     elif task.state == 'FAILURE':
-        return jsonify({"status": "error", "message": str(task.info)})
+        return jsonify({
+            "status": "error", 
+            "message": str(task.info)
+        })
+    
+    # 3. في حالة التقدم (هنا السحر!)
+    elif task.state == 'PROGRESS':
+        return jsonify({
+            "status": "processing",
+            "percent": task.info.get('percent', 0),
+            "msg": task.info.get('msg', 'جاري العمل...')
+        })
+    
+    # 4. أي حالة أخرى (انتظار أو بدء)
     else:
-        return jsonify({"status": "processing"})
+        return jsonify({
+            "status": "processing",
+            "percent": 5,
+            "msg": "في الانتظار..."
+        })
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
