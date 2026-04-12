@@ -1,11 +1,11 @@
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from celery import Celery
 
 app = Flask(__name__)
-# السماح للواجهة بالاتصال من أي مكان
-CORS(app, resources={r"/*": {"origins": "*"}})
+
+# هذا السطر هو "تصريح الدخول" العالمي لجميع المواقع
+CORS(app, support_credentials=True, resources={r"/*": {"origins": "*"}})
 
 # إعدادات Upstash (الرابط المشفر)
 REDIS_URL = "rediss://default:gQAAAAAAAXrOAAIncDIyYWIyMzA5NTE2NTU0M2YzYjk0MGM0ZTVjZjRiZjA5M3AyOTY5NzQ@primary-muskrat-96974.upstash.io:6379"
