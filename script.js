@@ -1,86 +1,168 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sl-Dubbing | منصة الدبلجة الذكية</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root{--bg:#f5f5f7;--card:#fff;--border:#e5e7eb;--text:#111827;--muted:#6b7280;--primary:#0f0f10;--mint:#a4fec4;--green-dk:#065f2c;--radius:14px;--shadow:0 1px 3px rgba(0,0,0,.07)}
-        *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-        body{background:var(--bg);color:var(--text);min-height:100vh;text-align:right;line-height:1.6}
-        .topbar{background:var(--primary);padding:13px 28px;display:flex;align-items:center;justify-content:space-between}
-        .logo{font-size:1.15rem;font-weight:800;color:#fff;letter-spacing:-.02em}.logo span{color:var(--mint)}
-        .pill{display:flex;align-items:center;gap:6px;font-size:.75rem;color:#fff;border:1px solid rgba(255,255,255,.2);padding:4px 12px;border-radius:20px}
-        .dot{width:7px;height:7px;border-radius:50%;background:#6b7280;transition:background .4s}
-        .dot.on{background:var(--mint);box-shadow:0 0 6px var(--mint)}
-        .wrap{max-width:900px;margin:0 auto;padding:32px 18px 60px}
-        .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:26px 28px;margin-bottom:18px;box-shadow:var(--shadow)}
-        .ttl{font-size:.95rem;font-weight:700;display:flex;align-items:center;gap:9px;margin-bottom:20px}
-        .ttl i{color:var(--muted);font-size:.9rem}
-        .badge{font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--mint);color:var(--green-dk);text-transform:uppercase;letter-spacing:.04em}
-        input[type=text],select{width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:.9rem;outline:none;transition:border-color .18s}
-        .srt-zone{border:1.5px dashed var(--border);border-radius:10px;padding:20px;background:#fafafa;text-align:center;cursor:pointer;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-        .srt-zone.ok{border-color:#059669;background:#f0fdf4}
-        .spk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
-        .spk-card{border:1.5px solid var(--border);border-radius:10px;padding:13px 10px;cursor:pointer;text-align:center;position:relative}
-        .spk-card.active{border-color:var(--primary);background:var(--mint)}
-        .lang-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:9px;margin-bottom:20px}
-        .lang-box{padding:10px 7px;background:#fff;border-radius:10px;text-align:center;cursor:pointer;border:1px solid var(--border);font-size:.85rem}
-        .lang-box.active{border-color:var(--primary);background:var(--mint);font-weight:700}
-        .btn-go{background:var(--primary);color:#fff;border:none;padding:14px;border-radius:10px;width:100%;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px}
-        #progressArea{display:none;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)}
-        .prog-bar-wrap{background:#e5e7eb;border-radius:8px;height:7px;overflow:hidden;margin-top:10px}
-        .prog-bar{background:var(--primary);width:0%;height:100%;transition:width .4s}
-        .res-card{display:none}
-        #ytInfo{display:none;background:#f9fafb;border:1px solid var(--border);border-radius:10px;padding:13px 16px;align-items:center;gap:16px;margin-top:10px}
-        #ytThumb{width:100px;border-radius:6px}
-    </style>
-</head>
-<body>
-    <div class="topbar">
-        <div class="logo">sl<span>-Dubbing</span></div>
-        <div class="pill"><div class="dot" id="dot"></div><span id="dotLbl">جاري التحقق...</span></div>
-    </div>
-    <div class="wrap">
-        <div class="card">
-            <div class="ttl"><i class="fas fa-photo-film"></i> المصدر</div>
-            <input type="text" id="ytUrl" placeholder="ضع رابط يوتيوب هنا..." oninput="onUrlUpdate(this.value)">
-            <div id="ytInfo">
-                <img id="ytThumb" src="" alt="Thumbnail">
-                <div><div id="ytTitle" style="font-weight:600; font-size:0.9rem;"></div></div>
+/* sl-Dubbing Script - Version 2.1 (Repair Edition) */
+const API_BASE = 'https://sl-dubbing-backend-production.up.railway.app'; 
+
+let selectedLangs = [];
+let srtSegments = [];
+let activeSpeakerId = 'muhammad';
+
+// اللغات المدعومة
+const LANGS = [
+    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'fr', name: 'French', flag: '🇫🇷' },
+    { code: 'de', name: 'German', flag: '🇩🇪' },
+    { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
+];
+
+// 1. وظيفة بناء القوائم (نضعها في البداية لضمان الظهور)
+function populateGrids() {
+    const spkGrid = document.getElementById('spkGrid');
+    const langGrid = document.getElementById('langGrid');
+
+    if (spkGrid) {
+        spkGrid.innerHTML = `
+            <div class="spk-card active" id="spk-muhammad" onclick="selectSpeaker('muhammad')">
+                <i class="fas fa-check-circle chk" style="display:block"></i>
+                <div class="spk-av">M</div>
+                <div class="spk-nm">محمد (افتراضي)</div>
             </div>
-        </div>
-        <div class="card">
-            <div class="ttl"><i class="fas fa-file-lines"></i> ملف الترجمة SRT <span class="badge">إلزامي</span></div>
-            <input type="file" id="srtFile" accept=".srt" style="display:none">
-            <div class="srt-zone" id="srtZone" onclick="document.getElementById('srtFile').click()">
-                <i class="fas fa-upload"></i>
-                <div id="srtStatusTxt">انقر لرفع ملف SRT</div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="ttl"><i class="fas fa-microphone-lines"></i> صوت المتحدث</div>
-            <div class="spk-grid" id="spkGrid"></div>
-            <input type="file" id="spkFile" style="display:none">
-        </div>
-        <div class="card">
-            <div class="ttl"><i class="fas fa-language"></i> لغة الدبلجة</div>
-            <div class="lang-grid" id="langGrid"></div>
-            <button class="btn-go" id="startBtn" onclick="start()" style="opacity:0.5; cursor:not-allowed;">ابدأ الدبلجة 🚀</button>
-            <div id="progressArea">
-                <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                    <span id="statusTxt">جاري العمل...</span>
-                    <span id="pctTxt">0%</span>
-                </div>
-                <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
-            </div>
-        </div>
-        <div class="card res-card" id="resCard">
-            <div class="ttl"><i class="fas fa-circle-check"></i> النتيجة النهائية</div>
-            <div id="resList"></div>
-        </div>
-    </div>
-    <script src="script.js"></script>
-</body>
-</html>
+        `;
+    }
+
+    if (langGrid) {
+        langGrid.innerHTML = ''; // تنظيف القائمة
+        LANGS.forEach(l => {
+            const box = document.createElement('div');
+            box.className = 'lang-box';
+            box.id = `lang-${l.code}`;
+            box.innerHTML = `${l.flag} ${l.name}`;
+            box.onclick = () => selectLanguage(l.code);
+            langGrid.appendChild(box);
+        });
+    }
+}
+
+// 2. دوال الاختيار (لم تكن معرفة في المرة السابقة!)
+window.selectSpeaker = function(id) {
+    activeSpeakerId = id;
+    document.querySelectorAll('.spk-card').forEach(c => c.classList.remove('active'));
+    document.getElementById(`spk-${id}`).classList.add('active');
+    checkReady();
+};
+
+window.selectLanguage = function(code) {
+    selectedLangs = [code];
+    document.querySelectorAll('.lang-box').forEach(b => b.classList.remove('active'));
+    document.getElementById(`lang-${code}`).classList.add('active');
+    checkReady();
+};
+
+// 3. تحديث حالة السيرفر
+async function updateStatus() {
+    const dot = document.getElementById('dot');
+    const dotLbl = document.getElementById('dotLbl');
+    try {
+        const res = await fetch(`${API_BASE}/api/status`);
+        const data = await res.json();
+        if(data.status === 'online') {
+            dot.classList.add('on');
+            dotLbl.innerText = "System Online";
+        }
+    } catch(e) {
+        dot.classList.remove('on');
+        dotLbl.innerText = "System Offline";
+    }
+}
+
+// 4. معالجة رابط يوتيوب
+window.onUrlUpdate = function(url) {
+    const infoDiv = document.getElementById('ytInfo');
+    const thumb = document.getElementById('ytThumb');
+    const title = document.getElementById('ytTitle');
+    if(url.includes('youtube.com') || url.includes('youtu.be')) {
+        const parts = url.split('v=');
+        const id = parts.length > 1 ? parts[1].split('&')[0] : url.split('/').pop();
+        thumb.src = `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+        title.innerText = "فيديو يوتيوب جاهز للمعالجة";
+        infoDiv.style.display = 'flex';
+    } else {
+        infoDiv.style.display = 'none';
+    }
+};
+
+// 5. رفع ملف SRT
+document.getElementById('srtFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        const lines = ev.target.result.split('\n');
+        srtSegments = lines.filter(l => l.length > 5 && !/^\d+$/.test(l));
+        document.getElementById('srtZone').classList.add('ok');
+        document.getElementById('srtStatusTxt').innerText = `تم استلام: ${file.name}`;
+        checkReady();
+    };
+    reader.readAsText(file);
+});
+
+function checkReady() {
+    const btn = document.getElementById('startBtn');
+    if(srtSegments.length > 0 && selectedLangs.length > 0) {
+        btn.style.opacity = "1";
+        btn.style.cursor = "pointer";
+    }
+}
+
+// 6. بدء الدبلجة
+window.start = async function() {
+    const btn = document.getElementById('startBtn');
+    if (btn.style.opacity !== "1") return;
+    
+    btn.style.display = 'none';
+    document.getElementById('progressArea').style.display = 'block';
+
+    try {
+        const res = await fetch(`${API_BASE}/dub`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                segments: srtSegments.map(s => ({text: s})),
+                lang: selectedLangs[0],
+                speaker_id: activeSpeakerId
+            })
+        });
+        const data = await res.json();
+        if(data.task_id) poll(data.task_id);
+    } catch(e) { 
+        alert("خطأ في الاتصال بالسيرفر!");
+        btn.style.display = 'block';
+    }
+};
+
+function poll(id) {
+    const interval = setInterval(async () => {
+        try {
+            const res = await fetch(`${API_BASE}/status/${id}`);
+            const data = await res.json();
+            if(data.status === 'done') {
+                clearInterval(interval);
+                finish(data.audio_url);
+            } else if(data.percent) {
+                document.getElementById('progBar').style.width = data.percent + '%';
+                document.getElementById('pctTxt').innerText = data.percent + '%';
+                document.getElementById('statusTxt').innerText = data.msg || "جاري المعالجة...";
+            }
+        } catch(e) {}
+    }, 4000);
+}
+
+function finish(url) {
+    document.getElementById('progressArea').style.display = 'none';
+    document.getElementById('resCard').style.display = 'block';
+    document.getElementById('resList').innerHTML = `<audio controls src="${url}" style="width:100%"></audio>`;
+}
+
+// التشغيل الابتدائي
+document.addEventListener('DOMContentLoaded', () => { 
+    populateGrids(); 
+    updateStatus(); 
+});
