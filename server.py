@@ -56,6 +56,6 @@ def get_job_status(job_id):
     return jsonify({"status": res.state, "progress": 50 if res.state == 'PROGRESS' else 0})
 
 if __name__ == '__main__':
-    # ملاحظة: عند استخدام gunicorn، يتم تجاهل هذا الجزء، لكنه مفيد للتجربة المحلية
-    port = int(os.environ.get("PORT", 5000))
+    # جلب المنفذ من Railway أو استخدام 8080 كافتراضي
+    port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
