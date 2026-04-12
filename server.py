@@ -7,12 +7,13 @@ from dotenv import load_dotenv
 load_dotenv()
 app = Flask(__name__)
 
-# تفعيل CORS بشكل كامل وصحيح لكل النطاقات لضمان عدم ظهور الخطأ الأحمر
+# تفعيل CORS بشكل صحيح لفتح الباب للموقع (بدون كلمات زائدة)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# إعدادات Celery
+# إعدادات Celery للربط مع Upstash
 REDIS_URL = os.getenv("CELERY_BROKER_URL")
 celery = Celery('tasks', broker=REDIS_URL, backend=REDIS_URL)
+
 celery.conf.update(
     broker_use_ssl={'ssl_cert_reqs': 'none'},
     redis_backend_use_ssl={'ssl_cert_reqs': 'none'},
@@ -26,7 +27,6 @@ def get_status():
 @app.route('/api/speakers', methods=['GET'])
 def get_speakers():
     speakers = []
-    # التأكد من وجود المجلد
     spk_dir = 'speakers'
     if os.path.exists(spk_dir):
         for f in os.listdir(spk_dir):
@@ -38,6 +38,7 @@ def get_speakers():
 @app.route('/api/dub', methods=['POST'])
 def start_dubbing():
     data = request.json
+    # إرسال المهمة للـ Worker في منزلك
     task = celery.send_task('tasks.process_tts', args=[data])
     return jsonify({"job_id": task.id, "status": "queued"})
 
@@ -48,6 +49,5 @@ def get_job_status(job_id):
     return jsonify({"status": res.state, "progress": 50 if res.state == 'PROGRESS' else 0})
 
 if __name__ == '__main__':
-    # مهم جداً لـ Railway: استخدام المنفذ المخصص والربط بـ 0.0.0.0
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
