@@ -1,44 +1,37 @@
 'use strict';
 
+// 🌍 تأكد أن هذا الرابط هو رابط Railway الخاص بك بالضبط
 const API_BASE = 'https://sl-dubbing-frontend-production.up.railway.app';
 
 let selectedLangs = [];
 let srtSegments = [];
 let activeSpeakerId = 'auto';
 
-// --- وظيفة معالجة رابط يوتيوب (التي كانت ناقصة) ---
-window.onUrl = function(url) {
-    const ytInfo = document.getElementById('ytInfo');
-    const ytThumb = document.getElementById('ytThumb');
-    if (!url.includes('youtu')) { if(ytInfo) ytInfo.style.display = 'none'; return; }
-    
-    const vid = (url.split('v=')[1]||'').split('&')[0] || url.split('.be/')[1] || '';
-    if (vid && ytThumb) {
-        ytThumb.src = `https://img.youtube.com/vi/${vid}/mqdefault.jpg`;
-        if(ytInfo) ytInfo.style.display = 'flex';
-    }
-};
+const SUPPORTED_LANGS = [
+    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'fr', name: 'French', flag: '🇫🇷' },
+    { code: 'de', name: 'German', flag: '🇩🇪' },
+    { code: 'es', name: 'Spanish', flag: '🇪🇸' },
+    { code: 'it', name: 'Italian', flag: '🇮🇹' },
+    { code: 'pt', name: 'Portuguese', flag: '🇵🇹' },
+    { code: 'tr', name: 'Turkish', flag: '🇹🇷' },
+    { code: 'ru', name: 'Russian', flag: '🇷🇺' },
+    { code: 'zh-cn', name: 'Chinese', flag: '🇨🇳' }
+];
 
-function showToast(msg, type = 'info') {
-    const toast = document.createElement('div');
-    toast.style.cssText = `position:fixed;bottom:20px;right:20px;padding:12px 24px;background:${type==='error'?'#ef4444':'#0f0f10'};color:white;border-radius:10px;z-index:9999;`;
-    toast.innerText = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
-}
-
-// بناء اللغات
+// --- بناء شبكة اللغات الكاملة ---
 function buildLangGrid() {
     const grid = document.getElementById('langGrid');
-    const langs = [{code:'ar', name:'العربية', flag:'🇸🇦'}, {code:'en', name:'English', flag:'🇺🇸'}];
     if (!grid) return;
     grid.innerHTML = '';
-    langs.forEach(l => {
+    SUPPORTED_LANGS.forEach(l => {
         const box = document.createElement('div');
         box.className = 'lang-box';
         box.innerHTML = `${l.flag} <span>${l.name}</span>`;
+        if (selectedLangs.includes(l.code)) box.classList.add('active');
         box.onclick = () => {
-            if (selectedLangs.includes(l.code)) selectedLangs = selectedLangs.filter(c => c!==l.code);
+            if (selectedLangs.includes(l.code)) selectedLangs = selectedLangs.filter(c => c !== l.code);
             else selectedLangs.push(l.code);
             box.classList.toggle('active');
             checkReady();
@@ -47,22 +40,52 @@ function buildLangGrid() {
     });
 }
 
+// --- تحميل الأصوات من السيرفر ---
 async function loadSpeakers() {
     const grid = document.getElementById('spkGrid');
     if (!grid) return;
-    grid.innerHTML = '<div class="spk-card active" onclick="activeSpeakerId=\'auto\'">تلقائي</div>';
+    grid.innerHTML = '';
+    // إضافة الخيار التلقائي دائماً
+    const autoCard = document.createElement('div');
+    autoCard.className = `spk-card ${activeSpeakerId === 'auto' ? 'active' : ''}`;
+    autoCard.innerHTML = '<i class="fas fa-magic"></i><div class="spk-nm">تلقائي (المصدر)</div>';
+    autoCard.onclick = () => {
+        activeSpeakerId = 'auto';
+        document.querySelectorAll('.spk-card').forEach(c => c.classList.remove('active'));
+        autoCard.classList.add('active');
+    };
+    grid.appendChild(autoCard);
+
     try {
         const res = await fetch(`${API_BASE}/api/speakers`);
-        const list = await res.json();
-        list.forEach(s => {
-            const card = document.createElement('div');
-            card.className = 'spk-card';
-            card.innerText = s.label;
-            card.onclick = () => activeSpeakerId = s.speaker_id;
-            grid.appendChild(card);
-        });
-    } catch (e) { console.log("خطأ تحميل الأصوات"); }
+        if (res.ok) {
+            const list = await res.json();
+            list.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'spk-card';
+                card.innerHTML = `<i class="fas fa-microphone"></i><div class="spk-nm">${s.label}</div>`;
+                card.onclick = () => {
+                    activeSpeakerId = s.speaker_id;
+                    document.querySelectorAll('.spk-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                };
+                grid.appendChild(card);
+            });
+        }
+    } catch (e) { console.log("السيرفر لا يزال أوفلاين"); }
 }
+
+// --- وظيفة يوتيوب ---
+window.onUrl = function(url) {
+    const ytInfo = document.getElementById('ytInfo');
+    const ytThumb = document.getElementById('ytThumb');
+    if (!url.includes('youtu')) { if(ytInfo) ytInfo.style.display = 'none'; return; }
+    const vid = (url.split('v=')[1]||'').split('&')[0] || url.split('.be/')[1] || '';
+    if (vid && ytThumb) {
+        ytThumb.src = `https://img.youtube.com/vi/${vid}/mqdefault.jpg`;
+        if(ytInfo) ytInfo.style.display = 'flex';
+    }
+};
 
 function checkReady() {
     const btn = document.getElementById('startBtn');
@@ -70,6 +93,7 @@ function checkReady() {
     if (btn) {
         btn.disabled = !(isOnline && selectedLangs.length > 0);
         btn.style.opacity = btn.disabled ? "0.5" : "1";
+        btn.innerText = isOnline ? "ابدأ الدبلجة" : "في انتظار اتصال النظام...";
     }
 }
 
