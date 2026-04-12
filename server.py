@@ -1,61 +1,48 @@
-import os, uuid
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from celery import Celery
-from dotenv import load_dotenv
 
-load_dotenv()
 app = Flask(__name__)
+# السماح لجميع النطاقات بالوصول (Vercel و Localhost)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-# فتح الصلاحيات لـ Vercel وللجميع لضمان عمل الموقع
-CORS(app)
+# إعدادات Upstash (يجب أن تطابق ما في tasks.py)
+REDIS_URL = "rediss://default:gQAAAAAAAXrOAAIncDIyYWIyMzA5NTE2NTU0M2YzYjk0MGM0ZTVjZjRiZjA5M3AyOTY5NzQ@primary-muskrat-96974.upstash.io:6379"
 
-# إعدادات الربط مع Upstash
-REDIS_URL = os.getenv("CELERY_BROKER_URL")
-celery = Celery('tasks', broker=REDIS_URL, backend=REDIS_URL)
-
-celery.conf.update(
+celery_app = Celery('tasks', broker=REDIS_URL, backend=REDIS_URL)
+celery_app.conf.update(
     broker_use_ssl={'ssl_cert_reqs': 'none'},
-    redis_backend_use_ssl={'ssl_cert_reqs': 'none'},
-    broker_connection_retry_on_startup=True
+    redis_backend_use_ssl={'ssl_cert_reqs': 'none'}
 )
 
-@app.route('/api/status', methods=['GET'])
-def get_status():
-    return jsonify({"status": "online", "engine": "ready"})
-
-@app.route('/api/speakers', methods=['GET'])
-def get_speakers():
-    speakers = []
-    spk_dir = 'speakers'
-    if os.path.exists(spk_dir):
-        for f in os.listdir(spk_dir):
-            if f.endswith(".wav"):
-                name = f.replace(".wav", "")
-                speakers.append({"speaker_id": name, "label": name.capitalize()})
-    
-    # إذا لم توجد ملفات، نرسل صوتاً افتراضياً لكي لا تظهر القائمة فارغة
-    if not speakers:
-        speakers = [{"speaker_id": "muhammad", "label": "Muhammad (Default)"}]
-    return jsonify(speakers)
-
-@app.route('/api/dub', methods=['POST'])
+# 1. مسار بدء الدبلجة (يعطي رقم تذكرة فوراً)
+@app.route('/dub', methods=['POST'])
 def start_dubbing():
     try:
         data = request.json
-        # إرسال المهمة للـ Worker في منزلك عبر السحاب
-        task = celery.send_task('tasks.process_tts', args=[data])
-        return jsonify({"job_id": task.id, "status": "queued"})
+        # إرسال المهمة للـ Worker في RunPod
+        task = celery_app.send_task('tasks.process_tts', args=[data])
+        return jsonify({
+            "task_id": task.id, 
+            "status": "processing",
+            "message": "Task sent to Cloud GPU"
+        }), 202
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/api/job/<job_id>', methods=['GET'])
-def get_job_status(job_id):
-    res = celery.AsyncResult(job_id)
-    if res.state == 'SUCCESS': return jsonify(res.result)
-    return jsonify({"status": res.state, "progress": 50 if res.state == 'PROGRESS' else 0})
+# 2. مسار التحقق من الحالة (الذي سيسأله الموقع كل 5 ثوانٍ)
+@app.route('/status/<task_id>', methods=['GET'])
+def get_status(task_id):
+    task = celery_app.AsyncResult(task_id)
+    
+    if task.state == 'SUCCESS':
+        return jsonify({"status": "done", "audio_url": task.result.get('audio_url')})
+    elif task.state == 'FAILURE':
+        return jsonify({"status": "error", "message": str(task.info)})
+    else:
+        return jsonify({"status": "processing"})
 
 if __name__ == '__main__':
-    # جلب المنفذ من Railway أو استخدام 8080 كافتراضي
-    port = int(os.environ.get("PORT", 8080))
+    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
