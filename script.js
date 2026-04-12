@@ -1,5 +1,5 @@
 /* sl-Dubbing Script - Version 2.1 (Repair Edition) */
-const API_BASE = 'https://sl-dubbing-backend-production.up.railway.app'; 
+const API_BASE = 'https://sl-dubbing-frontend-production.up.railway.app';
 
 let selectedLangs = [];
 let srtSegments = [];
