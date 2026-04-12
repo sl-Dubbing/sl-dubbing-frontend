@@ -1,16 +1,16 @@
 import os, uuid
 from flask import Flask, request, jsonify
-from flask_cors import CORS # تأكد أن هذه المكتبة موجودة في requirements.txt
+from flask_cors import CORS
 from celery import Celery
 from dotenv import load_dotenv
 
 load_dotenv()
 app = Flask(__name__)
 
-# --- 🛡️ تفعيل التصريح الشامل (أبسط نسخة تعمل دائماً) ---
-CORS(app) 
+# فتح الصلاحيات لـ Vercel وللجميع لضمان عمل الموقع
+CORS(app)
 
-# إعدادات السحاب (Upstash)
+# إعدادات الربط مع Upstash
 REDIS_URL = os.getenv("CELERY_BROKER_URL")
 celery = Celery('tasks', broker=REDIS_URL, backend=REDIS_URL)
 
@@ -22,7 +22,7 @@ celery.conf.update(
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
-    return jsonify({"status": "online", "message": "Backend is running!"})
+    return jsonify({"status": "online", "engine": "ready"})
 
 @app.route('/api/speakers', methods=['GET'])
 def get_speakers():
@@ -33,15 +33,21 @@ def get_speakers():
             if f.endswith(".wav"):
                 name = f.replace(".wav", "")
                 speakers.append({"speaker_id": name, "label": name.capitalize()})
-    # إذا كان المجلد فارغاً، نرسل صوتاً وهمياً للتجربة
-    if not speakers: speakers = [{"speaker_id": "muhammad", "label": "Muhammad (Default)"}]
+    
+    # إذا لم توجد ملفات، نرسل صوتاً افتراضياً لكي لا تظهر القائمة فارغة
+    if not speakers:
+        speakers = [{"speaker_id": "muhammad", "label": "Muhammad (Default)"}]
     return jsonify(speakers)
 
 @app.route('/api/dub', methods=['POST'])
 def start_dubbing():
-    data = request.json
-    task = celery.send_task('tasks.process_tts', args=[data])
-    return jsonify({"job_id": task.id, "status": "queued"})
+    try:
+        data = request.json
+        # إرسال المهمة للـ Worker في منزلك عبر السحاب
+        task = celery.send_task('tasks.process_tts', args=[data])
+        return jsonify({"job_id": task.id, "status": "queued"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/job/<job_id>', methods=['GET'])
 def get_job_status(job_id):
@@ -50,5 +56,6 @@ def get_job_status(job_id):
     return jsonify({"status": res.state, "progress": 50 if res.state == 'PROGRESS' else 0})
 
 if __name__ == '__main__':
+    # ملاحظة: عند استخدام gunicorn، يتم تجاهل هذا الجزء، لكنه مفيد للتجربة المحلية
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
