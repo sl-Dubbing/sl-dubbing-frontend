@@ -8,8 +8,7 @@
  * - Better UX (loading states, etc)
  */
 
-const API_BASE = 'https://sl-dubbing-frontend-production.up.railway.app';
-
+const API_BASE = document.currentScript?.dataset.apiBase || 'https://api.sl-dubbing.com';
 
 let selectedLangs = [];
 let srtSegments = [];
