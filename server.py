@@ -1,16 +1,16 @@
 import os, uuid
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS # تأكد أن هذه المكتبة موجودة في requirements.txt
 from celery import Celery
 from dotenv import load_dotenv
 
 load_dotenv()
 app = Flask(__name__)
 
-# تفعيل CORS بشكل صحيح لفتح الباب للموقع (بدون كلمات زائدة)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# --- 🛡️ تفعيل التصريح الشامل (أبسط نسخة تعمل دائماً) ---
+CORS(app) 
 
-# إعدادات Celery للربط مع Upstash
+# إعدادات السحاب (Upstash)
 REDIS_URL = os.getenv("CELERY_BROKER_URL")
 celery = Celery('tasks', broker=REDIS_URL, backend=REDIS_URL)
 
@@ -22,7 +22,7 @@ celery.conf.update(
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
-    return jsonify({"status": "online", "xtts_ready": True})
+    return jsonify({"status": "online", "message": "Backend is running!"})
 
 @app.route('/api/speakers', methods=['GET'])
 def get_speakers():
@@ -33,12 +33,13 @@ def get_speakers():
             if f.endswith(".wav"):
                 name = f.replace(".wav", "")
                 speakers.append({"speaker_id": name, "label": name.capitalize()})
+    # إذا كان المجلد فارغاً، نرسل صوتاً وهمياً للتجربة
+    if not speakers: speakers = [{"speaker_id": "muhammad", "label": "Muhammad (Default)"}]
     return jsonify(speakers)
 
 @app.route('/api/dub', methods=['POST'])
 def start_dubbing():
     data = request.json
-    # إرسال المهمة للـ Worker في منزلك
     task = celery.send_task('tasks.process_tts', args=[data])
     return jsonify({"job_id": task.id, "status": "queued"})
 
