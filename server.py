@@ -5,9 +5,10 @@ from celery import Celery
 
 app = Flask(__name__)
 
-# تفعيل CORS بشكل عالمي وصحيح
+# تفعيل CORS بشكل عالمي وصحيح لجميع النطاقات
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+# رابط Upstash
 REDIS_URL = "rediss://default:gQAAAAAAAXrOAAIncDIyYWIyMzA5NTE2NTU0M2YzYjk0MGM0ZTVjZjRiZjA5M3AyOTY5NzQ@primary-muskrat-96974.upstash.io:6379"
 
 celery_app = Celery('tasks', broker=REDIS_URL, backend=REDIS_URL)
@@ -37,10 +38,13 @@ def get_status(task_id):
     if task.state == 'SUCCESS':
         return jsonify({"status": "done", "audio_url": task.result.get('audio_url')})
     elif task.state == 'PROGRESS':
-        return jsonify({"status": "processing", "percent": task.info.get('percent', 0), "msg": task.info.get('msg', '')})
+        return jsonify({
+            "status": "processing", 
+            "percent": task.info.get('percent', 0), 
+            "msg": task.info.get('msg', '')
+        })
     return jsonify({"status": "processing"})
 
 if __name__ == '__main__':
-    # استخدام المنفذ الممرر من النظام
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
