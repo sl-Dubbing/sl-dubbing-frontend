@@ -3,119 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Log In - sl-Dubbing</title>
+<title>Sign in - sl-Dubbing</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-/* ── ElevenLabs Light Theme ── */
-:root {
-  --bg-page: #fafafa;
-  --bg-card: #ffffff;
-  --border-color: #e5e7eb;
-  --text-main: #0f0f10;
-  --text-muted: #6b7280;
-  --primary: #0f0f10;
-  --primary-hover: #27272a;
-  --radius-md: 12px;
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-
-.login-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 24px; padding: 48px; width: 100%; max-width: 440px; box-shadow: var(--shadow-lg); text-align: center; }
-.login-card h2 { font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }
-.login-card .sub { color: var(--text-muted); font-size: .95rem; margin-bottom: 32px; }
-.login-card .sub a { color: #2563eb; text-decoration: none; font-weight: 600; }
-
-.gaccounts { margin-bottom: 24px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-page); overflow: hidden; text-align: left; }
-.gacc-item { display: flex; align-items: center; gap: 12px; padding: 16px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background .2s; }
-.gacc-item:last-child { border-bottom: none; }
-.gacc-item:hover { background: #f3f4f6; }
-.gacc-avatar { width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-main); flex-shrink: 0; }
-.gacc-name { font-weight: 600; color: var(--text-main); font-size: .95rem; }
-.gacc-email { font-size: .85rem; color: var(--text-muted); }
-
-.divider { display: flex; align-items: center; margin: 24px 0; color: var(--text-muted); }
-.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border-color); }
-.divider span { padding: 0 16px; font-size: .85rem; font-weight: 500; }
-
-.fg { margin-bottom: 16px; text-align: left; }
-.fg label { display: block; font-weight: 600; color: var(--text-main); font-size: .9rem; margin-bottom: 8px; }
-.fg input { width: 100%; padding: 14px 16px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-main); font-size: .95rem; outline: none; transition: border .2s; }
-.fg input:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
-
-.submit-btn { width: 100%; padding: 14px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 8px; transition: background .2s; }
-.submit-btn:hover { background: var(--primary-hover); }
-
-.footer-links { display: flex; justify-content: space-between; margin-top: 20px; font-size: .85rem; }
-.footer-links a { color: #2563eb; text-decoration: none; font-weight: 500; }
-.back-link { display: inline-block; margin-top: 32px; color: var(--text-muted); text-decoration: none; font-size: .9rem; font-weight: 500; }
-.back-link:hover { color: var(--text-main); }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  body { background: #fafafa; display: flex; align-items: center; justify-content: center; min-height: 100vh; color: #111827; }
+  
+  .auth-card { background: #fff; width: 100%; max-width: 400px; padding: 40px; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.04); text-align: center; }
+  .logo { font-size: 1.5rem; font-weight: 900; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; gap: 10px; color: #0f0f10; text-decoration: none; }
+  .logo i { color: #a4fec4; background: #0f0f10; padding: 6px; border-radius: 8px; }
+  
+  h1 { font-size: 1.6rem; margin-bottom: 30px; font-weight: 800; }
+  
+  /* أزرار التسجيل الاجتماعي */
+  .social-btn { width: 100%; padding: 12px; margin-bottom: 12px; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; color: #374151; }
+  .social-btn:hover { background: #f9fafb; border-color: #9ca3af; }
+  .social-btn img { width: 20px; }
+  
+  .divider { display: flex; align-items: center; text-align: center; margin: 24px 0; color: #9ca3af; font-size: 0.85rem; }
+  .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e5e7eb; }
+  .divider:not(:empty)::before { margin-right: .25em; }
+  .divider:not(:empty)::after { margin-left: .25em; }
+  
+  /* الحقول التقليدية */
+  .input-group { text-align: left; margin-bottom: 16px; }
+  .input-group label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #374151; }
+  .input-group a { color: #6b7280; text-decoration: none; font-weight: 500; font-size: 0.8rem; }
+  .input-group a:hover { text-decoration: underline; }
+  .input-group input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem; outline: none; transition: border 0.2s; }
+  .input-group input:focus { border-color: #0f0f10; box-shadow: 0 0 0 1px #0f0f10; }
+  
+  .submit-btn { width: 100%; padding: 14px; background: #9ca3af; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+  .submit-btn.active { background: #0f0f10; }
+  .submit-btn.active:hover { background: #27272a; }
+  
+  .footer-text { margin-top: 24px; font-size: 0.9rem; color: #6b7280; }
+  .footer-text a { color: #111827; font-weight: 600; text-decoration: none; }
+  .footer-text a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
 
-<div class="login-card">
-  <div style="margin-bottom: 24px;">
-    <i class="fas fa-cube" style="font-size: 3rem; color: var(--primary);"></i>
-  </div>
-  <h2>Welcome back</h2>
-  <p class="sub">New user? <a href="#">Create an account</a></p>
-
-  <div class="gaccounts" id="gaccounts"></div>
-
-  <div class="divider"><span>Or continue with email</span></div>
-
-  <form onsubmit="handleLogin(event)">
-    <div class="fg">
-      <label>Email address</label>
-      <input type="email" id="em" placeholder="you@example.com" required>
-    </div>
-    <div class="fg">
-      <label>Password</label>
-      <input type="password" id="pw" placeholder="••••••••" required>
-    </div>
-    <button type="submit" class="submit-btn">Log In</button>
-  </form>
-
-  <div class="footer-links">
-    <a href="#">Forgot password?</a>
-    <label style="color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px;">
-      <input type="checkbox"> Remember me
-    </label>
+<div class="auth-card">
+  <a href="index.html" class="logo"><i class="fas fa-cube"></i> sl-Dubbing</a>
+  
+  <h1>Welcome back</h1>
+  
+  <button class="social-btn" id="googleLogin">
+    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
+    Sign in with Google
+  </button>
+  
+  <div class="divider">OR</div>
+  
+  <div class="input-group">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="name@company.com" oninput="checkForm()">
   </div>
   
-  <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
+  <div class="input-group">
+    <label>Password <a href="#">Forgot your password?</a></label>
+    <input type="password" id="password" placeholder="••••••••" oninput="checkForm()">
+  </div>
+  
+  <button class="submit-btn" id="loginBtn" disabled>Sign in</button>
+  
+  <div class="footer-text">
+    Don't have an account? <a href="signup.html">Sign up</a>
+  </div>
 </div>
 
 <script>
-const ACCOUNTS=[
-  {name:'Mona Alhil',email:'ahlil.ma@gmail.com',i:'M'},
-  {name:'ALHASHMI Design',email:'abd199641@gmail.com',i:'A'},
-  {name:'Rhf Alhil',email:'rhfalhil@gmail.com',i:'R'}
-];
-
-function saveAndGo(user){
-  localStorage.setItem('sl_user',JSON.stringify(user));
-  const r=sessionStorage.getItem('returnUrl')||'index.html';
-  sessionStorage.removeItem('returnUrl');
-  location.href=r;
-}
-
-document.getElementById('gaccounts').innerHTML=ACCOUNTS.map(a=>`
-  <div class="gacc-item" onclick="googleLogin('${a.email}','${a.name}','${a.i}')">
-    <div class="gacc-avatar">${a.i}</div>
-    <div><div class="gacc-name">${a.name}</div><div class="gacc-email">${a.email}</div></div>
-  </div>`).join('');
-
-function googleLogin(email,name,i){
-  saveAndGo({email,name,avatar:i,method:'google'});
-}
-
-function handleLogin(e){
-  e.preventDefault();
-  const email=document.getElementById('em').value;
-  saveAndGo({email, name:email.split('@')[0], avatar:email[0].toUpperCase(), method:'email'});
-}
+  // تفعيل الزر فقط عند كتابة البريد وكلمة المرور
+  function checkForm() {
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('password').value;
+    const btn = document.getElementById('loginBtn');
+    
+    if(email.length > 3 && pass.length > 5) {
+      btn.disabled = false;
+      btn.classList.add('active');
+    } else {
+      btn.disabled = true;
+      btn.classList.remove('active');
+    }
+  }
 </script>
+
 </body>
 </html>
