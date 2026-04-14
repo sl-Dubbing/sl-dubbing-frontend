@@ -1,52 +1,77 @@
-/* sl-Dubbing Script - FIXED VERSION
- * Improvements:
- * - Proper error handling
- * - Network retry logic
- * - Exponential backoff polling
- * - XSS prevention
- * - JWT token authentication
- * - Better UX (loading states, etc)
- */
+// ============================================================
+// script.js — sl-Dubbing Frontend (Production Version)
+// ============================================================
 
-const API_BASE = 'https://sl-dubbing-frontend-production.up.railway.app';
+const CONFIG = {
+  // ✅ رابط سيرفرك المليوني الجديد على Railway
+  API_BASE: 'https://web-production-14a1.up.railway.app', 
+  LANGS: [
+    {c:'ar', n:'العربية', f:'🇸🇦'},
+    {c:'en', n:'English', f:'🇺🇸'},
+    {c:'es', n:'Español', f:'🇪🇸'},
+    {c:'fr', n:'Français', f:'🇫🇷'},
+    {c:'de', n:'Deutsch', f:'🇩🇪'},
+    {c:'it', n:'Italiano', f:'🇮🇹'},
+    {c:'ru', n:'Русский', f:'🇷🇺'},
+    {c:'tr', n:'Türkçe', f:'🇹🇷'},
+    {c:'zh', n:'中文', f:'🇨🇳'},
+    {c:'hi', n:'हिन्दी', f:'🇮🇳'},
+    {c:'fa', n:'فارسی', f:'🇮🇷'},
+    {c:'sv', n:'Svenska', f:'🇸🇪'},
+    {c:'nl', n:'Nederlands', f:'🇳🇱'},
+  ]
+};
 
+const STATE = {
+  lang: 'ar',
+  voiceMode: 'muhamed',
+  srtData: [],
+  rawSRT: '',
+  selectedVoice: null,
+};
 
-let selectedLangs = [];
-let srtSegments = [];
-let activeSpeakerId = 'muhammad';
-let currentTaskId = null;
+// ── الأصوات المخصصة (XTTS) ──
+const _VOICES = {
+  muhamed:    { mode: 'xtts', voice_id: 'muhammad_ar',   voice_url: 'https://res.cloudinary.com/dxbmvzsiz/video/upload/v1773776198/Muhammad_ar.mp3' },
+  dmitry:     { mode: 'xtts', voice_id: 'dmitry_ru',     voice_url: 'https://res.cloudinary.com/dxbmvzsiz/video/upload/v1773776793/Dmitry_ru.mp3' },
+  baris:      { mode: 'xtts', voice_id: 'baris_tr',      voice_url: 'https://res.cloudinary.com/dxbmvzsiz/video/upload/v1773776793/Barış_tr.mp3' },
+  maximilian: { mode: 'xtts', voice_id: 'maximilian_de', voice_url: 'https://res.cloudinary.com/dxbmvzsiz/video/upload/v1773776975/Maximilian_ge.mp3' },
+};
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-const LANGS = [
-    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'fr', name: 'French', flag: '🇫🇷' },
-    { code: 'de', name: 'German', flag: '🇩🇪' },
-    { code: 'tr', name: 'Turkish', flag: '🇹🇷' },
-    { code: 'zh-cn', name: '中文', flag: '🇨🇳' },
-    { code: 'ja', name: '日本語', flag: '🇯🇵' },
-    { code: 'es', name: 'Español', flag: '🇪🇸' }
-];
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024;  // 10MB
-const MAX_TEXT_LENGTH = 50000;
-const RETRY_CONFIG = {
-    maxRetries: 3,
-    baseDelay: 1000,
-    maxDelay: 8000,
-    timeout: 10000
+// ── خريطة جميع الأصوات (بما فيها صوت المصدر) ──
+const VOICE_MAP = {
+  'source': { mode: 'source', voice_id: 'source', voice_url: null }, 
+  'gtts': { mode: 'gtts', voice_id: null, voice_url: null },
+  'muhamed': _VOICES.muhamed,
+  'dmitry': _VOICES.dmitry,
+  'baris': _VOICES.baris,
+  'maximilian': _VOICES.maximilian,
 };
 
 // ============================================================================
-// UTILITY FUNCTIONS
+// Network Helpers (Fetch with long timeout for heavy AI tasks)
 // ============================================================================
 
-/**
- * Escape HTML to prevent XSS
- */
+function apiGet(path, timeout) {
+  return fetch(CONFIG.API_BASE + path, {
+    signal: AbortSignal.timeout(timeout || 15000)
+  });
+}
+
+function apiPost(path, data, timeout) {
+  return fetch(CONFIG.API_BASE + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+    // 10 دقائق كحد أقصى لعمليات الدبلجة الثقيلة
+    signal: AbortSignal.timeout(timeout || 600000) 
+  });
+}
+
+// ============================================================================
+// UI & Toasts
+// ============================================================================
+
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -54,553 +79,294 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-/**
- * Show error toast
- */
-function showError(message) {
-    const toast = document.getElementById('toast') || createToast();
-    toast.className = 'toast error';
-    toast.innerHTML = `❌ ${escapeHtml(message)}`;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 5000);
+function showToast(msg, duration = 4000) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.className = 'toast';
+    document.body.appendChild(t);
+  }
+  t.innerHTML = escapeHtml(msg);
+  t.classList.add('show');
+  
+  clearTimeout(t._t);
+  t._t = setTimeout(() => {
+    t.classList.remove('show');
+  }, duration);
 }
 
-/**
- * Show success toast
- */
-function showSuccess(message) {
-    const toast = document.getElementById('toast') || createToast();
-    toast.className = 'toast success';
-    toast.innerHTML = `✅ ${escapeHtml(message)}`;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 5000);
-}
-
-/**
- * Create toast element if it doesn't exist
- */
-function createToast() {
-    const toast = document.createElement('div');
-    toast.id = 'toast';
-    toast.className = 'toast';
-    document.body.appendChild(toast);
-    return toast;
-}
-
-/**
- * Get JWT token from localStorage
- */
-function getAuthToken() {
-    try {
-        return localStorage.getItem('auth_token');
-    } catch (e) {
-        return null;
-    }
-}
-
-/**
- * Check if user is authenticated
- */
-function isAuthenticated() {
-    const token = getAuthToken();
-    if (!token) return false;
-    
-    try {
-        // Decode JWT (without verification - just checking expiration)
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const exp = payload.exp * 1000;  // Convert to milliseconds
-        return exp > Date.now();
-    } catch (e) {
-        localStorage.removeItem('auth_token');
-        return false;
-    }
-}
-
-/**
- * Fetch with retry logic and timeout
- */
-async function fetchWithRetry(url, options = {}, retryCount = 0) {
-    const { maxRetries, baseDelay, timeout } = RETRY_CONFIG;
-    
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-        
-        const response = await fetch(url, {
-            ...options,
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        // Automatically retry on 5xx errors
-        if (response.status >= 500 && retryCount < maxRetries) {
-            const delay = baseDelay * Math.pow(2, retryCount);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return fetchWithRetry(url, options, retryCount + 1);
-        }
-        
-        return response;
-        
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            error.message = 'Request timeout';
-        }
-        
-        if (retryCount < maxRetries) {
-            const delay = baseDelay * Math.pow(2, retryCount);
-            console.warn(`Retry ${retryCount + 1}/${maxRetries} after ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return fetchWithRetry(url, options, retryCount + 1);
-        }
-        
-        throw error;
-    }
-}
-
-/**
- * Make authenticated API call
- */
-async function apiCall(endpoint, options = {}) {
-    const token = getAuthToken();
-    
-    if (!token) {
-        window.location.href = 'login.html';
-        throw new Error('Authentication required');
-    }
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...options.headers
-    };
-    
-    const response = await fetchWithRetry(`${API_BASE}${endpoint}`, {
-        ...options,
-        headers
-    });
-    
-    if (response.status === 401) {
-        // Token expired
-        localStorage.removeItem('auth_token');
-        window.location.href = 'login.html';
-        throw new Error('Session expired. Please login again.');
-    }
-    
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-    }
-    
-    return response.json();
-}
-
-/**
- * Safely render content
- */
-function setTextContent(element, text) {
-    if (element) {
-        element.textContent = String(text || '');
-    }
-}
-
-/**
- * SRT Parser - Extract text segments from SRT file
- */
-function parseSRT(content) {
-    const segments = [];
-    
-    try {
-        // Split by double newlines (subtitle blocks)
-        const blocks = content.split(/\n\s*\n/);
-        
-        for (const block of blocks) {
-            const lines = block.trim().split('\n');
-            
-            if (lines.length < 2) continue;
-            
-            // Skip sequence number (lines[0])
-            // Skip timestamp (lines[1])
-            // Extract subtitle text (lines[2+])
-            
-            const text = lines.slice(2).join(' ').trim();
-            
-            if (text) {
-                segments.push({
-                    text: text,
-                    timestamp: lines[1] || ''
-                });
-            }
-        }
-        
-        if (segments.length === 0) {
-            throw new Error('No valid subtitle segments found in SRT file');
-        }
-        
-        return segments;
-        
-    } catch (error) {
-        throw new Error(`SRT parsing error: ${error.message}`);
-    }
-}
-
-// ============================================================================
-// UI FUNCTIONS
-// ============================================================================
-
-/**
- * Populate language and speaker grids
- */
-function populateGrids() {
-    // Speaker grid
-    const spkGrid = document.getElementById('spkGrid');
-    if (spkGrid) {
-        spkGrid.innerHTML = `
-            <div class="spk-card active" id="spk-muhammad" onclick="selectSpeaker('muhammad')">
-                <i class="fas fa-check-circle chk" style="display:block"></i>
-                <div class="spk-av">M</div>
-                <div class="spk-nm">محمد (افتراضي)</div>
-            </div>
-        `;
-    }
-    
-    // Language grid
-    const langGrid = document.getElementById('langGrid');
-    if (langGrid) {
-        langGrid.innerHTML = '';
-        LANGS.forEach(lang => {
-            const box = document.createElement('div');
-            box.className = 'lang-box';
-            box.id = `lang-${lang.code}`;
-            box.textContent = `${lang.flag} ${lang.name}`;
-            box.onclick = () => selectLanguage(lang.code);
-            langGrid.appendChild(box);
-        });
-    }
-}
-
-/**
- * Select speaker
- */
-window.selectSpeaker = function(id) {
-    activeSpeakerId = id;
-    document.querySelectorAll('.spk-card').forEach(c => c.classList.remove('active'));
-    const card = document.getElementById(`spk-${id}`);
-    if (card) card.classList.add('active');
-    checkReady();
-};
-
-/**
- * Select language
- */
-window.selectLanguage = function(code) {
-    selectedLangs = [code];
-    document.querySelectorAll('.lang-box').forEach(b => b.classList.remove('active'));
-    const box = document.getElementById(`lang-${code}`);
-    if (box) box.classList.add('active');
-    checkReady();
-};
-
-/**
- * Check if all required fields are filled
- */
-function checkReady() {
-    const btn = document.getElementById('startBtn');
-    if (!btn) return;
-    
-    const isReady = srtSegments.length > 0 && selectedLangs.length > 0;
-    btn.disabled = !isReady;
-    btn.style.opacity = isReady ? '1' : '0.5';
-    btn.style.cursor = isReady ? 'pointer' : 'not-allowed';
-}
-
-/**
- * Update server status indicator
- */
-async function updateStatus() {
-    const dot = document.getElementById('dot');
-    const dotLbl = document.getElementById('dotLbl');
-    
-    if (!dot || !dotLbl) return;
-    
-    try {
-        await fetchWithRetry(`${API_BASE}/api/health`, {}, 1);
-        dot.classList.add('on');
-        setTextContent(dotLbl, 'System Online');
-    } catch (e) {
-        dot.classList.remove('on');
-        setTextContent(dotLbl, 'System Offline');
-    }
-}
-
-/**
- * Handle YouTube URL input
- */
-window.onUrlUpdate = function(url) {
-    const infoDiv = document.getElementById('ytInfo');
-    const thumb = document.getElementById('ytThumb');
-    const title = document.getElementById('ytTitle');
-    
-    if (!infoDiv) return;
-    
-    url = (url || '').trim();
-    
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-        try {
-            // Extract video ID
-            let videoId;
-            if (url.includes('v=')) {
-                videoId = url.split('v=')[1].split('&')[0];
-            } else {
-                videoId = url.split('/').pop().split('?')[0];
-            }
-            
-            if (videoId && videoId.length === 11) {
-                if (thumb) thumb.src = `https://img.youtube.com/vi/${escapeHtml(videoId)}/mqdefault.jpg`;
-                if (title) setTextContent(title, 'Video ready for processing');
-                infoDiv.style.display = 'flex';
-            }
-        } catch (e) {
-            infoDiv.style.display = 'none';
-        }
+function initHeader() {
+  const hdr = document.getElementById('hdr');
+  if (!hdr) return;
+  try {
+    const u = JSON.parse(localStorage.getItem('sl_user'));
+    if (u) {
+      hdr.innerHTML = `<div class="pill" style="background:var(--card); color:var(--text); border-color:var(--border);">
+                          <div class="avatar" style="width:24px;height:24px;font-size:10px;">${u.avatar || '👤'}</div>
+                          <span class="username" style="font-weight:600;margin:0 5px;">${u.name || u.email}</span>
+                          <span style="color:#059669; font-weight:700; margin:0 5px;">${u.credits || 0} 🪙</span>
+                          <button class="btn-logout" onclick="logout()" style="padding:2px 8px;font-size:10px;">خروج</button>
+                       </div>`;
     } else {
-        infoDiv.style.display = 'none';
+      hdr.innerHTML = '<a href="login.html" class="btn-login" style="padding:6px 14px;font-size:.8rem;">تسجيل الدخول</a>';
     }
+  } catch(e) {
+    hdr.innerHTML = '<a href="login.html" class="btn-login">تسجيل الدخول</a>';
+  }
+}
+
+function logout() {
+  localStorage.removeItem('sl_user');
+  location.href = 'index.html';
+}
+
+async function checkServer() {
+  const dot = document.getElementById('dot');
+  const lbl = document.getElementById('dotLbl');
+  if (!dot) return;
+  
+  try {
+    const r = await apiGet('/api/health', 8000);
+    if (r.ok) {
+        dot.classList.add('on');
+        if (lbl) lbl.textContent = 'النظام متصل ✓';
+    } else {
+        throw new Error("Server not OK");
+    }
+  } catch(e) {
+    console.error('❌ Server check failed:', e);
+    dot.classList.remove('on');
+    dot.style.background = '#ef4444';
+    if (lbl) lbl.textContent = 'النظام غير متاح';
+  }
+}
+
+// ============================================================================
+// Setup Selections (Languages & Voices)
+// ============================================================================
+
+function initLangs() {
+  const el = document.getElementById('langGrid');
+  if (!el) return;
+  el.innerHTML = CONFIG.LANGS.map(l => 
+    `<div class="lang-box ${l.c === STATE.lang ? 'active' : ''}" onclick="selectLang('${l.c}', this)">
+        <span class="lang-flag" style="font-size:1.2rem;display:block;margin-bottom:4px;">${l.f}</span>
+        <span>${l.n}</span>
+     </div>`
+  ).join('');
+}
+
+window.selectLang = function(code, btn) {
+  STATE.lang = code;
+  document.querySelectorAll('.lang-box').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
 };
 
-/**
- * Handle SRT file upload
- */
+function updateVoiceSelection(mode) {
+  STATE.voiceMode = mode;
+  STATE.selectedVoice = VOICE_MAP[mode] || VOICE_MAP['muhamed'];
+  console.log('🎤 Voice Set:', mode);
+
+  if (STATE.selectedVoice && STATE.selectedVoice.voice_url && CONFIG.API_BASE) {
+    // إيقاظ السيرفر لتحميل الصوت مسبقاً وتسريع العملية لاحقاً
+    apiPost('/api/preload_voice', { 
+        voice_id: STATE.selectedVoice.voice_id, 
+        voice_url: STATE.selectedVoice.voice_url 
+    }, 120000).catch(e => console.log('Preload skipped.'));
+  }
+}
+
+// دمج اختيار الصوت مع HTML
+const originalSelectVoice = window.selectVoice;
+window.selectVoice = function(id, el) {
+    if(originalSelectVoice) originalSelectVoice(id, el);
+    updateVoiceSelection(id);
+};
+
+// ============================================================================
+// SRT Handling
+// ============================================================================
+
 document.addEventListener('DOMContentLoaded', () => {
-    const srtFile = document.getElementById('srtFile');
-    
-    if (srtFile) {
-        srtFile.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            
-            if (!file) return;
-            
-            // Validate file size
-            if (file.size > MAX_FILE_SIZE) {
-                showError(`File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)`);
-                e.target.value = '';
-                return;
-            }
-            
-            // Validate file type
-            if (!file.name.endsWith('.srt')) {
-                showError('Please upload an SRT file');
-                e.target.value = '';
-                return;
-            }
-            
-            const reader = new FileReader();
-            
-            reader.onload = function(ev) {
-                try {
-                    const content = ev.target.result;
-                    srtSegments = parseSRT(content);
-                    
-                    const zone = document.getElementById('srtZone');
-                    if (zone) {
-                        zone.classList.add('ok');
-                        setTextContent(
-                            zone.querySelector('#srtStatusTxt'),
-                            `✅ ${file.name} (${srtSegments.length} segments)`
-                        );
-                    }
-                    
-                    checkReady();
-                    
-                } catch (error) {
-                    showError(error.message);
-                    e.target.value = '';
-                    srtSegments = [];
-                }
-            };
-            
-            reader.onerror = function() {
-                showError('Error reading file');
-                e.target.value = '';
-            };
-            
-            reader.readAsText(file);
-        });
+    const srtFileInput = document.getElementById('srtFile');
+    if(srtFileInput) {
+        srtFileInput.addEventListener('change', loadSRTFile);
     }
-    
-    // Initialize UI
-    populateGrids();
-    updateStatus();
-    
-    // Refresh status every 30 seconds
-    setInterval(updateStatus, 30000);
 });
 
+function loadSRTFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  if (!file.name.endsWith('.srt') && !file.name.endsWith('.txt')) {
+      showToast('❌ يرجى رفع ملف بصيغة SRT أو TXT فقط', 4000);
+      event.target.value = '';
+      return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    STATE.rawSRT = e.target.result;
+    parseSRT(STATE.rawSRT);
+    
+    const zone = document.getElementById('srtZone');
+    if(zone) {
+        zone.classList.add('ok');
+        zone.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; font-size:1.8rem; margin-bottom:8px;"></i>
+                          <div class="srt-lbl" style="color:#059669; font-weight:700;">تم استلام: ${escapeHtml(file.name)}</div>
+                          <div style="font-size:.75rem;color:#059669;margin-top:5px;">(${STATE.srtData.length} مقطع زمني)</div>`;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseSRT(content) {
+  STATE.srtData = [];
+  let cur = null;
+  const lines = content.split('\n');
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) { 
+        if (cur) STATE.srtData.push(cur); 
+        cur = null; 
+        continue; 
+    }
+    if (/^\d+$/.test(line)) { 
+        if (cur) STATE.srtData.push(cur); 
+        cur = {i: parseInt(line), t: '', x: ''}; 
+    }
+    else if (line.includes('-->')) { 
+        if (cur) cur.t = line; 
+    }
+    else if (cur) { 
+        cur.x += line + ' '; 
+    }
+  }
+  if (cur) STATE.srtData.push(cur);
+}
+
 // ============================================================================
-// DUBBING WORKFLOW
+// Core Dubbing Execution
 // ============================================================================
 
-/**
- * Start dubbing process
- */
-window.start = async function() {
-    const btn = document.getElementById('startBtn');
+window.startDubbing = async function() {
+  if (!STATE.srtData.length) { 
+      showToast('⚠️ الرجاء رفع ملف الترجمة (SRT) أولاً', 4000); 
+      return; 
+  }
+  
+  const user = JSON.parse(localStorage.getItem('sl_user'));
+  if (!user) {
+      showToast('⚠️ يرجى تسجيل الدخول للبدء بالدبلجة', 4000);
+      setTimeout(() => window.location.href = 'login.html', 2000);
+      return;
+  }
+
+  const btn = document.getElementById('startBtn');
+  const progArea = document.getElementById('progressArea');
+  const progBar = document.getElementById('progBar');
+  const pctTxt = document.getElementById('pctTxt');
+  const statusTxt = document.getElementById('statusTxt');
+  
+  // تفعيل واجهة التحميل
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة السحابية...';
+  progArea.style.display = 'block';
+  progBar.style.width = '0%';
+  statusTxt.innerText = 'تهيئة المحرك الصوتي...';
+  
+  const fullText = STATE.srtData.map(item => item.x.trim()).join('\n');
+  
+  // محاكاة تقدم وهمي لكسر الملل أثناء معالجة الباك إند
+  let p = 0;
+  const iv = setInterval(() => {
+    p = Math.min(p + 1.2, 88); 
+    progBar.style.width = p + '%';
+    pctTxt.innerText = Math.floor(p) + '%';
+    if(p > 20) statusTxt.innerText = 'الذكاء الاصطناعي يولد الصوت الآن...';
+    if(p > 50) statusTxt.innerText = 'جاري دمج الصوت مع التوقيت الزمني (SRT)...';
+    if(p > 80) statusTxt.innerText = 'اللمسات النهائية، يرجى الانتظار...';
+  }, 1000);
+
+  try {
+    const voiceData = STATE.selectedVoice || VOICE_MAP['muhamed'];
+    const ytInput = document.getElementById('ytUrl');
+    const mediaUrl = ytInput ? ytInput.value.trim() : null;
+
+    if (voiceData.mode === 'source' && !mediaUrl) {
+        throw new Error("يجب وضع رابط يوتيوب لاستنساخ صوت المصدر.");
+    }
+
+    const payload = {
+      text: fullText,
+      srt: STATE.rawSRT,
+      lang: STATE.lang,
+      email: user.email,
+      voice_mode: voiceData.mode,
+      voice_id: voiceData.voice_id,
+      voice_url: voiceData.voice_url,
+      media_url: mediaUrl 
+    };
+
+    console.log('🚀 Sending to Railway Server:', payload);
+
+    const res = await apiPost('/api/dub', payload);
+    clearInterval(iv);
     
-    if (!btn || btn.disabled) return;
+    const d = await res.json();
+    console.log('📦 Server Response:', d);
+
+    if (!res.ok || !d.success) {
+        throw new Error(d.error || 'خطأ غير معروف من السيرفر');
+    }
+
+    // النجاح
+    progBar.style.width = '100%';
+    pctTxt.innerText = '100%';
+    statusTxt.innerText = 'اكتملت المعالجة بنجاح! ✨';
     
-    // Check authentication
-    if (!isAuthenticated()) {
-        showError('Please login first');
-        window.location.href = 'login.html';
-        return;
+    // تحديث رصيد المستخدم محلياً
+    if (d.remaining_credits !== undefined) {
+        user.credits = d.remaining_credits;
+        localStorage.setItem('sl_user', JSON.stringify(user));
+        initHeader(); // تحديث الرصيد في الأعلى
     }
     
-    // Disable button and show loading state
-    btn.disabled = true;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '⏳ جاري المعالجة...';
-    
-    const progressArea = document.getElementById('progressArea');
-    if (progressArea) progressArea.style.display = 'block';
-    
-    try {
-        const response = await apiCall('/api/dub', {
-            method: 'POST',
-            body: JSON.stringify({
-                segments: srtSegments,
-                lang: selectedLangs[0],
-                speaker_id: activeSpeakerId
-            })
-        });
+    setTimeout(() => {
+        progArea.style.display = 'none';
+        document.getElementById('resCard').style.display = 'block';
         
-        if (response.task_id) {
-            currentTaskId = response.task_id;
-            showSuccess('Processing started! 🎬');
-            
-            // Start polling for results
-            await pollStatus(response.task_id, 1000);
-        }
+        const aud = document.getElementById('dubAud');
+        const dl = document.getElementById('dlBtn');
         
-    } catch (error) {
-        showError(error.message || 'Failed to start processing');
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        if (progressArea) progressArea.style.display = 'none';
-    }
+        aud.src = d.audio_url;
+        dl.href = d.audio_url;
+        
+        showToast('🎉 الدبلجة جاهزة للتحميل!', 5000);
+    }, 1500);
+
+  } catch(e) {
+    clearInterval(iv);
+    console.error('❌ Dubbing Error:', e);
+    progBar.style.backgroundColor = '#ef4444'; 
+    statusTxt.innerText = 'حدث خطأ!';
+    showToast('❌ عذراً: ' + e.message, 6000);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-bolt"></i> ابدأ معالجة الدبلجة';
+  }
 };
 
-/**
- * Poll task status with exponential backoff
- */
-async function pollStatus(taskId, delayMs = 1000) {
-    const INITIAL_DELAY = 1000;
-    const MAX_DELAY = 8000;
-    
-    try {
-        const response = await apiCall(`/api/status/${taskId}`);
-        
-        // Update progress
-        if (response.percent !== undefined) {
-            updateProgress(response.percent, response.msg);
-        }
-        
-        if (response.status === 'done') {
-            finishDubbing(response.audio_url);
-            return;
-        }
-        
-        if (response.status === 'error') {
-            showError(`Processing failed: ${response.error}`);
-            resetUI();
-            return;
-        }
-        
-        // Schedule next poll with exponential backoff
-        const nextDelay = Math.min(delayMs * 1.5, MAX_DELAY);
-        setTimeout(() => pollStatus(taskId, nextDelay), delayMs);
-        
-    } catch (error) {
-        console.warn('Poll error:', error);
-        
-        // Retry on network error
-        setTimeout(() => pollStatus(taskId, Math.min(delayMs * 1.5, MAX_DELAY)), delayMs);
-    }
-}
-
-/**
- * Update progress display
- */
-function updateProgress(percent, message) {
-    const progBar = document.getElementById('progBar');
-    const pctTxt = document.getElementById('pctTxt');
-    const statusTxt = document.getElementById('statusTxt');
-    
-    if (progBar) progBar.style.width = `${Math.min(percent, 100)}%`;
-    if (pctTxt) setTextContent(pctTxt, `${Math.round(percent)}%`);
-    if (statusTxt) setTextContent(statusTxt, escapeHtml(message || 'Processing...'));
-}
-
-/**
- * Show result and finish
- */
-function finishDubbing(audioUrl) {
-    // Validate URL
-    try {
-        new URL(audioUrl);
-    } catch (e) {
-        showError('Invalid audio URL received');
-        resetUI();
-        return;
-    }
-    
-    const progressArea = document.getElementById('progressArea');
-    const resCard = document.getElementById('resCard');
-    const resList = document.getElementById('resList');
-    
-    if (progressArea) progressArea.style.display = 'none';
-    if (resCard) resCard.style.display = 'block';
-    
-    if (resList) {
-        resList.innerHTML = `
-            <audio controls style="width:100%; margin-bottom:20px;">
-                <source src="${escapeHtml(audioUrl)}" type="audio/mpeg">
-                Your browser does not support the audio element.
-            </audio>
-            <a href="${escapeHtml(audioUrl)}" download class="btn-go" style="text-align:center;">
-                <i class="fas fa-download"></i> Download Audio
-            </a>
-        `;
-    }
-    
-    showSuccess('Processing complete! ✨');
-}
-
-/**
- * Reset UI to initial state
- */
-function resetUI() {
-    const btn = document.getElementById('startBtn');
-    const progressArea = document.getElementById('progressArea');
-    const resCard = document.getElementById('resCard');
-    
-    if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = 'ابدأ الدبلجة 🚀';
-    }
-    if (progressArea) progressArea.style.display = 'none';
-    if (resCard) resCard.style.display = 'none';
-}
-
 // ============================================================================
-// ERROR BOUNDARY
+// Initialization on Load
 // ============================================================================
 
-window.addEventListener('error', (event) => {
-    console.error('Uncaught error:', event.error);
-    showError('An unexpected error occurred. Please refresh the page.');
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled rejection:', event.reason);
-    showError('A network error occurred. Please try again.');
-});
+window.onload = function() {
+  console.log('🚀 sl-Dubbing Application Loaded');
+  initHeader();
+  initLangs();
+  checkServer();
+  updateVoiceSelection('muhamed');
+};
