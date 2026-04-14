@@ -1,605 +1,446 @@
-# server.py — sl-Dubbing Backend (Enterprise Edition - SECURED & ENHANCED)
-import os, uuid, time, logging, subprocess, re, json
-from pathlib import Path
-from datetime import datetime
-from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
-from functools import wraps
-from dotenv import load_dotenv
+// ============================================================
+// script.js — sl-Dubbing Frontend (ENHANCED & SECURED)
+// ============================================================
 
-load_dotenv()
-logging.basicConfig(
-    level=logging.INFO, 
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
-)
-logger = logging.getLogger(__name__)
+// ═══════════════════════════════════════════
+// CONFIGURATION (Environment-based)
+// ═══════════════════════════════════════════
 
-# ============================================================================
-# FLASK & CORS SETUP
-# ============================================================================
+const CONFIG = {
+  // Use environment variable or fallback to current host
+  API_BASE: window.API_BASE || `${window.location.protocol}//${window.location.host}/api`,
+  
+  LANGS: [
+    {c:'ar', n:'العربية', f:'🇸🇦'},
+    {c:'en', n:'English', f:'🇺🇸'},
+    {c:'es', n:'Español', f:'🇪🇸'},
+    {c:'fr', n:'Français', f:'🇫🇷'},
+    {c:'de', n:'Deutsch', f:'🇩🇪'},
+    {c:'it', n:'Italiano', f:'🇮🇹'},
+    {c:'ru', n:'Русский', f:'🇷🇺'},
+    {c:'tr', n:'Türkçe', f:'🇹🇷'},
+    {c:'zh', n:'中文', f:'🇨🇳'},
+    {c:'hi', n:'हिन्दी', f:'🇮🇳'},
+    {c:'fa', n:'فارسی', f:'🇮🇷'},
+    {c:'sv', n:'Svenska', f:'🇸🇪'},
+    {c:'nl', n:'Nederlands', f:'🇳🇱'},
+  ]
+};
 
-app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+const STATE = {
+  lang: 'ar',
+  voiceMode: 'muhamed',
+  srtData: [],
+  rawSRT: '',
+  selectedVoice: null,
+  currentUser: null,
+  currentCredits: 0,
+};
 
-@app.after_request
-def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    return response
+// ════════════════════════════════════════════════════
+// VOICES MAP
+// ════════════════════════════════════════════════════
 
-# ============================================================================
-# DATABASE CONFIGURATION
-# ============================================================================
+const _VOICES = {
+  muhamed:    { mode: 'xtts', voice_id: 'muhammad_ar',   voice_url: 'https://res.cloudinary.com/dxbmvzsiz/video/upload/v1773776198/Muhammad_ar.mp3' },
+  dmitry:     { mode: 'xtts', voice_id: 'dmitry_ru',     voice_url: 'https://res.cloudinary.com/dxbmvzsiz/video/upload/v1773776793/Dmitry_ru.mp3' },
+  baris:      { mode: 'xtts', voice_id: 'baris_tr',      voice_url: 'https://res.cloudinary.com/dxbmvzsiz/video/upload/v1773776793/Barış_tr.mp3' },
+  maximilian: { mode: 'xtts', voice_id: 'maximilian_de', voice_url: 'https://res.cloudinary.com/dxbmvzsiz/video/upload/v1773776975/Maximilian_ge.mp3' },
+};
 
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if not DATABASE_URL:
-    logger.warning("⚠️ DATABASE_URL not set, using SQLite (dev only)")
-    DATABASE_URL = 'sqlite:///sl_dubbing.db'
+const VOICE_MAP = {
+  'source': { mode: 'source', voice_id: 'source', voice_url: null },
+  'gtts': { mode: 'gtts', voice_id: null, voice_url: null },
+  'muhamed': _VOICES.muhamed,
+  'dmitry': _VOICES.dmitry,
+  'baris': _VOICES.baris,
+  'maximilian': _VOICES.maximilian,
+};
 
-# Fix for PostgreSQL URI format
-if DATABASE_URL.startswith('postgres://'):
-    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+// ════════════════════════════════════════════════════
+// NETWORK HELPERS
+// ════════════════════════════════════════════════════
 
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JSON_SORT_KEYS'] = False
+function apiGet(path, timeout = 15000) {
+  const user = JSON.parse(localStorage.getItem('sl_user') || '{}');
+  return fetch(CONFIG.API_BASE + path, {
+    signal: AbortSignal.timeout(timeout),
+    headers: {
+      'X-User-Email': user.email || '',
+    }
+  });
+}
 
-db = SQLAlchemy(app)
+function apiPost(path, data, timeout = 600000) {
+  const user = JSON.parse(localStorage.getItem('sl_user') || '{}');
+  return fetch(CONFIG.API_BASE + path, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-User-Email': user.email || '',
+    },
+    body: JSON.stringify(data),
+    signal: AbortSignal.timeout(timeout)
+  });
+}
 
-# ============================================================================
-# DATABASE MODELS
-# ============================================================================
+// ════════════════════════════════════════════════════
+// UI & TOAST NOTIFICATIONS
+// ════════════════════════════════════════════════════
 
-class User(db.Model):
-    __tablename__ = 'users'
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+function showToast(msg, duration = 4000, type = 'info') {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.className = 'toast';
+    document.body.appendChild(t);
+  }
+  
+  // Add type-based styling
+  const bgColor = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6';
+  t.style.background = bgColor;
+  t.innerHTML = escapeHtml(msg);
+  t.classList.add('show');
+  
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => {
+    t.classList.remove('show');
+  }, duration);
+}
+
+// ════════════════════════════════════════════════════
+// HEADER & USER MANAGEMENT
+// ════════════════════════════════════════════════════
+
+function initHeader() {
+  const hdr = document.getElementById('hdr');
+  if (!hdr) return;
+  
+  try {
+    const u = JSON.parse(localStorage.getItem('sl_user'));
+    if (u && u.email) {
+      STATE.currentUser = u;
+      STATE.currentCredits = u.credits || 0;
+      
+      hdr.innerHTML = `
+        <div class="header-user" style="display:flex; align-items:center; gap:12px; padding:8px 16px; background:#f3f4f6; border-radius:10px;">
+          <div class="avatar" style="width:32px;height:32px;border-radius:50%;background:#0f0f10;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">${u.avatar || '👤'}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:0.9rem;">${escapeHtml(u.name || u.email)}</div>
+            <div style="font-size:0.8rem;color:#6b7280;">💰 ${u.credits || 0} أرصدة</div>
+          </div>
+          <button class="btn-logout" onclick="logout()" style="padding:6px 12px;font-size:0.8rem;background:#fee2e2;border:1px solid #fca5a5;color:#ef4444;border-radius:6px;cursor:pointer;font-weight:600;">خروج</button>
+        </div>
+      `;
+    } else {
+      hdr.innerHTML = '<a href="login.html" class="btn-login" style="padding:8px 16px;font-size:0.85rem;background:#0f0f10;color:#fff;border:none;border-radius:8px;cursor:pointer;text-decoration:none;font-weight:600;">تسجيل الدخول</a>';
+    }
+  } catch(e) {
+    console.error('Header init error:', e);
+    hdr.innerHTML = '<a href="login.html" class="btn-login">تسجيل الدخول</a>';
+  }
+}
+
+function logout() {
+  if (confirm('هل تريد تسجيل الخروج؟')) {
+    localStorage.removeItem('sl_user');
+    window.location.href = 'index.html';
+  }
+}
+
+async function checkServer() {
+  const dot = document.getElementById('dot');
+  const lbl = document.getElementById('dotLbl');
+  if (!dot) return;
+  
+  try {
+    const r = await apiGet('/health', 8000);
+    const data = await r.json();
     
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    name = db.Column(db.String(100), nullable=False)
-    avatar = db.Column(db.String(10), default='👤')
-    credits = db.Column(db.Integer, default=50000)  # 50,000 characters free
-    password_hash = db.Column(db.String(255), nullable=True)  # For email signup
-    auth_method = db.Column(db.String(50), default='oauth')  # 'oauth' or 'email'
-    last_login = db.Column(db.DateTime, default=datetime.utcnow)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    
-    # Relationships
-    jobs = db.relationship('DubbingJob', backref='user', lazy=True, cascade='all, delete-orphan')
-    credit_history = db.relationship('CreditTransaction', backref='user', lazy=True, cascade='all, delete-orphan')
-    
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-    
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'email': self.email,
-            'name': self.name,
-            'avatar': self.avatar,
-            'credits': self.credits,
-            'auth_method': self.auth_method,
-            'created_at': self.created_at.isoformat()
-        }
+    if (r.ok && data.status === 'ok') {
+      dot.classList.add('on');
+      if (lbl) lbl.textContent = '✓ النظام متصل';
+    } else {
+      throw new Error('Health check failed');
+    }
+  } catch(e) {
+    console.error('❌ Server check failed:', e);
+    dot.classList.remove('on');
+    dot.style.background = '#ef4444';
+    if (lbl) lbl.textContent = '✗ النظام غير متاح';
+  }
+}
 
-class DubbingJob(db.Model):
-    __tablename__ = 'dubbing_jobs'
-    
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    
-    status = db.Column(db.String(20), default='pending')  # pending, processing, completed, failed
-    language = db.Column(db.String(10), nullable=False)
-    voice_mode = db.Column(db.String(50), nullable=False)  # 'xtts', 'gtts', 'source'
-    voice_id = db.Column(db.String(100), nullable=True)
-    
-    text_length = db.Column(db.Integer, default=0)
-    credits_used = db.Column(db.Integer, default=0)
-    
-    input_url = db.Column(db.String(500), nullable=True)
-    output_url = db.Column(db.String(500), nullable=True)
-    
-    error_message = db.Column(db.Text, nullable=True)
-    processing_time = db.Column(db.Float, nullable=True)
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'status': self.status,
-            'language': self.language,
-            'voice_mode': self.voice_mode,
-            'text_length': self.text_length,
-            'credits_used': self.credits_used,
-            'output_url': self.output_url,
-            'error': self.error_message,
-            'processing_time': self.processing_time,
-            'created_at': self.created_at.isoformat()
-        }
+// ════════════════════════════════════════════════════
+// LANGUAGE & VOICE SELECTION
+// ════════════════════════════════════════════════════
 
-class CreditTransaction(db.Model):
-    __tablename__ = 'credit_transactions'
+function initLangs() {
+  const el = document.getElementById('langGrid');
+  if (!el) return;
+  
+  el.innerHTML = CONFIG.LANGS.map(l => 
+    `<div class="lang-box ${l.c === STATE.lang ? 'active' : ''}" onclick="selectLang('${l.c}', this)" style="cursor:pointer;padding:10px;border:1px solid #e5e7eb;border-radius:10px;text-align:center;transition:all 0.2s;${l.c === STATE.lang ? 'border-color:#0f0f10;background:#a4fec4;' : ''}">
+        <span style="font-size:1.2rem;display:block;margin-bottom:4px;">${l.f}</span>
+        <span style="font-size:0.85rem;">${l.n}</span>
+     </div>`
+  ).join('');
+}
+
+function selectLang(code, btn) {
+  STATE.lang = code;
+  document.querySelectorAll('.lang-box').forEach(b => {
+    b.style.borderColor = '#e5e7eb';
+    b.style.background = '#fff';
+    b.style.fontWeight = 'normal';
+  });
+  btn.style.borderColor = '#0f0f10';
+  btn.style.background = '#a4fec4';
+  btn.style.fontWeight = '700';
+  console.log('🌍 Language selected:', code);
+}
+
+function updateVoiceSelection(mode) {
+  STATE.voiceMode = mode;
+  STATE.selectedVoice = VOICE_MAP[mode] || VOICE_MAP['muhamed'];
+  console.log('🎤 Voice selected:', mode, STATE.selectedVoice.voice_id);
+}
+
+const originalSelectVoice = window.selectVoice;
+window.selectVoice = function(id, el) {
+  if(originalSelectVoice) originalSelectVoice(id, el);
+  updateVoiceSelection(id);
+};
+
+// ════════════════════════════════════════════════════
+// SRT FILE HANDLING
+// ════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  const srtFileInput = document.getElementById('srtFile');
+  if(srtFileInput) {
+    srtFileInput.addEventListener('change', loadSRTFile);
+  }
+});
+
+function loadSRTFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  // Validate file type
+  if (!file.name.endsWith('.srt') && !file.name.endsWith('.txt')) {
+    showToast('❌ يرجى رفع ملف SRT أو TXT فقط', 4000, 'error');
+    event.target.value = '';
+    return;
+  }
+  
+  // Validate file size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('❌ حجم الملف كبير جداً (الحد الأقصى 5 MB)', 4000, 'error');
+    event.target.value = '';
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    STATE.rawSRT = e.target.result;
+    parseSRT(STATE.rawSRT);
     
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    const zone = document.getElementById('srtZone');
+    if(zone) {
+      zone.classList.add('ok');
+      zone.innerHTML = `
+        <i class="fas fa-check-circle" style="color:#059669; font-size:1.8rem; margin-bottom:8px;"></i>
+        <div style="color:#059669; font-weight:700;">✓ تم استلام: ${escapeHtml(file.name)}</div>
+        <div style="font-size:0.75rem;color:#059669;margin-top:5px;">(${STATE.srtData.length} مقطع زمني)</div>
+      `;
+    }
     
-    transaction_type = db.Column(db.String(20), nullable=False)  # 'usage', 'purchase', 'refund', 'bonus'
-    amount = db.Column(db.Integer, nullable=False)  # positive or negative
-    reason = db.Column(db.String(200), nullable=False)
+    showToast(`✓ تم تحميل ${STATE.srtData.length} مقطع من الترجمة`, 3000, 'success');
+  };
+  
+  reader.onerror = function() {
+    showToast('❌ خطأ في قراءة الملف', 4000, 'error');
+  };
+  
+  reader.readAsText(file);
+}
+
+function parseSRT(content) {
+  STATE.srtData = [];
+  let cur = null;
+  const lines = content.split('\n');
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) { 
+      if (cur) STATE.srtData.push(cur); 
+      cur = null; 
+      continue; 
+    }
+    if (/^\d+$/.test(line)) { 
+      if (cur) STATE.srtData.push(cur); 
+      cur = {i: parseInt(line), t: '', x: ''}; 
+    }
+    else if (line.includes('-->')) { 
+      if (cur) cur.t = line; 
+    }
+    else if (cur) { 
+      cur.x += line + ' '; 
+    }
+  }
+  if (cur) STATE.srtData.push(cur);
+  
+  console.log(`✅ Parsed ${STATE.srtData.length} subtitle blocks`);
+}
+
+// ════════════════════════════════════════════════════
+// MAIN DUBBING FUNCTION
+// ════════════════════════════════════════════════════
+
+window.startDubbing = async function() {
+  // Validate user is logged in
+  if (!STATE.currentUser || !STATE.currentUser.email) {
+    showToast('⚠️ يرجى تسجيل الدخول أولاً', 4000, 'error');
+    setTimeout(() => window.location.href = 'login.html', 2000);
+    return;
+  }
+  
+  // Validate SRT file
+  if (!STATE.srtData.length) { 
+    showToast('⚠️ الرجاء رفع ملف الترجمة (SRT) أولاً', 4000, 'error'); 
+    return; 
+  }
+  
+  const btn = document.getElementById('startBtn');
+  const progArea = document.getElementById('progressArea');
+  const progBar = document.getElementById('progBar');
+  const pctTxt = document.getElementById('pctTxt');
+  const statusTxt = document.getElementById('statusTxt');
+  
+  // UI state
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+  progArea.style.display = 'block';
+  progBar.style.width = '0%';
+  statusTxt.innerText = 'تهيئة المحرك الصوتي...';
+  
+  const fullText = STATE.srtData.map(item => item.x.trim()).join('\n');
+  const textLength = fullText.length;
+  
+  // Check credits
+  if (STATE.currentCredits < textLength) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-bolt"></i> ابدأ معالجة الدبلجة';
+    progArea.style.display = 'none';
+    showToast(`⚠️ رصيدك غير كافٍ: تحتاج ${textLength} أرصدة، لديك ${STATE.currentCredits}`, 6000, 'error');
+    return;
+  }
+  
+  // Progress bar animation
+  let p = 0;
+  const iv = setInterval(() => {
+    p = Math.min(p + 1.2, 88);
+    progBar.style.width = p + '%';
+    pctTxt.innerText = Math.floor(p) + '%';
+    if(p > 20) statusTxt.innerText = 'الذكاء الاصطناعي يولد الصوت الآن...';
+    if(p > 50) statusTxt.innerText = 'جاري دمج الصوت مع التوقيت الزمني...';
+    if(p > 80) statusTxt.innerText = 'اللمسات النهائية، يرجى الانتظار...';
+  }, 1000);
+
+  try {
+    const voiceData = STATE.selectedVoice || VOICE_MAP['muhamed'];
+    const ytInput = document.getElementById('ytUrl');
+    const mediaUrl = ytInput ? ytInput.value.trim() : null;
+
+    if (voiceData.mode === 'source' && !mediaUrl) {
+      throw new Error("يجب وضع رابط يوتيوب لاستنساخ صوت المصدر");
+    }
+
+    const payload = {
+      text: fullText,
+      srt: STATE.rawSRT,
+      lang: STATE.lang,
+      email: STATE.currentUser.email,
+      voice_mode: voiceData.mode,
+      voice_id: voiceData.voice_id,
+      voice_url: voiceData.voice_url,
+      media_url: mediaUrl
+    };
+
+    console.log('🚀 Sending to Backend:', {
+      email: payload.email,
+      lang: payload.lang,
+      voice_mode: payload.voice_mode,
+      text_length: textLength
+    });
+
+    const res = await apiPost('/dub', payload);
+    clearInterval(iv);
     
-    job_id = db.Column(db.String(36), nullable=True)  # reference to DubbingJob if usage
-    payment_id = db.Column(db.String(100), nullable=True)  # reference to payment gateway
+    const d = await res.json();
+    console.log('📦 Server Response:', d);
+
+    if (!res.ok || !d.success) {
+      throw new Error(d.error || 'خطأ من السيرفر');
+    }
+
+    // Success!
+    progBar.style.width = '100%';
+    pctTxt.innerText = '100%';
+    statusTxt.innerText = 'اكتملت المعالجة بنجاح! ✨';
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    // Update user credits
+    if (d.remaining_credits !== undefined) {
+      STATE.currentCredits = d.remaining_credits;
+      STATE.currentUser.credits = d.remaining_credits;
+      localStorage.setItem('sl_user', JSON.stringify(STATE.currentUser));
+      initHeader();
+    }
     
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'type': self.transaction_type,
-            'amount': self.amount,
-            'reason': self.reason,
-            'created_at': self.created_at.isoformat()
-        }
+    setTimeout(() => {
+      progArea.style.display = 'none';
+      document.getElementById('resCard').style.display = 'block';
+      
+      const aud = document.getElementById('dubAud');
+      const dl = document.getElementById('dlBtn');
+      
+      aud.src = d.audio_url;
+      dl.href = d.audio_url;
+      
+      showToast('🎉 الدبلجة جاهزة للتحميل!', 5000, 'success');
+    }, 1500);
 
-# ============================================================================
-# AUTHENTICATION MIDDLEWARE
-# ============================================================================
+  } catch(e) {
+    clearInterval(iv);
+    console.error('❌ Dubbing Error:', e);
+    progBar.style.backgroundColor = '#ef4444';
+    statusTxt.innerText = 'حدث خطأ!';
+    showToast('❌ عذراً: ' + e.message, 6000, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-bolt"></i> ابدأ معالجة الدبلجة';
+  }
+};
 
-def require_auth(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        email = request.headers.get('X-User-Email')
-        if not email:
-            return jsonify({'error': 'Unauthorized'}), 401
-        
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-        
-        request.user = user
-        return f(*args, **kwargs)
-    
-    return decorated_function
+// ════════════════════════════════════════════════════
+// INITIALIZATION
+// ════════════════════════════════════════════════════
 
-# ============================================================================
-# DIRECTORY SETUP
-# ============================================================================
-
-AUDIO_DIR = Path('/tmp/sl_audio')
-VOICE_DIR = Path('/tmp/sl_voices')
-AUDIO_DIR.mkdir(parents=True, exist_ok=True)
-VOICE_DIR.mkdir(parents=True, exist_ok=True)
-
-VOICE_CACHE = {}
-XTTS_MODEL = None
-
-# ============================================================================
-# XTTS MODEL INITIALIZATION
-# ============================================================================
-
-def init_xtts():
-    global XTTS_MODEL
-    if XTTS_MODEL is not None:
-        return True
-    try:
-        from TTS.api import TTS
-        logger.info("⏳ Loading XTTS v2...")
-        XTTS_MODEL = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=True)
-        logger.info("✅ XTTS v2 loaded successfully")
-        return True
-    except Exception as e:
-        logger.error(f"❌ XTTS initialization failed: {e}")
-        XTTS_MODEL = None
-        return False
-
-import threading
-init_thread = threading.Thread(target=init_xtts, daemon=True)
-init_thread.start()
-
-# ============================================================================
-# HELPER FUNCTIONS
-# ============================================================================
-
-def deduct_credits(user, text_length):
-    """Deduct credits from user account"""
-    if user.credits < text_length:
-        return False, "رصيدك غير كافٍ"
-    
-    user.credits -= text_length
-    transaction = CreditTransaction(
-        user_id=user.id,
-        transaction_type='usage',
-        amount=-text_length,
-        reason=f'Text generation: {text_length} characters'
-    )
-    db.session.add(transaction)
-    db.session.commit()
-    return True, user.credits
-
-def fetch_voice_sample(voice_url, voice_id):
-    """Download and cache voice sample"""
-    if voice_id in VOICE_CACHE and Path(VOICE_CACHE[voice_id]).exists():
-        return VOICE_CACHE[voice_id]
-    
-    try:
-        import urllib.request
-        local_path = VOICE_DIR / f"{voice_id}.wav"
-        if not local_path.exists():
-            tmp = VOICE_DIR / f"{voice_id}.tmp.mp3"
-            urllib.request.urlretrieve(voice_url, str(tmp))
-            subprocess.run(
-                ['ffmpeg', '-y', '-i', str(tmp), '-ar', '22050', '-ac', '1', str(local_path)],
-                capture_output=True,
-                timeout=30
-            )
-            tmp.unlink(missing_ok=True)
-        
-        if local_path.exists():
-            VOICE_CACHE[voice_id] = str(local_path)
-            return str(local_path)
-    except Exception as e:
-        logger.error(f"Voice download error: {e}")
-    
-    return None
-
-def extract_source_voice(media_url, job_id):
-    """Extract voice from YouTube URL"""
-    tmp_audio = AUDIO_DIR / f"raw_{job_id}.wav"
-    ref_audio = VOICE_DIR / f"ref_{job_id}.wav"
-    
-    try:
-        logger.info(f"⏳ Downloading YouTube audio: {media_url}")
-        subprocess.run(
-            ['yt-dlp', '-x', '--audio-format', 'wav', '-o', str(tmp_audio), media_url],
-            check=True,
-            timeout=120
-        )
-        
-        # Take first 15 seconds as voice sample
-        subprocess.run(
-            ['ffmpeg', '-y', '-i', str(tmp_audio), '-t', '15', '-ac', '1', '-ar', '22050', str(ref_audio)],
-            check=True,
-            timeout=30
-        )
-        
-        logger.info(f"✅ Voice extracted: {ref_audio}")
-        return str(ref_audio)
-    except Exception as e:
-        logger.error(f"Source extraction error: {e}")
-        return None
-
-def synthesize_xtts(text, lang, voice_path, output_path):
-    """Generate speech using XTTS v2"""
-    global XTTS_MODEL
-    try:
-        if XTTS_MODEL is None:
-            return None, "XTTS not ready"
-        
-        XTTS_MODEL.tts_to_file(
-            text=text,
-            speaker_wav=voice_path,
-            language=lang[:2],
-            file_path=output_path
-        )
-        
-        if Path(output_path).exists():
-            return output_path, "xtts"
-        return None, "Empty output"
-    except Exception as e:
-        logger.error(f"XTTS error: {e}")
-        return None, str(e)
-
-def synthesize_gtts(text, lang, output_path):
-    """Generate speech using Google TTS"""
-    try:
-        from gtts import gTTS
-        gTTS(text=text, lang=lang[:2]).save(output_path)
-        return output_path, "gtts"
-    except Exception as e:
-        logger.error(f"gTTS error: {e}")
-        return None, str(e)
-
-def srt_time(s):
-    """Parse SRT timestamp"""
-    s = s.replace(",", ".")
-    p = s.split(":")
-    return int(p[0]) * 3600 + int(p[1]) * 60 + float(p[2])
-
-def parse_srt(content):
-    """Parse SRT subtitle file"""
-    blocks, cur = [], None
-    for line in content.split("\n"):
-        line = line.strip()
-        if not line:
-            if cur:
-                blocks.append(cur)
-            cur = None
-        elif re.match(r"^\d+$", line):
-            if cur:
-                blocks.append(cur)
-            cur = {"i": int(line), "start": 0, "end": 0, "text": ""}
-        elif "-->" in line and cur:
-            p = line.split("-->")
-            cur["start"] = srt_time(p[0].strip())
-            cur["end"] = srt_time(p[1].strip())
-        elif cur:
-            cur["text"] += line + " "
-    
-    if cur:
-        blocks.append(cur)
-    return blocks
-
-# ============================================================================
-# API ROUTES
-# ============================================================================
-
-@app.route('/api/health', methods=['GET'])
-def health():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'ok',
-        'timestamp': datetime.utcnow().isoformat(),
-        'xtts_ready': XTTS_MODEL is not None,
-        'database': 'connected' if db.session.execute(db.text('SELECT 1')) else 'error'
-    })
-
-@app.route('/api/sync-user', methods=['POST', 'OPTIONS'])
-def sync_user():
-    """Sync user from frontend"""
-    if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
-    
-    try:
-        data = request.get_json()
-        email = data.get('email', '').lower().strip()
-        name = data.get('name', 'User')
-        avatar = data.get('avatar', '👤')
-        auth_method = data.get('method', 'oauth')
-        
-        if not email or '@' not in email:
-            return jsonify({'error': 'Invalid email'}), 400
-        
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            user = User(
-                email=email,
-                name=name,
-                avatar=avatar,
-                auth_method=auth_method,
-                credits=50000  # 50K free characters
-            )
-            db.session.add(user)
-            logger.info(f"✅ New user created: {email}")
-        else:
-            user.last_login = datetime.utcnow()
-            logger.info(f"✅ User logged in: {email}")
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'User synced',
-            'user': user.to_dict()
-        }), 200
-    
-    except Exception as e:
-        logger.error(f"Sync error: {e}")
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/user', methods=['GET'])
-def get_user():
-    """Get current user info"""
-    email = request.headers.get('X-User-Email')
-    if not email:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    return jsonify({
-        'success': True,
-        'user': user.to_dict(),
-        'credits': user.credits
-    }), 200
-
-@app.route('/api/credits/history', methods=['GET'])
-def get_credit_history():
-    """Get user's credit transaction history"""
-    email = request.headers.get('X-User-Email')
-    if not email:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    limit = request.args.get('limit', 50, type=int)
-    transactions = CreditTransaction.query.filter_by(user_id=user.id) \
-        .order_by(CreditTransaction.created_at.desc()) \
-        .limit(limit) \
-        .all()
-    
-    return jsonify({
-        'success': True,
-        'credits': user.credits,
-        'transactions': [t.to_dict() for t in transactions]
-    }), 200
-
-@app.route('/api/dub', methods=['POST', 'OPTIONS'])
-def dub():
-    """Process dubbing request"""
-    if request.method == 'OPTIONS':
-        return jsonify({'ok': True}), 200
-    
-    try:
-        data = request.get_json(force=True) or {}
-        
-        # Validate input
-        email = data.get('email', '').lower().strip()
-        text = data.get('text', '').strip()
-        srt = data.get('srt', '').strip()
-        lang = data.get('lang', 'ar')
-        voice_mode = data.get('voice_mode', 'muhamed')
-        voice_id = data.get('voice_id', '')
-        voice_url = data.get('voice_url', '')
-        media_url = data.get('media_url', '').strip()
-        
-        if not email or '@' not in email:
-            return jsonify({'success': False, 'error': 'Invalid email'}), 400
-        
-        # Get user
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            return jsonify({'success': False, 'error': 'User not found'}), 404
-        
-        # Validate text
-        if not text and not srt:
-            return jsonify({'success': False, 'error': 'Text or SRT required'}), 400
-        
-        text_length = len(text) if text else len(srt)
-        if text_length < 5:
-            return jsonify({'success': False, 'error': 'Text too short'}), 400
-        
-        if text_length > 50000:
-            text = text[:50000]
-            logger.warning(f"Text truncated to 50k chars for {email}")
-        
-        # Check credits
-        if user.credits < text_length:
-            return jsonify({
-                'success': False,
-                'error': 'رصيدك غير كافٍ',
-                'credits_needed': text_length,
-                'credits_available': user.credits
-            }), 402
-        
-        # Create job record
-        job_id = str(uuid.uuid4())
-        job = DubbingJob(
-            id=job_id,
-            user_id=user.id,
-            language=lang,
-            voice_mode=voice_mode,
-            voice_id=voice_id,
-            text_length=text_length,
-            input_url=media_url or 'local_file'
-        )
-        db.session.add(job)
-        
-        # Deduct credits
-        success, result = deduct_credits(user, text_length)
-        if not success:
-            return jsonify({'success': False, 'error': result}), 402
-        
-        job.credits_used = text_length
-        job.status = 'processing'
-        db.session.commit()
-        
-        logger.info(f"🎯 Processing job {job_id} for {email} ({text_length} chars)")
-        
-        # Process audio
-        t0 = time.time()
-        voice_path = None
-        use_xtts = False
-        
-        if voice_mode == 'source' and media_url:
-            voice_path = extract_source_voice(media_url, job_id)
-            use_xtts = voice_path is not None
-        elif voice_mode == 'xtts' and voice_url:
-            voice_path = fetch_voice_sample(voice_url, voice_id)
-            use_xtts = voice_path is not None
-        
-        output_path = str(AUDIO_DIR / f"dub_{job_id}.mp3")
-        
-        if use_xtts and voice_path:
-            output_path, method = synthesize_xtts(text, lang, voice_path, output_path)
-        else:
-            output_path, method = synthesize_gtts(text, lang, output_path)
-        
-        if not output_path or not Path(output_path).exists():
-            job.status = 'failed'
-            job.error_message = 'Audio generation failed'
-            db.session.commit()
-            return jsonify({'success': False, 'error': 'فشل توليد الصوت'}), 500
-        
-        # Upload to CDN or generate public URL
-        audio_url = f"https://{request.host}/api/file/{Path(output_path).name}"
-        job.output_url = audio_url
-        job.status = 'completed'
-        job.processing_time = time.time() - t0
-        db.session.commit()
-        
-        logger.info(f"✅ Job {job_id} completed in {job.processing_time:.1f}s")
-        
-        return jsonify({
-            'success': True,
-            'job_id': job_id,
-            'audio_url': audio_url,
-            'processing_time': job.processing_time,
-            'remaining_credits': user.credits,
-            'message': 'الدبلجة جاهزة للتحميل!'
-        }), 200
-    
-    except Exception as e:
-        logger.error(f"DUB error: {e}", exc_info=True)
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/file/<filename>')
-def get_file(filename):
-    """Download processed audio file"""
-    p = AUDIO_DIR / filename
-    if not p.exists():
-        return jsonify({'error': 'File not found'}), 404
-    
-    mime = 'audio/mpeg'  # MP3 by default
-    return send_file(str(p), mimetype=mime, as_attachment=False)
-
-@app.route('/api/jobs', methods=['GET'])
-def get_jobs():
-    """Get user's dubbing jobs"""
-    email = request.headers.get('X-User-Email')
-    if not email:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    limit = request.args.get('limit', 20, type=int)
-    jobs = DubbingJob.query.filter_by(user_id=user.id) \
-        .order_by(DubbingJob.created_at.desc()) \
-        .limit(limit) \
-        .all()
-    
-    return jsonify({
-        'success': True,
-        'jobs': [j.to_dict() for j in jobs]
-    }), 200
-
-# ============================================================================
-# DATABASE INITIALIZATION
-# ============================================================================
-
-with app.app_context():
-    db.create_all()
-    logger.info("✅ Database tables initialized")
-
-# ============================================================================
-# RUN SERVER
-# ============================================================================
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    debug = os.environ.get("FLASK_ENV") == "development"
-    app.run(host='0.0.0.0', port=port, debug=debug, threaded=True)
+window.onload = function() {
+  console.log('🚀 sl-Dubbing Frontend Loaded');
+  console.log('📡 API Base:', CONFIG.API_BASE);
+  
+  initHeader();
+  initLangs();
+  checkServer();
+  updateVoiceSelection('muhamed');
+};
