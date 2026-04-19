@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // File Upload Visuals
+    // File Upload Handler
     const mediaFile = document.getElementById('mediaFile');
     const mediaZone = document.getElementById('mediaZone');
     if (mediaFile && mediaZone) {
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 mediaZone.innerHTML = `
                     <i class="fas ${icon} fa-beat" style="font-size:2rem; margin-bottom:10px; color:#065f2c; display:block;"></i>
                     <span style="font-weight:bold; color:#065f2c;">Ready:</span><br>
-                    <span style="font-size:0.85rem; color:#111827;">${file.name}</span>
+                    <span style="font-size:0.85rem; color:#111827; word-break: break-all;">${file.name}</span>
                 `;
                 mediaZone.style.borderColor = '#065f2c';
                 mediaZone.style.background = '#f0fdf4';
@@ -54,9 +54,9 @@ async function loadVoicesFromGithub() {
     if (!spkGrid) return;
     spkGrid.innerHTML = '';
 
+    // بطاقة Voice Clone المحسنة
     const sourceCard = document.createElement('div');
     sourceCard.className = 'spk-card active';
-    // Microphone Switch for Voice Clone
     sourceCard.innerHTML = `
         <i class="fas fa-check-circle chk"></i>
         <div class="mic-wrapper">
@@ -69,11 +69,12 @@ async function loadVoicesFromGithub() {
                 </div>
             </div>
         </div>
-        <div class="spk-nm" style="font-weight:800; color:var(--primary)">Voice Clone</div>
+        <div class="spk-nm">Voice Clone</div>
     `;
     sourceCard.onclick = () => selectVoice('source', sourceCard);
     spkGrid.appendChild(sourceCard);
 
+    // بطاقات الأصوات الأخرى بتنسيق مطابق
     try {
         const url = `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/samples?t=${Date.now()}`;
         const res = await fetch(url);
@@ -105,7 +106,8 @@ function selectVoice(id, el) {
 
 window.startDubbing = async function() {
     const btn = document.getElementById('startBtn');
-    const mediaFile = document.getElementById('mediaFile').files[0];
+    const mediaInput = document.getElementById('mediaFile');
+    const mediaFile = mediaInput && mediaInput.files.length ? mediaInput.files[0] : null;
     
     if (!mediaFile) {
         showToast("Please select a file first", "#b91c1c");
@@ -128,7 +130,7 @@ window.startDubbing = async function() {
         if (data.success) {
             currentJobId = data.job_id;
             document.getElementById('progressArea').style.display = 'block';
-            document.getElementById('statusTxt').innerText = 'Generating...';
+            document.getElementById('statusTxt').innerText = 'Uploading...';
             pollInterval = setInterval(() => pollJob(currentJobId), 2000);
         } else { 
             showToast("Error: " + data.error, "#b91c1c"); 
@@ -154,19 +156,19 @@ async function pollJob(jobId) {
             document.getElementById('pctTxt').innerText = cur + '%';
         } else if (data.status === 'completed') {
             clearInterval(pollInterval);
-            document.getElementById('statusTxt').innerText = 'Finished!';
+            document.getElementById('statusTxt').innerText = 'Success!';
             document.getElementById('progBar').style.width = '100%';
             document.getElementById('pctTxt').innerText = '100%';
             document.getElementById('resCard').style.display = 'block';
             document.getElementById('dubAud').src = data.audio_url;
             document.getElementById('dlBtn').href = data.audio_url;
             btn.disabled = false; btn.classList.remove('loading');
-            showToast("Success! Ready.", "#065f2c");
+            showToast("Success! Audio is ready.", "#065f2c");
             checkAuth();
         } else if (data.status === 'failed') {
             clearInterval(pollInterval);
-            document.getElementById('statusTxt').innerText = 'Failed';
-            showToast("Failed.", "#b91c1c");
+            document.getElementById('statusTxt').innerText = 'Process Failed';
+            showToast("Failed to process.", "#b91c1c");
             btn.disabled = false; btn.classList.remove('loading');
             checkAuth();
         }
