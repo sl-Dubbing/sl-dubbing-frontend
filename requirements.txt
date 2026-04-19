@@ -6,3 +6,4 @@ python-dotenv
 cloudinary
 gunicorn
 deep-translator
+redis
