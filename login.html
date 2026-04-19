@@ -1,94 +1,115 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign in - sl-Dubbing</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-  body { background: #fafafa; display: flex; align-items: center; justify-content: center; min-height: 100vh; color: #111827; }
-  
-  .auth-card { background: #fff; width: 100%; max-width: 400px; padding: 40px; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.04); text-align: center; }
-  .logo { font-size: 1.5rem; font-weight: 900; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; gap: 10px; color: #0f0f10; text-decoration: none; }
-  .logo i { color: #a4fec4; background: #0f0f10; padding: 6px; border-radius: 8px; }
-  
-  h1 { font-size: 1.6rem; margin-bottom: 30px; font-weight: 800; }
-  
-  /* أزرار التسجيل الاجتماعي */
-  .social-btn { width: 100%; padding: 12px; margin-bottom: 12px; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; color: #374151; }
-  .social-btn:hover { background: #f9fafb; border-color: #9ca3af; }
-  .social-btn img { width: 20px; }
-  
-  .divider { display: flex; align-items: center; text-align: center; margin: 24px 0; color: #9ca3af; font-size: 0.85rem; }
-  .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e5e7eb; }
-  .divider:not(:empty)::before { margin-right: .25em; }
-  .divider:not(:empty)::after { margin-left: .25em; }
-  
-  /* الحقول التقليدية */
-  .input-group { text-align: left; margin-bottom: 16px; }
-  .input-group label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #374151; }
-  .input-group a { color: #6b7280; text-decoration: none; font-weight: 500; font-size: 0.8rem; }
-  .input-group a:hover { text-decoration: underline; }
-  .input-group input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem; outline: none; transition: border 0.2s; }
-  .input-group input:focus { border-color: #0f0f10; box-shadow: 0 0 0 1px #0f0f10; }
-  
-  .submit-btn { width: 100%; padding: 14px; background: #9ca3af; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
-  .submit-btn.active { background: #0f0f10; }
-  .submit-btn.active:hover { background: #27272a; }
-  
-  .footer-text { margin-top: 24px; font-size: 0.9rem; color: #6b7280; }
-  .footer-text a { color: #111827; font-weight: 600; text-decoration: none; }
-  .footer-text a:hover { text-decoration: underline; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in | sl-Dubbing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --border-focus: #111827;
+            --btn-grey: #a1a1aa;
+            --btn-grey-hover: #71717a;
+            --radius: 10px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, system-ui, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; min-height: 100vh; }
+        .login-container { width: 100%; max-width: 400px; padding: 40px 20px; display: flex; flex-direction: column; margin-top: 4vh; }
+
+        .logo { text-align: center; font-size: 1.25rem; font-weight: 800; margin-bottom: 60px; color: var(--text-main); text-decoration: none; }
+        .logo span { font-weight: 900; margin-right: 2px; }
+        .title { text-align: center; font-size: 1.75rem; font-weight: 700; margin-bottom: 40px; }
+
+        .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
+        .divider { height: 1px; background-color: var(--border-color); margin-bottom: 30px; }
+
+        .form-group { margin-bottom: 20px; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        label { font-size: 0.85rem; font-weight: 600; }
+        .forgot-link { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; }
+        
+        input { width: 100%; height: 48px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: var(--radius); font-size: 1rem; outline: none; }
+        input:focus { border-color: var(--border-focus); }
+        
+        .submit-btn { width: 100%; height: 48px; background-color: var(--btn-grey); color: #fff; border: none; border-radius: var(--radius); font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .submit-btn:hover { background-color: var(--btn-grey-hover); }
+
+        .footer-text { text-align: center; margin-top: 24px; font-size: 0.9rem; }
+        .footer-text a { font-weight: 600; text-decoration: none; color: var(--text-main); }
+        .google-btn-wrapper { width: 100%; display: flex; justify-content: center; }
+    </style>
 </head>
 <body>
 
-<div class="auth-card">
-  <a href="index.html" class="logo"><i class="fas fa-cube"></i> sl-Dubbing</a>
-  
-  <h1>Welcome back</h1>
-  
-  <button class="social-btn" id="googleLogin">
-    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
-    Sign in with Google
-  </button>
-  
-  <div class="divider">OR</div>
-  
-  <div class="input-group">
-    <label>Email</label>
-    <input type="email" id="email" placeholder="name@company.com" oninput="checkForm()">
-  </div>
-  
-  <div class="input-group">
-    <label>Password <a href="#">Forgot your password?</a></label>
-    <input type="password" id="password" placeholder="••••••••" oninput="checkForm()">
-  </div>
-  
-  <button class="submit-btn" id="loginBtn" disabled>Sign in</button>
-  
-  <div class="footer-text">
-    Don't have an account? <a href="signup.html">Sign up</a>
-  </div>
+<div class="login-container">
+    <a href="index.html" class="logo"><span>||</span>sl-Dubbing</a>
+    <h1 class="title">Welcome back</h1>
+
+    <div class="oauth-group">
+        <div class="google-btn-wrapper" id="googleBtn"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <form id="loginForm">
+        <div class="form-group">
+            <div class="label-row"><label for="email">Email</label></div>
+            <input type="email" id="email" placeholder="name@company.com" required>
+        </div>
+
+        <div class="form-group">
+            <div class="label-row">
+                <label for="password">Password</label>
+                <a href="#" class="forgot-link">Forgot password?</a>
+            </div>
+            <input type="password" id="password" required>
+        </div>
+
+        <button type="submit" class="submit-btn">Sign in</button>
+    </form>
+    <p class="footer-text">Don't have an account? <a href="https://accounts.google.com/signup" target="_blank">Sign up</a></p>
 </div>
 
 <script>
-  // تفعيل الزر فقط عند كتابة البريد وكلمة المرور
-  function checkForm() {
-    const email = document.getElementById('email').value;
-    const pass = document.getElementById('password').value;
-    const btn = document.getElementById('loginBtn');
-    
-    if(email.length > 3 && pass.length > 5) {
-      btn.disabled = false;
-      btn.classList.add('active');
-    } else {
-      btn.disabled = true;
-      btn.classList.remove('active');
-    }
-  }
-</script>
+    const GOOGLE_CLIENT_ID = "497619073475-6vjelufub8gci231ettdhmk5pv0cdde3.apps.googleusercontent.com";
+    const API_BASE = "https://web-production-14a1.up.railway.app";
 
+    window.onload = function () {
+        google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleResponse
+        });
+        google.accounts.id.renderButton(
+            document.getElementById("googleBtn"),
+            { theme: "outline", size: "large", width: 360 }
+        );
+    };
+
+    async function handleGoogleResponse(response) {
+        try {
+            const res = await fetch(`${API_BASE}/api/auth/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ credential: response.credential })
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Redirect to the English dubbing studio page
+                window.location.href = 'dubbing.html';
+            } else {
+                alert("Login failed: " + data.error);
+            }
+        } catch (err) {
+            alert("Connection error. Make sure the server is running.");
+        }
+    }
+</script>
 </body>
 </html>
