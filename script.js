@@ -1,6 +1,54 @@
-// استبدلي الدوال التالية في ملف script.js بالدوال المحدثة:
+const API_BASE = 'https://web-production-14a1.up.railway.app';
+const GITHUB_USER = "sl-Dubbing"; 
+const REPO_NAME = "sl-dubbing-frontend";
 
-// 1. تحديث خيار Voice Clone
+let selectedVoice = 'source';
+let selectedLang = 'en'; 
+let currentJobId = null;
+let pollInterval = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadVoicesFromGithub();
+    checkAuth();
+    
+    // Language Setup
+    const langGrid = document.getElementById('langGrid');
+    if (langGrid) {
+        const langs = ['en','ar','es','fr','de','it','pt','tr','ru','zh','ja','ko','hi'];
+        langGrid.innerHTML = '';
+        langs.forEach(l => {
+            const el = document.createElement('div');
+            el.className = 'lang-box' + (l === selectedLang ? ' active' : '');
+            el.innerText = l.toUpperCase();
+            el.onclick = () => {
+                document.querySelectorAll('.lang-box').forEach(n => n.classList.remove('active'));
+                el.classList.add('active');
+                selectedLang = l;
+            };
+            langGrid.appendChild(el);
+        });
+    }
+
+    // File Upload Handler
+    const mediaFile = document.getElementById('mediaFile');
+    const mediaZone = document.getElementById('mediaZone');
+    if (mediaFile && mediaZone) {
+        mediaFile.addEventListener('change', () => {
+            if (mediaFile.files.length > 0) {
+                const file = mediaFile.files[0];
+                const icon = file.type.startsWith('video') ? 'fa-file-video' : 'fa-file-audio';
+                mediaZone.innerHTML = `
+                    <i class="fas ${icon} fa-beat" style="font-size:2rem; margin-bottom:10px; color:#065f2c; display:block;"></i>
+                    <span style="font-weight:bold; color:#065f2c;">Ready:</span><br>
+                    <span style="font-size:0.85rem; color:#111827;">${file.name}</span>
+                `;
+                mediaZone.style.borderColor = '#065f2c';
+                mediaZone.style.background = '#f0fdf4';
+            }
+        });
+    }
+});
+
 async function loadVoicesFromGithub() {
     const spkGrid = document.getElementById('spkGrid');
     if (!spkGrid) return;
@@ -8,7 +56,7 @@ async function loadVoicesFromGithub() {
 
     const sourceCard = document.createElement('div');
     sourceCard.className = 'spk-card active';
-    // تم تغيير النص إلى Voice Clone
+    // ✅ Change to Voice Clone
     sourceCard.innerHTML = `<i class="fas fa-check-circle chk"></i><div class="spk-av">VC</div><div class="spk-nm">Voice Clone</div>`;
     sourceCard.onclick = () => selectVoice('source', sourceCard);
     spkGrid.appendChild(sourceCard);
@@ -28,38 +76,27 @@ async function loadVoicesFromGithub() {
     } catch (e) { console.error("Error loading voices", e); }
 }
 
-// 2. تحديث الرصيد وزر الخروج
-async function checkAuth() {
-    try {
-        const res = await fetch(API_BASE + '/api/user', { credentials: 'include' });
-        const data = await res.json();
-        if (data.success) {
-            document.getElementById('authSection').innerHTML = `
-                <div style="display:flex; gap:10px; align-items:center">
-                    <div style="text-align:right">
-                        <div style="font-weight:700">${data.user.name || 'User'}</div>
-                        <div style="background:rgba(255,255,255,0.06); padding:6px; border-radius:8px; font-size:0.8rem">
-                           Credits: ${data.user.credits} 💰
-                        </div>
-                    </div>
-                    <button class="auth-btn" onclick="logout()">Logout</button>
-                </div>`;
-        }
-    } catch (e) {}
+function selectVoice(id, el) {
+    selectedVoice = id;
+    document.querySelectorAll('.spk-card').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    if (id !== 'source') {
+        const audio = new Audio("samples/" + id + ".mp3"); 
+        audio.play().catch(() => {});
+    }
 }
 
-// 3. تحديث حالة الزر عند البدء (Generating)
 window.startDubbing = async function() {
     const btn = document.getElementById('startBtn');
     const mediaInput = document.getElementById('mediaFile');
     const mediaFile = mediaInput && mediaInput.files.length ? mediaInput.files[0] : null;
     
     if (!mediaFile) {
-        showToast("Please upload a file first", "#b91c1c");
+        showToast("Please select a file first", "#b91c1c");
         return;
     }
 
-    // تفعيل حالة الـ Loading للزر الجديد
+    // ✅ Start Loading Animation
     btn.disabled = true;
     btn.classList.add('loading');
     
@@ -82,21 +119,89 @@ window.startDubbing = async function() {
         if (data.success) {
             currentJobId = data.job_id;
             document.getElementById('progressArea').style.display = 'block';
-            document.getElementById('statusTxt').innerText = 'Generating...';
-            document.getElementById('progBar').style.width = '5%';
+            document.getElementById('statusTxt').innerText = 'Uploading to server...';
             pollInterval = setInterval(() => pollJob(currentJobId), 2000);
         } else { 
             showToast("Error: " + data.error, "#b91c1c"); 
-            btn.disabled = false; 
+            btn.disabled = false;
             btn.classList.remove('loading');
         }
     } catch (e) { 
-        showToast("Connection failed", "#b91c1c"); 
-        btn.disabled = false; 
+        showToast("Server connection failed", "#b91c1c"); 
+        btn.disabled = false;
         btn.classList.remove('loading');
     }
 };
 
-// 4. تأكدي من إزالة الـ loading في حالة النجاح أو الفشل داخل pollJob:
-// أضيفي هذا السطر في نهاية حالات pollJob (completed و failed):
-// btn.classList.remove('loading');
+async function pollJob(jobId) {
+    try {
+        const res = await fetch(API_BASE + '/api/job/' + jobId, { credentials: 'include' });
+        const data = await res.json();
+        const btn = document.getElementById('startBtn');
+        
+        if (data.status === 'processing') {
+            document.getElementById('statusTxt').innerText = 'AI is Dubbing... Please wait';
+            let bar = document.getElementById('progBar');
+            let cur = parseInt(bar.style.width) || 5;
+            cur = Math.min(95, cur + 1); 
+            bar.style.width = cur + '%';
+            document.getElementById('pctTxt').innerText = cur + '%';
+        } else if (data.status === 'completed') {
+            clearInterval(pollInterval);
+            document.getElementById('statusTxt').innerText = 'Processing Finished!';
+            document.getElementById('progBar').style.width = '100%';
+            document.getElementById('pctTxt').innerText = '100%';
+            document.getElementById('resCard').style.display = 'block';
+            document.getElementById('dubAud').src = data.audio_url;
+            document.getElementById('dlBtn').href = data.audio_url;
+            
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            showToast("Magic Done! Your audio is ready.", "#065f2c");
+            checkAuth();
+        } else if (data.status === 'failed') {
+            clearInterval(pollInterval);
+            document.getElementById('statusTxt').innerText = 'Failed to process';
+            showToast("Process failed. Credits refunded.", "#b91c1c");
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            checkAuth();
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function checkAuth() {
+    try {
+        const res = await fetch(API_BASE + '/api/user', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+            // ✅ Updated Balance and 💰
+            document.getElementById('authSection').innerHTML = `
+                <div style="display:flex; gap:12px; align-items:center">
+                    <div style="text-align:right">
+                        <div style="font-weight:700; color:#fff">${data.user.name || 'User'}</div>
+                        <div style="background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:8px; font-size:0.8rem; color:#a4fec4">
+                           Balance: ${data.user.credits} 💰
+                        </div>
+                    </div>
+                    <button class="auth-btn" onclick="logout()">Logout</button>
+                </div>`;
+        }
+    } catch (e) {}
+}
+
+window.logout = async function() {
+    try {
+        await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' });
+        location.reload();
+    } catch (e) { location.reload(); }
+};
+
+function showToast(msg, color) {
+    const t = document.createElement('div');
+    t.className = 'toast show';
+    t.style.background = color;
+    t.innerText = msg;
+    document.getElementById('toasts').appendChild(t);
+    setTimeout(() => { t.remove(); }, 4000); 
+}
