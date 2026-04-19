@@ -36,28 +36,45 @@
         .srt-zone:hover { background: #f9fafb; border-color: #d1d5db; }
         .srt-zone.ok { border-color: var(--green-dk); background: #f0fdf4; color: var(--green-dk); }
         
-        /* Grids */
-        .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
-        .spk-card, .lang-box { padding: 15px 10px; border-radius: 10px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.2s; background: #fff; position: relative; }
+        /* Grids & Cards */
+        .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 12px; margin-bottom: 15px; }
+        .spk-card, .lang-box { 
+            padding: 15px 10px; border-radius: 12px; border: 1px solid var(--border); 
+            text-align: center; cursor: pointer; transition: 0.2s; background: #fff; 
+            position: relative; overflow: hidden;
+        }
         .spk-card.active, .lang-box.active { background: var(--mint); border-color: var(--primary); font-weight: 700; }
-        .chk { position: absolute; top: 5px; right: 5px; font-size: 0.8rem; color: var(--primary); display: none; }
+        
+        /* ✅ إصلاح علامة الصح لكي لا تتداخل مع الأيقونة */
+        .chk { position: absolute; top: 6px; right: 6px; font-size: 0.75rem; color: var(--primary); display: none; z-index: 10; }
         .spk-card.active .chk { display: block; }
 
         /* ── Microphone Switch Icon ── */
-        .mic-wrapper { display: flex; justify-content: center; margin-bottom: 10px; }
+        .mic-wrapper { display: flex; justify-content: center; margin-bottom: 8px; }
         .switch {
-          position: relative; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center;
-          background-color: rgb(60,64,67); color: #fff; border-radius: 50%; transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          position: relative; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center;
+          background-color: #3c4043; color: #fff; border-radius: 50%; transition: all .3s ease;
         }
-        .mic-on, .mic-off { width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; transition: all .3s ease-in-out; }
+        .mic-on, .mic-off { width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; transition: all .3s ease; }
         .mic-on { z-index: 4; }
         .mic-off { position: absolute; inset: 0; z-index: 5; opacity: 0; display: flex; justify-content: center; align-items: center; }
-        .spk-card.active .switch { background-color: #ef4444; } 
+        
+        /* حالة التفعيل لصوت المصدر */
+        .spk-card.active .switch { background-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); } 
         .spk-card.active .mic-off { opacity: 1; }
         .spk-card.active .mic-on { opacity: 0; }
-        .spk-av { width: 35px; height: 35px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: 800; }
 
-        /* ── Fancy Button ── */
+        /* تنسيق الأفاتار للأصوات الأخرى */
+        .spk-av { 
+            width: 44px; height: 44px; background: #e5e7eb; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            margin: 0 auto 8px; font-weight: 800; font-size: 1.1rem; color: #4b5563;
+            transition: 0.3s;
+        }
+        .spk-card.active .spk-av { background: #0f0f10; color: #a4fec4; }
+        .spk-nm { font-size: 0.85rem; font-weight: 600; }
+
+        /* ── Fancy Button Generate ── */
         .btn-wrapper { display: flex; justify-content: center; margin-top: 20px; width: 100%; }
         .btn {
           background-color: #101010; color: white; width: 100%; height: 58px; border-radius: 24px; border: solid 1px #fff2;
