@@ -1,352 +1,98 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Smart TTS | sl-Dubbing</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>AI TTS | Smart Cloudinary Sync</title>
     <style>
-        :root { 
-            --bg: #f5f5f7; --card: #fff; --primary: #0f0f10; --mint: #a4fec4; 
-            --green-dk: #065f2c; --border: #e5e7eb; --radius: 16px; --transition: 0.4s;
-        }
-        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: #111827; text-align: left; margin: 0; }
-        
-        .topbar { background: var(--primary); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; color: #fff; height: 60px; }
-        .logo-top { font-weight: 800; font-size: 1.1rem; text-decoration: none; color: white; }
-        .auth-section .auth-btn { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 8px; cursor: pointer; text-decoration: none; }
-        
-        .brand-header { text-align: center; margin: 40px auto 15px; }
-        .main-logo-img { max-width: 140px; height: auto; display: block; margin: 0 auto 10px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.08)); }
-        .brand-name { font-size: 2.4rem; font-weight: 900; color: var(--primary); letter-spacing: -1.5px; }
-        .brand-name span { color: var(--green-dk); border-bottom: 6px solid var(--mint); }
-
-        .wrap { max-width: 900px; margin: 0 auto 60px; padding: 18px; }
-        .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .ttl { font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; font-size: 1.1rem; color: var(--primary); }
-
-        textarea { width: 100%; height: 160px; border: 1.5px solid var(--border); border-radius: 12px; padding: 18px; font-size: 1rem; resize: none; outline: none; transition: 0.3s; background: #fafafa; }
-        textarea:focus { border-color: var(--primary); background: #fff; }
-
-        .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; margin-bottom: 15px; }
-        .item-card { padding: 18px 10px; border-radius: 14px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.2s; background: #fff; position: relative; }
-        .item-card.active { background: var(--mint); border-color: var(--primary); font-weight: 700; }
-        .chk { position: absolute; top: 8px; right: 8px; font-size: 0.75rem; color: var(--primary); display: none; }
-        .item-card.active .chk { display: block; }
-
-        .spk-av, .voice-ai-icon { width: 52px; height: 52px; background: #e5e7eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.4rem; color: #4b5563; transition: 0.3s; }
-        .item-card.active .spk-av, .item-card.active .voice-ai-icon { background: var(--primary); color: var(--mint); }
-        .item-card.active .voice-ai-icon.clone { background: #ef4444; color: #fff; }
-
-        .btn-wrapper { display: flex; justify-content: center; margin-top: 30px; }
-        .btn { background-color: #101010; color: white; width: 100%; height: 60px; border-radius: 30px; border: solid 1px #fff2; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; overflow: hidden; position: relative; transition: 0.3s; font-size: 1.1rem; font-weight: 600; }
-        .btn.loading .txt-1 { transform: translateY(-35px); opacity: 0; }
-        .btn.loading .txt-2 { transform: translateY(0); opacity: 1; }
-        .btn.loading .btn-svg { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        
-        .txt-wrapper { position: relative; height: 24px; overflow: hidden; display: flex; align-items: center; min-width: 140px; justify-content: center; }
-        .txt-1, .txt-2 { display: flex; gap: 2px; transition: all 0.5s; position: absolute; }
-        .txt-2 { transform: translateY(35px); opacity: 0; }
-
-        #progressArea { display: none; margin-top: 25px; padding: 18px; background: #f9fafb; border-radius: 12px; border: 1px solid var(--border); }
-        .prog-bar-wrap { background: #e5e7eb; border-radius: 50px; height: 10px; overflow: hidden; margin-top: 10px; }
-        .prog-bar { height: 100%; width: 0; background: var(--primary); transition: width 0.4s ease; }
-
-        .res-card { display: none; border: 2px solid var(--green-dk); }
-        .result-container { display: flex; align-items: center; gap: 15px; margin-top: 15px; }
-        audio { flex-grow: 1; }
-        .Btn-dl { width: 50px; height: 50px; border-radius: 50%; background: #1b1b1b; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; flex-shrink: 0; }
-        .svgIcon { fill: var(--mint); }
-
-        .trans-note { font-size: 0.85rem; background: #f0fdf4; border: 1px solid #bcf0da; padding: 10px; border-radius: 8px; margin-top: 15px; color: #065f2c; display: none; }
-
-        .toast { position: fixed; bottom: 25px; right: 25px; padding: 14px 22px; color: #fff; border-radius: 12px; z-index: 1000; font-weight: 600; transform: translateY(100px); opacity: 0; transition: 0.4s; }
-        .toast.show { transform: translateY(0); opacity: 1; }
+        body { font-family: sans-serif; padding: 40px; background: #f5f5f7; display: flex; justify-content: center; }
+        .card { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        textarea { width: 100%; height: 120px; border: 1px solid #ddd; border-radius: 12px; padding: 15px; margin-bottom: 20px; font-size: 1rem; box-sizing: border-box; }
+        .spk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 25px; }
+        .item { padding: 15px 5px; border: 1px solid #eee; border-radius: 10px; cursor: pointer; text-align: center; font-size: 0.9rem; }
+        .item.active { background: #a4fec4; border-color: black; font-weight: bold; }
+        .btn { width: 100%; padding: 18px; background: black; color: white; border: none; border-radius: 30px; cursor: pointer; font-size: 1.1rem; font-weight: 600; }
+        #res { margin-top: 30px; padding: 20px; border: 2px solid #065f2c; border-radius: 12px; display: none; }
     </style>
 </head>
 <body>
 
-<div class="topbar">
-    <a href="index.html" class="logo-top">sl<span style="color:#a4fec4">-Dubbing</span></a>
-    <div class="auth-section" id="authSection"></div>
-</div>
-
-<div class="brand-header">
-    <img src="logo/logo.gif" alt="sl-Dubbing" class="main-logo-img">
-    <h1 class="brand-name">sl-<span>TTS</span></h1>
-</div>
-
-<div class="wrap">
-    <div class="card">
-        <div class="ttl"><i class="fas fa-microphone-lines"></i> 1. Select Voice</div>
-        <div class="spk-grid" id="spkGrid"></div>
-        <input type="file" id="cloneFile" accept="audio/*" style="display:none">
+<div class="card">
+    <h2 style="margin-top:0;">AI Smart TTS</h2>
+    <textarea id="txt" placeholder="What should the AI say?"></textarea>
+    
+    <p style="font-weight:600; margin-bottom:10px;">Select Voice:</p>
+    <div class="spk-grid" id="spkGrid">
+        <div class="item active" onclick="setV('', this)">Default AI</div>
     </div>
 
-    <div class="card">
-        <div class="ttl"><i class="fas fa-language"></i> 2. Target Output Language</div>
-        <p style="font-size: 0.8rem; color: #6b7280; margin-top:-10px; margin-bottom:15px;">Paste text in ANY language; we will translate it for you.</p>
-        <div class="lang-grid" id="langs"></div>
-    </div>
-
-    <div class="card">
-        <div class="ttl"><i class="fas fa-keyboard"></i> 3. Input Text</div>
-        <textarea id="txt" placeholder="Enter text in any language (e.g. French, Arabic, Chinese)..."></textarea>
-        
-        <div class="btn-wrapper">
-          <button class="btn" id="generateBtn" onclick="startSpeech()">
-            <svg class="btn-svg" width="22" viewBox="0 0 24 24"><path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"></path></svg>
-            <div class="txt-wrapper">
-              <div class="txt-1">Translate & Speak</div>
-              <div class="txt-2">Processing...</div>
-            </div>
-          </button>
-        </div>
-
-        <div id="progressArea">
-            <div style="display:flex; justify-content:space-between;"><span id="statusTxt" style="font-weight:600">Analyzing...</span><span id="pctTxt" style="font-weight:700">0%</span></div>
-            <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
-            <div id="translatedBox" class="trans-note"></div>
-        </div>
-    </div>
-
-    <div class="card res-card" id="resCard">
-        <div class="ttl" style="color:var(--green-dk)"><i class="fas fa-check-circle"></i> Magic Complete!</div>
-        <div class="result-container">
-            <a href="#" class="Btn-dl" id="dlBtn" download="translated-speech.mp3">
-                <svg class="svgIcon" width="20" viewBox="0 0 384 512"><path d="M169.4 470.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 370.8V64c0-17.7-14.3-32-32-32s-32 14.3-32 32v306.7L54.6 265.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z"></path></svg>
-            </a>
-            <audio id="dubAud" controls></audio>
-        </div>
+    <button class="btn" id="goBtn" onclick="startTTS()">Generate AI Speech</button>
+    
+    <div id="res">
+        <p style="font-weight:bold; color:#065f2c; margin-top:0;">Ready!</p>
+        <audio id="aud" controls style="width:100%"></audio>
     </div>
 </div>
-
-<div id="toasts"></div>
 
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
+let voiceUrl = '';
 
-// 🟢 بيانات الجلب الديناميكي
-const GITHUB_USER = "sl-Dubbing"; 
-const REPO_NAME = "sl-dubbing-frontend"; 
-const SAMPLES_FOLDER = "speakers"; 
+document.addEventListener('DOMContentLoaded', loadVoices);
 
-let selectedVoice = 'source'; 
-let selectedLang = 'en';
-let clonedFileBase64 = null;
-let currentJobId = null;
-let pollInterval = null;
-
-const ALL_LANGS = [
-    {c:'en',n:'English',f:'🇺🇸'}, {c:'ar',n:'Arabic',f:'🇸🇦'}, {c:'es',n:'Spanish',f:'🇪🇸'},
-    {c:'fr',n:'French',f:'🇫🇷'}, {c:'de',n:'German',f:'🇩🇪'}, {c:'it',n:'Italian',f:'🇮🇹'},
-    {c:'ru',n:'Russian',f:'🇷🇺'}, {c:'zh',n:'Chinese',f:'🇨🇳'}, {c:'ja',n:'Japanese',f:'🇯🇵'}
-];
-
-document.addEventListener('DOMContentLoaded', () => {
-    checkAuth();
-    renderLangs();
-    loadVoices();
-    
-    document.getElementById('cloneFile').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (ev) => { clonedFileBase64 = ev.target.result.split(',')[1]; };
-            reader.readAsDataURL(file);
-            showToast("Voice Sample Loaded!", "#065f2c");
-        }
-    });
-});
-
-function renderLangs() {
-    const grid = document.getElementById('langs');
-    grid.innerHTML = ALL_LANGS.map(l => `
-        <div class="item-card ${l.c === selectedLang ? 'active' : ''}" onclick="selectLang('${l.c}', this)">
-            <span class="lang-flag">${l.f}</span>
-            <span style="font-size:0.8rem;">${l.n}</span>
-        </div>
-    `).join('');
-}
-
-function selectLang(c, el) {
-    selectedLang = c;
-    document.querySelectorAll('.lang-grid .item-card').forEach(x => x.classList.remove('active'));
-    el.classList.add('active');
-}
-
-// 🟢 الدالة الديناميكية لجلب الملفات من المجلد تلقائياً
 async function loadVoices() {
-    const spkGrid = document.getElementById('spkGrid');
-    if (!spkGrid) return;
-    spkGrid.innerHTML = '';
-
-    // زر ميزة النسخ الصوتي (Voice Clone)
-    const cloneCard = document.createElement('div');
-    cloneCard.className = 'item-card active';
-    cloneCard.innerHTML = `
-        <i class="fas fa-check-circle chk"></i>
-        <div class="voice-ai-icon clone"><i class="fas fa-wand-magic-sparkles"></i></div>
-        <div class="spk-nm" style="font-size:0.8rem">Voice Clone</div>
-    `;
-    cloneCard.onclick = () => { setVoice('source', cloneCard); document.getElementById('cloneFile').click(); };
-    spkGrid.appendChild(cloneCard);
-
-    // جلب باقي الأصوات من مجلد جيتهاب تلقائياً
+    const grid = document.getElementById('spkGrid');
     try {
-        const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/${SAMPLES_FOLDER}`);
-        if (res.ok) {
-            const files = await res.json();
-            files.filter(f => f.name.endsWith('.mp3')).forEach(file => {
-                const name = file.name.replace('.mp3', '');
-                const card = document.createElement('div');
-                card.className = 'item-card';
-                card.innerHTML = `
-                    <i class="fas fa-check-circle chk"></i>
-                    <div class="spk-av"><i class="fas fa-user"></i></div>
-                    <div class="spk-nm">${name}</div>`;
-                card.onclick = () => setVoice(name, card);
-                spkGrid.appendChild(card);
+        const res = await fetch(`${API_BASE}/api/voices`);
+        const data = await res.json();
+        if (data.success) {
+            data.voices.forEach(v => {
+                const d = document.createElement('div');
+                d.className = 'item';
+                d.innerText = v.name;
+                d.onclick = () => setV(v.url, d);
+                grid.appendChild(d);
             });
-        } else {
-            console.warn("Failed to fetch voices. Repo might be private or name is incorrect.");
         }
-    } catch (e) {
-        console.warn("API Fetch error:", e);
-    }
+    } catch(e) {}
 }
 
-function setVoice(id, el) {
-    selectedVoice = id;
-    document.querySelectorAll('.spk-grid .item-card').forEach(c => c.classList.remove('active'));
+function setV(url, el) {
+    voiceUrl = url;
+    document.querySelectorAll('.item').forEach(i => i.classList.remove('active'));
     el.classList.add('active');
 }
 
-window.startSpeech = async function() {
+async function startTTS() {
     const text = document.getElementById('txt').value.trim();
-    const btn = document.getElementById('generateBtn');
+    if(!text) return alert("Enter text");
     
-    if (!text) return showToast("Enter text first", "error");
-
-    if (selectedVoice === 'source' && !clonedFileBase64) {
-        return showToast("Please click 'Voice Clone' to upload a sample first!", "error");
-    }
-
-    btn.disabled = true;
-    btn.classList.add('loading');
-    document.getElementById('progressArea').style.display = 'block';
-    document.getElementById('resCard').style.display = 'none';
-    document.getElementById('translatedBox').style.display = 'none';
+    const btn = document.getElementById('goBtn');
+    btn.disabled = true; btn.innerText = "AI is thinking...";
 
     try {
         const res = await fetch(`${API_BASE}/api/tts`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                text: text, 
-                lang: selectedLang, 
-                voice_id: selectedVoice,
-                sample_b64: (selectedVoice === 'source') ? clonedFileBase64 : null 
-            }),
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({text, voice_url: voiceUrl, lang: 'en'}),
             credentials: 'include'
         });
-        
         const data = await res.json();
-        if (!data.success) {
-            if(data.error === 'Unauthorized') throw new Error("Please log in first.");
-            throw new Error(data.error || "Server processing failed.");
-        }
-
-        currentJobId = data.job_id;
-        document.getElementById('statusTxt').innerText = 'Sending to AI Factory...';
-        pollInterval = setInterval(() => pollJob(currentJobId), 2000);
-        
-    } catch (err) {
-        showToast(err.message, "error");
-        btn.disabled = false; btn.classList.remove('loading');
-    }
+        if (data.job_id) check(data.job_id);
+    } catch (e) { btn.disabled = false; btn.innerText = "Generate AI Speech"; }
 }
 
-async function pollJob(jobId) {
-    try {
-        const res = await fetch(API_BASE + '/api/job/' + jobId, { credentials: 'include' });
-        const data = await res.json();
-        const btn = document.getElementById('generateBtn');
-        
-        if (data.status === 'processing') {
-            document.getElementById('statusTxt').innerText = 'AI is Dubbing (This takes 2-5 mins)...';
-            let bar = document.getElementById('progBar');
-            let cur = parseInt(bar.style.width) || 5;
-            cur = Math.min(95, cur + 1); 
-            bar.style.width = cur + '%';
-            document.getElementById('pctTxt').innerText = cur + '%';
-        } else if (data.status === 'completed') {
-            clearInterval(pollInterval);
-            document.getElementById('statusTxt').innerText = 'Success!';
-            document.getElementById('progBar').style.width = '100%';
-            document.getElementById('pctTxt').innerText = '100%';
-            
-            document.getElementById('resCard').style.display = 'block';
-            document.getElementById('dubAud').src = data.audio_url;
-            document.getElementById('dlBtn').href = data.audio_url;
-            
-            if(data.final_text) {
-                const tBox = document.getElementById('translatedBox');
-                tBox.style.display = 'block';
-                tBox.innerHTML = `<strong>Translated Text:</strong><br>${data.final_text}`;
-            }
-
-            btn.disabled = false; btn.classList.remove('loading');
-            showToast("Speech Ready!", "#059669");
-            checkAuth();
-        } else if (data.status === 'failed' || data.status === 'error') {
-            clearInterval(pollInterval);
-            btn.disabled = false; btn.classList.remove('loading');
-            document.getElementById('statusTxt').innerText = 'Process Failed!';
-            document.getElementById('progBar').style.background = '#ef4444';
-            showToast("Processing failed! Please check input text.", "#b91c1c");
-            checkAuth();
+function check(id) {
+    const timer = setInterval(async () => {
+        const r = await fetch(`${API_BASE}/api/job/${id}`, {credentials: 'include'});
+        const d = await r.json();
+        if (d.status === 'completed') {
+            clearInterval(timer);
+            document.getElementById('res').style.display = 'block';
+            document.getElementById('aud').src = d.audio_url;
+            document.getElementById('goBtn').disabled = false;
+            document.getElementById('goBtn').innerText = "Generate AI Speech";
         }
-    } catch (e) { console.error(e); }
-}
-
-async function checkAuth() {
-    try {
-        const res = await fetch(API_BASE + '/api/user', { credentials: 'include' });
-        const data = await res.json();
-        if (data.success) {
-            document.getElementById('authSection').innerHTML = `
-                <div style="display:flex; gap:10px; align-items:center">
-                    <div style="text-align:right">
-                        <div style="font-weight:700; color:#fff">${data.user.name || 'User'}</div>
-                        <div style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:8px; font-size:0.8rem; color:#a4fec4">
-                           Balance: ${data.user.credits} 💰
-                        </div>
-                    </div>
-                    <button class="auth-btn" onclick="logout()">Log Out</button>
-                </div>`;
-        } else {
-             document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
-        }
-    } catch (e) {
-        document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
-    }
-}
-
-window.logout = async function() {
-    try { await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' }); location.reload(); }
-    catch (e) { location.reload(); }
-};
-
-function showToast(msg, color) {
-    const t = document.createElement('div');
-    t.className = 'toast show';
-    t.style.background = color === 'error' ? '#ef4444' : color;
-    t.innerText = msg;
-    document.getElementById('toasts').appendChild(t);
-    setTimeout(() => t.remove(), 4000);
+    }, 3000);
 }
 </script>
 </body>
