@@ -88,12 +88,23 @@ const API_BASE = 'https://web-production-14a1.up.railway.app';
 let selectedVoiceUrl = '', selectedVoiceId = '', customBase64 = '', selectedLang = 'ar';
 let evtSource = null;
 
-const LANGS = [{c:'en',n:'English',f:'🇺🇸'},{c:'ar',n:'Arabic',f:'🇸🇦'},{c:'es',n:'Spanish',f:'🇪🇸'},{c:'fr',n:'French',f:'🇫🇷'},{c:'de',n:'German',f:'🇩🇪'},{c:'it',n:'Italian',f:'🇮🇹'}];
+// 🟢 تم تحديث اللغات لتشمل جميع اللغات الـ 17 المدعومة رسمياً من XTTS v2
+const LANGS = [
+    {c:'ar', n:'Arabic', f:'🇸🇦'}, {c:'en', n:'English', f:'🇺🇸'},
+    {c:'es', n:'Spanish', f:'🇪🇸'}, {c:'fr', n:'French', f:'🇫🇷'},
+    {c:'de', n:'German', f:'🇩🇪'}, {c:'it', n:'Italian', f:'🇮🇹'},
+    {c:'pt', n:'Portuguese', f:'🇵🇹'}, {c:'tr', n:'Turkish', f:'🇹🇷'},
+    {c:'ru', n:'Russian', f:'🇷🇺'}, {c:'nl', n:'Dutch', f:'🇳🇱'},
+    {c:'cs', n:'Czech', f:'🇨🇿'}, {c:'pl', n:'Polish', f:'🇵🇱'},
+    {c:'hu', n:'Hungarian', f:'🇭🇺'}, {c:'zh', n:'Chinese', f:'🇨🇳'},
+    {c:'ja', n:'Japanese', f:'🇯🇵'}, {c:'ko', n:'Korean', f:'🇰🇷'},
+    {c:'hi', n:'Hindi', f:'🇮🇳'}
+];
 
 document.addEventListener('DOMContentLoaded', () => { checkAuth(); renderLangs(); loadVoices(); });
 
 function renderLangs() {
-    document.getElementById('langGrid').innerHTML = LANGS.map(l => `<div class="item-card ${l.c===selectedLang?'active':''}" onclick="setLang('${l.c}', this)"><div>${l.f}</div><div style="font-size:0.8rem;">${l.n}</div></div>`).join('');
+    document.getElementById('langGrid').innerHTML = LANGS.map(l => `<div class="item-card ${l.c===selectedLang?'active':''}" onclick="setLang('${l.c}', this)"><div style="font-size:1.8rem; margin-bottom:5px;">${l.f}</div><div style="font-size:0.8rem; font-weight:bold;">${l.n}</div></div>`).join('');
 }
 
 function setLang(c, el) { selectedLang = c; document.querySelectorAll('#langGrid .item-card').forEach(x => x.classList.remove('active')); el.classList.add('active'); }
@@ -155,7 +166,6 @@ async function startDubbing() {
     }
 }
 
-// 🟢 استخدام تقنية SSE للتخاطب المباشر مع سيرفر V27
 function startSSE(jobId) {
     if (evtSource) evtSource.close();
     evtSource = new EventSource(`${API_BASE}/api/progress/${jobId}`, { withCredentials: true });
