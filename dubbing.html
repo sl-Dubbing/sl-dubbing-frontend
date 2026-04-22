@@ -166,9 +166,10 @@ function selectVoice(url, el) {
     el.classList.add('active');
 }
 
+// استبدلي دالة startDubbing في ملف dubbing.html بهذا الكود:
 async function startDubbing() {
     const file = document.getElementById('mediaFile').files[0];
-    if (!file) return showToast("Select file first");
+    if (!file) return showToast("Please upload a file first");
 
     const btn = document.getElementById('generateBtn');
     btn.disabled = true;
@@ -181,58 +182,31 @@ async function startDubbing() {
     fd.append('lang', selectedLang);
 
     try {
-        const res = await fetch(`${API_BASE}/api/dub`, { method: 'POST', body: fd, credentials: 'include' });
+        const res = await fetch(`${API_BASE}/api/dub`, { 
+            method: 'POST', 
+            body: fd, 
+            credentials: 'include' 
+        });
+
+        // 🟢 أهم تعديل: التحقق من نوع الرد قبل محاولة قراءته كـ JSON
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            const errorText = await res.text();
+            console.error("Server returned non-JSON response:", errorText);
+            throw new Error("Server encountered an Internal Error. Check Railway Logs.");
+        }
+
         const data = await res.json();
-        if (data.job_id) {
+        if (data.success && data.job_id) {
             currentJobId = data.job_id;
             pollInterval = setInterval(() => pollJob(currentJobId), 3000);
-        } else throw new Error(data.error);
-    } catch (e) { showToast(e.message); btn.disabled = false; }
-}
-
-async function pollJob(id) {
-    try {
-        const res = await fetch(`${API_BASE}/api/job/${id}`, { credentials: 'include' });
-        const data = await res.json();
-        if (data.status === 'completed') {
-            clearInterval(pollInterval);
-            document.getElementById('resCard').style.display = 'block';
-            document.getElementById('dubAud').src = data.audio_url;
-            document.getElementById('dlBtn').href = data.audio_url;
-            document.getElementById('generateBtn').disabled = false;
-            document.getElementById('progBar').style.width = '100%';
-            document.getElementById('pctTxt').innerText = '100%';
-            showToast("Success!", "#065f2c");
-            checkAuth();
         } else {
-            let bar = document.getElementById('progBar');
-            let cur = parseInt(bar.style.width) || 10;
-            bar.style.width = Math.min(95, cur + 5) + '%';
-            document.getElementById('pctTxt').innerText = bar.style.width;
+            throw new Error(data.error || "Unknown processing error");
         }
-    } catch (e) {}
-}
-
-async function checkAuth() {
-    try {
-        const res = await fetch(API_BASE + '/api/user', { credentials: 'include' });
-        const data = await res.json();
-        if (data.success) {
-            document.getElementById('authSection').innerHTML = `
-                <div style="display:flex; gap:10px; align-items:center">
-                    <div style="text-align:right">
-                        <div style="font-weight:700; color:#fff">${data.user.name}</div>
-                        <div style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:8px; font-size:0.8rem; color:#a4fec4">
-                           Balance: ${data.user.credits} 💰
-                        </div>
-                    </div>
-                    <button class="auth-btn" onclick="location.reload()">Logout</button>
-                </div>`;
-        } else {
-             document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
-        }
-    } catch (e) {
-        document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
+    } catch (e) { 
+        showToast(e.message); 
+        btn.disabled = false;
+        document.getElementById('progressArea').style.display = 'none';
     }
 }
 
