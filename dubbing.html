@@ -11,24 +11,22 @@
             --green-dk: #065f2c; --border: #e5e7eb; --radius: 16px; --transition: 0.4s;
         }
         * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: #111827; text-align: left; margin: 0; }
+        body { background: var(--bg); color: #111827; text-align: left; margin: 0; padding-bottom: 50px; }
         
         .topbar { background: var(--primary); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; color: #fff; height: 60px; }
         .logo-top { font-weight: 800; font-size: 1.1rem; text-decoration: none; color: white; }
         .auth-section .auth-btn { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 8px; cursor: pointer; text-decoration: none; }
         
         .brand-header { text-align: center; margin: 40px auto 15px; }
-        .main-logo-img { max-width: 140px; height: auto; display: block; margin: 0 auto 10px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.08)); }
+        .main-logo-img { max-width: 140px; height: auto; display: block; margin: 0 auto 10px; }
         .brand-name { font-size: 2.4rem; font-weight: 900; color: var(--primary); letter-spacing: -1.5px; }
         .brand-name span { color: var(--green-dk); border-bottom: 6px solid var(--mint); }
 
-        .wrap { max-width: 900px; margin: 0 auto 60px; padding: 18px; }
+        .wrap { max-width: 900px; margin: 0 auto; padding: 0 18px; }
         .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
         .ttl { font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; font-size: 1.1rem; color: var(--primary); }
 
         .upload-area { border: 2px dashed var(--green-dk); border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; background: #f0fdf4; transition: 0.3s; }
-        .upload-area:hover { background: #dcfce7; }
-        .upload-area i { font-size: 2rem; color: var(--green-dk); margin-bottom: 10px; }
         .file-name { margin-top: 10px; font-weight: bold; color: var(--primary); }
 
         .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; margin-bottom: 15px; }
@@ -37,32 +35,19 @@
         .chk { position: absolute; top: 8px; right: 8px; font-size: 0.75rem; color: var(--primary); display: none; }
         .item-card.active .chk { display: block; }
 
-        .spk-av, .voice-ai-icon { width: 52px; height: 52px; background: #e5e7eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.4rem; color: #4b5563; transition: 0.3s; }
+        .spk-av, .voice-ai-icon { width: 52px; height: 52px; background: #e5e7eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.4rem; color: #4b5563; }
         .item-card.active .spk-av, .item-card.active .voice-ai-icon { background: var(--primary); color: var(--mint); }
 
-        .btn-wrapper { display: flex; justify-content: center; margin-top: 30px; }
-        .btn { background-color: #101010; color: white; width: 100%; height: 60px; border-radius: 30px; border: solid 1px #fff2; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; overflow: hidden; position: relative; transition: 0.3s; font-size: 1.1rem; font-weight: 600; }
-        .btn.loading .txt-1 { transform: translateY(-35px); opacity: 0; }
-        .btn.loading .txt-2 { transform: translateY(0); opacity: 1; }
-        .btn.loading .btn-svg { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        
-        .txt-wrapper { position: relative; height: 24px; overflow: hidden; display: flex; align-items: center; min-width: 140px; justify-content: center; }
-        .txt-1, .txt-2 { display: flex; gap: 2px; transition: all 0.5s; position: absolute; }
-        .txt-2 { transform: translateY(35px); opacity: 0; }
+        .btn { background-color: #101010; color: white; width: 100%; height: 60px; border-radius: 30px; border: none; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: 0.3s; }
+        .btn:disabled { background: #666; cursor: not-allowed; }
 
-        #progressArea { display: none; margin-top: 25px; padding: 18px; background: #f9fafb; border-radius: 12px; border: 1px solid var(--border); }
+        #progressArea { display: none; margin-top: 25px; text-align: center; }
         .prog-bar-wrap { background: #e5e7eb; border-radius: 50px; height: 10px; overflow: hidden; margin-top: 10px; }
         .prog-bar { height: 100%; width: 0; background: var(--primary); transition: width 0.4s ease; }
 
         .res-card { display: none; border: 2px solid var(--green-dk); }
-        .result-container { display: flex; align-items: center; gap: 15px; margin-top: 15px; }
-        audio, video { flex-grow: 1; width: 100%; border-radius: 8px; }
-        .Btn-dl { width: 50px; height: 50px; border-radius: 50%; background: #1b1b1b; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; flex-shrink: 0; margin-bottom:10px; }
-        .svgIcon { fill: var(--mint); }
-
-        .toast { position: fixed; bottom: 25px; right: 25px; padding: 14px 22px; color: #fff; border-radius: 12px; z-index: 1000; font-weight: 600; transform: translateY(100px); opacity: 0; transition: 0.4s; }
-        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast { position: fixed; bottom: 25px; right: 25px; padding: 14px 22px; background: #ef4444; color: #fff; border-radius: 12px; z-index: 1000; opacity: 0; transition: 0.4s; pointer-events: none; }
+        .toast.show { opacity: 1; }
     </style>
 </head>
 <body>
@@ -78,40 +63,30 @@
 </div>
 
 <div class="wrap">
-    
     <div class="card">
-        <div class="ttl"><i class="fas fa-file-upload"></i> 1. Upload Video or Audio File</div>
+        <div class="ttl"><i class="fas fa-file-upload"></i> 1. Upload Video or Audio</div>
         <div class="upload-area" onclick="document.getElementById('mediaFile').click()">
-            <i class="fas fa-cloud-upload-alt"></i>
-            <div>Click to browse or drag file here</div>
-            <div style="font-size:0.8rem; color:#666; margin-top:5px;">Max size 150MB</div>
-            <div id="fileName" class="file-name"></div>
+            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--green-dk);"></i>
+            <div style="margin-top:10px;">Click to browse file</div>
+            <div id="fileNameDisplay" class="file-name"></div>
         </div>
         <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none" onchange="updateFileName()">
     </div>
 
     <div class="card">
-        <div class="ttl"><i class="fas fa-microphone-lines"></i> 2. Select Dubbing Voice (Cloudinary Auto-Sync)</div>
+        <div class="ttl"><i class="fas fa-microphone-lines"></i> 2. Select Dubbing Voice (Cloudinary Sync)</div>
         <div class="spk-grid" id="spkGrid">
             </div>
     </div>
 
     <div class="card">
         <div class="ttl"><i class="fas fa-language"></i> 3. Target Output Language</div>
-        <div class="lang-grid" id="langs"></div>
+        <div class="lang-grid" id="langGrid">
+            </div>
     </div>
 
     <div class="card">
-        <div class="btn-wrapper" style="margin-top:0;">
-          <button class="btn" id="generateBtn" onclick="startDubbing()">
-            <svg class="btn-svg" width="22" viewBox="0 0 24 24"><path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"></path></svg>
-            <div class="txt-wrapper">
-              <div class="txt-1">Dub My Media</div>
-              <div class="txt-2">Processing...</div>
-            </div>
-          </button>
-        </div>
-
+        <button class="btn" id="generateBtn" onclick="startDubbing()">Start Dubbing Media</button>
         <div id="progressArea">
             <div style="display:flex; justify-content:space-between;"><span id="statusTxt" style="font-weight:600">Analyzing...</span><span id="pctTxt" style="font-weight:700">0%</span></div>
             <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
@@ -119,14 +94,10 @@
     </div>
 
     <div class="card res-card" id="resCard">
-        <div class="ttl" style="color:var(--green-dk)"><i class="fas fa-check-circle"></i> Dubbing Complete!</div>
-        <div style="display:flex; justify-content:center; align-items:center; flex-direction:column;">
-            <a href="#" class="Btn-dl" id="dlBtn" download="dubbed-media.mp3">
-                <svg class="svgIcon" width="20" viewBox="0 0 384 512"><path d="M169.4 470.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 370.8V64c0-17.7-14.3-32-32-32s-32 14.3-32 32v306.7L54.6 265.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z"></path></svg>
-            </a>
-            <audio id="dubAud" controls style="display:none;"></audio>
-            <video id="dubVid" controls style="display:none;"></video>
-        </div>
+        <div class="ttl" style="color:var(--green-dk)"><i class="fas fa-check-circle"></i> Magic Complete!</div>
+        <audio id="dubAud" controls style="width:100%; margin-bottom:15px;"></audio>
+        <video id="dubVid" controls style="width:100%; display:none; border-radius:8px; margin-bottom:15px;"></video>
+        <a id="dlBtn" download="dubbed_media.mp3" href="#" class="btn" style="text-decoration:none; display:flex; align-items:center; justify-content:center; background:var(--green-dk)">Download Result</a>
     </div>
 </div>
 
@@ -134,7 +105,6 @@
 
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
-
 let selectedVoiceUrl = ''; 
 let selectedLang = 'ar';
 let currentJobId = null;
@@ -154,152 +124,100 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function updateFileName() {
     const file = document.getElementById('mediaFile').files[0];
-    if (file) {
-        document.getElementById('fileName').innerText = file.name;
-        document.querySelector('.upload-area').style.background = '#f0fdf4';
-        document.querySelector('.upload-area').style.borderColor = '#065f2c';
-    }
+    if (file) document.getElementById('fileNameDisplay').innerText = file.name;
 }
 
 function renderLangs() {
-    const grid = document.getElementById('langs');
-    if (!grid) return;
+    const grid = document.getElementById('langGrid');
     grid.innerHTML = ALL_LANGS.map(l => `
         <div class="item-card ${l.c === selectedLang ? 'active' : ''}" onclick="selectLang('${l.c}', this)">
-            <span class="lang-flag">${l.f}</span>
-            <span style="font-size:0.8rem;">${l.n}</span>
+            <span>${l.f} ${l.n}</span>
         </div>
     `).join('');
 }
 
 function selectLang(c, el) {
     selectedLang = c;
-    document.querySelectorAll('.lang-grid .item-card').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('#langGrid .item-card').forEach(x => x.classList.remove('active'));
     el.classList.add('active');
 }
 
-// 🟢 دالة جلب الأصوات من Cloudinary عبر السيرفر
+// 🟢 دالة الجلب الموثوقة من السيرفر
 async function loadCloudinaryVoices() {
-    const spkGrid = document.getElementById('spkGrid');
-    if (!spkGrid) return;
-    spkGrid.innerHTML = '';
-
-    // إضافة خيار الصوت الأصلي دائماً في البداية
-    const originalCard = document.createElement('div');
-    originalCard.className = 'item-card active';
-    originalCard.innerHTML = `<i class="fas fa-check-circle chk"></i><div class="voice-ai-icon"><i class="fas fa-microphone"></i></div><div class="spk-nm">Original Voice</div>`;
-    originalCard.onclick = () => selectVoice('', originalCard);
-    spkGrid.appendChild(originalCard);
-
+    const grid = document.getElementById('spkGrid');
+    grid.innerHTML = `<div class="item-card active" id="origCard" onclick="selectVoice('', this)"><div class="voice-ai-icon"><i class="fas fa-microphone"></i></div><div class="spk-nm">Original</div></div>`;
+    
     try {
         const res = await fetch(`${API_BASE}/api/voices`);
         const data = await res.json();
-        if (data.success) {
+        if (data.success && data.voices.length > 0) {
             data.voices.forEach(v => {
                 const card = document.createElement('div');
                 card.className = 'item-card';
-                card.innerHTML = `
-                    <i class="fas fa-check-circle chk"></i>
-                    <div class="spk-av"><i class="fas fa-user"></i></div>
-                    <div class="spk-nm">${v.name}</div>`;
+                card.innerHTML = `<div class="spk-av"><i class="fas fa-user"></i></div><div class="spk-nm">${v.name}</div>`;
                 card.onclick = () => selectVoice(v.url, card);
-                spkGrid.appendChild(card);
+                grid.appendChild(card);
             });
         }
     } catch (e) {
-        console.error("Voices load error:", e);
-        showToast("Error loading voices from Cloudinary", "error");
+        console.error("Voices error", e);
     }
 }
 
 function selectVoice(url, el) {
     selectedVoiceUrl = url;
-    document.querySelectorAll('.spk-grid .item-card').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('#spkGrid .item-card').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
 }
 
 async function startDubbing() {
-    const fileInput = document.getElementById('mediaFile');
-    const btn = document.getElementById('generateBtn');
-    
-    if (!fileInput.files[0]) return showToast("Please upload a file first", "error");
+    const file = document.getElementById('mediaFile').files[0];
+    if (!file) return showToast("Select file first");
 
+    const btn = document.getElementById('generateBtn');
     btn.disabled = true;
-    btn.classList.add('loading');
     document.getElementById('progressArea').style.display = 'block';
     document.getElementById('resCard').style.display = 'none';
 
-    const formData = new FormData();
-    formData.append("media_file", fileInput.files[0]);
-    formData.append("lang", selectedLang);
-    formData.append("voice_url", selectedVoiceUrl); 
+    const fd = new FormData();
+    fd.append('media_file', file);
+    fd.append('voice_url', selectedVoiceUrl);
+    fd.append('lang', selectedLang);
 
     try {
-        const res = await fetch(`${API_BASE}/api/dub`, {
-            method: 'POST',
-            body: formData,
-            credentials: 'include'
-        });
-        
+        const res = await fetch(`${API_BASE}/api/dub`, { method: 'POST', body: fd, credentials: 'include' });
         const data = await res.json();
-        if (!data.success) {
-            if(data.error === 'Unauthorized') throw new Error("Please log in first.");
-            throw new Error(data.error || "Processing failed.");
-        }
-
-        currentJobId = data.job_id;
-        pollInterval = setInterval(() => pollJob(currentJobId), 2000); 
-        
-    } catch (err) {
-        showToast(err.message, "error");
-        btn.disabled = false; btn.classList.remove('loading');
+        if (data.job_id) {
+            currentJobId = data.job_id;
+            pollInterval = setInterval(() => pollJob(currentJobId), 3000);
+        } else throw new Error(data.error);
+    } catch (e) { 
+        showToast(e.message); 
+        btn.disabled = false;
     }
 }
 
-async function pollJob(jobId) {
+async function pollJob(id) {
     try {
-        const res = await fetch(API_BASE + '/api/job/' + jobId, { credentials: 'include' });
+        const res = await fetch(`${API_BASE}/api/job/${id}`, { credentials: 'include' });
         const data = await res.json();
-        const btn = document.getElementById('generateBtn');
-        
-        if (data.status === 'processing') {
-            document.getElementById('statusTxt').innerText = 'AI is Dubbing (2-5 mins)...';
-            let bar = document.getElementById('progBar');
-            let cur = parseInt(bar.style.width) || 10;
-            cur = Math.min(95, cur + 2); 
-            bar.style.width = cur + '%';
-            document.getElementById('pctTxt').innerText = cur + '%';
-        } else if (data.status === 'completed') {
+        if (data.status === 'completed') {
             clearInterval(pollInterval);
-            document.getElementById('statusTxt').innerText = 'Success!';
+            document.getElementById('resCard').style.display = 'block';
+            document.getElementById('dubAud').src = data.audio_url;
+            document.getElementById('dlBtn').href = data.audio_url;
+            document.getElementById('generateBtn').disabled = false;
             document.getElementById('progBar').style.width = '100%';
             document.getElementById('pctTxt').innerText = '100%';
-            
-            document.getElementById('resCard').style.display = 'block';
-            document.getElementById('dlBtn').href = data.audio_url;
-            
-            const isVideo = document.getElementById('mediaFile').files[0].type.startsWith('video');
-            if (isVideo) {
-                const vid = document.getElementById('dubVid');
-                vid.style.display = 'block'; vid.src = data.audio_url;
-                document.getElementById('dubAud').style.display = 'none';
-            } else {
-                const aud = document.getElementById('dubAud');
-                aud.style.display = 'block'; aud.src = data.audio_url;
-                document.getElementById('dubVid').style.display = 'none';
-            }
-
-            btn.disabled = false; btn.classList.remove('loading');
-            showToast("Dubbing Complete!", "#065f2c");
+            showToast("Success!", "#065f2c");
             checkAuth();
-        } else if (data.status === 'failed') {
-            clearInterval(pollInterval);
-            btn.disabled = false; btn.classList.remove('loading');
-            document.getElementById('statusTxt').innerText = 'Failed';
-            showToast("Process failed.", "error");
-            checkAuth();
+        } else {
+            let bar = document.getElementById('progBar');
+            let cur = parseInt(bar.style.width) || 10;
+            bar.style.width = Math.min(95, cur + 5) + '%';
+            document.getElementById('pctTxt').innerText = bar.style.width;
         }
-    } catch (e) { console.error(e); }
+    } catch (e) {}
 }
 
 async function checkAuth() {
@@ -308,14 +226,14 @@ async function checkAuth() {
         const data = await res.json();
         if (data.success) {
             document.getElementById('authSection').innerHTML = `
-                <div style="display:flex; gap:12px; align-items:center">
+                <div style="display:flex; gap:10px; align-items:center">
                     <div style="text-align:right">
                         <div style="font-weight:700; color:#fff">${data.user.name}</div>
                         <div style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:8px; font-size:0.8rem; color:#a4fec4">
                            Balance: ${data.user.credits} 💰
                         </div>
                     </div>
-                    <button class="auth-btn" onclick="logout()">Log Out</button>
+                    <button class="auth-btn" onclick="location.reload()">Logout</button>
                 </div>`;
         } else {
              document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
@@ -325,15 +243,10 @@ async function checkAuth() {
     }
 }
 
-async function logout() {
-    try { await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' }); location.reload(); }
-    catch (e) { location.reload(); }
-}
-
-function showToast(msg, color) {
+function showToast(msg, color = '#ef4444') {
     const t = document.createElement('div');
     t.className = 'toast show';
-    t.style.background = color === 'error' ? '#ef4444' : color;
+    t.style.background = color;
     t.innerText = msg;
     document.getElementById('toasts').appendChild(t);
     setTimeout(() => t.remove(), 4000);
