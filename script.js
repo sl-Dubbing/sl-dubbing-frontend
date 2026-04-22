@@ -1,6 +1,6 @@
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 const GITHUB_USER = "sl-Dubbing"; 
-const REPO_NAME = "sl-dubbing-frontend"; // 🟢 هنا كان الخطأ القاتل وتم إصلاحه!
+const REPO_NAME = "sl-dubbing-frontend"; // 🟢 مسار المستودع الصحيح
 
 let selectedVoice = 'source';
 let selectedLang = 'ar'; 
@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function loadVoices() {
+// 🟢 الإصلاح الأول: جلب الأصوات تلقائياً من جيتهاب من مجلد speakers
+async function loadVoices() {
     const spkGrid = document.getElementById('spkGrid');
     if (!spkGrid) return;
     spkGrid.innerHTML = '';
@@ -56,22 +57,29 @@ function loadVoices() {
     sourceCard.innerHTML = `
         <i class="fas fa-check-circle chk"></i>
         <div class="voice-ai-icon"><i class="fas fa-microphone"></i></div>
-        <div class="spk-nm">Video Original Voice</div>`;
+        <div class="spk-nm">Keep Original Voice</div>`;
     sourceCard.onclick = () => selectVoice('source', sourceCard);
     spkGrid.appendChild(sourceCard);
 
-    // الأسماء الثابتة للأصوات
-    const myVoices = ['muhammad', 'adam', 'bella']; 
-    myVoices.forEach(name => {
-        const card = document.createElement('div');
-        card.className = 'spk-card';
-        card.innerHTML = `
-            <i class="fas fa-check-circle chk"></i>
-            <div class="spk-av"><i class="fas fa-user"></i></div>
-            <div class="spk-nm">${name}</div>`;
-        card.onclick = () => selectVoice(name, card);
-        spkGrid.appendChild(card);
-    });
+    try {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/speakers`);
+        if (res.ok) {
+            const files = await res.json();
+            files.filter(f => f.name.endsWith('.mp3')).forEach(file => {
+                const name = file.name.replace('.mp3', '');
+                const card = document.createElement('div');
+                card.className = 'spk-card';
+                card.innerHTML = `
+                    <i class="fas fa-check-circle chk"></i>
+                    <div class="spk-av"><i class="fas fa-user"></i></div>
+                    <div class="spk-nm">${name}</div>`;
+                card.onclick = () => selectVoice(name, card);
+                spkGrid.appendChild(card);
+            });
+        }
+    } catch (e) {
+        console.warn("Could not load voices from GitHub");
+    }
 }
 
 function selectVoice(id, el) {
@@ -88,11 +96,11 @@ window.startDubbing = async function() {
     btn.disabled = true;
     btn.classList.add('loading');
     
-    // 🟢 الآن سيتم توجيه الرابط للمستودع الصحيح
-const voiceUrl = selectedVoice === 'source' ? '' : `https://sl-dubbing.github.io/samples/${selectedVoice}.mp3`;    const formData = new FormData();
+    const formData = new FormData();
     formData.append('lang', selectedLang);
-    formData.append('voice_mode', selectedVoice === 'source' ? 'source' : 'xtts');
-    formData.append('voice_url', voiceUrl);
+    // 🟢 الإصلاح الثاني: تمرير اسم الصوت فقط (السيرفر سيتولى البحث عنه)
+    formData.append('voice_mode', selectedVoice); 
+    formData.append('voice_url', ''); 
     formData.append('media_file', mediaFile);
 
     try {
@@ -102,7 +110,8 @@ const voiceUrl = selectedVoice === 'source' ? '' : `https://sl-dubbing.github.io
             currentJobId = data.job_id;
             document.getElementById('progressArea').style.display = 'block';
             document.getElementById('statusTxt').innerText = 'Sending to AI Factory...';
-            pollInterval = setInterval(() => pollJob(currentJobId), 2000);
+            // الاعتماد على الـ Polling كما صممتِه بذكاء
+            pollInterval = setInterval(() => pollJob(currentJobId), 2000); 
         } else { 
             showToast(data.error || "Error starting dubbing", "#b91c1c"); 
             btn.disabled = false; btn.classList.remove('loading');
@@ -131,18 +140,33 @@ async function pollJob(jobId) {
             document.getElementById('statusTxt').innerText = 'Success!';
             document.getElementById('progBar').style.width = '100%';
             document.getElementById('pctTxt').innerText = '100%';
+            
             document.getElementById('resCard').style.display = 'block';
-            document.getElementById('dubAud').src = data.audio_url;
             document.getElementById('dlBtn').href = data.audio_url;
+            
+            // 🟢 الإصلاح الثالث: التفرقة بين الفيديو والصوت في العرض
+            const isVideo = document.getElementById('mediaFile').files[0].type.startsWith('video');
+            if (isVideo) {
+                const vid = document.getElementById('dubVid');
+                if(vid) { vid.style.display = 'block'; vid.src = data.audio_url; }
+                const aud = document.getElementById('dubAud');
+                if(aud) { aud.style.display = 'none'; }
+            } else {
+                const aud = document.getElementById('dubAud');
+                if(aud) { aud.style.display = 'block'; aud.src = data.audio_url; }
+                const vid = document.getElementById('dubVid');
+                if(vid) { vid.style.display = 'none'; }
+            }
+
             btn.disabled = false; btn.classList.remove('loading');
-            showToast("Video Dubbing Complete!", "#065f2c");
+            showToast("Media Dubbing Complete!", "#065f2c");
             checkAuth();
         } else if (data.status === 'failed' || data.status === 'error') {
             clearInterval(pollInterval);
             btn.disabled = false; btn.classList.remove('loading');
             document.getElementById('statusTxt').innerText = 'Process Failed!';
             document.getElementById('progBar').style.background = '#ef4444';
-            showToast("Dubbing failed! Check Railway logs for details.", "#b91c1c");
+            showToast("Dubbing failed! Please check if the audio is clear.", "#b91c1c");
             checkAuth();
         }
     } catch (e) { console.error(e); }
