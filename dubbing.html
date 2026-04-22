@@ -8,8 +8,7 @@
     <style>
         :root { 
             --purple-dark: #3A0353; --purple-light: #804A8A;
-            --gold: #F59E51; --gold-light: #F8D299;
-            --white: #ffffff; --radius: 20px;
+            --gold: #F59E51; --gold-light: #F8D299; --radius: 20px;
         }
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: linear-gradient(135deg, var(--purple-dark), var(--purple-light)); background-attachment: fixed; color: #333; margin: 0; min-height: 100vh; padding-bottom: 50px; }
@@ -23,14 +22,12 @@
         .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; }
         .item-card { padding: 20px 10px; border-radius: 15px; border: 1px solid #ddd; text-align: center; cursor: pointer; transition: 0.3s; background: #fff; }
         .item-card.active { background: var(--purple-dark); color: #fff; border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
-        .btn { background: linear-gradient(to right, var(--gold-light), var(--gold)); color: var(--purple-dark); width: 100%; height: 60px; border-radius: 30px; border: none; cursor: pointer; font-size: 1.1rem; font-weight: 800; transition: 0.3s; text-transform: uppercase; }
+        .btn { background: linear-gradient(to right, var(--gold-light), var(--gold)); color: var(--purple-dark); width: 100%; height: 60px; border-radius: 30px; border: none; cursor: pointer; font-size: 1.1rem; font-weight: 800; transition: 0.3s; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         .btn:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; }
         #progressArea { display: none; margin-top: 25px; }
         .prog-bar-wrap { background: #eee; height: 12px; border-radius: 10px; overflow: hidden; margin-top: 10px; }
         .prog-bar { height: 100%; width: 0%; background: linear-gradient(to right, var(--gold), var(--gold-light)); transition: 0.5s; }
         .res-card { display: none; border: 3px solid var(--gold); }
-        #toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 90%; max-width: 500px; }
-        .toast { background: #ef4444; color: white; padding: 15px 20px; border-radius: 12px; margin-top: 10px; font-weight: 600; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -66,7 +63,7 @@
         <button class="btn" id="dubBtn" onclick="startDubbing()">Generate Dubbed Media</button>
         <div id="progressArea">
             <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                <span id="statusTxt">AI Processing...</span>
+                <span id="statusTxt">AI Factory Processing...</span>
                 <span id="pctTxt">0%</span>
             </div>
             <div class="prog-bar-wrap"><div class="prog-bar" id="progFill"></div></div>
@@ -79,8 +76,6 @@
         <a id="dlBtn" download href="#" class="btn" style="text-decoration:none; display:flex; align-items:center; justify-content:center;">Download File</a>
     </div>
 </div>
-
-<div id="toasts"></div>
 
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
@@ -109,36 +104,14 @@ function setVoice(u, el) { selectedVoiceUrl = u; document.querySelectorAll('#spk
 
 async function startDubbing() {
     const file = document.getElementById('mediaFile').files[0];
-    if(!file) return showToast("Please select a file");
-
-    const btn = document.getElementById('dubBtn');
-    btn.disabled = true;
+    if(!file) return alert("Select file first");
     document.getElementById('progressArea').style.display = 'block';
-    document.getElementById('resCard').style.display = 'none';
-
-    const fd = new FormData();
-    fd.append('media_file', file);
-    fd.append('voice_url', selectedVoiceUrl);
-    fd.append('lang', selectedLang);
-
+    const fd = new FormData(); fd.append('media_file', file); fd.append('voice_url', selectedVoiceUrl); fd.append('lang', selectedLang);
     try {
         const res = await fetch(`${API_BASE}/api/dub`, { method: 'POST', body: fd, credentials: 'include' });
-        
-        // 🟢 الحل البرمجي لمنع خطأ الـ JSON:
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-            const errorHtml = await res.text();
-            throw new Error("Server Error (500). Please check Railway logs.");
-        }
-
         const data = await res.json();
-        if(data.job_id) poll(data.job_id);
-        else throw new Error(data.error);
-    } catch(e) {
-        showToast(e.message);
-        btn.disabled = false;
-        document.getElementById('progressArea').style.display = 'none';
-    }
+        if(data.job_id) poll(data.job_id); else alert(data.error);
+    } catch(e){ alert("Server Error"); }
 }
 
 async function poll(id) {
@@ -147,42 +120,23 @@ async function poll(id) {
             const r = await fetch(`${API_BASE}/api/job/${id}`, { credentials: 'include' });
             const d = await r.json();
             if(d.status === 'completed') {
-                clearInterval(timer);
-                document.getElementById('resCard').style.display = 'block';
-                document.getElementById('dubAud').src = d.audio_url;
-                document.getElementById('dlBtn').href = d.audio_url;
-                document.getElementById('dubBtn').disabled = false;
-                document.getElementById('progFill').style.width = '100%';
-                document.getElementById('pctTxt').innerText = '100%';
-            } else if(d.status === 'failed') {
-                clearInterval(timer);
-                showToast("Dubbing Failed.");
-                document.getElementById('dubBtn').disabled = false;
+                clearInterval(timer); document.getElementById('resCard').style.display = 'block';
+                document.getElementById('dubAud').src = d.audio_url; document.getElementById('dlBtn').href = d.audio_url;
+                document.getElementById('progFill').style.width = '100%'; document.getElementById('pctTxt').innerText = '100%';
             } else {
                 let cur = parseInt(document.getElementById('progFill').style.width) || 10;
-                document.getElementById('progFill').style.width = Math.min(95, cur + 5) + '%';
-                document.getElementById('pctTxt').innerText = document.getElementById('progFill').style.width;
+                let next = Math.min(95, cur + 5);
+                document.getElementById('progFill').style.width = next + '%'; document.getElementById('pctTxt').innerText = next + '%';
             }
-        } catch(e) {}
+        } catch(e){}
     }, 4000);
 }
 
 async function checkAuth() {
-    try {
-        const r = await fetch(`${API_BASE}/api/user`, { credentials: 'include' });
-        const d = await r.json();
-        if(d.success) document.getElementById('authSection').innerHTML = `${d.user.name} | ${d.user.credits} 💰`;
-        else document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff">Login</a>`;
-    } catch(e) { document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff">Login</a>`; }
-}
-
-function showToast(msg) {
-    const t = document.getElementById('toasts');
-    const box = document.createElement('div');
-    box.className = 'toast';
-    box.innerText = msg;
-    t.appendChild(box);
-    setTimeout(() => box.remove(), 5000);
+    const r = await fetch(`${API_BASE}/api/user`, { credentials: 'include' });
+    const d = await r.json();
+    if(d.success) document.getElementById('authSection').innerHTML = `${d.user.name} | ${d.user.credits} 💰`;
+    else document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff">Login</a>`;
 }
 </script>
 </body>
