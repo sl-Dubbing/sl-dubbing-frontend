@@ -6,86 +6,193 @@
     <title>AI Smart Dubbing | sl-Dubbing</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* 🎨 الألوان والتدرجات الجديدة */
         :root { 
-            --bg: #f5f5f7; --card: #fff; --primary: #0f0f10; --mint: #a4fec4; 
-            --green-dk: #065f2c; --border: #e5e7eb; --radius: 16px; 
+            --purple-light: #804A8A;
+            --purple-dark: #3A0353;
+            --gold-light: #F8D299;
+            --gold-dark: #F59E51;
+            --bg-gradient: linear-gradient(135deg, #3A0353 0%, #804A8A 100%);
+            --btn-gradient: linear-gradient(to right, #F8D299, #F59E51);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #1f2937;
+            --radius: 20px;
         }
+
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: #111827; margin: 0; padding-bottom: 50px; }
         
-        .topbar { background: var(--primary); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; color: #fff; height: 60px; }
-        .logo-top { font-weight: 800; font-size: 1.1rem; text-decoration: none; color: white; }
-        .auth-section { font-weight: 600; font-size: 0.85rem; }
+        body { 
+            background: var(--bg-gradient); 
+            background-attachment: fixed;
+            color: var(--text-main); 
+            margin: 0; 
+            padding-bottom: 50px;
+            min-height: 100vh;
+        }
+        
+        /* Top Navigation */
+        .topbar { 
+            background: rgba(0, 0, 0, 0.3); 
+            backdrop-filter: blur(10px);
+            padding: 12px 25px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            color: #fff; 
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .logo-top { font-weight: 800; font-size: 1.2rem; text-decoration: none; color: #fff; }
+        .logo-top span { color: var(--gold-light); }
+        .auth-section { font-weight: 600; font-size: 0.9rem; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 50px; }
 
-        .brand-header { text-align: center; margin: 40px auto 15px; }
-        .main-logo-img { max-width: 130px; margin-bottom: 10px; }
-        .brand-name { font-size: 2.2rem; font-weight: 900; }
-        .brand-name span { color: var(--green-dk); border-bottom: 4px solid var(--mint); }
+        /* Header */
+        .brand-header { text-align: center; margin: 40px auto 25px; color: white; }
+        .main-logo-img { max-width: 120px; filter: drop-shadow(0 0 15px rgba(248, 210, 153, 0.3)); margin-bottom: 15px; }
+        .brand-name { font-size: 2.5rem; font-weight: 900; letter-spacing: -1px; }
+        .brand-name span { 
+            background: var(--btn-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
+        /* Main Cards */
         .wrap { max-width: 850px; margin: 0 auto; padding: 0 15px; }
-        .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .ttl { font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 1rem; }
+        .card { 
+            background: var(--card-bg); 
+            border-radius: var(--radius); 
+            padding: 30px; 
+            margin-bottom: 25px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .ttl { font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-size: 1.1rem; color: var(--purple-dark); }
+        .ttl i { color: var(--gold-dark); font-size: 1.3rem; }
 
-        .upload-area { border: 2px dashed var(--green-dk); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; background: #f0fdf4; transition: 0.3s; }
-        .upload-area:hover { background: #dcfce7; }
+        /* Step 1: Upload */
+        .upload-area { 
+            border: 2px dashed var(--purple-light); 
+            border-radius: 15px; 
+            padding: 40px; 
+            text-align: center; 
+            cursor: pointer; 
+            background: rgba(128, 74, 138, 0.05);
+            transition: 0.3s;
+        }
+        .upload-area:hover { background: rgba(128, 74, 138, 0.1); border-color: var(--gold-dark); }
         
-        .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
-        .item-card { padding: 15px 10px; border-radius: 12px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.3s; background: #fff; position: relative; }
-        .item-card.active { background: var(--mint); border-color: var(--primary); font-weight: 700; }
-        .item-card i { display: block; margin-bottom: 8px; font-size: 1.2rem; color: #666; }
-        .item-card.active i { color: var(--primary); }
+        /* Step 2 & 3: Grids */
+        .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; }
+        .item-card { 
+            padding: 20px 10px; 
+            border-radius: 15px; 
+            border: 1px solid #e5e7eb; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            background: #fff;
+        }
+        .item-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        
+        /* الحالة النشطة (Active) باستخدام ألوانك الجديدة */
+        .item-card.active { 
+            background: var(--purple-dark); 
+            border-color: var(--gold-light); 
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(58, 3, 83, 0.3);
+        }
+        .item-card i { display: block; margin-bottom: 10px; font-size: 1.5rem; color: var(--purple-light); }
+        .item-card.active i { color: var(--gold-light); }
 
-        .btn { background: var(--primary); color: white; width: 100%; height: 55px; border-radius: 30px; border: none; cursor: pointer; font-size: 1rem; font-weight: 600; transition: 0.3s; }
-        .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+        /* 🟢 الزر الرئيسي بالتدرج الذهبي */
+        .btn { 
+            background: var(--btn-gradient); 
+            color: var(--purple-dark); 
+            width: 100%; 
+            height: 60px; 
+            border-radius: 30px; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 1.1rem; 
+            font-weight: 800; 
+            transition: 0.3s;
+            text-transform: uppercase;
+            box-shadow: 0 10px 20px rgba(245, 158, 81, 0.3);
+        }
+        .btn:hover { transform: scale(1.02); box-shadow: 0 12px 25px rgba(245, 158, 81, 0.4); }
+        .btn:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; transform: none; }
 
-        #progressArea { display: none; margin-top: 20px; }
-        .prog-bar-wrap { background: #eee; height: 10px; border-radius: 10px; overflow: hidden; margin-top: 8px; }
-        .prog-bar { height: 100%; width: 0%; background: var(--primary); transition: 0.5s; }
+        /* Progress Bar */
+        #progressArea { display: none; margin-top: 25px; }
+        .prog-bar-wrap { background: #eee; height: 12px; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+        .prog-bar { height: 100%; width: 0%; background: var(--btn-gradient); transition: 0.5s; }
+        #pctTxt { color: var(--purple-dark); font-weight: 800; }
 
-        .res-card { display: none; border: 2px solid var(--green-dk); text-align: center; }
+        /* Result Area */
+        .res-card { display: none; border: 3px solid var(--gold-dark); text-align: center; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: translateY(0);} }
+        
+        .dl-btn {
+            background: var(--purple-dark);
+            color: var(--gold-light);
+            text-decoration: none;
+            padding: 15px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 700;
+            margin-top: 15px;
+        }
+
+        /* Toast notifications */
+        #toasts { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+        .toast { background: var(--gold-dark); color: var(--purple-dark); padding: 15px 25px; border-radius: 12px; font-weight: 700; margin-top: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
 <div class="topbar">
-    <a href="index.html" class="logo-top">sl<span style="color:var(--mint)">-Dubbing</span></a>
-    <div class="auth-section" id="authSection">Checking...</div>
+    <a href="index.html" class="logo-top">sl<span>-Dubbing</span></a>
+    <div class="auth-section" id="authSection">Loading User...</div>
 </div>
 
 <div class="brand-header">
     <img src="logo/logo.gif" alt="Logo" class="main-logo-img">
-    <h1 class="brand-name">sl-<span>Dubbing</span></h1>
+    <h1 class="brand-name">AI Smart <span>Dubbing</span></h1>
 </div>
 
 <div class="wrap">
     <div class="card">
-        <div class="ttl"><i class="fas fa-file-upload"></i> 1. Upload Video or Audio</div>
+        <div class="ttl"><i class="fas fa-cloud-upload-alt"></i> 1. Upload Your Media</div>
         <div class="upload-area" onclick="document.getElementById('mediaFile').click()">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--green-dk);"></i>
-            <div id="fileTxt" style="margin-top:10px; font-weight: 500;">Click to select your media file</div>
+            <i class="fas fa-file-video" style="font-size: 2.5rem; color: var(--purple-light);"></i>
+            <div id="fileTxt" style="margin-top:15px; font-weight: 600; color: var(--purple-dark);">Click to select video or audio file</div>
+            <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">Max size: 150MB</div>
         </div>
-        <input type="file" id="mediaFile" hidden onchange="document.getElementById('fileTxt').innerText=this.files[0].name">
+        <input type="file" id="mediaFile" hidden onchange="handleFileSelect(this)">
     </div>
 
     <div class="card">
-        <div class="ttl"><i class="fas fa-microphone-alt"></i> 2. Select Dubbing Voice</div>
+        <div class="ttl"><i class="fas fa-user-astronaut"></i> 2. Select AI Voice Profile</div>
         <div class="spk-grid" id="spkGrid">
             <div class="item-card active" onclick="setVoice('', this)">
-                <i class="fas fa-microphone"></i> Original Voice
+                <i class="fas fa-microphone-alt"></i>
+                <div style="font-size: 0.85rem;">Original Voice</div>
             </div>
         </div>
     </div>
 
     <div class="card">
-        <div class="ttl"><i class="fas fa-globe"></i> 3. Target Output Language</div>
+        <div class="ttl"><i class="fas fa-language"></i> 3. Target Dubbing Language</div>
         <div class="lang-grid" id="langGrid"></div>
     </div>
 
     <div class="card">
-        <button class="btn" id="dubBtn" onclick="startDubbing()">Dub My Media Now</button>
+        <button class="btn" id="dubBtn" onclick="startDubbing()">Generate Dubbed Media</button>
         <div id="progressArea">
-            <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:600;">
-                <span id="statusTxt">AI is working...</span>
+            <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                <span id="statusTxt" style="font-weight: 700; color: var(--purple-dark);">AI Factory is processing...</span>
                 <span id="pctTxt">0%</span>
             </div>
             <div class="prog-bar-wrap"><div class="prog-bar" id="progFill"></div></div>
@@ -93,11 +200,15 @@
     </div>
 
     <div class="card res-card" id="resCard">
-        <div class="ttl" style="color:var(--green-dk); justify-content:center;"><i class="fas fa-check-circle"></i> Processing Complete!</div>
-        <audio id="dubAud" controls style="width:100%; margin: 15px 0;"></audio>
-        <a id="dlBtn" download href="#" class="btn" style="text-decoration:none; display:flex; align-items:center; justify-content:center; background:var(--green-dk)">Download Dubbed File</a>
+        <div class="ttl" style="color:var(--purple-dark); justify-content:center;"><i class="fas fa-magic"></i> Dubbing Completed Successfully!</div>
+        <audio id="dubAud" controls style="width:100%; margin: 20px 0;"></audio>
+        <a id="dlBtn" download="dubbed_file.wav" href="#" class="dl-btn">
+            <i class="fas fa-download"></i> Download Your New Media
+        </a>
     </div>
 </div>
+
+<div id="toasts"></div>
 
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
@@ -116,12 +227,19 @@ document.addEventListener('DOMContentLoaded', () => {
     loadVoices();
 });
 
+function handleFileSelect(input) {
+    if(input.files.length > 0) {
+        document.getElementById('fileTxt').innerText = input.files[0].name;
+        document.getElementById('fileTxt').style.color = 'var(--gold-dark)';
+    }
+}
+
 function renderLangs() {
     const g = document.getElementById('langGrid');
     g.innerHTML = LANGS.map(l => `
         <div class="item-card ${l.c===selectedLang?'active':''}" onclick="setLang('${l.c}', this)">
-            <div style="font-size:1.6rem; margin-bottom:5px;">${l.f}</div>
-            <div style="font-size:0.8rem;">${l.n}</div>
+            <div style="font-size:1.8rem; margin-bottom:5px;">${l.f}</div>
+            <div style="font-size:0.85rem; font-weight:600;">${l.n}</div>
         </div>
     `).join('');
 }
@@ -141,7 +259,7 @@ async function loadVoices() {
             d.voices.forEach(v => {
                 const div = document.createElement('div');
                 div.className = 'item-card';
-                div.innerHTML = `<i class="fas fa-user-circle"></i><div style="font-size:0.8rem;">${v.name}</div>`;
+                div.innerHTML = `<i class="fas fa-user-circle"></i><div style="font-size:0.85rem; font-weight:600;">${v.name}</div>`;
                 div.onclick = () => setVoice(v.url, div);
                 g.appendChild(div);
             });
@@ -151,13 +269,13 @@ async function loadVoices() {
 
 function setVoice(url, el) {
     selectedVoiceUrl = url;
-    document.querySelectorAll('#spkGrid .item-card').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('#spkGrid .item-card').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
 }
 
 async function startDubbing() {
     const file = document.getElementById('mediaFile').files[0];
-    if(!file) return alert("Please select a file first");
+    if(!file) return showToast("Please upload a file first!");
 
     const btn = document.getElementById('dubBtn');
     btn.disabled = true;
@@ -173,9 +291,9 @@ async function startDubbing() {
         const res = await fetch(`${API_BASE}/api/dub`, { method: 'POST', body: fd, credentials: 'include' });
         const data = await res.json();
         if(data.job_id) poll(data.job_id);
-        else throw new Error(data.error || "Server error");
+        else throw new Error(data.error || "Server limit reached");
     } catch(e) {
-        alert(e.message);
+        showToast(e.message);
         btn.disabled = false;
         document.getElementById('progressArea').style.display = 'none';
     }
@@ -195,9 +313,10 @@ async function poll(id) {
                 document.getElementById('progFill').style.width = '100%';
                 document.getElementById('pctTxt').innerText = '100%';
                 checkAuth();
+                showToast("Success! Your file is ready.");
             } else if(d.status === 'failed') {
                 clearInterval(timer);
-                alert("Dubbing failed. Check logs.");
+                showToast("Dubbing failed. Please try again.");
                 document.getElementById('dubBtn').disabled = false;
             } else {
                 let cur = parseInt(document.getElementById('progFill').style.width) || 10;
@@ -213,9 +332,18 @@ async function checkAuth() {
     try {
         const r = await fetch(`${API_BASE}/api/user`, { credentials: 'include' });
         const d = await r.json();
-        if(d.success) document.getElementById('authSection').innerHTML = `${d.user.name} | ${d.user.credits} 💰`;
-        else document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff">Login</a>`;
-    } catch(e) { document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff">Login</a>`; }
+        if(d.success) document.getElementById('authSection').innerHTML = `<i class="fas fa-user-tie"></i> ${d.user.name} | ${d.user.credits} 💰`;
+        else document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff; text-decoration:none;">Login</a>`;
+    } catch(e) { document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff; text-decoration:none;">Login</a>`; }
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toasts');
+    const box = document.createElement('div');
+    box.className = 'toast';
+    box.innerText = msg;
+    t.appendChild(box);
+    setTimeout(() => box.remove(), 5000);
 }
 </script>
 </body>
