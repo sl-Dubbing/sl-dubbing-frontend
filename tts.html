@@ -1,98 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <title>AI TTS | Smart Cloudinary Sync</title>
+    <title>AI Smart TTS | Premium</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: sans-serif; padding: 40px; background: #f5f5f7; display: flex; justify-content: center; }
-        .card { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        textarea { width: 100%; height: 120px; border: 1px solid #ddd; border-radius: 12px; padding: 15px; margin-bottom: 20px; font-size: 1rem; box-sizing: border-box; }
-        .spk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 25px; }
-        .item { padding: 15px 5px; border: 1px solid #eee; border-radius: 10px; cursor: pointer; text-align: center; font-size: 0.9rem; }
-        .item.active { background: #a4fec4; border-color: black; font-weight: bold; }
-        .btn { width: 100%; padding: 18px; background: black; color: white; border: none; border-radius: 30px; cursor: pointer; font-size: 1.1rem; font-weight: 600; }
-        #res { margin-top: 30px; padding: 20px; border: 2px solid #065f2c; border-radius: 12px; display: none; }
+        :root { --purple-dark: #3A0353; --purple-light: #804A8A; --gold: #F59E51; --gold-light: #F8D299; --radius: 20px; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: linear-gradient(135deg, var(--purple-dark), var(--purple-light)); color: #333; margin: 0; padding-bottom: 50px; min-height: 100vh;}
+        .wrap { max-width: 850px; margin: 30px auto; padding: 0 15px; }
+        .card { background: rgba(255,255,255,0.95); border-radius: var(--radius); padding: 30px; margin-bottom: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
+        textarea { width: 100%; height: 120px; border-radius: 10px; border: 2px solid var(--purple-light); padding: 15px; font-size: 1rem; resize: vertical; }
+        .btn { background: linear-gradient(to right, var(--gold-light), var(--gold)); color: var(--purple-dark); width: 100%; height: 60px; border-radius: 30px; border: none; cursor: pointer; font-size: 1.1rem; font-weight: 800; text-transform: uppercase; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .spk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .item-card { padding: 15px; border-radius: 15px; border: 1px solid #ddd; text-align: center; cursor: pointer; background: #fff; }
+        .item-card.active { background: var(--purple-dark); color: #fff; border-color: var(--gold); }
+        .custom-voice-btn { width: 100%; background: rgba(245, 158, 81, 0.1); color: var(--purple-dark); border: 2px dashed var(--gold); padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; text-align: center; margin-bottom:20px;}
+        #progressArea { display: none; margin-top: 20px; }
+        .prog-bar { height: 10px; background: #eee; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+        .prog-fill { height: 100%; width: 0%; background: var(--gold); transition: 0.5s; }
+        .res-card { display: none; border: 3px solid var(--gold); text-align: center; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2 style="margin-top:0;">AI Smart TTS</h2>
-    <textarea id="txt" placeholder="What should the AI say?"></textarea>
-    
-    <p style="font-weight:600; margin-bottom:10px;">Select Voice:</p>
-    <div class="spk-grid" id="spkGrid">
-        <div class="item active" onclick="setV('', this)">Default AI</div>
+<div class="wrap">
+    <div class="card">
+        <h2 style="color:var(--purple-dark); margin-top:0;"><i class="fas fa-keyboard"></i> Text to Speech</h2>
+        <textarea id="txt" placeholder="Enter text here to generate AI speech..."></textarea>
+        
+        <h4 style="color:var(--purple-dark);"><i class="fas fa-user"></i> AI Voice Profile</h4>
+        <div class="spk-grid" id="spkGrid"><div class="item-card active" onclick="setVoice('','',this)">Default Voice</div></div>
+        
+        <div class="custom-voice-btn" onclick="document.getElementById('customVoice').click()">
+            <i class="fas fa-plus"></i> Upload Custom Clone (WAV/MP3)
+            <div id="customVoiceTxt" style="font-size:0.8rem; font-weight:normal;"></div>
+        </div>
+        <input type="file" id="customVoice" hidden accept="audio/*" onchange="handleCustom(this)">
+
+        <button class="btn" id="ttsBtn" onclick="startTTS()">Generate Audio</button>
+        
+        <div id="progressArea">
+            <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                <span id="statusTxt">Processing...</span><span id="pctTxt">0%</span>
+            </div>
+            <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+        </div>
     </div>
 
-    <button class="btn" id="goBtn" onclick="startTTS()">Generate AI Speech</button>
-    
-    <div id="res">
-        <p style="font-weight:bold; color:#065f2c; margin-top:0;">Ready!</p>
-        <audio id="aud" controls style="width:100%"></audio>
+    <div class="card res-card" id="resCard">
+        <h3 style="color:var(--purple-dark); margin-top:0;">Generated Speech</h3>
+        <audio id="ttsAud" controls style="width:100%; margin-bottom:15px;"></audio>
+        <p id="finalText" style="background:#eee; padding:15px; border-radius:10px; font-style:italic; font-size:0.9rem; text-align:left;"></p>
     </div>
 </div>
 
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
-let voiceUrl = '';
+let selectedVoiceUrl = '', selectedVoiceId = '', customBase64 = '';
+let evtSource = null;
 
 document.addEventListener('DOMContentLoaded', loadVoices);
 
 async function loadVoices() {
-    const grid = document.getElementById('spkGrid');
     try {
-        const res = await fetch(`${API_BASE}/api/voices`);
-        const data = await res.json();
-        if (data.success) {
-            data.voices.forEach(v => {
-                const d = document.createElement('div');
-                d.className = 'item';
-                d.innerText = v.name;
-                d.onclick = () => setV(v.url, d);
-                grid.appendChild(d);
-            });
-        }
-    } catch(e) {}
+        const r = await fetch(`${API_BASE}/api/voices`);
+        const d = await r.json();
+        if(d.success) d.voices.forEach(v => {
+            const div = document.createElement('div'); div.className = 'item-card'; div.innerText = v.name;
+            div.onclick = () => setVoice(v.url, v.name, div);
+            document.getElementById('spkGrid').appendChild(div);
+        });
+    } catch(e){}
 }
 
-function setV(url, el) {
-    voiceUrl = url;
-    document.querySelectorAll('.item').forEach(i => i.classList.remove('active'));
-    el.classList.add('active');
+function setVoice(url, id, el) { 
+    selectedVoiceUrl = url; selectedVoiceId = id; customBase64 = '';
+    document.getElementById('customVoiceTxt').innerText = '';
+    document.querySelectorAll('.item-card').forEach(x => x.classList.remove('active')); 
+    if(el) el.classList.add('active'); 
+}
+
+function handleCustom(input) {
+    if(input.files.length > 0) {
+        document.querySelectorAll('.item-card').forEach(x => x.classList.remove('active'));
+        selectedVoiceUrl = ''; selectedVoiceId = '';
+        document.getElementById('customVoiceTxt').innerText = "Selected: " + input.files[0].name;
+        const reader = new FileReader();
+        reader.readAsDataURL(input.files[0]);
+        reader.onload = () => { customBase64 = reader.result.split(',')[1]; };
+    }
 }
 
 async function startTTS() {
     const text = document.getElementById('txt').value.trim();
-    if(!text) return alert("Enter text");
-    
-    const btn = document.getElementById('goBtn');
-    btn.disabled = true; btn.innerText = "AI is thinking...";
+    if(!text) return alert("Enter text!");
+
+    const btn = document.getElementById('ttsBtn'); btn.disabled = true;
+    document.getElementById('progressArea').style.display = 'block';
+    document.getElementById('resCard').style.display = 'none';
 
     try {
         const res = await fetch(`${API_BASE}/api/tts`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({text, voice_url: voiceUrl, lang: 'en'}),
+            body: JSON.stringify({text: text, lang: 'ar', voice_url: selectedVoiceUrl, voice_id: selectedVoiceId, sample_b64: customBase64}),
             credentials: 'include'
         });
         const data = await res.json();
-        if (data.job_id) check(data.job_id);
-    } catch (e) { btn.disabled = false; btn.innerText = "Generate AI Speech"; }
+        if(data.success) startSSE(data.job_id);
+        else throw new Error(data.error);
+    } catch(e) { alert(e.message); btn.disabled = false; }
 }
 
-function check(id) {
-    const timer = setInterval(async () => {
-        const r = await fetch(`${API_BASE}/api/job/${id}`, {credentials: 'include'});
-        const d = await r.json();
-        if (d.status === 'completed') {
-            clearInterval(timer);
-            document.getElementById('res').style.display = 'block';
-            document.getElementById('aud').src = d.audio_url;
-            document.getElementById('goBtn').disabled = false;
-            document.getElementById('goBtn').innerText = "Generate AI Speech";
+function startSSE(jobId) {
+    if (evtSource) evtSource.close();
+    evtSource = new EventSource(`${API_BASE}/api/progress/${jobId}`, { withCredentials: true });
+
+    evtSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        document.getElementById('progFill').style.width = data.progress + '%';
+        document.getElementById('pctTxt').innerText = data.progress + '%';
+        document.getElementById('statusTxt').innerText = data.status;
+
+        if (data.status === 'done' || data.status === 'completed') {
+            evtSource.close();
+            document.getElementById('resCard').style.display = 'block';
+            document.getElementById('ttsAud').src = data.audio_url;
+            document.getElementById('finalText').innerText = data.final_text || "";
+            document.getElementById('ttsBtn').disabled = false;
+        } else if (data.status === 'failed' || data.status === 'error') {
+            evtSource.close(); alert("Failed."); document.getElementById('ttsBtn').disabled = false;
         }
-    }, 3000);
+    };
 }
 </script>
 </body>
