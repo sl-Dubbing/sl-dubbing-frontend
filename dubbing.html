@@ -181,13 +181,13 @@ function selectLang(c, el) {
     el.classList.add('active');
 }
 
-// 🟢 الدالة الديناميكية المحسنة لجلب الملفات من المجلد تلقائياً
+// 🟢 دالة الجلب التلقائي للأصوات من مجلد speakers على GitHub
 async function loadVoices() {
     const spkGrid = document.getElementById('spkGrid');
     if (!spkGrid) return;
     spkGrid.innerHTML = '';
 
-    // زر الحفاظ على الصوت الأصلي دائمًا يكون الأول
+    // زر الحفاظ على الصوت الأصلي (دائماً موجود)
     const sourceCard = document.createElement('div');
     sourceCard.className = 'item-card active';
     sourceCard.innerHTML = `
@@ -198,19 +198,13 @@ async function loadVoices() {
     sourceCard.onclick = () => setVoice('source', sourceCard);
     spkGrid.appendChild(sourceCard);
 
-    const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/${SAMPLES_FOLDER}`;
-    
+    // محاولة جلب الملفات من GitHub تلقائياً
     try {
+        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/${SAMPLES_FOLDER}`;
         const res = await fetch(apiUrl);
         if (res.ok) {
             const files = await res.json();
-            const audioFiles = files.filter(f => f.name.endsWith('.mp3'));
-            
-            if (audioFiles.length === 0) {
-                console.warn(`The folder '${SAMPLES_FOLDER}' exists but contains no .mp3 files.`);
-            }
-
-            audioFiles.forEach(file => {
+            files.filter(f => f.name.endsWith('.mp3')).forEach(file => {
                 const name = file.name.replace('.mp3', '');
                 const card = document.createElement('div');
                 card.className = 'item-card';
@@ -222,11 +216,10 @@ async function loadVoices() {
                 spkGrid.appendChild(card);
             });
         } else {
-            // رسالة خطأ واضحة في الكونسول لتحديد المشكلة
-            console.error(`Failed to load voices. Status: ${res.status}. Make sure the repository is PUBLIC and the folder '${SAMPLES_FOLDER}' exists.`);
+            console.error("Failed to fetch voices. Repo status:", res.status);
         }
     } catch (e) {
-        console.error("API Fetch error. Check your internet connection or GitHub API limits:", e);
+        console.error("Error loading voices from GitHub:", e);
     }
 }
 
@@ -236,7 +229,7 @@ function setVoice(id, el) {
     el.classList.add('active');
 }
 
-async function generateDubbing() {
+async function startDubbing() {
     const fileInput = document.getElementById('mediaFile');
     const btn = document.getElementById('generateBtn');
     
@@ -252,7 +245,7 @@ async function generateDubbing() {
     const formData = new FormData();
     formData.append("media_file", fileInput.files[0]);
     formData.append("lang", selectedLang);
-    formData.append("voice_mode", selectedVoice); 
+    formData.append("voice_mode", selectedVoice);
     formData.append('voice_url', '');
 
     try {
@@ -321,7 +314,7 @@ async function pollJob(jobId) {
             btn.disabled = false; btn.classList.remove('loading');
             document.getElementById('statusTxt').innerText = 'Process Failed!';
             document.getElementById('progBar').style.background = '#ef4444';
-            showToast("Dubbing failed! Please check if the audio is clear.", "#b91c1c");
+            showToast("Dubbing failed!", "error");
             checkAuth();
         }
     } catch (e) { console.error(e); }
