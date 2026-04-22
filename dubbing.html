@@ -13,55 +13,43 @@
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: var(--bg); color: #111827; margin: 0; padding-bottom: 50px; }
         
-        /* Navigation */
         .topbar { background: var(--primary); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; color: #fff; height: 60px; }
         .logo-top { font-weight: 800; font-size: 1.1rem; text-decoration: none; color: white; }
-        .auth-section { font-weight: 600; font-size: 0.9rem; }
+        .auth-section { font-weight: 600; font-size: 0.85rem; }
 
-        /* Header */
         .brand-header { text-align: center; margin: 40px auto 15px; }
-        .main-logo-img { max-width: 120px; margin-bottom: 10px; }
+        .main-logo-img { max-width: 130px; margin-bottom: 10px; }
         .brand-name { font-size: 2.2rem; font-weight: 900; }
         .brand-name span { color: var(--green-dk); border-bottom: 4px solid var(--mint); }
 
-        /* Main Container */
         .wrap { max-width: 850px; margin: 0 auto; padding: 0 15px; }
         .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
         .ttl { font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 1rem; }
 
-        /* Step 1: Upload */
-        .upload-area { border: 2px dashed var(--green-dk); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; background: #f0fdf4; }
+        .upload-area { border: 2px dashed var(--green-dk); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; background: #f0fdf4; transition: 0.3s; }
+        .upload-area:hover { background: #dcfce7; }
         
-        /* Step 2 & 3: Grids */
-        .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+        .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
         .item-card { padding: 15px 10px; border-radius: 12px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.3s; background: #fff; position: relative; }
         .item-card.active { background: var(--mint); border-color: var(--primary); font-weight: 700; }
         .item-card i { display: block; margin-bottom: 8px; font-size: 1.2rem; color: #666; }
         .item-card.active i { color: var(--primary); }
 
-        /* Action Button */
         .btn { background: var(--primary); color: white; width: 100%; height: 55px; border-radius: 30px; border: none; cursor: pointer; font-size: 1rem; font-weight: 600; transition: 0.3s; }
         .btn:disabled { background: #9ca3af; cursor: not-allowed; }
 
-        /* Progress Bar */
         #progressArea { display: none; margin-top: 20px; }
-        .prog-bar-wrap { background: #eee; height: 8px; border-radius: 10px; overflow: hidden; margin-top: 8px; }
+        .prog-bar-wrap { background: #eee; height: 10px; border-radius: 10px; overflow: hidden; margin-top: 8px; }
         .prog-bar { height: 100%; width: 0%; background: var(--primary); transition: 0.5s; }
 
-        /* Result Card */
         .res-card { display: none; border: 2px solid var(--green-dk); text-align: center; }
-
-        /* Toasts */
-        #toasts { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
-        .toast { background: #ef4444; color: white; padding: 12px 20px; border-radius: 8px; margin-top: 10px; animation: slideIn 0.3s; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
 <body>
 
 <div class="topbar">
     <a href="index.html" class="logo-top">sl<span style="color:var(--mint)">-Dubbing</span></a>
-    <div class="auth-section" id="authSection">Loading...</div>
+    <div class="auth-section" id="authSection">Checking...</div>
 </div>
 
 <div class="brand-header">
@@ -71,16 +59,16 @@
 
 <div class="wrap">
     <div class="card">
-        <div class="ttl"><i class="fas fa-file-import"></i> 1. Upload Media File</div>
+        <div class="ttl"><i class="fas fa-file-upload"></i> 1. Upload Video or Audio</div>
         <div class="upload-area" onclick="document.getElementById('mediaFile').click()">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 1.8rem; color: var(--green-dk);"></i>
-            <div id="fileTxt" style="margin-top:10px; font-weight: 500;">Click to select video or audio</div>
+            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--green-dk);"></i>
+            <div id="fileTxt" style="margin-top:10px; font-weight: 500;">Click to select your media file</div>
         </div>
         <input type="file" id="mediaFile" hidden onchange="document.getElementById('fileTxt').innerText=this.files[0].name">
     </div>
 
     <div class="card">
-        <div class="ttl"><i class="fas fa-user-voice"></i> 2. Select Dubbing Voice</div>
+        <div class="ttl"><i class="fas fa-microphone-alt"></i> 2. Select Dubbing Voice</div>
         <div class="spk-grid" id="spkGrid">
             <div class="item-card active" onclick="setVoice('', this)">
                 <i class="fas fa-microphone"></i> Original Voice
@@ -89,14 +77,14 @@
     </div>
 
     <div class="card">
-        <div class="ttl"><i class="fas fa-globe"></i> 3. Target Language</div>
+        <div class="ttl"><i class="fas fa-globe"></i> 3. Target Output Language</div>
         <div class="lang-grid" id="langGrid"></div>
     </div>
 
     <div class="card">
-        <button class="btn" id="dubBtn" onclick="startDubbing()">Start Dubbing Now</button>
+        <button class="btn" id="dubBtn" onclick="startDubbing()">Dub My Media Now</button>
         <div id="progressArea">
-            <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+            <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:600;">
                 <span id="statusTxt">AI is working...</span>
                 <span id="pctTxt">0%</span>
             </div>
@@ -105,13 +93,11 @@
     </div>
 
     <div class="card res-card" id="resCard">
-        <div class="ttl" style="color:var(--green-dk); justify-content:center;"><i class="fas fa-check-circle"></i> Dubbing Completed!</div>
+        <div class="ttl" style="color:var(--green-dk); justify-content:center;"><i class="fas fa-check-circle"></i> Processing Complete!</div>
         <audio id="dubAud" controls style="width:100%; margin: 15px 0;"></audio>
-        <a id="dlBtn" download="dubbed.wav" href="#" class="btn" style="text-decoration:none; display:flex; align-items:center; justify-content:center; background:var(--green-dk)">Download File</a>
+        <a id="dlBtn" download href="#" class="btn" style="text-decoration:none; display:flex; align-items:center; justify-content:center; background:var(--green-dk)">Download Dubbed File</a>
     </div>
 </div>
-
-<div id="toasts"></div>
 
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
@@ -121,7 +107,7 @@ let selectedLang = 'ar';
 const LANGS = [
     {c:'en', n:'English', f:'🇺🇸'}, {c:'ar', n:'Arabic', f:'🇸🇦'}, {c:'es', n:'Spanish', f:'🇪🇸'},
     {c:'fr', n:'French', f:'🇫🇷'}, {c:'de', n:'German', f:'🇩🇪'}, {c:'it', n:'Italian', f:'🇮🇹'},
-    {c:'zh', n:'Chinese', f:'🇨🇳'}, {c:'ja', n:'Japanese', f:'🇯🇵'}
+    {c:'ru', n:'Russian', f:'🇷🇺'}, {c:'ja', n:'Japanese', f:'🇯🇵'}
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -134,7 +120,7 @@ function renderLangs() {
     const g = document.getElementById('langGrid');
     g.innerHTML = LANGS.map(l => `
         <div class="item-card ${l.c===selectedLang?'active':''}" onclick="setLang('${l.c}', this)">
-            <div style="font-size:1.4rem;">${l.f}</div>
+            <div style="font-size:1.6rem; margin-bottom:5px;">${l.f}</div>
             <div style="font-size:0.8rem;">${l.n}</div>
         </div>
     `).join('');
@@ -155,12 +141,12 @@ async function loadVoices() {
             d.voices.forEach(v => {
                 const div = document.createElement('div');
                 div.className = 'item-card';
-                div.innerHTML = `<i class="fas fa-user-circle"></i>${v.name}`;
+                div.innerHTML = `<i class="fas fa-user-circle"></i><div style="font-size:0.8rem;">${v.name}</div>`;
                 div.onclick = () => setVoice(v.url, div);
                 g.appendChild(div);
             });
         }
-    } catch(e) {}
+    } catch(e) { console.error("Voices sync error"); }
 }
 
 function setVoice(url, el) {
@@ -187,7 +173,7 @@ async function startDubbing() {
         const res = await fetch(`${API_BASE}/api/dub`, { method: 'POST', body: fd, credentials: 'include' });
         const data = await res.json();
         if(data.job_id) poll(data.job_id);
-        else throw new Error(data.error);
+        else throw new Error(data.error || "Server error");
     } catch(e) {
         alert(e.message);
         btn.disabled = false;
@@ -209,10 +195,15 @@ async function poll(id) {
                 document.getElementById('progFill').style.width = '100%';
                 document.getElementById('pctTxt').innerText = '100%';
                 checkAuth();
+            } else if(d.status === 'failed') {
+                clearInterval(timer);
+                alert("Dubbing failed. Check logs.");
+                document.getElementById('dubBtn').disabled = false;
             } else {
                 let cur = parseInt(document.getElementById('progFill').style.width) || 10;
-                document.getElementById('progFill').style.width = Math.min(95, cur + 5) + '%';
-                document.getElementById('pctTxt').innerText = document.getElementById('progFill').style.width;
+                let next = Math.min(95, cur + 2);
+                document.getElementById('progFill').style.width = next + '%';
+                document.getElementById('pctTxt').innerText = next + '%';
             }
         } catch(e) {}
     }, 4000);
