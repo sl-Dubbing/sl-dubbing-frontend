@@ -134,8 +134,6 @@
 
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
-
-// 🟢 بيانات الجلب الديناميكي (تأكدي من صحتها وأن المستودع Public)
 const GITHUB_USER = "sl-Dubbing"; 
 const REPO_NAME = "sl-dubbing-frontend"; 
 const SAMPLES_FOLDER = "speakers"; 
@@ -168,6 +166,7 @@ function updateFileName() {
 
 function renderLangs() {
     const grid = document.getElementById('langs');
+    if (!grid) return;
     grid.innerHTML = ALL_LANGS.map(l => `
         <div class="item-card ${l.c === selectedLang ? 'active' : ''}" onclick="selectLang('${l.c}', this)">
             <span class="lang-flag">${l.f}</span>
@@ -182,13 +181,13 @@ function selectLang(c, el) {
     el.classList.add('active');
 }
 
-// 🟢 الدالة الديناميكية لجلب الملفات من المجلد تلقائياً
+// 🟢 الدالة الديناميكية المحسنة لجلب الملفات من المجلد تلقائياً
 async function loadVoices() {
     const spkGrid = document.getElementById('spkGrid');
     if (!spkGrid) return;
     spkGrid.innerHTML = '';
 
-    // زر الحفاظ على الصوت الأصلي
+    // زر الحفاظ على الصوت الأصلي دائمًا يكون الأول
     const sourceCard = document.createElement('div');
     sourceCard.className = 'item-card active';
     sourceCard.innerHTML = `
@@ -199,12 +198,19 @@ async function loadVoices() {
     sourceCard.onclick = () => setVoice('source', sourceCard);
     spkGrid.appendChild(sourceCard);
 
-    // جلب باقي الأصوات من مجلد جيتهاب تلقائياً
+    const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/${SAMPLES_FOLDER}`;
+    
     try {
-        const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/${SAMPLES_FOLDER}`);
+        const res = await fetch(apiUrl);
         if (res.ok) {
             const files = await res.json();
-            files.filter(f => f.name.endsWith('.mp3')).forEach(file => {
+            const audioFiles = files.filter(f => f.name.endsWith('.mp3'));
+            
+            if (audioFiles.length === 0) {
+                console.warn(`The folder '${SAMPLES_FOLDER}' exists but contains no .mp3 files.`);
+            }
+
+            audioFiles.forEach(file => {
                 const name = file.name.replace('.mp3', '');
                 const card = document.createElement('div');
                 card.className = 'item-card';
@@ -216,10 +222,11 @@ async function loadVoices() {
                 spkGrid.appendChild(card);
             });
         } else {
-            console.warn("Failed to fetch voices. Repo might be private or name is incorrect.");
+            // رسالة خطأ واضحة في الكونسول لتحديد المشكلة
+            console.error(`Failed to load voices. Status: ${res.status}. Make sure the repository is PUBLIC and the folder '${SAMPLES_FOLDER}' exists.`);
         }
     } catch (e) {
-        console.warn("API Fetch error:", e);
+        console.error("API Fetch error. Check your internet connection or GitHub API limits:", e);
     }
 }
 
@@ -229,11 +236,13 @@ function setVoice(id, el) {
     el.classList.add('active');
 }
 
-window.startDubbing = async function() {
+async function generateDubbing() {
     const fileInput = document.getElementById('mediaFile');
     const btn = document.getElementById('generateBtn');
     
-    if (!fileInput.files[0]) return showToast("Please upload a file first", "error");
+    if (!fileInput || !fileInput.files[0]) {
+        return showToast("Please upload a file first", "error");
+    }
 
     btn.disabled = true;
     btn.classList.add('loading');
@@ -341,10 +350,10 @@ async function checkAuth() {
     }
 }
 
-window.logout = async function() {
+async function logout() {
     try { await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' }); location.reload(); }
     catch (e) { location.reload(); }
-};
+}
 
 function showToast(msg, color) {
     const t = document.createElement('div');
