@@ -15,7 +15,7 @@
         
         .topbar { background: var(--primary); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; color: #fff; height: 60px; }
         .logo-top { font-weight: 800; font-size: 1.1rem; text-decoration: none; color: white; }
-        .auth-section .auth-btn { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+        .auth-section .auth-btn { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 8px; cursor: pointer; text-decoration: none; }
         
         .brand-header { text-align: center; margin: 40px auto 15px; }
         .main-logo-img { max-width: 140px; height: auto; display: block; margin: 0 auto 10px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.08)); }
@@ -96,7 +96,7 @@
         <textarea id="txt" placeholder="Enter text in any language (e.g. French, Arabic, Chinese)..."></textarea>
         
         <div class="btn-wrapper">
-          <button class="btn" id="generateBtn" onclick="generateSpeech()">
+          <button class="btn" id="generateBtn" onclick="startSpeech()">
             <svg class="btn-svg" width="22" viewBox="0 0 24 24"><path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"></path></svg>
             <div class="txt-wrapper">
               <div class="txt-1">Translate & Speak</div>
@@ -127,13 +127,17 @@
 
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
+
+// 🟢 بيانات الجلب الديناميكي
 const GITHUB_USER = "sl-Dubbing"; 
-const REPO_NAME = "sl-dubbing-frontend";
+const REPO_NAME = "sl-dubbing-frontend"; 
 const SAMPLES_FOLDER = "speakers"; 
 
 let selectedVoice = 'source'; 
 let selectedLang = 'en';
 let clonedFileBase64 = null;
+let currentJobId = null;
+let pollInterval = null;
 
 const ALL_LANGS = [
     {c:'en',n:'English',f:'🇺🇸'}, {c:'ar',n:'Arabic',f:'🇸🇦'}, {c:'es',n:'Spanish',f:'🇪🇸'},
@@ -152,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const reader = new FileReader();
             reader.onload = (ev) => { clonedFileBase64 = ev.target.result.split(',')[1]; };
             reader.readAsDataURL(file);
-            showToast("Voice Loaded!", "#065f2c");
+            showToast("Voice Sample Loaded!", "#065f2c");
         }
     });
 });
@@ -173,41 +177,44 @@ function selectLang(c, el) {
     el.classList.add('active');
 }
 
-function addVoiceCard(name, grid) {
-    if (document.getElementById('voice-' + name)) return;
-    const card = document.createElement('div');
-    card.id = 'voice-' + name;
-    card.className = 'item-card';
-    card.innerHTML = `<i class="fas fa-check-circle chk"></i><div class="spk-av"><i class="fas fa-user"></i></div><div class="spk-nm">${name}</div>`;
-    card.onclick = () => setVoice(name, card);
-    grid.appendChild(card);
-}
-
-// 🟢 تحميل الأصوات الحقيقية فقط (بدون أسماء وهمية)
+// 🟢 الدالة الديناميكية لجلب الملفات من المجلد تلقائياً
 async function loadVoices() {
-    const grid = document.getElementById('spkGrid');
-    grid.innerHTML = '';
+    const spkGrid = document.getElementById('spkGrid');
+    if (!spkGrid) return;
+    spkGrid.innerHTML = '';
 
+    // زر ميزة النسخ الصوتي (Voice Clone)
     const cloneCard = document.createElement('div');
     cloneCard.className = 'item-card active';
     cloneCard.innerHTML = `
         <i class="fas fa-check-circle chk"></i>
         <div class="voice-ai-icon clone"><i class="fas fa-wand-magic-sparkles"></i></div>
-        <div class="spk-nm">Voice Clone</div>
+        <div class="spk-nm" style="font-size:0.8rem">Voice Clone</div>
     `;
     cloneCard.onclick = () => { setVoice('source', cloneCard); document.getElementById('cloneFile').click(); };
-    grid.appendChild(cloneCard);
+    spkGrid.appendChild(cloneCard);
 
+    // جلب باقي الأصوات من مجلد جيتهاب تلقائياً
     try {
         const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/${SAMPLES_FOLDER}`);
         if (res.ok) {
             const files = await res.json();
             files.filter(f => f.name.endsWith('.mp3')).forEach(file => {
-                addVoiceCard(file.name.replace('.mp3', ''), grid);
+                const name = file.name.replace('.mp3', '');
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <i class="fas fa-check-circle chk"></i>
+                    <div class="spk-av"><i class="fas fa-user"></i></div>
+                    <div class="spk-nm">${name}</div>`;
+                card.onclick = () => setVoice(name, card);
+                spkGrid.appendChild(card);
             });
+        } else {
+            console.warn("Failed to fetch voices. Repo might be private or name is incorrect.");
         }
     } catch (e) {
-        console.warn("Failed to read speakers folder.");
+        console.warn("API Fetch error:", e);
     }
 }
 
@@ -217,14 +224,14 @@ function setVoice(id, el) {
     el.classList.add('active');
 }
 
-async function generateSpeech() {
+window.startSpeech = async function() {
     const text = document.getElementById('txt').value.trim();
     const btn = document.getElementById('generateBtn');
     
     if (!text) return showToast("Enter text first", "error");
 
     if (selectedVoice === 'source' && !clonedFileBase64) {
-        return showToast("Please upload a voice sample first!", "error");
+        return showToast("Please click 'Voice Clone' to upload a sample first!", "error");
     }
 
     btn.disabled = true;
@@ -248,56 +255,61 @@ async function generateSpeech() {
         
         const data = await res.json();
         if (!data.success) {
-            // معالجة خطأ الرصيد أو غيره بوضوح
             if(data.error === 'Unauthorized') throw new Error("Please log in first.");
             throw new Error(data.error || "Server processing failed.");
         }
 
-        // 🟢 التحديث الأمني: إضافة withCredentials=true
-        const source = new EventSource(`${API_BASE}/api/progress/${data.job_id}`, { withCredentials: true });
-        
-        source.onmessage = (e) => {
-            const progress = JSON.parse(e.data);
-            
-            if (progress.status === 'error' || progress.status === 'failed') {
-                source.close();
-                showToast(progress.error || "Process failed", "error");
-                btn.disabled = false; btn.classList.remove('loading');
-                return;
-            }
-
-            document.getElementById('progBar').style.width = progress.progress + '%';
-            document.getElementById('statusTxt').innerText = progress.message;
-            document.getElementById('pctTxt').innerText = progress.progress + '%';
-            
-            if (progress.status === 'done') {
-                source.close();
-                document.getElementById('resCard').style.display = 'block';
-                document.getElementById('dubAud').src = progress.audio_url;
-                document.getElementById('dlBtn').href = progress.audio_url;
-                
-                if(progress.final_text) {
-                    const tBox = document.getElementById('translatedBox');
-                    tBox.style.display = 'block';
-                    tBox.innerHTML = `<strong>Translated Text:</strong><br>${progress.final_text}`;
-                }
-
-                btn.disabled = false; btn.classList.remove('loading');
-                showToast("Speech Ready!", "#059669");
-                checkAuth();
-            }
-        };
-        
-        source.onerror = () => {
-            source.close();
-            showToast("Connection to server lost.", "error");
-            btn.disabled = false; btn.classList.remove('loading');
-        };
+        currentJobId = data.job_id;
+        document.getElementById('statusTxt').innerText = 'Sending to AI Factory...';
+        pollInterval = setInterval(() => pollJob(currentJobId), 2000);
         
     } catch (err) {
         showToast(err.message, "error");
         btn.disabled = false; btn.classList.remove('loading');
     }
+}
+
+async function pollJob(jobId) {
+    try {
+        const res = await fetch(API_BASE + '/api/job/' + jobId, { credentials: 'include' });
+        const data = await res.json();
+        const btn = document.getElementById('generateBtn');
+        
+        if (data.status === 'processing') {
+            document.getElementById('statusTxt').innerText = 'AI is Dubbing (This takes 2-5 mins)...';
+            let bar = document.getElementById('progBar');
+            let cur = parseInt(bar.style.width) || 5;
+            cur = Math.min(95, cur + 1); 
+            bar.style.width = cur + '%';
+            document.getElementById('pctTxt').innerText = cur + '%';
+        } else if (data.status === 'completed') {
+            clearInterval(pollInterval);
+            document.getElementById('statusTxt').innerText = 'Success!';
+            document.getElementById('progBar').style.width = '100%';
+            document.getElementById('pctTxt').innerText = '100%';
+            
+            document.getElementById('resCard').style.display = 'block';
+            document.getElementById('dubAud').src = data.audio_url;
+            document.getElementById('dlBtn').href = data.audio_url;
+            
+            if(data.final_text) {
+                const tBox = document.getElementById('translatedBox');
+                tBox.style.display = 'block';
+                tBox.innerHTML = `<strong>Translated Text:</strong><br>${data.final_text}`;
+            }
+
+            btn.disabled = false; btn.classList.remove('loading');
+            showToast("Speech Ready!", "#059669");
+            checkAuth();
+        } else if (data.status === 'failed' || data.status === 'error') {
+            clearInterval(pollInterval);
+            btn.disabled = false; btn.classList.remove('loading');
+            document.getElementById('statusTxt').innerText = 'Process Failed!';
+            document.getElementById('progBar').style.background = '#ef4444';
+            showToast("Processing failed! Please check input text.", "#b91c1c");
+            checkAuth();
+        }
+    } catch (e) { console.error(e); }
 }
 
 async function checkAuth() {
@@ -313,7 +325,7 @@ async function checkAuth() {
                            Balance: ${data.user.credits} 💰
                         </div>
                     </div>
-                    <button class="auth-btn" onclick="location.reload();">Log Out</button>
+                    <button class="auth-btn" onclick="logout()">Log Out</button>
                 </div>`;
         } else {
              document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
@@ -322,6 +334,11 @@ async function checkAuth() {
         document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
     }
 }
+
+window.logout = async function() {
+    try { await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' }); location.reload(); }
+    catch (e) { location.reload(); }
+};
 
 function showToast(msg, color) {
     const t = document.createElement('div');
