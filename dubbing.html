@@ -8,7 +8,7 @@
     <style>
         :root { 
             --bg: #f5f5f7; --card: #fff; --primary: #0f0f10; --mint: #a4fec4; 
-            --green-dk: #065f2c; --border: #e5e7eb; --radius: 16px;
+            --green-dk: #065f2c; --border: #e5e7eb; --radius: 16px; --transition: 0.4s;
         }
         * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background: var(--bg); color: #111827; text-align: left; margin: 0; }
@@ -26,29 +26,29 @@
         .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
         .ttl { font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; font-size: 1.1rem; color: var(--primary); }
 
+        /* Upload Area */
         .upload-area { border: 2px dashed var(--green-dk); border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; background: #f0fdf4; transition: 0.3s; }
         .upload-area:hover { background: #dcfce7; }
         .upload-area i { font-size: 2rem; color: var(--green-dk); margin-bottom: 10px; }
         .file-name { margin-top: 10px; font-weight: bold; color: var(--primary); }
-
-        /* [FIX] تحذير حجم الملف */
-        .size-warning { display: none; color: #dc2626; font-size: 0.82rem; margin-top: 6px; }
 
         .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; margin-bottom: 15px; }
         .item-card { padding: 18px 10px; border-radius: 14px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.2s; background: #fff; position: relative; }
         .item-card.active { background: var(--mint); border-color: var(--primary); font-weight: 700; }
         .chk { position: absolute; top: 8px; right: 8px; font-size: 0.75rem; color: var(--primary); display: none; }
         .item-card.active .chk { display: block; }
+
         .spk-av, .voice-ai-icon { width: 52px; height: 52px; background: #e5e7eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.4rem; color: #4b5563; transition: 0.3s; }
         .item-card.active .spk-av, .item-card.active .voice-ai-icon { background: var(--primary); color: var(--mint); }
         .item-card.active .voice-ai-icon.clone { background: #ef4444; color: #fff; }
 
+        .btn-wrapper { display: flex; justify-content: center; margin-top: 30px; }
         .btn { background-color: #101010; color: white; width: 100%; height: 60px; border-radius: 30px; border: solid 1px #fff2; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; overflow: hidden; position: relative; transition: 0.3s; font-size: 1.1rem; font-weight: 600; }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn.loading .txt-1 { transform: translateY(-35px); opacity: 0; }
         .btn.loading .txt-2 { transform: translateY(0); opacity: 1; }
         .btn.loading .btn-svg { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        
         .txt-wrapper { position: relative; height: 24px; overflow: hidden; display: flex; align-items: center; min-width: 140px; justify-content: center; }
         .txt-1, .txt-2 { display: flex; gap: 2px; transition: all 0.5s; position: absolute; }
         .txt-2 { transform: translateY(35px); opacity: 0; }
@@ -58,7 +58,9 @@
         .prog-bar { height: 100%; width: 0; background: var(--primary); transition: width 0.4s ease; }
 
         .res-card { display: none; border: 2px solid var(--green-dk); }
-        .Btn-dl { width: 50px; height: 50px; border-radius: 50%; background: #1b1b1b; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; flex-shrink: 0; margin-bottom: 10px; }
+        .result-container { display: flex; align-items: center; gap: 15px; margin-top: 15px; }
+        audio, video { flex-grow: 1; width: 100%; border-radius: 8px; }
+        .Btn-dl { width: 50px; height: 50px; border-radius: 50%; background: #1b1b1b; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; flex-shrink: 0; margin-bottom:10px; }
         .svgIcon { fill: var(--mint); }
 
         .toast { position: fixed; bottom: 25px; right: 25px; padding: 14px 22px; color: #fff; border-radius: 12px; z-index: 1000; font-weight: 600; transform: translateY(100px); opacity: 0; transition: 0.4s; }
@@ -84,12 +86,8 @@
         <div class="upload-area" onclick="document.getElementById('mediaFile').click()">
             <i class="fas fa-cloud-upload-alt"></i>
             <div>Click to browse or drag file here</div>
-            <div style="font-size:0.8rem; color:#666; margin-top:5px;">Max size 150MB · Video or Audio</div>
+            <div style="font-size:0.8rem; color:#666; margin-top:5px;">Max size 150MB</div>
             <div id="fileName" class="file-name"></div>
-        </div>
-        <!-- [FIX] تحذير الحجم -->
-        <div id="sizeWarning" class="size-warning">
-            <i class="fas fa-exclamation-triangle"></i> File exceeds 150MB limit. Please choose a smaller file.
         </div>
         <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none" onchange="updateFileName()">
     </div>
@@ -105,9 +103,9 @@
     </div>
 
     <div class="card">
-        <div style="margin-top:0;">
+        <div class="btn-wrapper" style="margin-top:0;">
           <button class="btn" id="generateBtn" onclick="generateDubbing()">
-            <svg class="btn-svg" width="22" viewBox="0 0 24 24" fill="white"><path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"/></svg>
+            <svg class="btn-svg" width="22" viewBox="0 0 24 24"><path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"></path></svg>
             <div class="txt-wrapper">
               <div class="txt-1">Dub My Media</div>
               <div class="txt-2">Processing...</div>
@@ -116,10 +114,7 @@
         </div>
 
         <div id="progressArea">
-            <div style="display:flex; justify-content:space-between;">
-                <span id="statusTxt" style="font-weight:600">Analyzing...</span>
-                <span id="pctTxt" style="font-weight:700">0%</span>
-            </div>
+            <div style="display:flex; justify-content:space-between;"><span id="statusTxt" style="font-weight:600">Analyzing...</span><span id="pctTxt" style="font-weight:700">0%</span></div>
             <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
         </div>
     </div>
@@ -128,10 +123,10 @@
         <div class="ttl" style="color:var(--green-dk)"><i class="fas fa-check-circle"></i> Dubbing Complete!</div>
         <div style="display:flex; justify-content:center; align-items:center; flex-direction:column;">
             <a href="#" class="Btn-dl" id="dlBtn" download="dubbed-media.mp3">
-                <svg class="svgIcon" width="20" viewBox="0 0 384 512"><path d="M169.4 470.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 370.8V64c0-17.7-14.3-32-32-32s-32 14.3-32 32v306.7L54.6 265.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z"/></svg>
+                <svg class="svgIcon" width="20" viewBox="0 0 384 512"><path d="M169.4 470.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 370.8V64c0-17.7-14.3-32-32-32s-32 14.3-32 32v306.7L54.6 265.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z"></path></svg>
             </a>
-            <audio id="dubAud" controls style="display:none; width:100%;"></audio>
-            <video id="dubVid" controls style="display:none; width:100%;"></video>
+            <audio id="dubAud" controls style="display:none;"></audio>
+            <video id="dubVid" controls style="display:none;"></video>
         </div>
     </div>
 </div>
@@ -139,16 +134,13 @@
 <div id="toasts"></div>
 
 <script>
-// [FIX] قراءة API_BASE من متغير بيئة أو ثابت
 const API_BASE = 'https://web-production-14a1.up.railway.app';
-const GITHUB_USER = "sl-Dubbing";
+const GITHUB_USER = "sl-Dubbing"; 
 const REPO_NAME = "sl-dubbing-frontend";
-const SAMPLES_FOLDER = "speakers";
-const MAX_FILE_BYTES = 150 * 1024 * 1024; // [FIX] متطابق مع server.py و factory.py
+const SAMPLES_FOLDER = "speakers"; 
 
-let selectedVoice = 'source';
+let selectedVoice = 'source'; 
 let selectedLang = 'en';
-let activeEventSource = null; // [FIX] تتبع SSE لإغلاقه عند الحاجة
 
 const ALL_LANGS = [
     {c:'en',n:'English',f:'🇺🇸'}, {c:'ar',n:'Arabic',f:'🇸🇦'}, {c:'es',n:'Spanish',f:'🇪🇸'},
@@ -162,41 +154,33 @@ document.addEventListener('DOMContentLoaded', () => {
     loadVoices();
 });
 
-function renderLangs() {
-    const container = document.getElementById('langs');
-    ALL_LANGS.forEach((l, i) => {
-        const card = document.createElement('div');
-        card.className = 'item-card' + (i === 0 ? ' active' : '');
-        card.innerHTML = `<i class="fas fa-check-circle chk"></i><div style="font-size:1.8rem;margin-bottom:6px">${l.f}</div><div>${l.n}</div>`;
-        card.onclick = () => {
-            selectedLang = l.c;
-            document.querySelectorAll('.lang-grid .item-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-        };
-        container.appendChild(card);
-    });
-}
-
 function updateFileName() {
     const file = document.getElementById('mediaFile').files[0];
-    const warning = document.getElementById('sizeWarning');
-    if (!file) return;
+    if (file) document.getElementById('fileName').innerText = file.name;
+}
 
-    // [FIX] تحقق من الحجم في المتصفح قبل الإرسال
-    if (file.size > MAX_FILE_BYTES) {
-        warning.style.display = 'block';
-        document.getElementById('fileName').innerText = '';
-        document.getElementById('mediaFile').value = '';
-        return;
-    }
-    warning.style.display = 'none';
-    document.getElementById('fileName').innerText = file.name;
+function renderLangs() {
+    const grid = document.getElementById('langs');
+    grid.innerHTML = ALL_LANGS.map(l => `
+        <div class="item-card ${l.c === selectedLang ? 'active' : ''}" onclick="selectLang('${l.c}', this)">
+            <span class="lang-flag">${l.f}</span>
+            <span style="font-size:0.8rem;">${l.n}</span>
+        </div>
+    `).join('');
+}
+
+function selectLang(c, el) {
+    selectedLang = c;
+    document.querySelectorAll('.lang-grid .item-card').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
 }
 
 function addVoiceCard(name, grid) {
+    if (document.getElementById('voice-' + name)) return;
     const card = document.createElement('div');
+    card.id = 'voice-' + name;
     card.className = 'item-card';
-    card.innerHTML = `<i class="fas fa-check-circle chk"></i><div class="spk-av"><i class="fas fa-user"></i></div><div>${name}</div>`;
+    card.innerHTML = `<i class="fas fa-check-circle chk"></i><div class="spk-av"><i class="fas fa-user"></i></div><div class="spk-nm">${name}</div>`;
     card.onclick = () => setVoice(name, card);
     grid.appendChild(card);
 }
@@ -210,9 +194,9 @@ async function loadVoices() {
     cloneCard.innerHTML = `
         <i class="fas fa-check-circle chk"></i>
         <div class="voice-ai-icon clone"><i class="fas fa-microphone"></i></div>
-        <div style="font-size:0.8rem">Keep Original Voice</div>
+        <div class="spk-nm" style="font-size:0.8rem">Keep Original Voice</div>
     `;
-    cloneCard.onclick = () => setVoice('source', cloneCard);
+    cloneCard.onclick = () => { setVoice('source', cloneCard); };
     grid.appendChild(cloneCard);
 
     try {
@@ -234,22 +218,11 @@ function setVoice(id, el) {
     el.classList.add('active');
 }
 
-function resetUI(btn) {
-    btn.disabled = false;
-    btn.classList.remove('loading');
-}
-
 async function generateDubbing() {
     const fileInput = document.getElementById('mediaFile');
     const btn = document.getElementById('generateBtn');
-
+    
     if (!fileInput.files[0]) return showToast("Please upload a file first", "error");
-
-    // [FIX] إغلاق أي SSE سابق
-    if (activeEventSource) {
-        activeEventSource.close();
-        activeEventSource = null;
-    }
 
     btn.disabled = true;
     btn.classList.add('loading');
@@ -259,8 +232,7 @@ async function generateDubbing() {
     const formData = new FormData();
     formData.append("media_file", fileInput.files[0]);
     formData.append("lang", selectedLang);
-    // [FIX] متوافق مع server.py: يقرأ voice_mode ويمرره كـ voice_id إلى Modal
-    formData.append("voice_mode", selectedVoice);
+    formData.append("voice_mode", selectedVoice); // Backend uses this as voice_id
 
     try {
         const res = await fetch(`${API_BASE}/api/dub`, {
@@ -268,70 +240,61 @@ async function generateDubbing() {
             body: formData,
             credentials: 'include'
         });
-
+        
         const data = await res.json();
         if (!data.success) {
-            if (res.status === 401) throw new Error("Please log in first.");
-            if (res.status === 413) throw new Error("File too large. Max size is 150MB.");
-            if (res.status === 402) throw new Error("Insufficient credits.");
+            if(data.error === 'Unauthorized') throw new Error("Please log in first.");
             throw new Error(data.error || "Server processing failed.");
         }
 
-        // [FIX] SSE مع credentials (متوافق مع @require_auth في server.py)
+        // 🟢 التحديث الأمني: إضافة withCredentials=true
         const source = new EventSource(`${API_BASE}/api/progress/${data.job_id}`, { withCredentials: true });
-        activeEventSource = source;
-
+        
         source.onmessage = (e) => {
             const progress = JSON.parse(e.data);
-
+            
             if (progress.status === 'error' || progress.status === 'failed') {
                 source.close();
-                activeEventSource = null;
                 showToast(progress.error || "Process failed", "error");
-                resetUI(btn);
+                btn.disabled = false; btn.classList.remove('loading');
                 return;
             }
 
             document.getElementById('progBar').style.width = progress.progress + '%';
             document.getElementById('statusTxt').innerText = progress.message;
             document.getElementById('pctTxt').innerText = progress.progress + '%';
-
+            
             if (progress.status === 'done') {
                 source.close();
-                activeEventSource = null;
-
                 document.getElementById('resCard').style.display = 'block';
                 document.getElementById('dlBtn').href = progress.audio_url;
-
+                
                 const isVideo = fileInput.files[0].type.startsWith('video');
                 if (isVideo) {
                     const vid = document.getElementById('dubVid');
-                    vid.style.display = 'block';
-                    document.getElementById('dubAud').style.display = 'none';
+                    vid.style.display = 'block'; document.getElementById('dubAud').style.display = 'none';
                     vid.src = progress.audio_url;
                 } else {
                     const aud = document.getElementById('dubAud');
-                    aud.style.display = 'block';
-                    document.getElementById('dubVid').style.display = 'none';
+                    aud.style.display = 'block'; document.getElementById('dubVid').style.display = 'none';
                     aud.src = progress.audio_url;
                 }
 
-                resetUI(btn);
+                btn.disabled = false; btn.classList.remove('loading');
                 showToast("Dubbing Ready!", "#059669");
                 checkAuth();
             }
         };
-
+        
         source.onerror = () => {
             source.close();
-            activeEventSource = null;
             showToast("Connection to server lost.", "error");
-            resetUI(btn);
+            btn.disabled = false; btn.classList.remove('loading');
         };
-
+        
     } catch (err) {
         showToast(err.message, "error");
-        resetUI(btn);
+        btn.disabled = false; btn.classList.remove('loading');
     }
 }
 
@@ -345,22 +308,17 @@ async function checkAuth() {
                     <div style="text-align:right">
                         <div style="font-weight:700; color:#fff">${data.user.name || 'User'}</div>
                         <div style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:8px; font-size:0.8rem; color:#a4fec4">
-                           Balance: ${data.user.credits.toLocaleString()} 💰
+                           Balance: ${data.user.credits} 💰
                         </div>
                     </div>
-                    <button class="auth-btn" onclick="logout()">Log Out</button>
+                    <button class="auth-btn" onclick="location.reload();">Log Out</button>
                 </div>`;
         } else {
-            document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
+             document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
         }
     } catch (e) {
         document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
     }
-}
-
-async function logout() {
-    await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' });
-    checkAuth();
 }
 
 function showToast(msg, color) {
