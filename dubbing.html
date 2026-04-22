@@ -79,7 +79,6 @@
 </div>
 
 <div class="wrap">
-    
     <div class="card">
         <div class="ttl"><i class="fas fa-file-upload"></i> 1. Upload Video or Audio File</div>
         <div class="upload-area" onclick="document.getElementById('mediaFile').click()">
@@ -93,12 +92,14 @@
 
     <div class="card">
         <div class="ttl"><i class="fas fa-microphone-lines"></i> 2. Select Dubbing Voice</div>
-        <div class="spk-grid" id="spkGrid"></div>
+        <div class="spk-grid" id="spkGrid">
+            </div>
     </div>
 
     <div class="card">
         <div class="ttl"><i class="fas fa-language"></i> 3. Target Output Language</div>
-        <div class="lang-grid" id="langs"></div>
+        <div class="lang-grid" id="langs">
+            </div>
     </div>
 
     <div class="card">
@@ -134,6 +135,8 @@
 
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
+
+// 🟢 البيانات الديناميكية (تأكدي أن اسم المستودع Public)
 const GITHUB_USER = "sl-Dubbing"; 
 const REPO_NAME = "sl-dubbing-frontend"; 
 const SAMPLES_FOLDER = "speakers"; 
@@ -181,13 +184,13 @@ function selectLang(c, el) {
     el.classList.add('active');
 }
 
-// 🟢 دالة الجلب التلقائي للأصوات من مجلد speakers على GitHub
+// 🟢 دالة الجلب التلقائي للأصوات من مجلد speakers على جيتهاب
 async function loadVoices() {
     const spkGrid = document.getElementById('spkGrid');
     if (!spkGrid) return;
     spkGrid.innerHTML = '';
 
-    // زر الحفاظ على الصوت الأصلي (دائماً موجود)
+    // زر الحفاظ على الصوت الأصلي
     const sourceCard = document.createElement('div');
     sourceCard.className = 'item-card active';
     sourceCard.innerHTML = `
@@ -198,13 +201,17 @@ async function loadVoices() {
     sourceCard.onclick = () => setVoice('source', sourceCard);
     spkGrid.appendChild(sourceCard);
 
-    // محاولة جلب الملفات من GitHub تلقائياً
     try {
+        // محاولة جلب قائمة الملفات من GitHub API
         const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/${SAMPLES_FOLDER}`;
         const res = await fetch(apiUrl);
+        
         if (res.ok) {
             const files = await res.json();
-            files.filter(f => f.name.endsWith('.mp3')).forEach(file => {
+            // تصفية الملفات التي تنتهي بـ .mp3 فقط
+            const audioFiles = files.filter(f => f.name.toLowerCase().endsWith('.mp3'));
+            
+            audioFiles.forEach(file => {
                 const name = file.name.replace('.mp3', '');
                 const card = document.createElement('div');
                 card.className = 'item-card';
@@ -215,11 +222,13 @@ async function loadVoices() {
                 card.onclick = () => setVoice(name, card);
                 spkGrid.appendChild(card);
             });
+            console.log(`Successfully loaded ${audioFiles.length} voices from GitHub.`);
         } else {
-            console.error("Failed to fetch voices. Repo status:", res.status);
+            console.error(`GitHub API Error: ${res.status}. Is the repository Private?`);
+            showToast("Failed to fetch dynamic voices.", "error");
         }
     } catch (e) {
-        console.error("Error loading voices from GitHub:", e);
+        console.error("Error loading voices:", e);
     }
 }
 
@@ -233,9 +242,7 @@ async function startDubbing() {
     const fileInput = document.getElementById('mediaFile');
     const btn = document.getElementById('generateBtn');
     
-    if (!fileInput || !fileInput.files[0]) {
-        return showToast("Please upload a file first", "error");
-    }
+    if (!fileInput || !fileInput.files[0]) return showToast("Please upload a file first", "error");
 
     btn.disabled = true;
     btn.classList.add('loading');
@@ -245,7 +252,7 @@ async function startDubbing() {
     const formData = new FormData();
     formData.append("media_file", fileInput.files[0]);
     formData.append("lang", selectedLang);
-    formData.append("voice_mode", selectedVoice);
+    formData.append("voice_mode", selectedVoice); 
     formData.append('voice_url', '');
 
     try {
