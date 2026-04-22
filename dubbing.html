@@ -1,146 +1,249 @@
-# server.py — النسخة المستقرة جداً (V20.0)
-import os, uuid, logging, time, json, threading, requests, base64
-from pathlib import Path
-from datetime import datetime, timedelta
-from concurrent.futures import ThreadPoolExecutor
-from flask import Flask, request, jsonify, make_response, send_file, Response
-from flask_cors import CORS
-from dotenv import load_dotenv
-import jwt
-from functools import wraps
-from werkzeug.utils import secure_filename
-from werkzeug.middleware.proxy_fix import ProxyFix
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Smart Dubbing | sl-Dubbing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { 
+            --bg: #f5f5f7; --card: #fff; --primary: #0f0f10; --mint: #a4fec4; 
+            --green-dk: #065f2c; --border: #e5e7eb; --radius: 16px; --transition: 0.4s;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: #111827; text-align: left; margin: 0; padding-bottom: 50px; }
+        
+        .topbar { background: var(--primary); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; color: #fff; height: 60px; }
+        .logo-top { font-weight: 800; font-size: 1.1rem; text-decoration: none; color: white; }
+        .auth-section .auth-btn { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 8px; cursor: pointer; text-decoration: none; }
+        
+        .brand-header { text-align: center; margin: 40px auto 15px; }
+        .main-logo-img { max-width: 140px; height: auto; display: block; margin: 0 auto 10px; }
+        .brand-name { font-size: 2.4rem; font-weight: 900; color: var(--primary); letter-spacing: -1.5px; }
+        .brand-name span { color: var(--green-dk); border-bottom: 6px solid var(--mint); }
 
-load_dotenv()
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
-logger = logging.getLogger(__name__)
+        .wrap { max-width: 900px; margin: 0 auto; padding: 0 18px; }
+        .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .ttl { font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; font-size: 1.1rem; color: var(--primary); }
 
-ALLOWED_ORIGINS = ['https://sl-dubbing.github.io', 'http://localhost:5500', 'http://127.0.0.1:5500']
-AUDIO_DIR = Path('/tmp/sl_audio')
-AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+        .upload-area { border: 2px dashed var(--green-dk); border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; background: #f0fdf4; transition: 0.3s; }
+        .file-name { margin-top: 10px; font-weight: bold; color: var(--primary); }
 
-app = Flask(__name__)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'sl-secret-2026')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://', 1)
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; margin-bottom: 15px; }
+        .item-card { padding: 18px 10px; border-radius: 14px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.2s; background: #fff; position: relative; }
+        .item-card.active { background: var(--mint); border-color: var(--primary); font-weight: 700; }
+        .chk { position: absolute; top: 8px; right: 8px; font-size: 0.75rem; color: var(--primary); display: none; }
+        .item-card.active .chk { display: block; }
 
-CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}}, supports_credentials=True)
+        .spk-av, .voice-ai-icon { width: 52px; height: 52px; background: #e5e7eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.4rem; color: #4b5563; }
+        .item-card.active .spk-av, .item-card.active .voice-ai-icon { background: var(--primary); color: var(--mint); }
 
-from models import db, User, DubbingJob
-db.init_app(app)
+        .btn { background-color: #101010; color: white; width: 100%; height: 60px; border-radius: 30px; border: none; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: 0.3s; }
+        .btn:disabled { background: #666; cursor: not-allowed; }
 
-import cloudinary
-import cloudinary.api
-try:
-    cloudinary.config(
-        cloud_name=os.getenv('CLOUDINARY_NAME'),
-        api_key=os.getenv('CLOUDINARY_API_KEY'),
-        api_secret=os.getenv('CLOUDINARY_API_SECRET'),
-        secure=True
-    )
-    CLOUDINARY_READY = True
-except:
-    CLOUDINARY_READY = False
+        #progressArea { display: none; margin-top: 25px; text-align: center; }
+        .prog-bar-wrap { background: #e5e7eb; border-radius: 50px; height: 10px; overflow: hidden; margin-top: 10px; }
+        .prog-bar { height: 100%; width: 0; background: var(--primary); transition: width 0.4s ease; }
 
-_executor = ThreadPoolExecutor(max_workers=5)
+        .res-card { display: none; border: 2px solid var(--green-dk); }
+        .toast { position: fixed; bottom: 25px; right: 25px; padding: 14px 22px; background: #ef4444; color: #fff; border-radius: 12px; z-index: 1000; opacity: 0; transition: 0.4s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
 
-# 🟢 جلب الأصوات مع نظام حماية من الانهيار
-@app.route('/api/voices', methods=['GET'])
-def list_voices():
-    voices = []
-    if CLOUDINARY_READY:
-        try:
-            result = cloudinary.api.resources(type="upload", prefix="sl_voices/", resource_type="video")
-            for res in result.get('resources', []):
-                voices.append({"name": res['public_id'].split('/')[-1], "url": res['secure_url']})
-        except Exception as e:
-            logger.error(f"Cloudinary Error: {e}")
+<div class="topbar">
+    <a href="index.html" class="logo-top">sl<span style="color:#a4fec4">-Dubbing</span></a>
+    <div class="auth-section" id="authSection"></div>
+</div>
+
+<div class="brand-header">
+    <img src="logo/logo.gif" alt="sl-Dubbing" class="main-logo-img">
+    <h1 class="brand-name">sl-<span>Dubbing</span></h1>
+</div>
+
+<div class="wrap">
+    <div class="card">
+        <div class="ttl"><i class="fas fa-file-upload"></i> 1. Upload Video or Audio</div>
+        <div class="upload-area" onclick="document.getElementById('mediaFile').click()">
+            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--green-dk);"></i>
+            <div style="margin-top:10px;">Click to browse file</div>
+            <div id="fileNameDisplay" class="file-name"></div>
+        </div>
+        <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none" onchange="updateFileName()">
+    </div>
+
+    <div class="card">
+        <div class="ttl"><i class="fas fa-microphone-lines"></i> 2. Select Dubbing Voice (Cloudinary Sync)</div>
+        <div class="spk-grid" id="spkGrid">
+            </div>
+    </div>
+
+    <div class="card">
+        <div class="ttl"><i class="fas fa-language"></i> 3. Target Output Language</div>
+        <div class="lang-grid" id="langGrid"></div>
+    </div>
+
+    <div class="card">
+        <button class="btn" id="generateBtn" onclick="startDubbing()">Start Dubbing Media</button>
+        <div id="progressArea">
+            <div style="display:flex; justify-content:space-between;"><span id="statusTxt" style="font-weight:600">Analyzing...</span><span id="pctTxt" style="font-weight:700">0%</span></div>
+            <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
+        </div>
+    </div>
+
+    <div class="card res-card" id="resCard">
+        <div class="ttl" style="color:var(--green-dk)"><i class="fas fa-check-circle"></i> Magic Complete!</div>
+        <audio id="dubAud" controls style="width:100%; margin-bottom:15px;"></audio>
+        <video id="dubVid" controls style="width:100%; display:none; border-radius:8px; margin-bottom:15px;"></video>
+        <a id="dlBtn" download="dubbed_media.mp3" href="#" class="btn" style="text-decoration:none; display:flex; align-items:center; justify-content:center; background:var(--green-dk)">Download Result</a>
+    </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+const API_BASE = 'https://web-production-14a1.up.railway.app';
+let selectedVoiceUrl = ''; 
+let selectedLang = 'ar';
+let currentJobId = null;
+let pollInterval = null;
+
+const ALL_LANGS = [
+    {c:'en',n:'English',f:'🇺🇸'}, {c:'ar',n:'Arabic',f:'🇸🇦'}, {c:'es',n:'Spanish',f:'🇪🇸'},
+    {c:'fr',n:'French',f:'🇫🇷'}, {c:'de',n:'German',f:'🇩🇪'}, {c:'it',n:'Italian',f:'🇮🇹'},
+    {c:'ru',n:'Russian',f:'🇷🇺'}, {c:'zh',n:'Chinese',f:'🇨🇳'}, {c:'ja',n:'Japanese',f:'🇯🇵'}
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    renderLangs();
+    loadCloudinaryVoices();
+});
+
+function updateFileName() {
+    const file = document.getElementById('mediaFile').files[0];
+    if (file) document.getElementById('fileNameDisplay').innerText = file.name;
+}
+
+function renderLangs() {
+    const grid = document.getElementById('langGrid');
+    grid.innerHTML = ALL_LANGS.map(l => `
+        <div class="item-card ${l.c === selectedLang ? 'active' : ''}" onclick="selectLang('${l.c}', this)">
+            <span>${l.f} ${l.n}</span>
+        </div>
+    `).join('');
+}
+
+function selectLang(c, el) {
+    selectedLang = c;
+    document.querySelectorAll('#langGrid .item-card').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+}
+
+async function loadCloudinaryVoices() {
+    const grid = document.getElementById('spkGrid');
+    grid.innerHTML = `<div class="item-card active" id="origCard" onclick="selectVoice('', this)"><div class="voice-ai-icon"><i class="fas fa-microphone"></i></div><div class="spk-nm">Original</div></div>`;
     
-    # أصوات احتياطية تظهر فوراً إذا فشل الاتصال بكلاوديناري
-    if not voices:
-        voices = [{"name": "muhammad_ar", "url": "https://res.cloudinary.com/dxbmvzsiz/video/upload/v1712611200/sl_voices/muhammad_ar.wav"}]
-    
-    return jsonify({"success": True, "voices": voices})
+    try {
+        const res = await fetch(`${API_BASE}/api/voices`);
+        const data = await res.json();
+        if (data.success && data.voices.length > 0) {
+            data.voices.forEach(v => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `<div class="spk-av"><i class="fas fa-user"></i></div><div class="spk-nm">${v.name}</div>`;
+                card.onclick = () => selectVoice(v.url, card);
+                grid.appendChild(card);
+            });
+        }
+    } catch (e) { console.error("Voices error", e); }
+}
 
-def require_auth(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if request.method == 'OPTIONS': return f(*args, **kwargs)
-        token = request.cookies.get('sl_auth_token')
-        if not token: return jsonify({'error': 'Unauthorized'}), 401
-        try:
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
-            user = User.query.get(data.get('user_id'))
-            if not user: raise ValueError()
-            request.user = user
-        except: return jsonify({'error': 'Session expired'}), 401
-        return f(*args, **kwargs)
-    return decorated_function
+function selectVoice(url, el) {
+    selectedVoiceUrl = url;
+    document.querySelectorAll('#spkGrid .item-card').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+}
 
-def _run_workflow(job_id, modal_url, payload):
-    with app.app_context():
-        job = DubbingJob.query.get(job_id)
-        try:
-            response = requests.post(modal_url, json=payload, timeout=1800)
-            res = response.json()
-            if res.get("success"):
-                job.output_url = res.get("audio_url")
-                job.status = 'completed'
-                if res.get("final_text"): job.extra_data = res.get("final_text")
-            else: job.status = 'failed'
-        except: job.status = 'failed'
-        db.session.commit()
+async function startDubbing() {
+    const file = document.getElementById('mediaFile').files[0];
+    if (!file) return showToast("Select file first");
 
-@app.route('/api/dub', methods=['POST', 'OPTIONS'])
-@require_auth
-def dub():
-    if request.method == 'OPTIONS': return jsonify({'ok': True}), 200
-    media_file = request.files.get('media_file')
-    if not media_file: return jsonify({'error': 'No file'}), 400
-    
-    user = request.user
-    job_id = str(uuid.uuid4())
-    input_path = AUDIO_DIR / f"in_{job_id}_{secure_filename(media_file.filename)}"
-    media_file.save(input_path)
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    document.getElementById('progressArea').style.display = 'block';
+    document.getElementById('resCard').style.display = 'none';
 
-    job = DubbingJob(id=job_id, user_id=user.id, status='processing', credits_used=0)
-    db.session.add(job); db.session.commit()
+    const fd = new FormData();
+    fd.append('media_file', file);
+    fd.append('voice_url', selectedVoiceUrl);
+    fd.append('lang', selectedLang);
 
-    with open(input_path, "rb") as f: file_b64 = base64.b64encode(f.read()).decode('utf-8')
+    try {
+        const res = await fetch(`${API_BASE}/api/dub`, { method: 'POST', body: fd, credentials: 'include' });
+        const data = await res.json();
+        if (data.job_id) {
+            currentJobId = data.job_id;
+            pollInterval = setInterval(() => pollJob(currentJobId), 3000);
+        } else throw new Error(data.error);
+    } catch (e) { showToast(e.message); btn.disabled = false; }
+}
 
-    modal_payload = {
-        "file_b64": file_b64,
-        "lang": request.form.get('lang', 'ar'),
-        "voice_url": request.form.get('voice_url', ''),
-        "voice_mode": "xtts" if request.form.get('voice_url') else "source"
+async function pollJob(id) {
+    try {
+        const res = await fetch(`${API_BASE}/api/job/${id}`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.status === 'completed') {
+            clearInterval(pollInterval);
+            document.getElementById('resCard').style.display = 'block';
+            document.getElementById('dubAud').src = data.audio_url;
+            document.getElementById('dlBtn').href = data.audio_url;
+            document.getElementById('generateBtn').disabled = false;
+            document.getElementById('progBar').style.width = '100%';
+            document.getElementById('pctTxt').innerText = '100%';
+            showToast("Success!", "#065f2c");
+            checkAuth();
+        } else {
+            let bar = document.getElementById('progBar');
+            let cur = parseInt(bar.style.width) || 10;
+            bar.style.width = Math.min(95, cur + 5) + '%';
+            document.getElementById('pctTxt').innerText = bar.style.width;
+        }
+    } catch (e) {}
+}
+
+async function checkAuth() {
+    try {
+        const res = await fetch(API_BASE + '/api/user', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('authSection').innerHTML = `
+                <div style="display:flex; gap:10px; align-items:center">
+                    <div style="text-align:right">
+                        <div style="font-weight:700; color:#fff">${data.user.name}</div>
+                        <div style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:8px; font-size:0.8rem; color:#a4fec4">
+                           Balance: ${data.user.credits} 💰
+                        </div>
+                    </div>
+                    <button class="auth-btn" onclick="location.reload()">Logout</button>
+                </div>`;
+        } else {
+             document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
+        }
+    } catch (e) {
+        document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
     }
-    
-    _executor.submit(_run_workflow, job_id, "https://sl-dubbing--sl-dubbing-factory-fastapi-app.modal.run/", modal_payload)
-    return jsonify({'success': True, 'job_id': job_id}), 200
+}
 
-@app.route('/api/job/<job_id>')
-@require_auth
-def get_job(job_id):
-    job = DubbingJob.query.get(job_id)
-    if not job: return jsonify({'error': 'Not found'}), 404
-    return jsonify({'status': job.status, 'audio_url': job.output_url})
-
-@app.route('/api/user')
-@require_auth
-def get_user(): return jsonify({'success': True, 'user': request.user.to_dict()})
-
-@app.route('/api/auth/login', methods=['POST'])
-def login():
-    data = request.json
-    user = User.query.filter_by(email=data.get('email')).first()
-    if user and user.check_password(data.get('password')):
-        token = jwt.encode({'user_id': user.id, 'exp': datetime.utcnow() + timedelta(hours=24)}, app.config['SECRET_KEY'], algorithm='HS256')
-        resp = make_response(jsonify({'success': True, 'user': user.to_dict()}))
-        resp.set_cookie('sl_auth_token', token, httponly=True, secure=True, samesite='None', max_age=24*3600)
-        return resp
-    return jsonify({'error': 'Invalid'}), 401
-
-if __name__ == '__main__':
-    with app.app_context(): db.create_all()
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+function showToast(msg, color = '#ef4444') {
+    const t = document.createElement('div');
+    t.className = 'toast show';
+    t.style.background = color;
+    t.innerText = msg;
+    document.getElementById('toasts').appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+}
+</script>
+</body>
+</html>
