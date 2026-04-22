@@ -1,6 +1,6 @@
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 const GITHUB_USER = "sl-Dubbing"; 
-const REPO_NAME = "dubbing-studio"; // 🟢 هنا كان الخطأ القاتل وتم إصلاحه!
+const REPO_NAME = "sl-dubbing-frontend"; // 🟢 هنا كان الخطأ القاتل وتم إصلاحه!
 
 let selectedVoice = 'source';
 let selectedLang = 'ar'; 
