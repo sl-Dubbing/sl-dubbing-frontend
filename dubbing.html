@@ -3,13 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Smart Dubbing | Premium Edition</title>
+    <title>AI Smart Dubbing | Premium</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { 
-            --purple-dark: #3A0353; --purple-light: #804A8A;
-            --gold: #F59E51; --gold-light: #F8D299; --radius: 20px;
-        }
+        :root { --purple-dark: #3A0353; --purple-light: #804A8A; --gold: #F59E51; --gold-light: #F8D299; --radius: 20px; }
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: linear-gradient(135deg, var(--purple-dark), var(--purple-light)); background-attachment: fixed; color: #333; margin: 0; min-height: 100vh; padding-bottom: 50px; }
         .topbar { background: rgba(0,0,0,0.2); backdrop-filter: blur(10px); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; color: #fff; }
@@ -22,40 +19,47 @@
         .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; }
         .item-card { padding: 20px 10px; border-radius: 15px; border: 1px solid #ddd; text-align: center; cursor: pointer; transition: 0.3s; background: #fff; }
         .item-card.active { background: var(--purple-dark); color: #fff; border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+        .custom-voice-btn { margin-top: 15px; width: 100%; background: rgba(245, 158, 81, 0.1); color: var(--purple-dark); border: 2px dashed var(--gold); padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; text-align: center;}
         .btn { background: linear-gradient(to right, var(--gold-light), var(--gold)); color: var(--purple-dark); width: 100%; height: 60px; border-radius: 30px; border: none; cursor: pointer; font-size: 1.1rem; font-weight: 800; transition: 0.3s; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         .btn:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; }
         #progressArea { display: none; margin-top: 25px; }
         .prog-bar-wrap { background: #eee; height: 12px; border-radius: 10px; overflow: hidden; margin-top: 10px; }
         .prog-bar { height: 100%; width: 0%; background: linear-gradient(to right, var(--gold), var(--gold-light)); transition: 0.5s; }
         .res-card { display: none; border: 3px solid var(--gold); }
+        .toast { background: #ef4444; color: white; padding: 15px 20px; border-radius: 12px; position: fixed; bottom: 20px; right: 20px; font-weight: 600; z-index: 1000;}
     </style>
 </head>
 <body>
 
 <div class="topbar">
     <a href="index.html" class="logo-top">sl<span>-Dubbing</span></a>
-    <div id="authSection" style="font-weight:bold;">Loading...</div>
+    <div id="authSection" style="font-weight:bold; color:white;">Checking...</div>
 </div>
 
 <div class="wrap">
     <div class="card">
-        <div class="ttl"><i class="fas fa-file-upload"></i> 1. Upload Media</div>
+        <div class="ttl"><i class="fas fa-cloud-upload-alt"></i> 1. Upload Media</div>
         <div class="upload-area" onclick="document.getElementById('mediaFile').click()">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: var(--purple-light);"></i>
-            <div id="fileTxt" style="margin-top:15px; font-weight:600;">Click to select video or audio</div>
+            <i class="fas fa-file-video" style="font-size: 2.5rem; color: var(--purple-light);"></i>
+            <div id="fileTxt" style="margin-top:15px; font-weight:600;">Click to select media</div>
         </div>
-        <input type="file" id="mediaFile" hidden onchange="document.getElementById('fileTxt').innerText=this.files[0].name">
+        <input type="file" id="mediaFile" hidden onchange="document.getElementById('fileTxt').innerText=this.files[0].name; document.getElementById('fileTxt').style.color='var(--purple-dark)';">
     </div>
 
     <div class="card">
-        <div class="ttl"><i class="fas fa-microphone-alt"></i> 2. Select AI Voice</div>
+        <div class="ttl"><i class="fas fa-user-astronaut"></i> 2. Select AI Voice Profile</div>
         <div class="spk-grid" id="spkGrid">
-            <div class="item-card active" onclick="setVoice('', this)">Original Voice</div>
+            <div class="item-card active" id="origVoice" onclick="setVoice('', '', this)">Original Voice</div>
         </div>
+        <div class="custom-voice-btn" onclick="document.getElementById('customVoice').click()">
+            <i class="fas fa-plus-circle"></i> Upload Custom Voice Clone (WAV/MP3)
+            <div id="customVoiceTxt" style="font-size:0.8rem; font-weight:normal; margin-top:5px;"></div>
+        </div>
+        <input type="file" id="customVoice" hidden accept="audio/*" onchange="handleCustomVoice(this)">
     </div>
 
     <div class="card">
-        <div class="ttl"><i class="fas fa-globe"></i> 3. Target Language</div>
+        <div class="ttl"><i class="fas fa-language"></i> 3. Target Language</div>
         <div class="lang-grid" id="langGrid"></div>
     </div>
 
@@ -63,7 +67,7 @@
         <button class="btn" id="dubBtn" onclick="startDubbing()">Generate Dubbed Media</button>
         <div id="progressArea">
             <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                <span id="statusTxt">AI Factory Processing...</span>
+                <span id="statusTxt">Connecting to AI Factory...</span>
                 <span id="pctTxt">0%</span>
             </div>
             <div class="prog-bar-wrap"><div class="prog-bar" id="progFill"></div></div>
@@ -71,15 +75,19 @@
     </div>
 
     <div class="card res-card" id="resCard">
-        <div class="ttl" style="color:var(--purple-dark); justify-content:center;">Completed!</div>
+        <div class="ttl" style="color:var(--purple-dark); justify-content:center;">Dubbing Complete!</div>
         <audio id="dubAud" controls style="width:100%; margin-bottom:15px;"></audio>
         <a id="dlBtn" download href="#" class="btn" style="text-decoration:none; display:flex; align-items:center; justify-content:center;">Download File</a>
     </div>
 </div>
 
+<div id="toasts"></div>
+
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
-let selectedVoiceUrl = '', selectedLang = 'ar';
+let selectedVoiceUrl = '', selectedVoiceId = '', customBase64 = '', selectedLang = 'ar';
+let evtSource = null;
+
 const LANGS = [{c:'en',n:'English',f:'🇺🇸'},{c:'ar',n:'Arabic',f:'🇸🇦'},{c:'es',n:'Spanish',f:'🇪🇸'},{c:'fr',n:'French',f:'🇫🇷'},{c:'de',n:'German',f:'🇩🇪'},{c:'it',n:'Italian',f:'🇮🇹'}];
 
 document.addEventListener('DOMContentLoaded', () => { checkAuth(); renderLangs(); loadVoices(); });
@@ -87,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => { checkAuth(); renderLangs()
 function renderLangs() {
     document.getElementById('langGrid').innerHTML = LANGS.map(l => `<div class="item-card ${l.c===selectedLang?'active':''}" onclick="setLang('${l.c}', this)"><div>${l.f}</div><div style="font-size:0.8rem;">${l.n}</div></div>`).join('');
 }
+
 function setLang(c, el) { selectedLang = c; document.querySelectorAll('#langGrid .item-card').forEach(x => x.classList.remove('active')); el.classList.add('active'); }
 
 async function loadVoices() {
@@ -95,48 +104,97 @@ async function loadVoices() {
         const d = await r.json();
         if(d.success) d.voices.forEach(v => {
             const div = document.createElement('div'); div.className = 'item-card'; div.innerText = v.name;
-            div.onclick = () => setVoice(v.url, div);
+            div.onclick = () => setVoice(v.url, v.name, div);
             document.getElementById('spkGrid').appendChild(div);
         });
     } catch(e){}
 }
-function setVoice(u, el) { selectedVoiceUrl = u; document.querySelectorAll('#spkGrid .item-card').forEach(x => x.classList.remove('active')); el.classList.add('active'); }
+
+function setVoice(url, id, el) { 
+    selectedVoiceUrl = url; selectedVoiceId = id; customBase64 = '';
+    document.getElementById('customVoiceTxt').innerText = '';
+    document.querySelectorAll('#spkGrid .item-card').forEach(x => x.classList.remove('active')); 
+    if(el) el.classList.add('active'); 
+}
+
+function handleCustomVoice(input) {
+    if(input.files.length > 0) {
+        document.querySelectorAll('#spkGrid .item-card').forEach(x => x.classList.remove('active'));
+        selectedVoiceUrl = ''; selectedVoiceId = '';
+        document.getElementById('customVoiceTxt').innerText = "Selected: " + input.files[0].name;
+        
+        const reader = new FileReader();
+        reader.readAsDataURL(input.files[0]);
+        reader.onload = () => { customBase64 = reader.result.split(',')[1]; };
+    }
+}
 
 async function startDubbing() {
     const file = document.getElementById('mediaFile').files[0];
-    if(!file) return alert("Select file first");
+    if(!file) return showToast("Select media file first!");
+
+    const btn = document.getElementById('dubBtn');
+    btn.disabled = true;
     document.getElementById('progressArea').style.display = 'block';
-    const fd = new FormData(); fd.append('media_file', file); fd.append('voice_url', selectedVoiceUrl); fd.append('lang', selectedLang);
+    document.getElementById('resCard').style.display = 'none';
+
+    const fd = new FormData();
+    fd.append('media_file', file);
+    fd.append('lang', selectedLang);
+    if (selectedVoiceUrl) fd.append('voice_url', selectedVoiceUrl);
+    if (selectedVoiceId) fd.append('voice_id', selectedVoiceId);
+    if (customBase64) fd.append('sample_b64', customBase64);
+
     try {
         const res = await fetch(`${API_BASE}/api/dub`, { method: 'POST', body: fd, credentials: 'include' });
         const data = await res.json();
-        if(data.job_id) poll(data.job_id); else alert(data.error);
-    } catch(e){ alert("Server Error"); }
+        if(data.success && data.job_id) startSSE(data.job_id);
+        else throw new Error(data.error);
+    } catch(e) {
+        showToast(e.message); btn.disabled = false;
+    }
 }
 
-async function poll(id) {
-    const timer = setInterval(async () => {
-        try {
-            const r = await fetch(`${API_BASE}/api/job/${id}`, { credentials: 'include' });
-            const d = await r.json();
-            if(d.status === 'completed') {
-                clearInterval(timer); document.getElementById('resCard').style.display = 'block';
-                document.getElementById('dubAud').src = d.audio_url; document.getElementById('dlBtn').href = d.audio_url;
-                document.getElementById('progFill').style.width = '100%'; document.getElementById('pctTxt').innerText = '100%';
-            } else {
-                let cur = parseInt(document.getElementById('progFill').style.width) || 10;
-                let next = Math.min(95, cur + 5);
-                document.getElementById('progFill').style.width = next + '%'; document.getElementById('pctTxt').innerText = next + '%';
-            }
-        } catch(e){}
-    }, 4000);
+// 🟢 استخدام تقنية SSE للتخاطب المباشر مع سيرفر V27
+function startSSE(jobId) {
+    if (evtSource) evtSource.close();
+    evtSource = new EventSource(`${API_BASE}/api/progress/${jobId}`, { withCredentials: true });
+
+    evtSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        document.getElementById('progFill').style.width = data.progress + '%';
+        document.getElementById('pctTxt').innerText = data.progress + '%';
+        document.getElementById('statusTxt').innerText = "Status: " + data.status;
+
+        if (data.status === 'done' || data.status === 'completed') {
+            evtSource.close();
+            document.getElementById('resCard').style.display = 'block';
+            document.getElementById('dubAud').src = data.audio_url;
+            document.getElementById('dlBtn').href = data.audio_url;
+            document.getElementById('dubBtn').disabled = false;
+            checkAuth();
+        } else if (data.status === 'failed' || data.status === 'error') {
+            evtSource.close();
+            showToast("Processing Failed.");
+            document.getElementById('dubBtn').disabled = false;
+        }
+    };
+    evtSource.onerror = function() { evtSource.close(); };
 }
 
 async function checkAuth() {
-    const r = await fetch(`${API_BASE}/api/user`, { credentials: 'include' });
-    const d = await r.json();
-    if(d.success) document.getElementById('authSection').innerHTML = `${d.user.name} | ${d.user.credits} 💰`;
-    else document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff">Login</a>`;
+    try {
+        const r = await fetch(`${API_BASE}/api/user`, { credentials: 'include' });
+        const d = await r.json();
+        if(d.success) document.getElementById('authSection').innerHTML = `${d.user.name} | ${d.user.credits} 💰`;
+        else document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff">Login</a>`;
+    } catch(e) { document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff">Login</a>`; }
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toasts');
+    const box = document.createElement('div'); box.className = 'toast'; box.innerText = msg;
+    t.appendChild(box); setTimeout(() => box.remove(), 4000);
 }
 </script>
 </body>
