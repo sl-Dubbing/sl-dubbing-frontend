@@ -3,365 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Smart Dubbing | sl-Dubbing</title>
+    <title>AI Smart Dubbing | Cloudinary Voices</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { 
-            --bg: #f5f5f7; --card: #fff; --primary: #0f0f10; --mint: #a4fec4; 
-            --green-dk: #065f2c; --border: #e5e7eb; --radius: 16px; --transition: 0.4s;
-        }
-        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: #111827; text-align: left; margin: 0; }
-        
-        .topbar { background: var(--primary); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; color: #fff; height: 60px; }
-        .logo-top { font-weight: 800; font-size: 1.1rem; text-decoration: none; color: white; }
-        .auth-section .auth-btn { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 8px; cursor: pointer; text-decoration: none; }
-        
-        .brand-header { text-align: center; margin: 40px auto 15px; }
-        .main-logo-img { max-width: 140px; height: auto; display: block; margin: 0 auto 10px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.08)); }
-        .brand-name { font-size: 2.4rem; font-weight: 900; color: var(--primary); letter-spacing: -1.5px; }
-        .brand-name span { color: var(--green-dk); border-bottom: 6px solid var(--mint); }
-
-        .wrap { max-width: 900px; margin: 0 auto 60px; padding: 18px; }
-        .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .ttl { font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; font-size: 1.1rem; color: var(--primary); }
-
-        .upload-area { border: 2px dashed var(--green-dk); border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; background: #f0fdf4; transition: 0.3s; }
-        .upload-area:hover { background: #dcfce7; }
-        .upload-area i { font-size: 2rem; color: var(--green-dk); margin-bottom: 10px; }
-        .file-name { margin-top: 10px; font-weight: bold; color: var(--primary); }
-
-        .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; margin-bottom: 15px; }
-        .item-card { padding: 18px 10px; border-radius: 14px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.2s; background: #fff; position: relative; }
+        :root { --bg: #f5f5f7; --card: #fff; --primary: #0f0f10; --mint: #a4fec4; --green-dk: #065f2c; --radius: 16px; }
+        body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; color: #111827; }
+        .wrap { max-width: 800px; margin: 0 auto; }
+        .card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--radius); padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .ttl { font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+        .spk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+        .item-card { padding: 20px 10px; border-radius: 14px; border: 1px solid #e5e7eb; text-align: center; cursor: pointer; transition: 0.3s; background: #fff; }
         .item-card.active { background: var(--mint); border-color: var(--primary); font-weight: 700; }
-        .chk { position: absolute; top: 8px; right: 8px; font-size: 0.75rem; color: var(--primary); display: none; }
-        .item-card.active .chk { display: block; }
-
-        .spk-av, .voice-ai-icon { width: 52px; height: 52px; background: #e5e7eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.4rem; color: #4b5563; transition: 0.3s; }
-        .item-card.active .spk-av, .item-card.active .voice-ai-icon { background: var(--primary); color: var(--mint); }
-        .item-card.active .voice-ai-icon.clone { background: #ef4444; color: #fff; }
-
-        .btn-wrapper { display: flex; justify-content: center; margin-top: 30px; }
-        .btn { background-color: #101010; color: white; width: 100%; height: 60px; border-radius: 30px; border: solid 1px #fff2; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; overflow: hidden; position: relative; transition: 0.3s; font-size: 1.1rem; font-weight: 600; }
-        .btn.loading .txt-1 { transform: translateY(-35px); opacity: 0; }
-        .btn.loading .txt-2 { transform: translateY(0); opacity: 1; }
-        .btn.loading .btn-svg { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        
-        .txt-wrapper { position: relative; height: 24px; overflow: hidden; display: flex; align-items: center; min-width: 140px; justify-content: center; }
-        .txt-1, .txt-2 { display: flex; gap: 2px; transition: all 0.5s; position: absolute; }
-        .txt-2 { transform: translateY(35px); opacity: 0; }
-
-        #progressArea { display: none; margin-top: 25px; padding: 18px; background: #f9fafb; border-radius: 12px; border: 1px solid var(--border); }
-        .prog-bar-wrap { background: #e5e7eb; border-radius: 50px; height: 10px; overflow: hidden; margin-top: 10px; }
-        .prog-bar { height: 100%; width: 0; background: var(--primary); transition: width 0.4s ease; }
-
-        .res-card { display: none; border: 2px solid var(--green-dk); }
-        .result-container { display: flex; align-items: center; gap: 15px; margin-top: 15px; }
-        audio, video { flex-grow: 1; width: 100%; border-radius: 8px; }
-        .Btn-dl { width: 50px; height: 50px; border-radius: 50%; background: #1b1b1b; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; flex-shrink: 0; margin-bottom:10px; }
-        .svgIcon { fill: var(--mint); }
-
-        .toast { position: fixed; bottom: 25px; right: 25px; padding: 14px 22px; color: #fff; border-radius: 12px; z-index: 1000; font-weight: 600; transform: translateY(100px); opacity: 0; transition: 0.4s; }
-        .toast.show { transform: translateY(0); opacity: 1; }
+        .btn { background: var(--primary); color: white; border: none; padding: 18px; border-radius: 30px; cursor: pointer; width: 100%; font-size: 1.1rem; font-weight: 600; margin-top: 10px; }
+        #progressArea { display: none; margin-top: 25px; text-align: center; }
+        .prog-bar { height: 10px; background: #e5e7eb; border-radius: 50px; overflow: hidden; margin-top: 10px; }
+        .prog-fill { height: 100%; background: var(--primary); width: 0%; transition: 0.5s ease; }
     </style>
 </head>
 <body>
 
-<div class="topbar">
-    <a href="index.html" class="logo-top">sl<span style="color:#a4fec4">-Dubbing</span></a>
-    <div class="auth-section" id="authSection"></div>
-</div>
-
-<div class="brand-header">
-    <img src="logo/logo.gif" alt="sl-Dubbing" class="main-logo-img">
-    <h1 class="brand-name">sl-<span>Dubbing</span></h1>
-</div>
-
 <div class="wrap">
     <div class="card">
-        <div class="ttl"><i class="fas fa-file-upload"></i> 1. Upload Video or Audio File</div>
-        <div class="upload-area" onclick="document.getElementById('mediaFile').click()">
-            <i class="fas fa-cloud-upload-alt"></i>
-            <div>Click to browse or drag file here</div>
-            <div style="font-size:0.8rem; color:#666; margin-top:5px;">Max size 150MB</div>
-            <div id="fileName" class="file-name"></div>
-        </div>
-        <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none" onchange="updateFileName()">
+        <div class="ttl"><i class="fas fa-file-upload"></i> 1. Upload Video or Audio</div>
+        <input type="file" id="mediaFile" accept="video/*,audio/*" style="width: 100%;">
     </div>
 
     <div class="card">
-        <div class="ttl"><i class="fas fa-microphone-lines"></i> 2. Select Dubbing Voice</div>
+        <div class="ttl"><i class="fas fa-microphone-lines"></i> 2. Select Dubbing Voice (Auto-Sync)</div>
         <div class="spk-grid" id="spkGrid">
+            <div class="item-card active" onclick="selectVoice('', this)">
+                <i class="fas fa-microphone" style="display:block; margin-bottom:8px;"></i> Original Voice
             </div>
-    </div>
-
-    <div class="card">
-        <div class="ttl"><i class="fas fa-language"></i> 3. Target Output Language</div>
-        <div class="lang-grid" id="langs">
-            </div>
-    </div>
-
-    <div class="card">
-        <div class="btn-wrapper" style="margin-top:0;">
-          <button class="btn" id="generateBtn" onclick="startDubbing()">
-            <svg class="btn-svg" width="22" viewBox="0 0 24 24"><path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"></path></svg>
-            <div class="txt-wrapper">
-              <div class="txt-1">Dub My Media</div>
-              <div class="txt-2">Processing...</div>
-            </div>
-          </button>
         </div>
+    </div>
 
+    <div class="card">
+        <button class="btn" id="startBtn" onclick="startDubbing()">Start Dubbing Process</button>
         <div id="progressArea">
-            <div style="display:flex; justify-content:space-between;"><span id="statusTxt" style="font-weight:600">Analyzing...</span><span id="pctTxt" style="font-weight:700">0%</span></div>
-            <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
+            <p id="statusTxt" style="font-weight: 600;">Processing media...</p>
+            <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
         </div>
     </div>
 
-    <div class="card res-card" id="resCard">
-        <div class="ttl" style="color:var(--green-dk)"><i class="fas fa-check-circle"></i> Dubbing Complete!</div>
-        <div style="display:flex; justify-content:center; align-items:center; flex-direction:column;">
-            <a href="#" class="Btn-dl" id="dlBtn" download="dubbed-media.mp3">
-                <svg class="svgIcon" width="20" viewBox="0 0 384 512"><path d="M169.4 470.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 370.8V64c0-17.7-14.3-32-32-32s-32 14.3-32 32v306.7L54.6 265.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z"></path></svg>
-            </a>
-            <audio id="dubAud" controls style="display:none;"></audio>
-            <video id="dubVid" controls style="display:none;"></video>
-        </div>
+    <div class="card" id="resCard" style="display:none; border: 2px solid var(--green-dk);">
+        <div class="ttl" style="color:var(--green-dk)"><i class="fas fa-check-circle"></i> Result Ready!</div>
+        <audio id="dubAud" controls style="width: 100%; margin: 15px 0;"></audio>
+        <a id="dlBtn" download="dubbed.mp3" href="#" class="btn" style="text-decoration:none; display:block; text-align:center; background:var(--green-dk)">Download File</a>
     </div>
 </div>
-
-<div id="toasts"></div>
 
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
+let selectedVoiceUrl = '';
 
-// 🟢 البيانات الديناميكية (تأكدي أن اسم المستودع Public)
-const GITHUB_USER = "sl-Dubbing"; 
-const REPO_NAME = "sl-dubbing-frontend"; 
-const SAMPLES_FOLDER = "speakers"; 
+document.addEventListener('DOMContentLoaded', loadCloudinaryVoices);
 
-let selectedVoice = 'source'; 
-let selectedLang = 'ar';
-let currentJobId = null;
-let pollInterval = null;
-
-const ALL_LANGS = [
-    {c:'en',n:'English',f:'🇺🇸'}, {c:'ar',n:'Arabic',f:'🇸🇦'}, {c:'es',n:'Spanish',f:'🇪🇸'},
-    {c:'fr',n:'French',f:'🇫🇷'}, {c:'de',n:'German',f:'🇩🇪'}, {c:'it',n:'Italian',f:'🇮🇹'},
-    {c:'ru',n:'Russian',f:'🇷🇺'}, {c:'zh',n:'Chinese',f:'🇨🇳'}, {c:'ja',n:'Japanese',f:'🇯🇵'}
-];
-
-document.addEventListener('DOMContentLoaded', () => {
-    checkAuth();
-    renderLangs();
-    loadVoices();
-});
-
-function updateFileName() {
-    const file = document.getElementById('mediaFile').files[0];
-    if (file) {
-        document.getElementById('fileName').innerText = file.name;
-        document.querySelector('.upload-area').style.background = '#f0fdf4';
-        document.querySelector('.upload-area').style.borderColor = '#065f2c';
-    }
-}
-
-function renderLangs() {
-    const grid = document.getElementById('langs');
-    if (!grid) return;
-    grid.innerHTML = ALL_LANGS.map(l => `
-        <div class="item-card ${l.c === selectedLang ? 'active' : ''}" onclick="selectLang('${l.c}', this)">
-            <span class="lang-flag">${l.f}</span>
-            <span style="font-size:0.8rem;">${l.n}</span>
-        </div>
-    `).join('');
-}
-
-function selectLang(c, el) {
-    selectedLang = c;
-    document.querySelectorAll('.lang-grid .item-card').forEach(x => x.classList.remove('active'));
-    el.classList.add('active');
-}
-
-// 🟢 دالة الجلب التلقائي للأصوات من مجلد speakers على جيتهاب
-async function loadVoices() {
-    const spkGrid = document.getElementById('spkGrid');
-    if (!spkGrid) return;
-    spkGrid.innerHTML = '';
-
-    // زر الحفاظ على الصوت الأصلي
-    const sourceCard = document.createElement('div');
-    sourceCard.className = 'item-card active';
-    sourceCard.innerHTML = `
-        <i class="fas fa-check-circle chk"></i>
-        <div class="voice-ai-icon clone"><i class="fas fa-microphone"></i></div>
-        <div class="spk-nm" style="font-size:0.8rem">Keep Original Voice</div>
-    `;
-    sourceCard.onclick = () => setVoice('source', sourceCard);
-    spkGrid.appendChild(sourceCard);
-
+async function loadCloudinaryVoices() {
+    const grid = document.getElementById('spkGrid');
     try {
-        // محاولة جلب قائمة الملفات من GitHub API
-        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/${SAMPLES_FOLDER}`;
-        const res = await fetch(apiUrl);
-        
-        if (res.ok) {
-            const files = await res.json();
-            // تصفية الملفات التي تنتهي بـ .mp3 فقط
-            const audioFiles = files.filter(f => f.name.toLowerCase().endsWith('.mp3'));
-            
-            audioFiles.forEach(file => {
-                const name = file.name.replace('.mp3', '');
-                const card = document.createElement('div');
-                card.className = 'item-card';
-                card.innerHTML = `
-                    <i class="fas fa-check-circle chk"></i>
-                    <div class="spk-av"><i class="fas fa-user"></i></div>
-                    <div class="spk-nm">${name}</div>`;
-                card.onclick = () => setVoice(name, card);
-                spkGrid.appendChild(card);
+        const res = await fetch(`${API_BASE}/api/voices`);
+        const data = await res.json();
+        if (data.success) {
+            data.voices.forEach(v => {
+                const div = document.createElement('div');
+                div.className = 'item-card';
+                div.innerHTML = `<i class="fas fa-user" style="display:block; margin-bottom:8px;"></i> ${v.name}`;
+                div.onclick = () => selectVoice(v.url, div);
+                grid.appendChild(div);
             });
-            console.log(`Successfully loaded ${audioFiles.length} voices from GitHub.`);
-        } else {
-            console.error(`GitHub API Error: ${res.status}. Is the repository Private?`);
-            showToast("Failed to fetch dynamic voices.", "error");
         }
-    } catch (e) {
-        console.error("Error loading voices:", e);
-    }
+    } catch (e) { console.error("Voices sync failed", e); }
 }
 
-function setVoice(id, el) {
-    selectedVoice = id;
-    document.querySelectorAll('.spk-grid .item-card').forEach(c => c.classList.remove('active'));
+function selectVoice(url, el) {
+    selectedVoiceUrl = url;
+    document.querySelectorAll('.item-card').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
 }
 
 async function startDubbing() {
-    const fileInput = document.getElementById('mediaFile');
-    const btn = document.getElementById('generateBtn');
-    
-    if (!fileInput || !fileInput.files[0]) return showToast("Please upload a file first", "error");
+    const file = document.getElementById('mediaFile').files[0];
+    if (!file) return alert("Please select a file first");
 
-    btn.disabled = true;
-    btn.classList.add('loading');
+    const btn = document.getElementById('startBtn');
+    btn.disabled = true; btn.innerText = "Working...";
     document.getElementById('progressArea').style.display = 'block';
     document.getElementById('resCard').style.display = 'none';
 
-    const formData = new FormData();
-    formData.append("media_file", fileInput.files[0]);
-    formData.append("lang", selectedLang);
-    formData.append("voice_mode", selectedVoice); 
-    formData.append('voice_url', '');
+    const fd = new FormData();
+    fd.append('media_file', file);
+    fd.append('voice_url', selectedVoiceUrl);
+    fd.append('lang', 'ar');
 
     try {
-        const res = await fetch(`${API_BASE}/api/dub`, {
-            method: 'POST',
-            body: formData,
-            credentials: 'include'
-        });
-        
+        const res = await fetch(`${API_BASE}/api/dub`, { method: 'POST', body: fd, credentials: 'include' });
         const data = await res.json();
-        if (!data.success) {
-            if(data.error === 'Unauthorized') throw new Error("Please log in first.");
-            throw new Error(data.error || "Server processing failed.");
-        }
-
-        currentJobId = data.job_id;
-        document.getElementById('statusTxt').innerText = 'Sending to AI Factory...';
-        pollInterval = setInterval(() => pollJob(currentJobId), 2000); 
-        
-    } catch (err) {
-        showToast(err.message, "error");
-        btn.disabled = false; btn.classList.remove('loading');
-    }
+        if (data.job_id) poll(data.job_id);
+        else throw new Error(data.error);
+    } catch (e) { alert(e.message); btn.disabled = false; btn.innerText = "Start Dubbing"; }
 }
 
-async function pollJob(jobId) {
-    try {
-        const res = await fetch(API_BASE + '/api/job/' + jobId, { credentials: 'include' });
+async function poll(id) {
+    const interval = setInterval(async () => {
+        const res = await fetch(`${API_BASE}/api/job/${id}`, { credentials: 'include' });
         const data = await res.json();
-        const btn = document.getElementById('generateBtn');
-        
-        if (data.status === 'processing') {
-            document.getElementById('statusTxt').innerText = 'AI is Dubbing (This takes 2-5 mins)...';
-            let bar = document.getElementById('progBar');
-            let cur = parseInt(bar.style.width) || 5;
-            cur = Math.min(95, cur + 1); 
-            bar.style.width = cur + '%';
-            document.getElementById('pctTxt').innerText = cur + '%';
-        } else if (data.status === 'completed') {
-            clearInterval(pollInterval);
-            document.getElementById('statusTxt').innerText = 'Success!';
-            document.getElementById('progBar').style.width = '100%';
-            document.getElementById('pctTxt').innerText = '100%';
-            
+        if (data.status === 'completed') {
+            clearInterval(interval);
             document.getElementById('resCard').style.display = 'block';
+            document.getElementById('dubAud').src = data.audio_url;
             document.getElementById('dlBtn').href = data.audio_url;
-            
-            const isVideo = document.getElementById('mediaFile').files[0].type.startsWith('video');
-            if (isVideo) {
-                const vid = document.getElementById('dubVid');
-                if(vid) { vid.style.display = 'block'; vid.src = data.audio_url; }
-                const aud = document.getElementById('dubAud');
-                if(aud) { aud.style.display = 'none'; }
-            } else {
-                const aud = document.getElementById('dubAud');
-                if(aud) { aud.style.display = 'block'; aud.src = data.audio_url; }
-                const vid = document.getElementById('dubVid');
-                if(vid) { vid.style.display = 'none'; }
-            }
-
-            btn.disabled = false; btn.classList.remove('loading');
-            showToast("Dubbing Complete!", "#065f2c");
-            checkAuth();
-        } else if (data.status === 'failed' || data.status === 'error') {
-            clearInterval(pollInterval);
-            btn.disabled = false; btn.classList.remove('loading');
-            document.getElementById('statusTxt').innerText = 'Process Failed!';
-            document.getElementById('progBar').style.background = '#ef4444';
-            showToast("Dubbing failed!", "error");
-            checkAuth();
-        }
-    } catch (e) { console.error(e); }
-}
-
-async function checkAuth() {
-    try {
-        const res = await fetch(API_BASE + '/api/user', { credentials: 'include' });
-        const data = await res.json();
-        if (data.success) {
-            document.getElementById('authSection').innerHTML = `
-                <div style="display:flex; gap:10px; align-items:center">
-                    <div style="text-align:right">
-                        <div style="font-weight:700; color:#fff">${data.user.name || 'User'}</div>
-                        <div style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:8px; font-size:0.8rem; color:#a4fec4">
-                           Balance: ${data.user.credits} 💰
-                        </div>
-                    </div>
-                    <button class="auth-btn" onclick="logout()">Log Out</button>
-                </div>`;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').innerText = "Start Dubbing Process";
+            document.getElementById('progFill').style.width = '100%';
+        } else if (data.status === 'failed') {
+            clearInterval(interval);
+            alert("Dubbing failed. Credits returned.");
+            document.getElementById('startBtn').disabled = false;
         } else {
-             document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
+            document.getElementById('progFill').style.width = '50%';
         }
-    } catch (e) {
-        document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn">Log In</a>`;
-    }
-}
-
-async function logout() {
-    try { await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' }); location.reload(); }
-    catch (e) { location.reload(); }
-}
-
-function showToast(msg, color) {
-    const t = document.createElement('div');
-    t.className = 'toast show';
-    t.style.background = color === 'error' ? '#ef4444' : color;
-    t.innerText = msg;
-    document.getElementById('toasts').appendChild(t);
-    setTimeout(() => t.remove(), 4000);
+    }, 3000);
 }
 </script>
 </body>
