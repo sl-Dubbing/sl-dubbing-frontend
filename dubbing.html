@@ -8,96 +8,106 @@
     <style>
         :root { 
             --bg: #f5f5f7; --card: #fff; --primary: #0f0f10; --mint: #a4fec4; 
-            --green-dk: #065f2c; --border: #e5e7eb; --radius: 16px; --transition: 0.4s;
+            --green-dk: #065f2c; --border: #e5e7eb; --radius: 16px; 
         }
-        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: #111827; text-align: left; margin: 0; padding-bottom: 50px; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: #111827; margin: 0; padding-bottom: 50px; }
         
+        /* Navigation */
         .topbar { background: var(--primary); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; color: #fff; height: 60px; }
         .logo-top { font-weight: 800; font-size: 1.1rem; text-decoration: none; color: white; }
-        .auth-section { display: flex; align-items: center; gap: 10px; }
-        
+        .auth-section { font-weight: 600; font-size: 0.9rem; }
+
+        /* Header */
         .brand-header { text-align: center; margin: 40px auto 15px; }
-        .main-logo-img { max-width: 140px; height: auto; display: block; margin: 0 auto 10px; }
-        .brand-name { font-size: 2.4rem; font-weight: 900; color: var(--primary); letter-spacing: -1.5px; }
-        .brand-name span { color: var(--green-dk); border-bottom: 6px solid var(--mint); }
+        .main-logo-img { max-width: 120px; margin-bottom: 10px; }
+        .brand-name { font-size: 2.2rem; font-weight: 900; }
+        .brand-name span { color: var(--green-dk); border-bottom: 4px solid var(--mint); }
 
-        .wrap { max-width: 900px; margin: 0 auto; padding: 0 18px; }
+        /* Main Container */
+        .wrap { max-width: 850px; margin: 0 auto; padding: 0 15px; }
         .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .ttl { font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; font-size: 1.1rem; color: var(--primary); }
+        .ttl { font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 1rem; }
 
-        .upload-area { border: 2px dashed var(--green-dk); border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; background: #f0fdf4; transition: 0.3s; }
-        .file-name { margin-top: 10px; font-weight: bold; color: var(--primary); }
-
-        .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
-        .item-card { padding: 18px 10px; border-radius: 14px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.2s; background: #fff; position: relative; }
-        .item-card.active { background: var(--mint); border-color: var(--primary); font-weight: 700; }
+        /* Step 1: Upload */
+        .upload-area { border: 2px dashed var(--green-dk); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; background: #f0fdf4; }
         
-        .voice-ai-icon, .spk-av { width: 50px; height: 50px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.2rem; }
-        .item-card.active .voice-ai-icon, .item-card.active .spk-av { background: var(--primary); color: var(--mint); }
+        /* Step 2 & 3: Grids */
+        .spk-grid, .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+        .item-card { padding: 15px 10px; border-radius: 12px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.3s; background: #fff; position: relative; }
+        .item-card.active { background: var(--mint); border-color: var(--primary); font-weight: 700; }
+        .item-card i { display: block; margin-bottom: 8px; font-size: 1.2rem; color: #666; }
+        .item-card.active i { color: var(--primary); }
 
-        .btn { background-color: #101010; color: white; width: 100%; height: 60px; border-radius: 30px; border: none; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: 0.3s; }
-        .btn:disabled { background: #666; cursor: not-allowed; }
+        /* Action Button */
+        .btn { background: var(--primary); color: white; width: 100%; height: 55px; border-radius: 30px; border: none; cursor: pointer; font-size: 1rem; font-weight: 600; transition: 0.3s; }
+        .btn:disabled { background: #9ca3af; cursor: not-allowed; }
 
-        #progressArea { display: none; margin-top: 25px; text-align: center; }
-        .prog-bar-wrap { background: #e5e7eb; border-radius: 50px; height: 10px; overflow: hidden; margin-top: 10px; }
-        .prog-bar { height: 100%; width: 0; background: var(--primary); transition: width 0.4s ease; }
+        /* Progress Bar */
+        #progressArea { display: none; margin-top: 20px; }
+        .prog-bar-wrap { background: #eee; height: 8px; border-radius: 10px; overflow: hidden; margin-top: 8px; }
+        .prog-bar { height: 100%; width: 0%; background: var(--primary); transition: 0.5s; }
 
-        .res-card { display: none; border: 2px solid var(--green-dk); }
-        .toast { position: fixed; bottom: 25px; right: 25px; padding: 14px 22px; background: #ef4444; color: #fff; border-radius: 12px; z-index: 1000; opacity: 0; transition: 0.4s; }
-        .toast.show { opacity: 1; }
+        /* Result Card */
+        .res-card { display: none; border: 2px solid var(--green-dk); text-align: center; }
+
+        /* Toasts */
+        #toasts { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+        .toast { background: #ef4444; color: white; padding: 12px 20px; border-radius: 8px; margin-top: 10px; animation: slideIn 0.3s; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
 <body>
 
 <div class="topbar">
-    <a href="index.html" class="logo-top">sl<span style="color:#a4fec4">-Dubbing</span></a>
-    <div class="auth-section" id="authSection"></div>
+    <a href="index.html" class="logo-top">sl<span style="color:var(--mint)">-Dubbing</span></a>
+    <div class="auth-section" id="authSection">Loading...</div>
 </div>
 
 <div class="brand-header">
-    <img src="logo/logo.gif" alt="sl-Dubbing" class="main-logo-img">
+    <img src="logo/logo.gif" alt="Logo" class="main-logo-img">
     <h1 class="brand-name">sl-<span>Dubbing</span></h1>
 </div>
 
 <div class="wrap">
     <div class="card">
-        <div class="ttl"><i class="fas fa-file-upload"></i> 1. Upload Video or Audio</div>
+        <div class="ttl"><i class="fas fa-file-import"></i> 1. Upload Media File</div>
         <div class="upload-area" onclick="document.getElementById('mediaFile').click()">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--green-dk);"></i>
-            <div style="margin-top:10px;">Click to browse file</div>
-            <div id="fileNameDisplay" class="file-name"></div>
+            <i class="fas fa-cloud-upload-alt" style="font-size: 1.8rem; color: var(--green-dk);"></i>
+            <div id="fileTxt" style="margin-top:10px; font-weight: 500;">Click to select video or audio</div>
         </div>
-        <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none" onchange="updateFileName()">
+        <input type="file" id="mediaFile" hidden onchange="document.getElementById('fileTxt').innerText=this.files[0].name">
     </div>
 
     <div class="card">
-        <div class="ttl"><i class="fas fa-microphone-lines"></i> 2. Select Dubbing Voice</div>
+        <div class="ttl"><i class="fas fa-user-voice"></i> 2. Select Dubbing Voice</div>
         <div class="spk-grid" id="spkGrid">
-            <div class="item-card active" onclick="selectVoice('', this)">
-                <div class="voice-ai-icon"><i class="fas fa-microphone"></i></div>
-                <div>Original</div>
+            <div class="item-card active" onclick="setVoice('', this)">
+                <i class="fas fa-microphone"></i> Original Voice
             </div>
         </div>
     </div>
 
     <div class="card">
-        <div class="ttl"><i class="fas fa-language"></i> 3. Target Output Language</div>
+        <div class="ttl"><i class="fas fa-globe"></i> 3. Target Language</div>
         <div class="lang-grid" id="langGrid"></div>
     </div>
 
     <div class="card">
-        <button class="btn" id="generateBtn" onclick="startDubbing()">Dub My Media</button>
+        <button class="btn" id="dubBtn" onclick="startDubbing()">Start Dubbing Now</button>
         <div id="progressArea">
-            <div style="display:flex; justify-content:space-between;"><span id="statusTxt" style="font-weight:600">Analyzing...</span><span id="pctTxt" style="font-weight:700">0%</span></div>
-            <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
+            <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                <span id="statusTxt">AI is working...</span>
+                <span id="pctTxt">0%</span>
+            </div>
+            <div class="prog-bar-wrap"><div class="prog-bar" id="progFill"></div></div>
         </div>
     </div>
 
     <div class="card res-card" id="resCard">
-        <div class="ttl" style="color:var(--green-dk)"><i class="fas fa-check-circle"></i> Dubbing Complete!</div>
-        <audio id="dubAud" controls style="width:100%; margin-bottom:15px;"></audio>
-        <a id="dlBtn" download href="#" class="btn" style="text-decoration:none; display:flex; align-items:center; justify-content:center; background:var(--green-dk)">Download Result</a>
+        <div class="ttl" style="color:var(--green-dk); justify-content:center;"><i class="fas fa-check-circle"></i> Dubbing Completed!</div>
+        <audio id="dubAud" controls style="width:100%; margin: 15px 0;"></audio>
+        <a id="dlBtn" download="dubbed.wav" href="#" class="btn" style="text-decoration:none; display:flex; align-items:center; justify-content:center; background:var(--green-dk)">Download File</a>
     </div>
 </div>
 
@@ -105,72 +115,65 @@
 
 <script>
 const API_BASE = 'https://web-production-14a1.up.railway.app';
-let selectedVoiceUrl = ''; 
+let selectedVoiceUrl = '';
 let selectedLang = 'ar';
-let currentJobId = null;
-let pollInterval = null;
 
-const ALL_LANGS = [
-    {c:'en',n:'English',f:'🇺🇸'}, {c:'ar',n:'Arabic',f:'🇸🇦'}, {c:'es',n:'Spanish',f:'🇪🇸'},
-    {c:'fr',n:'French',f:'🇫🇷'}, {c:'de',n:'German',f:'🇩🇪'}, {c:'it',n:'Italian',f:'🇮🇹'},
-    {c:'ru',n:'Russian',f:'🇷🇺'}, {c:'zh',n:'Chinese',f:'🇨🇳'}, {c:'ja',n:'Japanese',f:'🇯🇵'}
+const LANGS = [
+    {c:'en', n:'English', f:'🇺🇸'}, {c:'ar', n:'Arabic', f:'🇸🇦'}, {c:'es', n:'Spanish', f:'🇪🇸'},
+    {c:'fr', n:'French', f:'🇫🇷'}, {c:'de', n:'German', f:'🇩🇪'}, {c:'it', n:'Italian', f:'🇮🇹'},
+    {c:'zh', n:'Chinese', f:'🇨🇳'}, {c:'ja', n:'Japanese', f:'🇯🇵'}
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     renderLangs();
-    loadCloudinaryVoices();
+    loadVoices();
 });
 
-function updateFileName() {
-    const file = document.getElementById('mediaFile').files[0];
-    if (file) document.getElementById('fileNameDisplay').innerText = file.name;
-}
-
 function renderLangs() {
-    const grid = document.getElementById('langGrid');
-    grid.innerHTML = ALL_LANGS.map(l => `
-        <div class="item-card ${l.c === selectedLang ? 'active' : ''}" onclick="selectLang('${l.c}', this)">
-            <div style="font-size:1.5rem; margin-bottom:5px;">${l.f}</div>
-            <div style="font-size:0.85rem;">${l.n}</div>
+    const g = document.getElementById('langGrid');
+    g.innerHTML = LANGS.map(l => `
+        <div class="item-card ${l.c===selectedLang?'active':''}" onclick="setLang('${l.c}', this)">
+            <div style="font-size:1.4rem;">${l.f}</div>
+            <div style="font-size:0.8rem;">${l.n}</div>
         </div>
     `).join('');
 }
 
-function selectLang(c, el) {
+function setLang(c, el) {
     selectedLang = c;
     document.querySelectorAll('#langGrid .item-card').forEach(x => x.classList.remove('active'));
     el.classList.add('active');
 }
 
-async function loadCloudinaryVoices() {
-    const grid = document.getElementById('spkGrid');
+async function loadVoices() {
+    const g = document.getElementById('spkGrid');
     try {
-        const res = await fetch(`${API_BASE}/api/voices`);
-        const data = await res.json();
-        if (data.success) {
-            data.voices.forEach(v => {
-                const card = document.createElement('div');
-                card.className = 'item-card';
-                card.innerHTML = `<div class="spk-av"><i class="fas fa-user"></i></div><div style="font-size:0.85rem;">${v.name}</div>`;
-                card.onclick = () => selectVoice(v.url, card);
-                grid.appendChild(card);
+        const r = await fetch(`${API_BASE}/api/voices`);
+        const d = await r.json();
+        if(d.success) {
+            d.voices.forEach(v => {
+                const div = document.createElement('div');
+                div.className = 'item-card';
+                div.innerHTML = `<i class="fas fa-user-circle"></i>${v.name}`;
+                div.onclick = () => setVoice(v.url, div);
+                g.appendChild(div);
             });
         }
-    } catch (e) { console.error("Voices sync error"); }
+    } catch(e) {}
 }
 
-function selectVoice(url, el) {
+function setVoice(url, el) {
     selectedVoiceUrl = url;
-    document.querySelectorAll('#spkGrid .item-card').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('#spkGrid .item-card').forEach(x => x.classList.remove('active'));
     el.classList.add('active');
 }
 
 async function startDubbing() {
     const file = document.getElementById('mediaFile').files[0];
-    if (!file) return showToast("Please select a file first");
+    if(!file) return alert("Please select a file first");
 
-    const btn = document.getElementById('generateBtn');
+    const btn = document.getElementById('dubBtn');
     btn.disabled = true;
     document.getElementById('progressArea').style.display = 'block';
     document.getElementById('resCard').style.display = 'none';
@@ -183,58 +186,45 @@ async function startDubbing() {
     try {
         const res = await fetch(`${API_BASE}/api/dub`, { method: 'POST', body: fd, credentials: 'include' });
         const data = await res.json();
-        if (data.job_id) {
-            currentJobId = data.job_id;
-            pollInterval = setInterval(() => pollJob(currentJobId), 3000);
-        } else throw new Error(data.error);
-    } catch (e) { 
-        showToast(e.message); 
+        if(data.job_id) poll(data.job_id);
+        else throw new Error(data.error);
+    } catch(e) {
+        alert(e.message);
         btn.disabled = false;
         document.getElementById('progressArea').style.display = 'none';
     }
 }
 
-async function pollJob(id) {
-    try {
-        const res = await fetch(`${API_BASE}/api/job/${id}`, { credentials: 'include' });
-        const data = await res.json();
-        if (data.status === 'completed') {
-            clearInterval(pollInterval);
-            document.getElementById('resCard').style.display = 'block';
-            document.getElementById('dubAud').src = data.audio_url;
-            document.getElementById('dlBtn').href = data.audio_url;
-            document.getElementById('generateBtn').disabled = false;
-            document.getElementById('progBar').style.width = '100%';
-            document.getElementById('pctTxt').innerText = '100%';
-            checkAuth();
-        } else {
-            let bar = document.getElementById('progBar');
-            let cur = parseInt(bar.style.width) || 10;
-            bar.style.width = Math.min(95, cur + 5) + '%';
-            document.getElementById('pctTxt').innerText = bar.style.width;
-        }
-    } catch (e) {}
+async function poll(id) {
+    const timer = setInterval(async () => {
+        try {
+            const r = await fetch(`${API_BASE}/api/job/${id}`, { credentials: 'include' });
+            const d = await r.json();
+            if(d.status === 'completed') {
+                clearInterval(timer);
+                document.getElementById('resCard').style.display = 'block';
+                document.getElementById('dubAud').src = d.audio_url;
+                document.getElementById('dlBtn').href = d.audio_url;
+                document.getElementById('dubBtn').disabled = false;
+                document.getElementById('progFill').style.width = '100%';
+                document.getElementById('pctTxt').innerText = '100%';
+                checkAuth();
+            } else {
+                let cur = parseInt(document.getElementById('progFill').style.width) || 10;
+                document.getElementById('progFill').style.width = Math.min(95, cur + 5) + '%';
+                document.getElementById('pctTxt').innerText = document.getElementById('progFill').style.width;
+            }
+        } catch(e) {}
+    }, 4000);
 }
 
 async function checkAuth() {
     try {
-        const res = await fetch(API_BASE + '/api/user', { credentials: 'include' });
-        const data = await res.json();
-        if (data.success) {
-            document.getElementById('authSection').innerHTML = `<span style="color:#fff; font-weight:bold;">${data.user.name} | ${data.user.credits} 💰</span>`;
-        } else {
-            document.getElementById('authSection').innerHTML = `<a href="login.html" class="auth-btn" style="color:#fff; text-decoration:none; border:1px solid #fff; padding:5px 10px; border-radius:5px;">Login</a>`;
-        }
-    } catch (e) {}
-}
-
-function showToast(msg) {
-    const t = document.getElementById('toasts');
-    const box = document.createElement('div');
-    box.className = 'toast show';
-    box.innerText = msg;
-    t.appendChild(box);
-    setTimeout(() => box.remove(), 4000);
+        const r = await fetch(`${API_BASE}/api/user`, { credentials: 'include' });
+        const d = await r.json();
+        if(d.success) document.getElementById('authSection').innerHTML = `${d.user.name} | ${d.user.credits} 💰`;
+        else document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff">Login</a>`;
+    } catch(e) { document.getElementById('authSection').innerHTML = `<a href="login.html" style="color:#fff">Login</a>`; }
 }
 </script>
 </body>
