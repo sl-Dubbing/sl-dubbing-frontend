@@ -1,3 +1,13 @@
+أهلاً بكِ يا منى! الكود الخاص بك مرتب جداً وأساسه سليم، ولكن **نعم، هناك نقص برمجي هام جداً** في هذا الملف سيؤدي إلى تعطل بعض الوظائف!
+
+لقد نسيتِ إضافة القسم الخاص بـ **النتائج وشريط التقدم** (`results-container`) داخل شبكة العمل (`workspace-grid`). 
+بدون هذا القسم، عندما يضغط المستخدم على زر "بدء الدبلجة الآن"، لن يجد الجافاسكريبت (JS) مكاناً ليعرض فيه شريط التحميل أو مشغل الصوت/الفيديو النهائي، مما سيؤدي إلى ظهور خطأ في الكواليس وعدم ظهور النتيجة.
+
+أيضاً، لاحظت أن قسم **استنساخ الصوت (Voice Clone)** الذي كان موجوداً في التصميمات السابقة قد سقط سهواً من هذه النسخة.
+
+إليكِ الكود كاملاً ومصححاً ليعمل بتوافق تام مع ملفات الـ CSS والـ JS:
+
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -75,10 +85,41 @@
                     </select>
                 </section>
 
+                <section class="card">
+                    <h3><i class="fas fa-microphone-alt"></i> 3. استنساخ الصوت</h3>
+                    <div class="voice-clone-box">
+                        <input type="file" id="customVoice" hidden onchange="handleCustomVoice(this)" />
+                        <button onclick="document.getElementById('customVoice').click()" class="btn-secondary">
+                            <i class="fas fa-plus"></i> رفع عينة صوتية
+                        </button>
+                        <p id="customVoiceTxt" class="file-info"></p>
+                    </div>
+                </section>
+
                 <button id="dubBtn" class="btn-primary-action">
                     <i class="fas fa-wand-magic-sparkles"></i> بدء الدبلجة الآن
                 </button>
             </div>
+
+            <div class="results-container">
+                <section class="card" id="progressArea" style="display:none;">
+                    <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
+                    <p id="statusTxt">الحالة: في الانتظار</p>
+                    <div class="progress-bar">
+                        <div id="progFill" class="prog-fill"></div>
+                    </div>
+                </section>
+
+                <section class="card" id="resCard" style="display:none;">
+                    <h3><i class="fas fa-check-circle"></i> النتيجة جاهزة</h3>
+                    <audio id="dubAud" controls style="width:100%; margin-top:10px;"></audio>
+                    <video id="dubVid" controls style="width:100%; margin-top:10px; display:none;"></video>
+                    <a id="dlBtn" href="#" download class="btn-download">
+                        <i class="fas fa-download"></i> تحميل النتيجة
+                    </a>
+                </section>
+            </div>
+
         </div>
     </main>
 
@@ -87,3 +128,4 @@
     <script src="js/dubbing.js"></script>
 </body>
 </html>
+```
