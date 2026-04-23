@@ -1,7 +1,33 @@
-// js/dubbing.js - النسخة النهائية المطورة
+// ==========================================
+// 🚀 AI Dubbing Logic & UI Renderer
+// ==========================================
+
 let selectedVoiceId = 'source';
-let selectedLang = 'en';
-let customVoiceBase64 = ''; // لتخزين عينة الصوت المنسوخ
+let selectedLang = 'ar'; // اللغة الافتراضية
+let customVoiceBase64 = ''; 
+
+// 1. قائمة اللغات (التي كانت مفقودة عندك)
+const LANGS = [
+    {c:'ar', n:'Arabic', f:'🇸🇦'}, {c:'en', n:'English', f:'🇺🇸'},
+    {c:'es', n:'Spanish', f:'🇪🇸'}, {c:'fr', n:'French', f:'🇫🇷'},
+    {c:'de', n:'German', f:'🇩🇪'}, {c:'it', n:'Italian', f:'🇮🇹'},
+    {c:'pt', n:'Portuguese', f:'🇵🇹'}, {c:'tr', n:'Turkish', f:'🇹🇷'},
+    {c:'ru', n:'Russian', f:'🇷🇺'}, {c:'hi', n:'Hindi', f:'🇮🇳'},
+    {c:'zh', n:'Chinese', f:'🇨🇳'}, {c:'ja', n:'Japanese', f:'🇯🇵'}
+];
+
+// 2. دالة رسم اللغات عند تحميل الصفحة
+function renderLangs() {
+    const grid = document.getElementById('langGrid');
+    if (!grid) return;
+    
+    grid.innerHTML = LANGS.map(l => `
+        <div class="item-card ${l.c === selectedLang ? 'active' : ''}" onclick="setLang('${l.c}', this)">
+            <div style="font-size:1.8rem; margin-bottom:5px;">${l.f}</div>
+            <div style="font-size:0.8rem; font-weight:bold;">${l.n}</div>
+        </div>
+    `).join('');
+}
 
 // دالة اختيار اللغة
 function setLang(code, el) { 
@@ -10,102 +36,102 @@ function setLang(code, el) {
     el.classList.add('active');
 }
 
-// دالة معالجة عينة الصوت المخصص (استنساخ الصوت)
+// 3. معالجة استنساخ الصوت (Voice Clone)
 async function handleCustomVoice(input) {
     const file = input.files[0];
     if (!file) return;
 
-    // تحويل الملف إلى Base64 لإرساله للسيرفر
     const reader = new FileReader();
     reader.onload = function(e) {
-        customVoiceBase64 = e.target.result.split(',')[1]; // نأخذ الجزء النصي فقط
-        selectedVoiceId = 'custom'; // نغير الـ ID ليقوم السيرفر بالتبديل
-        showToast("Voice sample uploaded successfully!", "#1e40af");
+        customVoiceBase64 = e.target.result.split(',')[1];
+        selectedVoiceId = 'custom';
+        const txt = document.getElementById('customVoiceTxt');
+        if(txt) txt.innerText = "✅ تم تحميل العينة: " + file.name;
+        showToast("تم تحميل عينة الصوت بنجاح!", "#1e40af");
     };
     reader.readAsDataURL(file);
 }
 
-// الدالة الأساسية لبدء الدبلجة
+// 4. بدء عملية الدبلجة
 async function startDubbing() {
     const mediaInput = document.getElementById('mediaFile');
-    if (!mediaInput.files[0]) return showToast("Please select a file!", "#b91c1c");
+    const token = localStorage.getItem('token');
+
+    if (!token) return showToast("يرجى تسجيل الدخول أولاً", "#b91c1c");
+    if (!mediaInput.files[0]) return showToast("يرجى اختيار ملف فيديو أو صوت!", "#b91c1c");
 
     const btn = document.getElementById('dubBtn');
     const progressArea = document.getElementById('progressArea');
     
     btn.disabled = true;
-    progressArea.style.display = 'block'; // إظهار منطقة التقدم
+    if(progressArea) progressArea.style.display = 'block';
     
     const fd = new FormData();
     fd.append('media_file', mediaInput.files[0]);
     fd.append('lang', selectedLang);
     fd.append('voice_id', selectedVoiceId);
     
-    // إذا كان هناك صوت مخصص، نرسله
     if (selectedVoiceId === 'custom' && customVoiceBase64) {
         fd.append('sample_b64', customVoiceBase64);
     }
 
     try {
-        // جلب التوكن من LocalStorage (بافتراض أنكِ تخزنينه هناك عند تسجيل الدخول)
-        const token = localStorage.getItem('token');
-
         const res = await fetch(`${API_BASE}/api/dub`, { 
             method: 'POST', 
             body: fd, 
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
         const data = await res.json();
         if (data.success) {
             startSSE(data.job_id);
         } else {
-            showToast(data.error || "Dubbing failed", "#b91c1c");
+            showToast(data.error || "فشلت العملية", "#b91c1c");
             btn.disabled = false;
         }
     } catch(e) {
-        showToast("Connection Error", "#b91c1c");
+        showToast("خطأ في الاتصال بالسيرفر", "#b91c1c");
         btn.disabled = false;
     }
 }
 
-// دالة الـ SSE لمتابعة التقدم بالوقت الحقيقي
+// 5. متابعة التقدم (SSE)
 function startSSE(jobId) {
     const statusTxt = document.getElementById('statusTxt');
     const progFill = document.getElementById('progFill');
     const resCard = document.getElementById('resCard');
     
-    // استخدام EventSource للاستماع للسيرفر
     const source = new EventSource(`${API_BASE}/api/progress/${jobId}`);
     
     source.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        statusTxt.innerText = "Status: " + data.status;
+        if(statusTxt) statusTxt.innerText = "الحالة: " + data.status;
 
-        // تحديث شريط التقدم وهمياً بناءً على الحالة
-        if (data.status === 'processing') progFill.style.width = "50%";
+        if (data.status === 'processing') if(progFill) progFill.style.width = "60%";
         
         if (data.status === 'completed') {
-            progFill.style.width = "100%";
-            document.getElementById('dubAud').src = data.audio_url;
-            resCard.style.display = 'block';
+            if(progFill) progFill.style.width = "100%";
+            const aud = document.getElementById('dubAud');
+            if(aud) { aud.src = data.audio_url; aud.play(); }
+            if(resCard) resCard.style.display = 'block';
             
-            showToast("Success!", "#065f2c");
+            showToast("تمت الدبلجة بنجاح!", "#065f2c");
             source.close();
             document.getElementById('dubBtn').disabled = false;
         }
 
         if (data.status === 'failed') {
-            showToast("Processing failed. Credits refunded.", "#b91c1c");
+            showToast("فشلت المعالجة، تم إعادة الرصيد.", "#b91c1c");
             source.close();
             document.getElementById('dubBtn').disabled = false;
         }
     };
 
-    source.onerror = () => {
-        source.close();
-        document.getElementById('dubBtn').disabled = false;
-    };
+    source.onerror = () => source.close();
 }
+
+// تشغيل الدوال عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    renderLangs(); // رسم اللغات
+    // هنا يمكن إضافة loadVoicesFromGitHub() إذا أردتِ
+});
