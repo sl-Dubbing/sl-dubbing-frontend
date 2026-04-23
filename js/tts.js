@@ -1,7 +1,7 @@
 // ==========================================
 // 🎨 ثوابت الألوان والإعدادات
 // ==========================================
-const API_BASE = 'web-production-14a1.up.railway.app';
+const API_BASE = 'https://web-production-14a1.up.railway.app';
 const COLORS = {
     ACCENT: '#7c3aed',
     GOLD: '#ffb800',
