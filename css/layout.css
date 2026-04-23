@@ -2,17 +2,24 @@
    🚀 AI Dubbing Layout - النسخة الاحترافية
    ========================================== */
 
+/* --- متغيرات عامة (يمكنك نقلها إلى variables.css إن رغبت) --- */
 :root {
     --sidebar-width: 280px;
     --transition-speed: 0.3s;
+    --bg-body: #0d0d1f;
+    --bg-card: rgba(22,22,37,0.95);
+    --border: rgba(167, 139, 250, 0.12);
+    --gold: #ffb800;
+    --text: #e0e0ff;
 }
 
 /* --- الهيكل العام --- */
+* { box-sizing: border-box; }
 body {
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--bg-body); /* تأكد من تعريفه في variables.css */
-    color: white;
+    background-color: var(--bg-body);
+    color: var(--text);
     overflow-x: hidden;
 }
 
@@ -29,6 +36,7 @@ body {
     z-index: 1000;
     transition: transform var(--transition-speed) ease, width var(--transition-speed) ease;
     box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+    overflow: auto;
 }
 
 /* حالة إغلاق الشريط الجانبي */
@@ -50,26 +58,90 @@ body {
 }
 
 /* --- زر التحكم في القائمة (Toggle Button) --- */
-.toggle-btn {
-    background: var(--bg-card);
-    color: var(--gold);
-    border: 1px solid var(--border);
-    padding: 10px 15px;
-    border-radius: 8px;
+/* هذا الزر يحتوي على ثلاثة خطوط (hamburger) وكلمة "القائمة" فوقه */
+.menu-toggle {
+    position: fixed;
+    top: 18px;
+    right: calc(var(--sidebar-width) - 34px); /* يتراكب جزئياً على الشريط */
+    width: 56px;
+    height: 56px;
+    background: transparent;
+    border: none;
     cursor: pointer;
-    margin-bottom: 20px;
-    display: inline-flex;
+    z-index: 1200; /* أعلى من sidebar */
+    display: flex;
     align-items: center;
-    gap: 8px;
-    font-weight: bold;
-    transition: 0.3s;
-    z-index: 1100;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.18s ease;
 }
 
-.toggle-btn:hover {
-    background: var(--border);
-    border-color: var(--gold);
+/* الكلمة فوق الزر */
+.menu-toggle .label {
+    position: absolute;
+    top: -28px;
+    right: 50%;
+    transform: translateX(50%);
+    font-size: 0.85rem;
+    color: var(--gold);
+    background: rgba(0,0,0,0.25);
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,184,0,0.08);
+    pointer-events: none;
+    white-space: nowrap;
+    font-weight: 700;
+    z-index: 1300;
 }
+
+/* الدائرة الخلفية للزر */
+.menu-toggle .btn-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(124,58,237,0.95), rgba(37,99,235,0.95));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 30px rgba(37,99,235,0.12);
+    transition: transform var(--transition-speed) ease, background 0.2s ease;
+}
+
+/* ثلاثة خطوط الهامبرغر */
+.menu-toggle .btn-circle .hamburger {
+    position: relative;
+    width: 22px;
+    height: 2px;
+    background: #fff;
+    display: inline-block;
+    transition: all 0.18s ease;
+}
+.menu-toggle .btn-circle .hamburger::before,
+.menu-toggle .btn-circle .hamburger::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    width: 22px;
+    height: 2px;
+    background: #fff;
+    transition: all 0.18s ease;
+}
+.menu-toggle .btn-circle .hamburger::before { top: -7px; }
+.menu-toggle .btn-circle .hamburger::after  { top: 7px; }
+
+/* حالة الشريط مغلق: نحول الهامبرغر إلى X (اختياري) */
+.sidebar.collapsed ~ .menu-toggle .btn-circle .hamburger {
+    background: transparent;
+}
+.sidebar.collapsed ~ .menu-toggle .btn-circle .hamburger::before {
+    transform: translateY(7px) rotate(45deg);
+}
+.sidebar.collapsed ~ .menu-toggle .btn-circle .hamburger::after {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+/* عندما يكون الشريط مفتوح ونريد تأثير بصري على الزر */
+.menu-toggle:hover .btn-circle { transform: scale(1.03); }
 
 /* --- منطقة العمل (Workspace Grid) --- */
 .workspace {
@@ -83,7 +155,7 @@ body {
 .lang-dropdown {
     width: 100%;
     padding: 12px 15px;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.03);
     color: white;
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -91,7 +163,6 @@ body {
     cursor: pointer;
     outline: none;
     appearance: none;
-    /* سهم ذهبي مخصص للقائمة */
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gold' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
     background-position: left 1rem center;
@@ -101,15 +172,14 @@ body {
 
 .lang-dropdown:focus {
     border-color: var(--gold);
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.08);
 }
 
-/* --- الاستجابة للشاشات الصغيرة (Responsive) --- */
+/* --- استجابة للشاشات الصغيرة --- */
 @media (max-width: 1024px) {
     .sidebar {
         transform: translateX(100%); /* مخفي افتراضياً في الجوال */
     }
-    
     .sidebar.open {
         transform: translateX(0); /* يظهر عند إضافة كلاس open للجوال */
     }
@@ -122,7 +192,16 @@ body {
         grid-template-columns: 1fr; /* تحويل الأعمدة لصف واحد */
     }
 
-    .side-options {
-        order: 2; /* النتيجة تظهر تحت الإعدادات في الجوال */
+    .menu-toggle {
+        right: 20px;
+        top: 14px;
+    }
+
+    .menu-toggle .label {
+        top: -26px;
+        right: 50%;
     }
 }
+
+/* --- لمسات نهائية --- */
+button:focus { outline: none; box-shadow: 0 0 0 4px rgba(124,58,237,0.12); }
