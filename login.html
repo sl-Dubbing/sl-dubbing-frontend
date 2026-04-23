@@ -6,42 +6,63 @@
     <title>Sign in | sl-Dubbing</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
     <style>
         :root {
-            --bg-color: #ffffff;
-            --text-main: #111827;
-            --text-muted: #6b7280;
-            --border-color: #e5e7eb;
-            --border-focus: #111827;
-            --btn-grey: #a1a1aa;
-            --btn-grey-hover: #71717a;
-            --radius: 10px;
+            --bg-dark: #0b1020;
+            --card-bg: rgba(255,255,255,0.04);
+            --border-color: rgba(167,139,250,0.15);
+            --border-focus: #7c3aed;
+            --accent: #7c3aed;
+            --accent-hover: #2563eb;
+            --text-main: #e6e7ff;
+            --text-muted: #9ca3af;
+            --gold: #ffb800;
+            --radius: 12px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, system-ui, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; min-height: 100vh; }
-        .login-container { width: 100%; max-width: 400px; padding: 40px 20px; display: flex; flex-direction: column; margin-top: 4vh; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
+        .login-container { 
+            width: 100%; max-width: 400px; padding: 40px; display: flex; flex-direction: column; 
+            background: var(--card-bg); border: 1px solid var(--border-color); 
+            border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+        }
 
-        .logo { text-align: center; font-size: 1.25rem; font-weight: 800; margin-bottom: 60px; color: var(--text-main); text-decoration: none; }
-        .logo span { font-weight: 900; margin-right: 2px; }
-        .title { text-align: center; font-size: 1.75rem; font-weight: 700; margin-bottom: 40px; }
+        .logo { text-align: center; font-size: 1.5rem; font-weight: 800; margin-bottom: 20px; color: var(--gold); text-decoration: none; }
+        .logo span { font-weight: 900; margin-right: 5px; color: var(--text-main); }
+        .title { text-align: center; font-size: 1.5rem; font-weight: 700; margin-bottom: 30px; color: #fff; }
 
-        .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
-        .divider { height: 1px; background-color: var(--border-color); margin-bottom: 30px; }
+        .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
+        .divider { height: 1px; background-color: var(--border-color); margin-bottom: 25px; position: relative; }
+        .divider::after {
+            content: "OR"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--bg-dark); padding: 0 10px; color: var(--text-muted); font-size: 0.8rem;
+        }
 
         .form-group { margin-bottom: 20px; }
         .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        label { font-size: 0.85rem; font-weight: 600; }
-        .forgot-link { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; }
+        label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+        .forgot-link { font-size: 0.8rem; color: var(--accent); text-decoration: none; transition: 0.3s; }
+        .forgot-link:hover { color: var(--gold); }
         
-        input { width: 100%; height: 48px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: var(--radius); font-size: 1rem; outline: none; }
-        input:focus { border-color: var(--border-focus); }
+        input { 
+            width: 100%; height: 48px; padding: 0 16px; background: rgba(0,0,0,0.3); color: #fff;
+            border: 1px solid var(--border-color); border-radius: var(--radius); font-size: 1rem; outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2); }
         
-        .submit-btn { width: 100%; height: 48px; background-color: var(--btn-grey); color: #fff; border: none; border-radius: var(--radius); font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-        .submit-btn:hover { background-color: var(--btn-grey-hover); }
+        .submit-btn { 
+            width: 100%; height: 48px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); 
+            color: #fff; border: none; border-radius: var(--radius); font-size: 1rem; font-weight: bold; 
+            cursor: pointer; margin-top: 10px; transition: 0.3s; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5); }
 
-        .footer-text { text-align: center; margin-top: 24px; font-size: 0.9rem; }
-        .footer-text a { font-weight: 600; text-decoration: none; color: var(--text-main); }
+        .footer-text { text-align: center; margin-top: 24px; font-size: 0.9rem; color: var(--text-muted); }
+        .footer-text a { font-weight: 600; text-decoration: none; color: var(--accent); transition: 0.3s; }
+        .footer-text a:hover { color: var(--gold); }
         .google-btn-wrapper { width: 100%; display: flex; justify-content: center; }
     </style>
 </head>
@@ -85,9 +106,10 @@
             client_id: GOOGLE_CLIENT_ID,
             callback: handleGoogleResponse
         });
+        // استخدام الثيم الداكن لزر جوجل ليتوافق مع التصميم الجديد
         google.accounts.id.renderButton(
             document.getElementById("googleBtn"),
-            { theme: "outline", size: "large", width: 360 }
+            { theme: "filled_black", size: "large", width: 320 }
         );
     };
 
@@ -100,8 +122,13 @@
                 body: JSON.stringify({ credential: response.credential })
             });
             const data = await res.json();
+            
             if (data.success) {
-                // Redirect to the English dubbing studio page
+                // 🟢 السطر السحري الذي كان مفقوداً: حفظ التوكن في المتصفح!
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                }
+                // توجيه المستخدم لصفحة الدبلجة
                 window.location.href = 'dubbing.html';
             } else {
                 alert("Login failed: " + data.error);
@@ -110,6 +137,12 @@
             alert("Connection error. Make sure the server is running.");
         }
     }
+
+    // منع إعادة تحميل الصفحة عند الضغط على زر Sign in العادي (إذا أردتِ برمجته لاحقاً)
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        alert("يرجى استخدام تسجيل الدخول بحساب جوجل حالياً.");
+    });
 </script>
 </body>
 </html>
