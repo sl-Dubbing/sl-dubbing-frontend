@@ -33,19 +33,18 @@ function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
     
-    // تفعيل وإلغاء تفعيل القائمة والطبقة الشفافة
     sidebar.classList.toggle('active');
     overlay.classList.toggle('active');
 }
 
 // ==========================================
-// 🟢 جلب بيانات المستخدم (المصادقة والرصيد)
+// 🟢 جلب بيانات المستخدم (المصادقة والرصيد المطور)
 // ==========================================
 async function updateSidebarAuth() {
     const authSection = document.getElementById('authSection');
     const token = localStorage.getItem('token');
     
-    // إذا لم يكن مسجلاً للدخول
+    // إذا لم يكن هناك توكن
     if (!token) {
         authSection.innerHTML = `
             <div class="user-info-card">
@@ -57,31 +56,45 @@ async function updateSidebarAuth() {
 
     try {
         const res = await fetch(`${API_BASE}/api/user`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            method: 'GET',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
         });
+
+        if (!res.ok) throw new Error('الاستجابة غير صالحة من السيرفر');
+
         const data = await res.json();
         
-        // إذا كان التوكن صحيحاً وجلبنا البيانات بنجاح
-        if (data.success) {
+        // التحقق الذكي من البيانات (يدعم عدة مسميات محتملة من السيرفر)
+        if (data.success || data.user) {
+            const userName = data.user?.name || data.user?.username || data.name || 'مستخدم';
+            const userCredits = data.user?.credits ?? data.user?.points ?? data.credits ?? 0;
+
             authSection.innerHTML = `
                 <div class="user-info-card">
-                    <div class="user-name">${data.user.name}</div>
-                    <div class="user-points">رصيدك: ${data.user.credits} نقطة 💰</div>
-                    <button onclick="logout()" style="margin-top:12px; background:none; border:none; color:#ff4444; cursor:pointer; font-size:0.85rem; font-weight:bold;"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</button>
+                    <div class="user-name">${userName}</div>
+                    <div class="user-points">رصيدك: ${userCredits} نقطة 💰</div>
+                    <button onclick="logout()" style="margin-top:12px; background:none; border:none; color:#ff4444; cursor:pointer; font-size:0.85rem; font-weight:bold;">
+                        <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                    </button>
                 </div>
             `;
         } else {
-            // إذا كان التوكن منتهي الصلاحية أو غير صحيح
-            localStorage.removeItem('token');
-            updateSidebarAuth();
+            throw new Error('البيانات غير مكتملة');
         }
     } catch (e) {
         console.error("Auth Error:", e);
-        authSection.innerHTML = `<div style="color:#ff4444; font-size:0.8rem;">خطأ في الاتصال بالخادم</div>`;
+        localStorage.removeItem('token'); // مسح التوكن التالف
+        authSection.innerHTML = `
+            <div class="user-info-card">
+                <p style="margin-bottom:10px; font-size:0.85rem; color: #ff4444;">انتهت الجلسة أو حدث خطأ</p>
+                <a href="login.html" class="btn-login-sidebar">تسجيل الدخول مجدداً</a>
+            </div>`;
     }
 }
 
-// دالة تسجيل الخروج
 function logout() {
     localStorage.removeItem('token');
     location.reload();
@@ -184,9 +197,8 @@ async function startDubbing() {
 }
 
 // ==========================================
-// 🟢 تهيئة الأحداث عند تحميل الصفحة
+// 🟢 تهيئة الأحداث عند التحميل
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // جلب بيانات المستخدم وعرض الرصيد
     updateSidebarAuth();
 });
