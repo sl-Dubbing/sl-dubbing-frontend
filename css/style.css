@@ -1,48 +1,46 @@
 /* الأنماط الأساسية */
 html, body { height: 100%; margin: 0; background: var(--bg-dark); color: var(--text); overflow-x: hidden; }
 
+/* زر الهامبرغر المطور */
+.hamburger-menu {
+    position: fixed; top: 50%; right: calc(var(--sidebar-w) - 25px);
+    transform: translateY(-50%); width: 50px; height: 50px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border: none; border-radius: 12px; color: white; cursor: pointer;
+    z-index: 3000; transition: var(--transition);
+}
+.hamburger-menu.sidebar-collapsed { right: 20px; }
+
+.menu-label-text {
+    position: absolute; top: -30px; right: 50%; transform: translateX(50%);
+    font-size: 0.8rem; color: var(--gold); font-weight: bold; white-space: nowrap;
+}
+
 /* الشريط الجانبي */
 .sidebar {
-    position: fixed; right: 0; top: 0; width: var(--sidebar-w); height: 100vh;
+    position: fixed; top: 0; right: 0; width: var(--sidebar-w); height: 100vh;
     background: var(--sidebar-bg); border-left: 1px solid var(--border);
-    padding: 80px 20px 20px; z-index: 1000; transition: transform var(--transition);
+    padding-top: 80px; z-index: 2000; transition: var(--transition);
 }
 .sidebar.collapsed { transform: translateX(100%); }
 
-/* زر القائمة المطور */
-.menu-toggle {
-    position: fixed; width: 56px; height: 56px; border: none; border-radius: 12px;
-    display: flex; align-items: center; justify-content: center; z-index: 1200;
-    transition: all 0.3s ease; background: linear-gradient(180deg, var(--accent), var(--accent-2));
-    color: #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.45); cursor: pointer;
-}
-
-.menu-toggle.position-center {
-    top: 50%; transform: translateY(-50%);
-    right: calc(var(--sidebar-w) - 28px);
-}
-
-/* حركة الهامبرغر */
-.hamburger { position: relative; width: 22px; height: 2px; background: #fff; transition: 0.3s; }
-.hamburger::before, .hamburger::after {
-    content: ""; position: absolute; left: 0; width: 22px; height: 2px; background: #fff; transition: 0.3s;
-}
-.hamburger::before { top: -7px; }
-.hamburger::after { top: 7px; }
-
-/* التحول لعلامة X عند إغلاق القائمة */
-.sidebar.collapsed ~ .menu-toggle .hamburger { background: transparent; }
-.sidebar.collapsed ~ .menu-toggle .hamburger::before { transform: translateY(7px) rotate(45deg); }
-.sidebar.collapsed ~ .menu-toggle .hamburger::after { transform: translateY(-7px) rotate(-45deg); }
-
 /* المحتوى */
-.main-content { margin-right: var(--sidebar-w); transition: margin-right var(--transition); }
+.main-content { margin-right: var(--sidebar-w); padding: 40px; transition: var(--transition); }
 .main-content.expanded { margin-right: 0; }
 
-.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 15px; padding: 25px; margin-bottom: 20px; }
-.progress-bar { background: rgba(0,0,0,0.3); height: 10px; border-radius: 10px; overflow: hidden; margin-top: 15px; }
+.workspace-grid { display: grid; grid-template-columns: 1fr 340px; gap: 25px; }
+
+.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 25px; margin-bottom: 20px; }
+
+.styled-select { width: 100%; padding: 12px; background: #000; color: #fff; border: 1px solid var(--border); border-radius: 10px; }
+
+.prog-fill { height: 100%; background: var(--progress-accent); width: 0%; transition: 0.5s; }
+.progress-bar { height: 10px; background: #333; border-radius: 10px; overflow: hidden; margin-top: 15px; }
+
+.btn-primary-action { width: 100%; padding: 18px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; }
+.btn-secondary { background: rgba(255,255,255,0.03); color: var(--text); border: 1px solid var(--border); padding: 10px 14px; border-radius: 10px; cursor: pointer; }
 
 @media (max-width: 1024px) {
-    .menu-toggle.position-center { top: 20px; right: 20px; transform: none; }
+    .hamburger-menu { top: 20px; transform: none; right: 20px; }
     .main-content { margin-right: 0 !important; }
 }
