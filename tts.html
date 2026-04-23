@@ -16,9 +16,20 @@
         --gold: #ffb800;
         --text: #e6e7ff;
         --muted-text: #9ca3af;
+        --progress-accent: #34d399;
+        --download-bg: #065f2c;
         --sidebar-w: 280px;
         --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
+    /* تنسيق مربع النص المخصص لهذه الصفحة */
+    .styled-textarea {
+        width: 100%; padding: 15px; background: rgba(0,0,0,0.4); color: #fff;
+        border: 1px solid var(--border); border-radius: 12px; outline: none;
+        font-family: inherit; font-size: 1rem; resize: vertical; min-height: 150px;
+        transition: 0.3s;
+    }
+    .styled-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2); }
     </style>
 
     <link rel="stylesheet" href="css/style.css" />
@@ -40,7 +51,7 @@
 
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-user-section" id="authSection">
-            <div style="color: #666; font-size: 0.8rem; text-align: center;">جاري التحقق من بياناتك...</div>
+            <div style="color: #666; font-size: 0.8rem; text-align: center;">جاري التحقق...</div>
         </div>
 
         <nav class="sidebar-nav">
@@ -56,19 +67,19 @@
     <main class="main-content" id="mainContent">
         <div class="container">
             <header class="main-header">
-                <h1>تحويل النص إلى صوت احترافي</h1>
-                <p>اكتب نصك، اختر اللغة، ودع الذكاء الاصطناعي ينطقه بواقعية</p>
+                <h1>تحويل النص إلى صوت (TTS)</h1>
+                <p>اكتب أي نص وسيقوم الذكاء الاصطناعي بقراءته بصوت بشري طبيعي</p>
             </header>
             
             <div class="workspace-grid">
                 <div class="tools-container">
                     <section class="card">
-                        <h3><i class="fas fa-edit"></i> 1. أدخل النص</h3>
-                        <textarea id="ttsInput" class="styled-textarea" rows="6" placeholder="اكتب النص هنا ليقوم الذكاء الاصطناعي بنطقه..."></textarea>
+                        <h3><i class="fas fa-edit"></i> 1. اكتب النص هنا</h3>
+                        <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص الذي تريد تحويله إلى صوت هنا..."></textarea>
                     </section>
 
                     <section class="card">
-                        <h3><i class="fas fa-globe"></i> 2. لغة النطق (الهدف)</h3>
+                        <h3><i class="fas fa-globe"></i> 2. اختر لغة النطق</h3>
                         <select id="langSelect" class="styled-select">
                             <option value="ar">🇸🇦 العربية</option>
                             <option value="en">🇺🇸 الإنجليزية</option>
@@ -78,30 +89,23 @@
                     </section>
 
                     <button id="ttsBtn" class="btn-primary-action" onclick="startTTS()">
-                        <i class="fas fa-volume-up"></i> بدء التحويل الصوتي
+                        <i class="fas fa-volume-up"></i> توليد الصوت الآن
                     </button>
                 </div>
 
                 <div class="results-container">
                     <section class="card" id="progressArea" style="display:none;">
                         <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
-                        <p id="statusTxt">الحالة: في الانتظار</p>
+                        <p id="statusTxt">الحالة: يتم الآن توليد الصوت</p>
                         <div class="progress-bar">
                             <div id="progFill" class="prog-fill"></div>
                         </div>
                     </section>
 
                     <section class="card" id="resCard" style="display:none;">
-                        <h3><i class="fas fa-check-circle" style="color: #10b981;"></i> النتيجة جاهزة</h3>
-                        
-                        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px;">
-                            <h4 style="font-size: 0.85rem; color: var(--gold); margin: 0 0 8px 0;">الترجمة الذكية:</h4>
-                            <p id="translatedText" style="font-style: italic; color: #ccc; font-size: 0.95rem; line-height: 1.6; margin: 0;"></p>
-                        </div>
-
-                        <audio id="audioResult" controls style="width:100%; margin-bottom:10px;"></audio>
-                        
-                        <a id="dlBtn" href="#" download class="btn-download">
+                        <h3><i class="fas fa-check-circle" style="color: #10b981;"></i> تم إنشاء المقطع بنجاح</h3>
+                        <audio id="audioResult" controls style="width:100%; margin-top:15px;"></audio>
+                        <a id="dlBtn" href="#" download class="btn-download" style="margin-top:15px;">
                             <i class="fas fa-download"></i> تحميل المقطع الصوتي
                         </a>
                     </section>
@@ -111,7 +115,7 @@
     </main>
 
     <div id="toasts"></div>
-
+    
     <script src="js/tts.js"></script>
 </body>
 </html>
