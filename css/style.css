@@ -1,96 +1,48 @@
-:root {
-    --bg-dark: #0d0d1f;
-    --sidebar-bg: #161625;
-    --border: rgba(167, 139, 250, 0.2);
-    --accent: #7c3aed;
-    --gold: #ffb800;
-    --sidebar-w: 280px;
-    --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* الأنماط الأساسية */
+html, body { height: 100%; margin: 0; background: var(--bg-dark); color: var(--text); overflow-x: hidden; }
 
-body {
-    background: var(--bg-dark);
-    color: #e0e0ff;
-    font-family: 'Segoe UI', sans-serif;
-    direction: rtl;
-    margin: 0;
-    overflow-x: hidden;
-}
-
-/* زر الهامبرغر */
-.hamburger-menu {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 45px;
-    height: 45px;
-    background: var(--accent);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    z-index: 3000;
-    transition: var(--transition);
-}
-
-/* القائمة الجانبية */
+/* الشريط الجانبي */
 .sidebar {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: var(--sidebar-w);
-    height: 100vh;
-    background: var(--sidebar-bg);
-    border-left: 1px solid var(--border);
-    z-index: 2000;
-    padding-top: 80px;
-    transition: var(--transition);
+    position: fixed; right: 0; top: 0; width: var(--sidebar-w); height: 100vh;
+    background: var(--sidebar-bg); border-left: 1px solid var(--border);
+    padding: 80px 20px 20px; z-index: 1000; transition: transform var(--transition);
 }
 .sidebar.collapsed { transform: translateX(100%); }
 
-/* المحتوى */
-.main-content {
-    margin-right: var(--sidebar-w);
-    padding: 40px;
-    transition: var(--transition);
+/* زر القائمة المطور */
+.menu-toggle {
+    position: fixed; width: 56px; height: 56px; border: none; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; z-index: 1200;
+    transition: all 0.3s ease; background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    color: #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.45); cursor: pointer;
 }
+
+.menu-toggle.position-center {
+    top: 50%; transform: translateY(-50%);
+    right: calc(var(--sidebar-w) - 28px);
+}
+
+/* حركة الهامبرغر */
+.hamburger { position: relative; width: 22px; height: 2px; background: #fff; transition: 0.3s; }
+.hamburger::before, .hamburger::after {
+    content: ""; position: absolute; left: 0; width: 22px; height: 2px; background: #fff; transition: 0.3s;
+}
+.hamburger::before { top: -7px; }
+.hamburger::after { top: 7px; }
+
+/* التحول لعلامة X عند إغلاق القائمة */
+.sidebar.collapsed ~ .menu-toggle .hamburger { background: transparent; }
+.sidebar.collapsed ~ .menu-toggle .hamburger::before { transform: translateY(7px) rotate(45deg); }
+.sidebar.collapsed ~ .menu-toggle .hamburger::after { transform: translateY(-7px) rotate(-45deg); }
+
+/* المحتوى */
+.main-content { margin-right: var(--sidebar-w); transition: margin-right var(--transition); }
 .main-content.expanded { margin-right: 0; }
 
-/* Overlay للجوال */
-.overlay-for-sidebar {
-    position: fixed;
-    inset: 0;
-    z-index: 1500;
-    opacity: 0;
-    visibility: hidden;
-    transition: 0.3s;
-}
-.overlay-for-sidebar.visible {
-    opacity: 1;
-    visibility: visible;
-}
+.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 15px; padding: 25px; margin-bottom: 20px; }
+.progress-bar { background: rgba(0,0,0,0.3); height: 10px; border-radius: 10px; overflow: hidden; margin-top: 15px; }
 
-/* تنسيق الكروت */
-.card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 25px;
-    margin-bottom: 20px;
-}
-
-.workspace-grid {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 25px;
-}
-
-.prog-fill { height: 100%; background: #34d399; width: 0%; transition: 0.5s; }
-.progress-bar { height: 10px; background: #333; border-radius: 10px; overflow: hidden; margin-top: 15px; }
-
-/* استجابة الشاشات */
 @media (max-width: 1024px) {
-    .main-content { margin-right: 0; padding: 20px; }
-    .sidebar { transform: translateX(100%); }
-    .workspace-grid { grid-template-columns: 1fr; }
+    .menu-toggle.position-center { top: 20px; right: 20px; transform: none; }
+    .main-content { margin-right: 0 !important; }
 }
