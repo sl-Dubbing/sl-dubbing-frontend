@@ -3,210 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Dubbing Studio | استوديو الدبلجة الذكي</title>
-    
-    <link rel="stylesheet" href="css/variables.css">
-    <link rel="stylesheet" href="css/layout.css">
-    <link rel="stylesheet" href="css/components.css">
+    <title>AI Dubbing Studio | sl-Dubbing</title>
     <link rel="stylesheet" href="css/style.css">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-    <style>
-        /* تحسينات إضافية للميزات الجديدة */
-        .sidebar {
-            transition: transform 0.3s ease, width 0.3s ease;
-            overflow-x: hidden;
-        }
-
-        /* حالة إغلاق القائمة الجانبية */
-        .sidebar.collapsed {
-            transform: translateX(100%); /* تختفي لجهة اليمين في RTL */
-            width: 0;
-            padding: 0;
-            margin: 0;
-        }
-
-        .main-content {
-            transition: margin-right 0.3s ease;
-        }
-
-        /* تمدد المحتوى عند إغلاق القائمة */
-        .main-content.expanded {
-            margin-right: 0 !important;
-        }
-
-        /* زر التحكم في القائمة */
-        .toggle-btn {
-            background: var(--bg-card);
-            color: var(--gold);
-            border: 1px solid var(--border);
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-bottom: 20px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-family: inherit;
-            transition: 0.3s;
-        }
-
-        .toggle-btn:hover {
-            background: var(--border);
-        }
-
-        /* تنسيق القائمة المنسدلة للغات */
-        .lang-dropdown {
-            width: 100%;
-            padding: 12px 15px;
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            font-size: 1rem;
-            cursor: pointer;
-            outline: none;
-            appearance: none; /* إخفاء سهم المتصفح الافتراضي */
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gold' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: left 1rem center;
-            background-size: 1em;
-        }
-
-        .lang-dropdown option {
-            background: #1e1e2d;
-            color: white;
-        }
-    </style>
 </head>
 <body>
 
     <aside class="sidebar" id="sidebar">
-        <div class="logo-area" style="text-align: center; margin-bottom: 2rem;">
-            <h2 style="color: var(--gold); font-size: 1.5rem;">|| sl-Dubbing</h2>
+        <div class="sidebar-label">القائمة</div>
+        
+        <div class="logo-area">
+            <h2>|| sl-Dubbing</h2>
         </div>
 
         <div id="authSection">
-            <div style="color: #666; font-size: 0.9rem; text-align: center;">جاري التحقق...</div>
+            <div style="color: #666; font-size: 0.8rem; text-align: center;">جاري التحقق...</div>
         </div>
 
-        <nav style="margin-top: 3rem;">
-            <ul style="list-style: none; padding: 0;">
-                <li style="margin-bottom: 1.5rem;">
-                    <a href="index.html" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-th-large"></i> الرئيسية
-                    </a>
-                </li>
-                <li style="margin-bottom: 1.5rem;">
-                    <a href="dubbing.html" class="active" style="color: var(--gold); text-decoration: none; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-film"></i> استوديو الدبلجة
-                    </a>
-                </li>
-                <li style="margin-bottom: 1.5rem;">
-                    <a href="tts.html" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-comment-dots"></i> تحويل النص لصوت
-                    </a>
-                </li>
+        <nav>
+            <ul>
+                <li><a href="index.html"><i class="fas fa-th-large"></i> الرئيسية</a></li>
+                <li><a href="dubbing.html" class="active"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
+                <li><a href="tts.html"><i class="fas fa-comment-dots"></i> تحويل النص لصوت</a></li>
             </ul>
         </nav>
     </aside>
 
     <main class="main-content" id="mainContent">
-        <header style="margin-bottom: 2rem;">
+        <header>
             <button class="toggle-btn" onclick="toggleSidebar()">
                 <i class="fas fa-bars"></i>
-                <span>القائمة</span>
+                <span>إظهار/إخفاء القائمة</span>
             </button>
 
-            <h1 style="font-size: 1.8rem; color: #fff;">استوديو الدبلجة الاحترافي</h1>
-            <p style="color: #aaa;">قم برفع الفيديو الخاص بك واختيار لغة الهدف لبدء الدبلجة بالذكاء الاصطناعي</p>
+            <h1>استوديو الدبلجة الاحترافي</h1>
+            <p>قم برفع الفيديو واختيار لغة الهدف للبدء</p>
         </header>
 
         <div class="workspace">
-            
             <div class="main-area">
                 <section class="card">
                     <h3><i class="fas fa-cloud-upload-alt"></i> 1. رفع الوسائط</h3>
-                    <div class="upload-box" style="border: 2px dashed var(--border); padding: 2rem; text-align: center; border-radius: 15px;">
+                    <div class="upload-box">
                         <input type="file" id="mediaFile" accept="video/*,audio/*" style="display: none;">
                         <button onclick="document.getElementById('mediaFile').click()" class="btn-secondary">
-                            <i class="fas fa-file-video"></i> اختر ملف فيديو أو صوت
+                            <i class="fas fa-file-video"></i> اختر ملف
                         </button>
-                        <div id="fileTxt" style="margin-top: 10px; font-size: 0.85rem; color: #888;">لم يتم اختيار ملف بعد</div>
+                        <div id="fileTxt">لم يتم اختيار ملف</div>
                     </div>
                 </section>
 
-                <section class="card" style="margin-top: 2rem;">
+                <section class="card">
                     <h3><i class="fas fa-language"></i> 2. لغة الهدف</h3>
                     <select id="langSelect" class="lang-dropdown" onchange="setLang(this.value)">
-                        <option value="" disabled selected>اختر اللغة المطلوبة...</option>
-                        </select>
+                        <option value="" disabled selected>اختر لغة الهدف...</option>
+                    </select>
                 </section>
 
-                <section class="card" style="margin-top: 2rem;">
-                    <h3><i class="fas fa-microphone-alt"></i> 3. اختيار الصوت (Voice Profile)</h3>
-                    <div id="spkGrid" class="grid-container" style="margin-bottom: 15px;">
-                        </div>
-                    
-                    <div class="custom-voice-area" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 10px;">
-                        <p style="font-size: 0.85rem; margin-bottom: 10px;">أو استنساخ صوتك (Voice Clone):</p>
+                <section class="card">
+                    <h3><i class="fas fa-microphone-alt"></i> 3. استنساخ الصوت</h3>
+                    <div class="custom-voice-area">
                         <input type="file" id="customVoice" onchange="handleCustomVoice(this)" style="display: none;">
-                        <button onclick="document.getElementById('customVoice').click()" class="btn-sm" style="background: transparent; border: 1px solid var(--gold); color: var(--gold);">
+                        <button onclick="document.getElementById('customVoice').click()" class="btn-sm">
                             <i class="fas fa-plus"></i> رفع عينة صوت
                         </button>
-                        <span id="customVoiceTxt" style="font-size: 0.8rem; margin-right: 10px;"></span>
+                        <span id="customVoiceTxt"></span>
                     </div>
                 </section>
 
-                <button id="dubBtn" onclick="startDubbing()" class="btn-primary" style="width: 100%; margin-top: 2rem; padding: 1.2rem; font-size: 1.1rem;">
-                    <i class="fas fa-wand-magic-sparkles"></i> بدء عملية الدبلجة الآن
+                <button id="dubBtn" onclick="startDubbing()" class="btn-primary">
+                    <i class="fas fa-wand-magic-sparkles"></i> بدء الدبلجة الآن
                 </button>
             </div>
 
             <div class="side-options">
-                <section class="card" id="progressArea" style="display: none; border-color: var(--purple-light);">
+                <section class="card" id="progressArea" style="display: none;">
                     <h3><i class="fas fa-spinner fa-spin"></i> جاري العمل...</h3>
-                    <p id="statusTxt" style="font-size: 0.9rem; color: #ccc;">الحالة: جاري المعالجة</p>
-                    <div class="progress-bar" style="height: 8px; background: #333; border-radius: 10px; overflow: hidden; margin-top: 15px;">
-                        <div id="progFill" style="width: 10%; height: 100%; background: var(--purple-light); transition: 0.5s;"></div>
-                    </div>
+                    <p id="statusTxt">الحالة: جاري المعالجة</p>
+                    <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
                 </section>
 
-                <section class="card" id="resCard" style="display: none; border-color: #22c55e;">
-                    <h3 style="color: #22c55e;"><i class="fas fa-check-double"></i> النتيجة النهائية</h3>
-                    <audio id="dubAud" controls style="width: 100%; margin-bottom: 15px;"></audio>
-                    <video id="dubVid" controls style="width: 100%; display: none; border-radius: 10px;"></video>
-                    <a id="dlBtn" href="#" download class="btn-primary" style="display: block; text-align: center; text-decoration: none; background: #065f2c;">
-                        <i class="fas fa-download"></i> تحميل الملف
-                    </a>
-                </section>
-
-                <section class="card" style="margin-top: 1rem; background: rgba(255,215,0,0.05);">
-                    <h4 style="color: var(--gold);"><i class="fas fa-info-circle"></i> ملاحظات</h4>
-                    <ul style="font-size: 0.75rem; color: #aaa; padding-right: 1.2rem;">
-                        <li>تكلفة الدبلجة: 100 نقطة لكل عملية.</li>
-                        <li>المعالجة تستغرق 2-5 دقائق.</li>
-                    </ul>
+                <section class="card" id="resCard" style="display: none;">
+                    <h3><i class="fas fa-check-double"></i> النتيجة</h3>
+                    <audio id="dubAud" controls style="width:100%"></audio>
+                    <video id="dubVid" controls style="width:100%; display:none;"></video>
+                    <a id="dlBtn" href="#" download class="btn-primary" style="margin-top:10px; background:#065f2c; text-align:center; text-decoration:none;">تحميل</a>
                 </section>
             </div>
-
         </div>
     </main>
 
     <div id="toasts"></div>
-
     <script src="js/shared.js"></script>
     <script src="js/dubbing.js"></script>
-
-    <script>
-        // وظيفة إخفاء وإظهار القائمة الجانبية
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('expanded');
-        }
-    </script>
 </body>
 </html>
