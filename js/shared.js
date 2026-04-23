@@ -1,5 +1,5 @@
 // js/shared.js - المحرك المشترك لنظام الحماية والتنبيهات والتحكم بالشريط الجانبي
-const API_BASE = 'https://web-production-14a1.up.railway.app';
+const API_BASE = 'web-production-14a1.up.railway.app';
 const OVERLAY_ID = 'sidebarOverlay';
 
 // -----------------------------
