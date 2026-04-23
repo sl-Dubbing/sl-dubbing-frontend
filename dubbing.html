@@ -9,8 +9,14 @@
 </head>
 <body>
 
+    <button class="main-toggle-btn" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-label">القائمة</div>
+        <div class="sidebar-top">
+            <span class="menu-title">القائمة</span>
+        </div>
         
         <div class="logo-area">
             <h2>|| sl-Dubbing</h2>
@@ -31,11 +37,6 @@
 
     <main class="main-content" id="mainContent">
         <header>
-            <button class="toggle-btn" onclick="toggleSidebar()">
-                <i class="fas fa-bars"></i>
-                <span>إظهار/إخفاء القائمة</span>
-            </button>
-
             <h1>استوديو الدبلجة الاحترافي</h1>
             <p>قم برفع الفيديو واختيار لغة الهدف للبدء</p>
         </header>
@@ -45,7 +46,7 @@
                 <section class="card">
                     <h3><i class="fas fa-cloud-upload-alt"></i> 1. رفع الوسائط</h3>
                     <div class="upload-box">
-                        <input type="file" id="mediaFile" accept="video/*,audio/*" style="display: none;">
+                        <input type="file" id="mediaFile" accept="video/*,audio/*" style="display: none;" onchange="updateFileName()">
                         <button onclick="document.getElementById('mediaFile').click()" class="btn-secondary">
                             <i class="fas fa-file-video"></i> اختر ملف
                         </button>
@@ -79,7 +80,7 @@
             <div class="side-options">
                 <section class="card" id="progressArea" style="display: none;">
                     <h3><i class="fas fa-spinner fa-spin"></i> جاري العمل...</h3>
-                    <p id="statusTxt">الحالة: جاري المعالجة</p>
+                    <p id="statusTxt">الحالة: الانتظار</p>
                     <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
                 </section>
 
