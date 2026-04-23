@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text to Speech</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <header>
+        <div id="authSection"></div>
+    </header>
+
+    <main class="container">
+        <section class="card">
+            <h3><i class="fas fa-edit"></i> 1. Enter Your Text</h3>
+            <textarea id="ttsInput" placeholder="اكتب النص هنا ليقوم الذكاء الاصطناعي بنطقه..."></textarea>
+        </section>
+
+        <section class="card">
+            <h3><i class="fas fa-globe"></i> 2. Target Language</h3>
+            <div id="langGrid" class="grid-container">
+                <div class="item-card active" onclick="setLang('en', this)">English</div>
+                <div class="item-card" onclick="setLang('ar', this)">Arabic</div>
+                </div>
+        </section>
+
+        <button id="ttsBtn" onclick="startTTS()" class="btn-primary">CONVERT TEXT TO VOICE</button>
+
+        <div id="statusArea">
+            <p id="statusTxt"></p>
+        </div>
+
+        <section id="resultArea" class="card" style="display:none;">
+            <h3>AI Translation:</h3>
+            <p id="translatedText" style="font-style: italic; color: #ccc;"></p>
+            <hr>
+            <audio id="audioResult" controls></audio>
+        </section>
+    </main>
+
+    <div id="toasts"></div>
+
+    <script src="js/shared.js"></script>
+    <script src="js/tts.js"></script>
+</body>
+</html>
