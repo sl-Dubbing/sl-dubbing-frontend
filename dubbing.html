@@ -7,12 +7,12 @@
 
     <style>
     :root {
-        --bg-dark: #0b1020;         
-        --sidebar-bg: #0f1724;      
-        --accent: #7c3aed;          
-        --gold: #ffb800;            
-        --sidebar-w: 280px;         
-        --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --bg-dark: #0b1020;
+        --sidebar-bg: #0f1724;
+        --accent: #7c3aed;
+        --gold: #ffb800;
+        --sidebar-w: 280px;
+        --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
     </style>
 
@@ -33,7 +33,7 @@
             </div>
             
             <div id="authSection" class="user-card">
-                <div style="color: #666; font-size: 0.8rem;">جاري التحميل...</div>
+                <div style="color: #666; font-size: 0.8rem; text-align: center;">جاري التحقق...</div>
             </div>
 
             <nav class="sidebar-nav">
@@ -47,22 +47,43 @@
     </aside>
 
     <main class="main-content" id="mainContent">
-        <div class="container">
-            <header class="main-header">
-                <h1>استوديو الدبلجة الاحترافي</h1>
-                <p>حول فيديوهاتك للغة التي تحب بضغطة زر</p>
-            </header>
+        <header class="main-header">
+            <h1>استوديو الدبلجة الاحترافي</h1>
+            <p>ارفع ملفك الآن وابدأ الدبلجة بأحدث تقنيات الذكاء الاصطناعي</p>
+        </header>
 
-            <div class="workspace-card">
-                <section style="padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px;">
-                    <h3>مرحباً بكِ مجدداً</h3>
-                    <p>استخدمي القائمة الجانبية للتنقل بين الأدوات.</p>
-                 </section>
+        <div class="workspace-grid">
+            <div class="tools-container">
+                <section class="card">
+                    <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
+                    <div class="upload-wrapper">
+                        <input type="file" id="mediaFile" hidden onchange="updateFileName()" />
+                        <button onclick="document.getElementById('mediaFile').click()" class="btn-secondary">
+                            <i class="fas fa-file-video"></i> اختر فيديو أو صوت
+                        </button>
+                        <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h3><i class="fas fa-globe"></i> 2. لغة الهدف</h3>
+                    <select id="langSelect" class="styled-select" onchange="setLang(this.value)">
+                        <option value="ar">🇸🇦 العربية</option>
+                        <option value="en">🇺🇸 الإنجليزية</option>
+                        <option value="es">🇪🇸 الإسبانية</option>
+                        <option value="fr">🇫🇷 الفرنسية</option>
+                    </select>
+                </section>
+
+                <button id="dubBtn" class="btn-primary-action">
+                    <i class="fas fa-wand-magic-sparkles"></i> بدء الدبلجة الآن
+                </button>
             </div>
         </div>
     </main>
 
     <div id="toasts"></div>
+
     <script src="js/dubbing.js"></script>
 </body>
 </html>
