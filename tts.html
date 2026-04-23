@@ -1,54 +1,117 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Text to Speech</title>
-    
-    <link rel="stylesheet" href="./css/variables.css">
-    <link rel="stylesheet" href="./css/layout.css">
-    <link rel="stylesheet" href="./css/components.css">
-    <link rel="stylesheet" href="./css/style.css">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تحويل النص إلى صوت | sl-Dubbing</title>
+
+    <style>
+    :root {
+        --bg-dark: #0b1020;
+        --sidebar-bg: #0f1724;
+        --card-bg: rgba(255,255,255,0.04);
+        --border: rgba(167,139,250,0.12);
+        --accent: #7c3aed;
+        --accent-2: #2563eb;
+        --gold: #ffb800;
+        --text: #e6e7ff;
+        --muted-text: #9ca3af;
+        --sidebar-w: 280px;
+        --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    </style>
+
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 <body>
 
-    <header>
-        <div id="authSection"></div>
+    <header class="top-bar">
+        <button class="menu-btn" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+            <span>القائمة</span>
+        </button>
+        <div class="top-logo">
+            <h2 style="color: var(--gold); margin: 0; font-size: 1.2rem;">sl-Dubbing</h2>
+        </div>
     </header>
 
-    <main class="container">
-        <section class="card">
-            <h3><i class="fas fa-edit"></i> 1. Enter Your Text</h3>
-            <textarea id="ttsInput" placeholder="اكتب النص هنا ليقوم الذكاء الاصطناعي بنطقه..."></textarea>
-        </section>
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
-        <section class="card">
-            <h3><i class="fas fa-globe"></i> 2. Target Language</h3>
-            <div id="langGrid" class="grid-container">
-                <div class="item-card active" onclick="setLang('en', this)">English</div>
-                <div class="item-card" onclick="setLang('ar', this)">Arabic</div>
-                </div>
-        </section>
-
-        <button id="ttsBtn" onclick="startTTS()" class="btn-primary">CONVERT TEXT TO VOICE</button>
-
-        <div id="statusArea">
-            <p id="statusTxt"></p>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-user-section" id="authSection">
+            <div style="color: #666; font-size: 0.8rem; text-align: center;">جاري التحقق من بياناتك...</div>
         </div>
 
-        <section id="resultArea" class="card" style="display:none;">
-            <h3>AI Translation:</h3>
-            <p id="translatedText" style="font-style: italic; color: #ccc;"></p>
-            <hr>
-            <audio id="audioResult" controls></audio>
-        </section>
+        <nav class="sidebar-nav">
+            <div class="nav-label">القائمة الرئيسية</div>
+            <ul>
+                <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
+                <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
+                <li><a href="tts.html" class="active"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content" id="mainContent">
+        <div class="container">
+            <header class="main-header">
+                <h1>تحويل النص إلى صوت احترافي</h1>
+                <p>اكتب نصك، اختر اللغة، ودع الذكاء الاصطناعي ينطقه بواقعية</p>
+            </header>
+            
+            <div class="workspace-grid">
+                <div class="tools-container">
+                    <section class="card">
+                        <h3><i class="fas fa-edit"></i> 1. أدخل النص</h3>
+                        <textarea id="ttsInput" class="styled-textarea" rows="6" placeholder="اكتب النص هنا ليقوم الذكاء الاصطناعي بنطقه..."></textarea>
+                    </section>
+
+                    <section class="card">
+                        <h3><i class="fas fa-globe"></i> 2. لغة النطق (الهدف)</h3>
+                        <select id="langSelect" class="styled-select">
+                            <option value="ar">🇸🇦 العربية</option>
+                            <option value="en">🇺🇸 الإنجليزية</option>
+                            <option value="es">🇪🇸 الإسبانية</option>
+                            <option value="fr">🇫🇷 الفرنسية</option>
+                        </select>
+                    </section>
+
+                    <button id="ttsBtn" class="btn-primary-action" onclick="startTTS()">
+                        <i class="fas fa-volume-up"></i> بدء التحويل الصوتي
+                    </button>
+                </div>
+
+                <div class="results-container">
+                    <section class="card" id="progressArea" style="display:none;">
+                        <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
+                        <p id="statusTxt">الحالة: في الانتظار</p>
+                        <div class="progress-bar">
+                            <div id="progFill" class="prog-fill"></div>
+                        </div>
+                    </section>
+
+                    <section class="card" id="resCard" style="display:none;">
+                        <h3><i class="fas fa-check-circle" style="color: #10b981;"></i> النتيجة جاهزة</h3>
+                        
+                        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px;">
+                            <h4 style="font-size: 0.85rem; color: var(--gold); margin: 0 0 8px 0;">الترجمة الذكية:</h4>
+                            <p id="translatedText" style="font-style: italic; color: #ccc; font-size: 0.95rem; line-height: 1.6; margin: 0;"></p>
+                        </div>
+
+                        <audio id="audioResult" controls style="width:100%; margin-bottom:10px;"></audio>
+                        
+                        <a id="dlBtn" href="#" download class="btn-download">
+                            <i class="fas fa-download"></i> تحميل المقطع الصوتي
+                        </a>
+                    </section>
+                </div>
+            </div>
+        </div>
     </main>
 
     <div id="toasts"></div>
 
-    <script src="./js/shared.js"></script>
-    <script src="./js/tts.js"></script>
+    <script src="js/tts.js"></script>
 </body>
 </html>
