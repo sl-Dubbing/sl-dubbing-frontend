@@ -1,12 +1,27 @@
-### js/dubbing.js (مُعدّل وكامل)
-
 ```javascript
-// js/dubbing.js
-// نسخة مُحسّنة: تحسين التعامل مع الأخطاء، رسائل للمستخدم، فحص المصادقة، ودعم واجهة المستخدم.
-// ملاحظة: تأكد أن shared.js لا يعيد تعريف أي من هذه الدوال إذا كان موجودًا.
+// js/dubbing.js (ألوان معدّلة ومركزّة في أعلى الملف)
+// نسخة مُحسّنة: استبدلت كل ألوان النصوص والتنبيهات بثوابت لونية في الأعلى
+// ملاحظة: لا تغيّر ترتيب تحميل هذا الملف — يجب أن يُحمّل بعد DOM أو مع defer.
 
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 const FETCH_TIMEOUT_MS = 10000; // مهلة الشبكة بالمللي ثانية
+
+// -----------------------------
+// 🟢 ثوابت الألوان (عدل هنا لتغيير الألوان في كل الملف)
+// -----------------------------
+const COLORS = {
+    ACCENT: '#7c3aed',         // اللون الرئيسي
+    ACCENT_2: '#2563eb',       // لون ثانوي للتدرجات
+    GOLD: '#ffb800',           // لون التمييز
+    TEXT: '#e0e0ff',           // لون النص العام
+    MUTED_TEXT: '#9ca3af',     // نص ثانوي
+    PROGRESS: '#34d399',       // تعبئة شريط التقدم
+    DOWNLOAD_BG: '#065f2c',    // زر التحميل
+    TOAST_ERROR: '#ef4444',    // تنبيه خطأ
+    TOAST_WARNING: '#f59e0b',  // تحذير / انتهاء صلاحية
+    TOAST_INFO: '#f97316',     // معلومات عامة
+    TOAST_SUCCESS: '#10b981'   // نجاح
+};
 
 // -----------------------------
 // 🟢 مساعدة: fetch مع مهلة
@@ -28,12 +43,26 @@ async function fetchWithTimeout(url, opts = {}, timeout = FETCH_TIMEOUT_MS) {
 // -----------------------------
 // 🟢 إظهار التنبيهات (toast)
 // -----------------------------
-function showToast(msg, color = '#ef4444') {
+function showToast(msg, color = COLORS.TOAST_ERROR) {
     const t = document.getElementById('toasts');
     if (!t) return;
     const box = document.createElement('div');
     box.className = 'toast';
-    box.style.cssText = `position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:${color}; color:white; padding:12px 25px; border-radius:10px; z-index:9999; font-weight:bold;`;
+    box.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${color};
+        color: white;
+        padding: 12px 25px;
+        border-radius: 10px;
+        z-index: 9999;
+        font-weight: bold;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+        max-width: calc(100% - 40px);
+        text-align: center;
+    `;
     box.innerText = msg;
     t.appendChild(box);
     setTimeout(() => {
@@ -52,7 +81,7 @@ async function checkAuth() {
 
     // حالة عدم وجود توكن
     if (!token) {
-        authSection.innerHTML = `<a href="login.html" style="color:var(--gold); text-decoration:none; font-weight:bold; display:block; text-align:center;">تسجيل الدخول</a>`;
+        authSection.innerHTML = `<a href="login.html" style="color:${COLORS.GOLD}; text-decoration:none; font-weight:bold; display:block; text-align:center;">تسجيل الدخول</a>`;
         return;
     }
 
@@ -67,12 +96,12 @@ async function checkAuth() {
             // حالات شائعة: 401 (غير مصرح)، 403، 500
             if (r.status === 401 || r.status === 403) {
                 localStorage.removeItem('token');
-                showToast('انتهت صلاحية الجلسة. الرجاء تسجيل الدخول مجدداً.', '#f59e0b');
-                authSection.innerHTML = `<a href="login.html" style="color:var(--gold); text-decoration:none; font-weight:bold; display:block; text-align:center;">تسجيل الدخول</a>`;
+                showToast('انتهت صلاحية الجلسة. الرجاء تسجيل الدخول مجدداً.', COLORS.TOAST_WARNING);
+                authSection.innerHTML = `<a href="login.html" style="color:${COLORS.GOLD}; text-decoration:none; font-weight:bold; display:block; text-align:center;">تسجيل الدخول</a>`;
                 return;
             }
             // عرض رسالة عامة مع رمز الحالة
-            showToast(`خطأ في المصادقة: ${r.status}`, '#f97316');
+            showToast(`خطأ في المصادقة: ${r.status}`, COLORS.TOAST_INFO);
             return;
         }
 
@@ -85,21 +114,21 @@ async function checkAuth() {
         if (d.success) {
             authSection.innerHTML = `
                 <div style="text-align:center; background:rgba(255,255,255,0.03); padding:10px; border-radius:12px;">
-                    <div style="font-weight:bold; color:#fff">${escapeHtml(d.user.name || 'مستخدم')}</div>
-                    <div style="color:var(--gold); font-size:0.85rem; margin:5px 0;">الرصيد: ${Number(d.user.credits || 0)} 💰</div>
+                    <div style="font-weight:bold; color:${COLORS.TEXT}">${escapeHtml(d.user.name || 'مستخدم')}</div>
+                    <div style="color:${COLORS.GOLD}; font-size:0.85rem; margin:5px 0;">الرصيد: ${Number(d.user.credits || 0)} 💰</div>
                     <button id="logoutBtn" style="background:none; border:1px solid #f87171; color:#f87171; padding:4px 10px; border-radius:8px; cursor:pointer; font-size:0.8rem;">خروج</button>
                 </div>`;
             const lb = document.getElementById('logoutBtn');
             if (lb) lb.addEventListener('click', () => { logout(); });
         } else {
             localStorage.removeItem('token');
-            showToast('فشل التحقق من المستخدم. الرجاء تسجيل الدخول.', '#f97316');
-            authSection.innerHTML = `<a href="login.html" style="color:var(--gold); text-decoration:none; font-weight:bold; display:block; text-align:center;">تسجيل الدخول</a>`;
+            showToast('فشل التحقق من المستخدم. الرجاء تسجيل الدخول.', COLORS.TOAST_INFO);
+            authSection.innerHTML = `<a href="login.html" style="color:${COLORS.GOLD}; text-decoration:none; font-weight:bold; display:block; text-align:center;">تسجيل الدخول</a>`;
         }
     } catch (e) {
         // قد يكون سبب الخطأ: CORS، انقطاع الشبكة، مهلة، أو خطأ في الخادم
         console.error("Auth check failed", e);
-        showToast('فشل الاتصال بالخادم. تحقق من إعدادات CORS أو حالة الخادم.', '#ef4444');
+        showToast('فشل الاتصال بالخادم. تحقق من إعدادات CORS أو حالة الخادم.', COLORS.TOAST_ERROR);
     }
 }
 
@@ -159,13 +188,13 @@ async function startDubbing() {
     const sampleInput = document.getElementById('customVoice');
 
     if (!mediaInput || !mediaInput.files || mediaInput.files.length === 0) {
-        showToast('اختر ملف وسائط أولاً.', '#f97316');
+        showToast('اختر ملف وسائط أولاً.', COLORS.TOAST_INFO);
         return;
     }
 
     const token = localStorage.getItem('token');
     if (!token) {
-        showToast('الرجاء تسجيل الدخول قبل البدء.', '#f59e0b');
+        showToast('الرجاء تسجيل الدخول قبل البدء.', COLORS.TOAST_WARNING);
         return;
     }
 
@@ -198,13 +227,13 @@ async function startDubbing() {
 
         if (!res.ok) {
             if (res.status === 401) {
-                showToast('غير مصرح. الرجاء تسجيل الدخول مجدداً.', '#f59e0b');
+                showToast('غير مصرح. الرجاء تسجيل الدخول مجدداً.', COLORS.TOAST_WARNING);
                 localStorage.removeItem('token');
                 checkAuth();
                 return;
             }
             const txt = await res.text().catch(() => null);
-            showToast(`فشل الطلب: ${res.status}`, '#ef4444');
+            showToast(`فشل الطلب: ${res.status}`, COLORS.TOAST_ERROR);
             console.error('Dubbing failed:', res.status, txt);
             if (statusTxt) statusTxt.innerText = `الحالة: فشل (${res.status})`;
             return;
@@ -213,7 +242,7 @@ async function startDubbing() {
         // استجابة ناجحة
         const data = await res.json().catch(() => null);
         if (!data) {
-            showToast('استجابة الخادم غير صالحة.', '#ef4444');
+            showToast('استجابة الخادم غير صالحة.', COLORS.TOAST_ERROR);
             if (statusTxt) statusTxt.innerText = 'الحالة: استجابة غير صالحة';
             return;
         }
@@ -241,16 +270,19 @@ async function startDubbing() {
         if (dlBtn && data.audio_url) {
             dlBtn.href = data.audio_url;
             dlBtn.style.display = 'block';
+            // تأكد من أن زر التحميل يتماشى لونيًا مع الثوابت
+            dlBtn.style.background = COLORS.DOWNLOAD_BG;
+            dlBtn.style.color = '#fff';
         }
 
-        showToast('تمت الدبلجة بنجاح!', '#10b981');
+        showToast('تمت الدبلجة بنجاح!', COLORS.TOAST_SUCCESS);
     } catch (err) {
         console.error('startDubbing error', err);
         if (err.name === 'AbortError') {
-            showToast('انتهت مهلة الاتصال. حاول مرة أخرى لاحقاً.', '#f97316');
+            showToast('انتهت مهلة الاتصال. حاول مرة أخرى لاحقاً.', COLORS.TOAST_INFO);
             if (statusTxt) statusTxt.innerText = 'الحالة: مهلة الاتصال';
         } else {
-            showToast('حدث خطأ أثناء المعالجة. تحقق من الخادم وإعدادات CORS.', '#ef4444');
+            showToast('حدث خطأ أثناء المعالجة. تحقق من الخادم وإعدادات CORS.', COLORS.TOAST_ERROR);
             if (statusTxt) statusTxt.innerText = 'الحالة: خطأ أثناء المعالجة';
         }
     } finally {
@@ -280,6 +312,8 @@ function toggleSidebar() {
         if (!overlay) {
             overlay = document.createElement('div');
             overlay.className = 'overlay-for-sidebar visible';
+            // طبق لون overlay من الثوابت (CSS سيغطي العرض إن وُجد)
+            overlay.style.background = 'rgba(0,0,0,0.45)';
             document.body.appendChild(overlay);
             overlay.addEventListener('click', () => {
                 sidebar.classList.add('collapsed');
