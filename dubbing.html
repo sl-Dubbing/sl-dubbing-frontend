@@ -62,10 +62,11 @@
             
             <div class="workspace-grid">
                 <div class="tools-container">
+                    
                     <section class="card">
                         <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
                         <div class="upload-wrapper">
-                            <input type="file" id="mediaFile" hidden onchange="updateFileName()" />
+                            <input type="file" id="mediaFile" hidden onchange="updateFileName()" accept="video/*,audio/*" />
                             <button onclick="document.getElementById('mediaFile').click()" class="btn-secondary">
                                 <i class="fas fa-file-video"></i> اختر فيديو أو صوت
                             </button>
@@ -84,11 +85,19 @@
                     </section>
 
                     <section class="card">
-                        <h3><i class="fas fa-microphone-alt"></i> 3. استنساخ الصوت</h3>
-                        <div class="voice-clone-box">
-                            <input type="file" id="customVoice" hidden onchange="handleCustomVoice(this)" />
+                        <h3><i class="fas fa-microphone-alt"></i> 3. اختيار الصوت (Voice Profile)</h3>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display:block; margin-bottom:10px; color:var(--muted-text); font-size:0.9rem;">الخيار الأول: استخدم صوتاً جاهزاً أو الأصلي</label>
+                            <select id="voiceSelect" class="styled-select" onchange="setVoice(this.value)">
+                                </select>
+                        </div>
+
+                        <div class="voice-clone-box" style="border-top: 1px dashed var(--border); padding-top: 20px;">
+                            <label style="display:block; margin-bottom:10px; color:var(--muted-text); font-size:0.9rem;">الخيار الثاني: أو قم برفع عينة صوتية مخصصة</label>
+                            <input type="file" id="customVoice" hidden onchange="handleCustomVoice(this)" accept="audio/*" />
                             <button onclick="document.getElementById('customVoice').click()" class="btn-secondary">
-                                <i class="fas fa-plus"></i> رفع عينة صوتية
+                                <i class="fas fa-plus"></i> رفع عينة من جهازك
                             </button>
                             <p id="customVoiceTxt" class="file-info"></p>
                         </div>
@@ -122,7 +131,6 @@
     </main>
 
     <div id="toasts"></div>
-
     <script src="js/dubbing.js"></script>
 </body>
 </html>
