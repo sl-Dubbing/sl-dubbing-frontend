@@ -11,10 +11,78 @@
     <link rel="stylesheet" href="css/style.css">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* تحسينات إضافية للميزات الجديدة */
+        .sidebar {
+            transition: transform 0.3s ease, width 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        /* حالة إغلاق القائمة الجانبية */
+        .sidebar.collapsed {
+            transform: translateX(100%); /* تختفي لجهة اليمين في RTL */
+            width: 0;
+            padding: 0;
+            margin: 0;
+        }
+
+        .main-content {
+            transition: margin-right 0.3s ease;
+        }
+
+        /* تمدد المحتوى عند إغلاق القائمة */
+        .main-content.expanded {
+            margin-right: 0 !important;
+        }
+
+        /* زر التحكم في القائمة */
+        .toggle-btn {
+            background: var(--bg-card);
+            color: var(--gold);
+            border: 1px solid var(--border);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+            transition: 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: var(--border);
+        }
+
+        /* تنسيق القائمة المنسدلة للغات */
+        .lang-dropdown {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            outline: none;
+            appearance: none; /* إخفاء سهم المتصفح الافتراضي */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gold' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: left 1rem center;
+            background-size: 1em;
+        }
+
+        .lang-dropdown option {
+            background: #1e1e2d;
+            color: white;
+        }
+    </style>
 </head>
 <body>
 
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="logo-area" style="text-align: center; margin-bottom: 2rem;">
             <h2 style="color: var(--gold); font-size: 1.5rem;">|| sl-Dubbing</h2>
         </div>
@@ -44,8 +112,13 @@
         </nav>
     </aside>
 
-    <main class="main-content">
+    <main class="main-content" id="mainContent">
         <header style="margin-bottom: 2rem;">
+            <button class="toggle-btn" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+                <span>القائمة</span>
+            </button>
+
             <h1 style="font-size: 1.8rem; color: #fff;">استوديو الدبلجة الاحترافي</h1>
             <p style="color: #aaa;">قم برفع الفيديو الخاص بك واختيار لغة الهدف لبدء الدبلجة بالذكاء الاصطناعي</p>
         </header>
@@ -66,8 +139,9 @@
 
                 <section class="card" style="margin-top: 2rem;">
                     <h3><i class="fas fa-language"></i> 2. لغة الهدف</h3>
-                    <div id="langGrid" class="grid-container">
-                        </div>
+                    <select id="langSelect" class="lang-dropdown" onchange="setLang(this.value)">
+                        <option value="" disabled selected>اختر اللغة المطلوبة...</option>
+                        </select>
                 </section>
 
                 <section class="card" style="margin-top: 2rem;">
@@ -76,7 +150,7 @@
                         </div>
                     
                     <div class="custom-voice-area" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 10px;">
-                        <p style="font-size: 0.85rem; margin-bottom: 10px;">أو قم برفع عينة صوتك لاستنساخها (Voice Clone):</p>
+                        <p style="font-size: 0.85rem; margin-bottom: 10px;">أو استنساخ صوتك (Voice Clone):</p>
                         <input type="file" id="customVoice" onchange="handleCustomVoice(this)" style="display: none;">
                         <button onclick="document.getElementById('customVoice').click()" class="btn-sm" style="background: transparent; border: 1px solid var(--gold); color: var(--gold);">
                             <i class="fas fa-plus"></i> رفع عينة صوت
@@ -101,13 +175,10 @@
 
                 <section class="card" id="resCard" style="display: none; border-color: #22c55e;">
                     <h3 style="color: #22c55e;"><i class="fas fa-check-double"></i> النتيجة النهائية</h3>
-                    <p style="font-size: 0.85rem; margin-bottom: 15px;">تمت الدبلجة بنجاح! يمكنك الآن الاستماع والتحميل.</p>
-                    
                     <audio id="dubAud" controls style="width: 100%; margin-bottom: 15px;"></audio>
                     <video id="dubVid" controls style="width: 100%; display: none; border-radius: 10px;"></video>
-                    
-                    <a id="dlBtn" href="#" download class="btn-primary" style="display: block; text-align: center; text-decoration: none; background: #065f2c; margin-top: 10px;">
-                        <i class="fas fa-download"></i> تحميل الملف المترجم
+                    <a id="dlBtn" href="#" download class="btn-primary" style="display: block; text-align: center; text-decoration: none; background: #065f2c;">
+                        <i class="fas fa-download"></i> تحميل الملف
                     </a>
                 </section>
 
@@ -115,8 +186,7 @@
                     <h4 style="color: var(--gold);"><i class="fas fa-info-circle"></i> ملاحظات</h4>
                     <ul style="font-size: 0.75rem; color: #aaa; padding-right: 1.2rem;">
                         <li>تكلفة الدبلجة: 100 نقطة لكل عملية.</li>
-                        <li>قد تستغرق المعالجة من 2-5 دقائق حسب طول الفيديو.</li>
-                        <li>سيتم إعادة الرصيد تلقائياً في حال فشل العملية.</li>
+                        <li>المعالجة تستغرق 2-5 دقائق.</li>
                     </ul>
                 </section>
             </div>
@@ -128,5 +198,15 @@
 
     <script src="js/shared.js"></script>
     <script src="js/dubbing.js"></script>
+
+    <script>
+        // وظيفة إخفاء وإظهار القائمة الجانبية
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        }
+    </script>
 </body>
 </html>
