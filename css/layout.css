@@ -1,23 +1,77 @@
-/* الشريط الجانبي */
+/* ==========================================
+   🚀 AI Dubbing Layout - النسخة الاحترافية
+   ========================================== */
+
+:root {
+    --sidebar-width: 280px;
+    --transition-speed: 0.3s;
+}
+
+/* --- الهيكل العام --- */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-body); /* تأكد من تعريفه في variables.css */
+    color: white;
+    overflow-x: hidden;
+}
+
+/* --- الشريط الجانبي (Sidebar) --- */
 .sidebar {
     position: fixed;
-    right: 0;
+    right: 0; /* التثبيت في اليمين لأن الموقع RTL */
     top: 0;
-    width: 280px;
+    width: var(--sidebar-width);
     height: 100vh;
     background: var(--bg-card);
     border-left: 1px solid var(--border);
     padding: 2rem 1.5rem;
     z-index: 1000;
-    transition: var(--transition);
+    transition: transform var(--transition-speed) ease, width var(--transition-speed) ease;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.3);
 }
 
+/* حالة إغلاق الشريط الجانبي */
+.sidebar.collapsed {
+    transform: translateX(100%); /* يختفي خارج الشاشة من جهة اليمين */
+}
+
+/* --- المحتوى الرئيسي (Main Content) --- */
 .main-content {
-    margin-right: 280px;
+    margin-right: var(--sidebar-width);
     padding: 2rem;
     min-height: 100vh;
+    transition: margin-right var(--transition-speed) ease;
 }
 
+/* تمدد المحتوى عند إغلاق القائمة */
+.main-content.expanded {
+    margin-right: 0;
+}
+
+/* --- زر التحكم في القائمة (Toggle Button) --- */
+.toggle-btn {
+    background: var(--bg-card);
+    color: var(--gold);
+    border: 1px solid var(--border);
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    transition: 0.3s;
+    z-index: 1100;
+}
+
+.toggle-btn:hover {
+    background: var(--border);
+    border-color: var(--gold);
+}
+
+/* --- منطقة العمل (Workspace Grid) --- */
 .workspace {
     display: grid;
     grid-template-columns: 1fr 350px;
@@ -25,9 +79,50 @@
     margin-bottom: 2rem;
 }
 
+/* --- تنسيق القائمة المنسدلة (Dropdown) --- */
+.lang-dropdown {
+    width: 100%;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    /* سهم ذهبي مخصص للقائمة */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gold' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: left 1rem center;
+    background-size: 1em;
+    transition: 0.3s;
+}
+
+.lang-dropdown:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
+}
+
+/* --- الاستجابة للشاشات الصغيرة (Responsive) --- */
 @media (max-width: 1024px) {
-    .sidebar { transform: translateX(100%); }
-    .sidebar.open { transform: translateX(0); }
-    .main-content { margin-right: 0; }
-    .workspace { grid-template-columns: 1fr; }
+    .sidebar {
+        transform: translateX(100%); /* مخفي افتراضياً في الجوال */
+    }
+    
+    .sidebar.open {
+        transform: translateX(0); /* يظهر عند إضافة كلاس open للجوال */
+    }
+
+    .main-content {
+        margin-right: 0;
+    }
+
+    .workspace {
+        grid-template-columns: 1fr; /* تحويل الأعمدة لصف واحد */
+    }
+
+    .side-options {
+        order: 2; /* النتيجة تظهر تحت الإعدادات في الجوال */
+    }
 }
