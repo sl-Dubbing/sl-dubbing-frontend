@@ -1,4 +1,4 @@
-### css/style.css
+### css/style.css (محدّث وكامل)
 
 ```css
 /* --- المتغيرات الأساسية --- */
@@ -14,40 +14,117 @@
     --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* --- قواعد عامة --- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
+html, body { height: 100%; }
 body {
     background: var(--bg-dark);
     color: var(--text);
     font-family: 'Segoe UI', sans-serif;
     direction: rtl;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* --- زر الهامبرغر الثابت (معدّل ليظهر فوق الشريط الجانبي) --- */
+/* --- زر القائمة (ثلاث خطوط + كلمة "القائمة" فوقه) --- */
+.menu-toggle,
 .hamburger-menu {
     position: fixed;
     top: 20px;
-    /* تراكب جزئي فوق الشريط الجانبي */
     right: calc(var(--sidebar-w) - 30px);
-    width: 50px;
-    height: 50px;
-    background: var(--accent);
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(180deg, rgba(124,58,237,0.95), rgba(37,99,235,0.95));
     border: none;
     border-radius: 12px;
     color: white;
-    font-size: 1.4rem;
     cursor: pointer;
     z-index: 4000; /* أعلى من sidebar */
-    box-shadow: 0 6px 20px rgba(0,0,0,0.45);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: var(--transition);
+    transition: transform var(--transition), right 0.2s ease;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.45);
 }
-.hamburger-menu:hover { background: var(--gold); transform: scale(1.05); }
 
-/* عندما يكون الشريط مطوياً، حرك الزر إلى اليمين ليبقى ظاهرًا */
+/* كلمة "القائمة" فوق الزر */
+.menu-toggle .label,
+.hamburger-menu .label {
+    position: absolute;
+    top: -28px;
+    right: 50%;
+    transform: translateX(50%);
+    font-size: 0.85rem;
+    color: var(--gold);
+    background: rgba(0,0,0,0.25);
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,184,0,0.08);
+    pointer-events: none;
+    white-space: nowrap;
+    font-weight: 700;
+    z-index: 4100;
+}
+
+/* شكل ثلاث خطوط الهامبرغر داخل الزر */
+.menu-toggle .btn-circle,
+.hamburger-menu .btn-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    position: relative;
+}
+
+.menu-toggle .hamburger,
+.hamburger-menu .hamburger {
+    position: relative;
+    width: 22px;
+    height: 2px;
+    background: #fff;
+    display: inline-block;
+    transition: all 0.18s ease;
+}
+.menu-toggle .hamburger::before,
+.menu-toggle .hamburger::after,
+.hamburger-menu .hamburger::before,
+.hamburger-menu .hamburger::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    width: 22px;
+    height: 2px;
+    background: #fff;
+    transition: all 0.18s ease;
+}
+.menu-toggle .hamburger::before,
+.hamburger-menu .hamburger::before { top: -7px; }
+.menu-toggle .hamburger::after,
+.hamburger-menu .hamburger::after  { top: 7px; }
+
+/* حالة مصغرة/مغلقة: نحول الهامبرغر إلى X */
+.sidebar.collapsed ~ .menu-toggle .hamburger,
+.sidebar.collapsed ~ .hamburger-menu .hamburger {
+    background: transparent;
+}
+.sidebar.collapsed ~ .menu-toggle .hamburger::before,
+.sidebar.collapsed ~ .hamburger-menu .hamburger::before {
+    transform: translateY(7px) rotate(45deg);
+}
+.sidebar.collapsed ~ .menu-toggle .hamburger::after,
+.sidebar.collapsed ~ .hamburger-menu .hamburger::after {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+/* عند المرور فوق الزر */
+.menu-toggle:hover, .hamburger-menu:hover { transform: scale(1.03); }
+
+/* عندما يكون الشريط مطوياً، حرك الزر قليلاً لليسار ليبقى ظاهرًا */
+.menu-toggle.sidebar-collapsed,
 .hamburger-menu.sidebar-collapsed {
     right: 20px;
 }
@@ -62,12 +139,17 @@ body {
     background: var(--sidebar-bg);
     border-left: 1px solid var(--border);
     z-index: 2000;
-    transition: var(--transition);
-    padding: 80px 20px 20px; /* مساحة تحت الزر */
+    transition: transform var(--transition), width var(--transition);
+    padding: 80px 20px 20px;
     overflow: auto;
+    box-shadow: -6px 0 20px rgba(0,0,0,0.35);
 }
 .sidebar.collapsed { transform: translateX(100%); }
 
+/* حالة الظهور على الجوال */
+.sidebar.open { transform: translateX(0); z-index: 4000; }
+
+/* --- ترويسة الشريط --- */
 .sidebar-header { text-align: center; margin-bottom: 30px; }
 .menu-label {
     display: block;
@@ -81,6 +163,7 @@ body {
 }
 .logo-area h2 { color: var(--gold); font-size: 1.5rem; }
 
+/* --- روابط الشريط --- */
 .sidebar-nav ul { list-style: none; padding: 0; margin: 0; }
 .sidebar-nav ul li a {
     color: #fff;
@@ -91,19 +174,20 @@ body {
     padding: 14px;
     border-radius: 10px;
     margin-bottom: 8px;
-    transition: 0.3s;
+    transition: background 0.25s ease;
 }
 .sidebar-nav ul li a.active { background: rgba(124, 58, 237, 0.2); color: var(--gold); }
-.sidebar-nav ul li a:hover { background: rgba(255,255,255,0.05); }
+.sidebar-nav ul li a:hover { background: rgba(255,255,255,0.03); }
 
 /* --- المحتوى الرئيسي --- */
 .main-content {
     margin-right: var(--sidebar-w);
     padding: 40px;
-    transition: var(--transition);
+    transition: margin-right var(--transition);
 }
 .main-content.expanded { margin-right: 0; }
 
+/* --- شبكة العمل --- */
 .workspace-grid {
     display: grid;
     grid-template-columns: 1fr 340px;
@@ -112,6 +196,7 @@ body {
     margin: 0 auto;
 }
 
+/* --- البطاقات --- */
 .card {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -120,10 +205,9 @@ body {
     margin-bottom: 20px;
     backdrop-filter: blur(5px);
 }
-
 .card h3 { font-size: 1.1rem; margin-bottom: 15px; color: #fff; }
 
-/* --- المدخلات والأزرار --- */
+/* --- عناصر التحكم --- */
 .styled-select {
     width: 100%;
     padding: 14px;
@@ -134,7 +218,6 @@ body {
     outline: none;
     cursor: pointer;
 }
-
 .btn-primary-action {
     width: 100%;
     padding: 18px;
@@ -147,7 +230,6 @@ body {
     cursor: pointer;
     box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3);
 }
-
 .btn-secondary {
     padding: 12px 20px;
     background: rgba(255,255,255,0.05);
@@ -156,13 +238,13 @@ body {
     color: #fff;
     cursor: pointer;
 }
-
 .file-info { font-size: 0.85rem; color: #9ca3af; margin-top: 10px; }
 
 /* --- شريط التقدم --- */
 .progress-bar { height: 10px; background: #333; border-radius: 10px; overflow: hidden; margin-top: 15px; }
 .prog-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #34d399); width: 10%; transition: width 0.5s ease; }
 
+/* --- زر التحميل --- */
 .btn-download {
     display: block;
     text-align: center;
@@ -174,33 +256,45 @@ body {
     font-weight: bold;
 }
 
-/* --- تحسينات الوصول واللمسات البصرية --- */
-.hamburger-menu:focus { outline: 3px solid rgba(124,58,237,0.18); }
+/* --- toasts --- */
+#toasts {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+}
+.toast { pointer-events: auto; }
+
+/* --- overlay للشاشات الصغيرة --- */
+.overlay-for-sidebar {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 3500;
+    display: none;
+}
+.overlay-for-sidebar.visible { display: block; }
+
+/* --- تحسينات الوصول --- */
+.menu-toggle:focus, .hamburger-menu:focus { outline: 3px solid rgba(124,58,237,0.18); }
 .sidebar-nav ul li a i { width: 20px; text-align: center; }
 
-/* --- الاستجابة للجوال --- */
+/* --- استجابة للجوال --- */
 @media (max-width: 1024px) {
     .workspace-grid { grid-template-columns: 1fr; padding: 0 20px; }
     .sidebar { transform: translateX(100%); }
+    .sidebar.open { transform: translateX(0); z-index: 4000; }
     .main-content { margin-right: 0; padding: 20px; }
-    .hamburger-menu {
-        right: 20px;
-        top: 14px;
-        width: 46px;
-        height: 46px;
-    }
+    .menu-toggle, .hamburger-menu { right: 20px; top: 14px; width: 46px; height: 46px; }
+    .menu-toggle .label, .hamburger-menu .label { top: -26px; }
 }
 
-/* --- حالات إضافية: عندما يكون الشريط مرئيًا على الشاشات الصغيرة --- */
-@media (max-width: 1024px) {
-    .sidebar.open { transform: translateX(0); z-index: 4000; }
-    .overlay-for-sidebar {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.45);
-        z-index: 3500;
-        display: none;
-    }
-    .overlay-for-sidebar.visible { display: block; }
-}
+/* --- لمسات نهائية --- */
+button { -webkit-tap-highlight-color: transparent; }
 ```
