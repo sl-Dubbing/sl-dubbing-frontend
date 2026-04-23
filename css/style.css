@@ -1,65 +1,39 @@
-### css/style.css
-
-```css
-/* --- المتغيرات الأساسية (ألوان معدّلة فقط) --- */
 :root {
-    --bg-dark: #0b1020;
-    --sidebar-bg: #0f1724;
-    --card-bg: rgba(255, 255, 255, 0.04);
-    --border: rgba(167, 139, 250, 0.12);
+    --bg-dark: #0d0d1f;
+    --sidebar-bg: #161625;
+    --border: rgba(167, 139, 250, 0.2);
     --accent: #7c3aed;
-    --accent-2: #2563eb;
     --gold: #ffb800;
-    --text: #e6e7ff;
-    --muted-text: #9ca3af;
-    --progress-accent: #34d399;
-    --download-bg: #065f2c;
-    --toast-error: #ef4444;
-    --toast-success: #10b981;
-    --overlay: rgba(0,0,0,0.45);
     --sidebar-w: 280px;
     --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
     background: var(--bg-dark);
-    color: var(--text);
+    color: #e0e0ff;
     font-family: 'Segoe UI', sans-serif;
     direction: rtl;
+    margin: 0;
     overflow-x: hidden;
 }
 
-/* --- زر الهامبرغر الثابت (معدّل ليظهر فوق الشريط الجانبي) --- */
+/* زر الهامبرغر */
 .hamburger-menu {
     position: fixed;
     top: 20px;
-    /* تراكب جزئي فوق الشريط الجانبي */
-    right: calc(var(--sidebar-w) - 30px);
-    width: 50px;
-    height: 50px;
-    background: linear-gradient(180deg, var(--accent), var(--accent-2));
-    border: none;
-    border-radius: 12px;
+    right: 20px;
+    width: 45px;
+    height: 45px;
+    background: var(--accent);
     color: white;
-    font-size: 1.4rem;
+    border: none;
+    border-radius: 10px;
     cursor: pointer;
-    z-index: 4000; /* أعلى من sidebar */
-    box-shadow: 0 6px 20px rgba(0,0,0,0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    z-index: 3000;
     transition: var(--transition);
 }
-.hamburger-menu:hover { background: var(--gold); transform: scale(1.05); }
 
-/* عندما يكون الشريط مطوياً، حرك الزر إلى اليمين ليبقى ظاهرًا */
-.hamburger-menu.sidebar-collapsed {
-    right: 20px;
-}
-
-/* --- الشريط الجانبي --- */
+/* القائمة الجانبية */
 .sidebar {
     position: fixed;
     top: 0;
@@ -69,41 +43,12 @@ body {
     background: var(--sidebar-bg);
     border-left: 1px solid var(--border);
     z-index: 2000;
+    padding-top: 80px;
     transition: var(--transition);
-    padding: 80px 20px 20px; /* مساحة تحت الزر */
-    overflow: auto;
 }
 .sidebar.collapsed { transform: translateX(100%); }
 
-.sidebar-header { text-align: center; margin-bottom: 30px; }
-.menu-label {
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 800;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 4px;
-    margin-bottom: 8px;
-    opacity: 0.8;
-}
-.logo-area h2 { color: var(--gold); font-size: 1.5rem; }
-
-.sidebar-nav ul { list-style: none; padding: 0; margin: 0; }
-.sidebar-nav ul li a {
-    color: var(--text);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    transition: 0.3s;
-}
-.sidebar-nav ul li a.active { background: rgba(124, 58, 237, 0.18); color: var(--gold); }
-.sidebar-nav ul li a:hover { background: rgba(255,255,255,0.03); }
-
-/* --- المحتوى الرئيسي --- */
+/* المحتوى */
 .main-content {
     margin-right: var(--sidebar-w);
     padding: 40px;
@@ -111,119 +56,41 @@ body {
 }
 .main-content.expanded { margin-right: 0; }
 
-.workspace-grid {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 25px;
-    max-width: 1200px;
-    margin: 0 auto;
+/* Overlay للجوال */
+.overlay-for-sidebar {
+    position: fixed;
+    inset: 0;
+    z-index: 1500;
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s;
+}
+.overlay-for-sidebar.visible {
+    opacity: 1;
+    visibility: visible;
 }
 
+/* تنسيق الكروت */
 .card {
-    background: var(--card-bg);
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 25px;
     margin-bottom: 20px;
-    backdrop-filter: blur(5px);
 }
 
-.card h3 { font-size: 1.1rem; margin-bottom: 15px; color: var(--text); }
-
-/* --- المدخلات والأزرار --- */
-.styled-select {
-    width: 100%;
-    padding: 14px;
-    background: rgba(0,0,0,0.6);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    outline: none;
-    cursor: pointer;
+.workspace-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 25px;
 }
 
-.btn-primary-action {
-    width: 100%;
-    padding: 18px;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    color: #fff;
-    border: none;
-    border-radius: 15px;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-    box-shadow: 0 5px 15px rgba(124, 58, 237, 0.25);
-}
+.prog-fill { height: 100%; background: #34d399; width: 0%; transition: 0.5s; }
+.progress-bar { height: 10px; background: #333; border-radius: 10px; overflow: hidden; margin-top: 15px; }
 
-.btn-secondary {
-    padding: 12px 20px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    cursor: pointer;
-}
-
-.file-info { font-size: 0.85rem; color: var(--muted-text); margin-top: 10px; }
-
-/* --- شريط التقدم --- */
-.progress-bar { height: 10px; background: rgba(0,0,0,0.45); border-radius: 10px; overflow: hidden; margin-top: 15px; }
-.prog-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--progress-accent)); width: 10%; transition: width 0.5s ease; }
-
-.btn-download {
-    display: block;
-    text-align: center;
-    padding: 14px;
-    background: var(--download-bg);
-    color: #fff;
-    text-decoration: none;
-    border-radius: 10px;
-    font-weight: bold;
-}
-
-/* --- toasts --- */
-#toasts {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    pointer-events: none;
-}
-.toast { pointer-events: auto; color: #fff; background: var(--toast-error); padding: 10px 14px; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
-.toast.success { background: var(--toast-success); }
-
-/* --- تحسينات الوصول واللمسات البصرية --- */
-.hamburger-menu:focus { outline: 3px solid rgba(124,58,237,0.18); }
-.sidebar-nav ul li a i { width: 20px; text-align: center; }
-
-/* --- الاستجابة للجوال --- */
+/* استجابة الشاشات */
 @media (max-width: 1024px) {
-    .workspace-grid { grid-template-columns: 1fr; padding: 0 20px; }
-    .sidebar { transform: translateX(100%); }
     .main-content { margin-right: 0; padding: 20px; }
-    .hamburger-menu {
-        right: 20px;
-        top: 14px;
-        width: 46px;
-        height: 46px;
-    }
+    .sidebar { transform: translateX(100%); }
+    .workspace-grid { grid-template-columns: 1fr; }
 }
-
-/* --- حالات إضافية: عندما يكون الشريط مرئيًا على الشاشات الصغيرة --- */
-@media (max-width: 1024px) {
-    .sidebar.open { transform: translateX(0); z-index: 4000; }
-    .overlay-for-sidebar {
-        position: fixed;
-        inset: 0;
-        background: var(--overlay);
-        z-index: 3500;
-        display: none;
-    }
-    .overlay-for-sidebar.visible { display: block; }
-}
-```
