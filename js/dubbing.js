@@ -13,6 +13,55 @@ const COLORS = {
 };
 
 // ==========================================
+// 🎙️ جلب العينات تلقائياً من Cloudinary
+// ==========================================
+async function renderVoices() {
+    const select = document.getElementById('voiceSelect');
+    if (!select) return;
+    
+    // الخيار الافتراضي الثابت
+    select.innerHTML = '<option value="original" selected>🎙️ الصوت الأصلي للوسائط (بدون استنساخ)</option>';
+    
+    try {
+        // 💡 السطر السحري: يجلب كل الملفات التي تحمل التاج "sl_voice" من كلاوديناري
+        // ملاحظة: كلاوديناري يعتبر ملفات الصوت (video) في بنيته التحتية
+        const res = await fetch('https://res.cloudinary.com/dxbmvzsiz/video/list/sl_voice.json');
+        
+        if (res.ok) {
+            const data = await res.json();
+            
+            // إضافة كل ملف يعود من كلاوديناري إلى القائمة المنسدلة
+            data.resources.forEach(file => {
+                const opt = document.createElement('option');
+                // بناء الرابط المباشر للعينة ليتم إرساله للسيرفر الخاص بك
+                opt.value = `https://res.cloudinary.com/dxbmvzsiz/video/upload/v${file.version}/${file.public_id}.${file.format}`;
+                
+                // تنظيف اسم الملف ليكون جميلاً للعميل (إزالة العلامات السفلية)
+                let cleanName = file.public_id.split('/').pop().replace(/_/g, ' ');
+                opt.textContent = `👤 عينة: ${cleanName}`;
+                
+                select.appendChild(opt);
+            });
+            return; // نجح الجلب التلقائي، نخرج من الدالة
+        }
+    } catch (e) {
+        console.warn("لم نتمكن من جلب العينات من كلاوديناري تلقائياً، سيتم استخدام الاحتياطية.");
+    }
+
+    // 🛡️ القائمة الاحتياطية (في حال لم تقومي بإعداد Cloudinary بعد)
+    const fallbackVoices = [
+        { url: 'https://res.cloudinary.com/dxbmvzsiz/video/upload/v1776890116/muhammad_ar.wav', name: 'محمد (عينة ذكورية)' }
+    ];
+    
+    fallbackVoices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.url;
+        opt.textContent = `👨 عينة: ${v.name}`;
+        select.appendChild(opt);
+    });
+}
+
+// ==========================================
 // 🟢 إظهار التنبيهات (Toasts)
 // ==========================================
 function showToast(msg, color = COLORS.TOAST_ERROR) {
@@ -38,13 +87,12 @@ function toggleSidebar() {
 }
 
 // ==========================================
-// 🟢 جلب بيانات المستخدم (المصادقة والرصيد المطور)
+// 🟢 جلب بيانات المستخدم (المصادقة والرصيد)
 // ==========================================
 async function updateSidebarAuth() {
     const authSection = document.getElementById('authSection');
     const token = localStorage.getItem('token');
     
-    // إذا لم يكن هناك توكن
     if (!token) {
         authSection.innerHTML = `
             <div class="user-info-card">
@@ -57,17 +105,12 @@ async function updateSidebarAuth() {
     try {
         const res = await fetch(`${API_BASE}/api/user`, {
             method: 'GET',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
-            }
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
         });
 
-        if (!res.ok) throw new Error('الاستجابة غير صالحة من السيرفر');
-
+        if (!res.ok) throw new Error('الاستجابة غير صالحة');
         const data = await res.json();
         
-        // التحقق الذكي من البيانات (يدعم عدة مسميات محتملة من السيرفر)
         if (data.success || data.user) {
             const userName = data.user?.name || data.user?.username || data.name || 'مستخدم';
             const userCredits = data.user?.credits ?? data.user?.points ?? data.credits ?? 0;
@@ -79,50 +122,60 @@ async function updateSidebarAuth() {
                     <button onclick="logout()" style="margin-top:12px; background:none; border:none; color:#ff4444; cursor:pointer; font-size:0.85rem; font-weight:bold;">
                         <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
                     </button>
-                </div>
-            `;
+                </div>`;
         } else {
-            throw new Error('البيانات غير مكتملة');
+            throw new Error('بيانات غير مكتملة');
         }
     } catch (e) {
         console.error("Auth Error:", e);
-        localStorage.removeItem('token'); // مسح التوكن التالف
+        localStorage.removeItem('token');
         authSection.innerHTML = `
             <div class="user-info-card">
-                <p style="margin-bottom:10px; font-size:0.85rem; color: #ff4444;">انتهت الجلسة أو حدث خطأ</p>
+                <p style="margin-bottom:10px; font-size:0.85rem; color: #ff4444;">انتهت الجلسة</p>
                 <a href="login.html" class="btn-login-sidebar">تسجيل الدخول مجدداً</a>
             </div>`;
     }
 }
 
-function logout() {
-    localStorage.removeItem('token');
-    location.reload();
-}
+function logout() { localStorage.removeItem('token'); location.reload(); }
 
 // ==========================================
-// 🟢 تحديث نصوص الملفات المرفوعة
+// 🟢 تحديث الواجهة عند اختيار الملفات
 // ==========================================
 function updateFileName() {
     const inp = document.getElementById('mediaFile');
     const txt = document.getElementById('fileTxt');
     if (inp.files && inp.files[0]) {
-        txt.innerText = "✅ الملف: " + inp.files[0].name;
+        txt.innerText = "✅ ملف الوسائط: " + inp.files[0].name;
         txt.style.color = COLORS.GOLD;
     }
 }
 
-function handleCustomVoice(input) {
-    const txt = document.getElementById('customVoiceTxt');
-    if (input.files && input.files[0]) {
-        txt.innerText = "✅ عينة الصوت: " + input.files[0].name;
-        txt.style.color = COLORS.PROGRESS;
+// إذا اختار العميل صوتاً جاهزاً، نفرغ العينة المرفوعة لمنع التضارب
+function setVoice(val) {
+    const customInput = document.getElementById('customVoice');
+    const customTxt = document.getElementById('customVoiceTxt');
+    
+    if (val !== 'original' && customInput.files.length > 0) {
+        customInput.value = ''; 
+        customTxt.innerText = "تم إلغاء المرفق لأنك اخترت عينة جاهزة";
+        customTxt.style.color = COLORS.TOAST_WARNING;
     }
 }
 
-function setLang(val) {
-    console.log("تم اختيار اللغة:", val);
+// إذا رفع العميل ملفاً، نعيد القائمة للوضع "الأصلي"
+function handleCustomVoice(input) {
+    const txt = document.getElementById('customVoiceTxt');
+    const voiceSelect = document.getElementById('voiceSelect');
+    
+    if (input.files && input.files[0]) {
+        txt.innerText = "✅ عينة خاصة: " + input.files[0].name;
+        txt.style.color = COLORS.PROGRESS;
+        if (voiceSelect) voiceSelect.value = 'original';
+    }
 }
+
+function setLang(val) { console.log("Language selected:", val); }
 
 // ==========================================
 // 🟢 بدء الدبلجة (إرسال البيانات للسيرفر)
@@ -130,6 +183,7 @@ function setLang(val) {
 async function startDubbing() {
     const mediaInput = document.getElementById('mediaFile');
     const langSelect = document.getElementById('langSelect');
+    const voiceSelect = document.getElementById('voiceSelect');
     const customVoiceInput = document.getElementById('customVoice');
     const token = localStorage.getItem('token');
 
@@ -145,16 +199,20 @@ async function startDubbing() {
     dubBtn.disabled = true;
     progressArea.style.display = 'block';
     resCard.style.display = 'none';
-    statusTxt.innerText = "الحالة: جاري رفع الملفات...";
+    statusTxt.innerText = "الحالة: جاري المعالجة...";
     progFill.style.width = '30%';
 
     const fd = new FormData();
     fd.append('media_file', mediaInput.files[0]);
     fd.append('lang', langSelect.value || 'ar');
     
+    // الأولوية دائماً للملف المرفوع، ثم العينة الجاهزة
     if (customVoiceInput && customVoiceInput.files.length > 0) {
         fd.append('voice_sample', customVoiceInput.files[0]);
         fd.append('voice_id', 'custom');
+    } else {
+        // نرسل رابط كلاوديناري مباشرة للسيرفر!
+        fd.append('voice_id', voiceSelect.value);
     }
 
     try {
@@ -173,7 +231,6 @@ async function startDubbing() {
             
             resCard.style.display = 'block';
             const dubAud = document.getElementById('dubAud');
-            const dubVid = document.getElementById('dubVid');
             const dlBtn = document.getElementById('dlBtn');
 
             if (data.audio_url) {
@@ -201,4 +258,5 @@ async function startDubbing() {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     updateSidebarAuth();
+    renderVoices(); // 👈 استدعاء الدالة لجلب الأصوات من كلاوديناري
 });
