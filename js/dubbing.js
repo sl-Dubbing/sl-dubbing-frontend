@@ -3,10 +3,10 @@
 // ==========================================
 
 let selectedVoiceId = 'source';
-let selectedLang = 'ar'; // اللغة الافتراضية
+let selectedLang = ''; // سيتحدد عند اختيار المستخدم من القائمة
 let customVoiceBase64 = ''; 
 
-// 1. قائمة اللغات (التي كانت مفقودة عندك)
+// 1. قائمة اللغات المدعومة
 const LANGS = [
     {c:'ar', n:'Arabic', f:'🇸🇦'}, {c:'en', n:'English', f:'🇺🇸'},
     {c:'es', n:'Spanish', f:'🇪🇸'}, {c:'fr', n:'French', f:'🇫🇷'},
@@ -16,56 +16,74 @@ const LANGS = [
     {c:'zh', n:'Chinese', f:'🇨🇳'}, {c:'ja', n:'Japanese', f:'🇯🇵'}
 ];
 
-// 2. دالة رسم اللغات عند تحميل الصفحة
+// 2. دالة رسم اللغات داخل القائمة المنسدلة (Dropdown)
 function renderLangs() {
-    const grid = document.getElementById('langGrid');
-    if (!grid) return;
+    const select = document.getElementById('langSelect');
+    if (!select) return;
+
+    // إضافة الخيارات من مصفوفة اللغات
+    LANGS.forEach(l => {
+        const option = document.createElement('option');
+        option.value = l.c;
+        option.textContent = `${l.f} ${l.n}`;
+        select.appendChild(option);
+    });
+}
+
+// 3. دالة التحكم في إخفاء وإظهار القائمة الجانبية (Sidebar Toggle)
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
     
-    grid.innerHTML = LANGS.map(l => `
-        <div class="item-card ${l.c === selectedLang ? 'active' : ''}" onclick="setLang('${l.c}', this)">
-            <div style="font-size:1.8rem; margin-bottom:5px;">${l.f}</div>
-            <div style="font-size:0.8rem; font-weight:bold;">${l.n}</div>
-        </div>
-    `).join('');
+    if (sidebar && mainContent) {
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+    }
 }
 
-// دالة اختيار اللغة
-function setLang(code, el) { 
+// 4. دالة اختيار اللغة من القائمة
+function setLang(code) {
     selectedLang = code;
-    document.querySelectorAll('#langGrid .item-card').forEach(x => x.classList.remove('active'));
-    el.classList.add('active');
+    console.log("اللغة المختارة:", selectedLang);
 }
 
-// 3. معالجة استنساخ الصوت (Voice Clone)
+// 5. معالجة استنساخ الصوت (Voice Clone)
 async function handleCustomVoice(input) {
     const file = input.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = function(e) {
+        // تحويل الملف لـ Base64
         customVoiceBase64 = e.target.result.split(',')[1];
         selectedVoiceId = 'custom';
+        
         const txt = document.getElementById('customVoiceTxt');
         if(txt) txt.innerText = "✅ تم تحميل العينة: " + file.name;
-        showToast("تم تحميل عينة الصوت بنجاح!", "#1e40af");
+        
+        showToast("تم رفع عينة الصوت للاستنساخ", "#1e40af");
     };
     reader.readAsDataURL(file);
 }
 
-// 4. بدء عملية الدبلجة
+// 6. الدالة الأساسية لبدء عملية الدبلجة
 async function startDubbing() {
     const mediaInput = document.getElementById('mediaFile');
     const token = localStorage.getItem('token');
 
+    // التحقق من المدخلات
     if (!token) return showToast("يرجى تسجيل الدخول أولاً", "#b91c1c");
-    if (!mediaInput.files[0]) return showToast("يرجى اختيار ملف فيديو أو صوت!", "#b91c1c");
+    if (!mediaInput.files[0]) return showToast("يرجى اختيار ملف فيديو أو صوت أولاً!", "#b91c1c");
+    if (!selectedLang) return showToast("يرجى اختيار لغة الهدف!", "#b91c1c");
 
     const btn = document.getElementById('dubBtn');
     const progressArea = document.getElementById('progressArea');
     
+    // تحضير الواجهة للانتظار
     btn.disabled = true;
     if(progressArea) progressArea.style.display = 'block';
     
+    // إنشاء بيانات النموذج
     const fd = new FormData();
     fd.append('media_file', mediaInput.files[0]);
     fd.append('lang', selectedLang);
@@ -84,6 +102,7 @@ async function startDubbing() {
 
         const data = await res.json();
         if (data.success) {
+            showToast("بدأت المعالجة، يرجى الانتظار...", "#7c3aed");
             startSSE(data.job_id);
         } else {
             showToast(data.error || "فشلت العملية", "#b91c1c");
@@ -95,7 +114,7 @@ async function startDubbing() {
     }
 }
 
-// 5. متابعة التقدم (SSE)
+// 7. متابعة التقدم عبر الـ SSE (Server-Sent Events)
 function startSSE(jobId) {
     const statusTxt = document.getElementById('statusTxt');
     const progFill = document.getElementById('progFill');
@@ -107,31 +126,64 @@ function startSSE(jobId) {
         const data = JSON.parse(event.data);
         if(statusTxt) statusTxt.innerText = "الحالة: " + data.status;
 
-        if (data.status === 'processing') if(progFill) progFill.style.width = "60%";
+        // تحديث شريط التقدم
+        if (data.status === 'processing') {
+            if(progFill) progFill.style.width = "60%";
+        }
         
         if (data.status === 'completed') {
             if(progFill) progFill.style.width = "100%";
+            
+            // إظهار النتيجة (فيديو أو صوت)
             const aud = document.getElementById('dubAud');
-            if(aud) { aud.src = data.audio_url; aud.play(); }
+            const vid = document.getElementById('dubVid');
+            const dlBtn = document.getElementById('dlBtn');
+
+            if(data.audio_url) {
+                // إذا كان فيديو، سنظهره في عنصر الفيديو، وإذا كان صوت في عنصر الصوت
+                const isVideo = data.audio_url.endsWith('.mp4');
+                if(isVideo && vid) {
+                    vid.src = data.audio_url;
+                    vid.style.display = 'block';
+                    if(aud) aud.style.display = 'none';
+                } else if(aud) {
+                    aud.src = data.audio_url;
+                    aud.style.display = 'block';
+                    if(vid) vid.style.display = 'none';
+                }
+                if(dlBtn) dlBtn.href = data.audio_url;
+            }
+
             if(resCard) resCard.style.display = 'block';
             
-            showToast("تمت الدبلجة بنجاح!", "#065f2c");
+            showToast("اكتملت الدبلجة بنجاح!", "#065f2c");
             source.close();
             document.getElementById('dubBtn').disabled = false;
         }
 
         if (data.status === 'failed') {
-            showToast("فشلت المعالجة، تم إعادة الرصيد.", "#b91c1c");
+            showToast("فشلت المعالجة، تم إعادة الرصيد لحسابك.", "#b91c1c");
             source.close();
             document.getElementById('dubBtn').disabled = false;
         }
     };
 
-    source.onerror = () => source.close();
+    source.onerror = () => {
+        source.close();
+        document.getElementById('dubBtn').disabled = false;
+    };
 }
 
-// تشغيل الدوال عند تحميل الصفحة
+// 8. تشغيل الدوال عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', () => {
-    renderLangs(); // رسم اللغات
-    // هنا يمكن إضافة loadVoicesFromGitHub() إذا أردتِ
+    renderLangs(); // تعبئة القائمة المنسدلة
+    
+    // تحديث اسم الملف عند اختياره من الجهاز
+    const mediaInput = document.getElementById('mediaFile');
+    if(mediaInput) {
+        mediaInput.onchange = function() {
+            const txt = document.getElementById('fileTxt');
+            if(txt && this.files[0]) txt.innerText = "الملف المختار: " + this.files[0].name;
+        };
+    }
 });
