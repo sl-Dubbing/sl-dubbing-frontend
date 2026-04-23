@@ -199,19 +199,21 @@ async function startDubbing() {
     dubBtn.disabled = true;
     progressArea.style.display = 'block';
     resCard.style.display = 'none';
-    statusTxt.innerText = "الحالة: جاري المعالجة...";
+    statusTxt.innerText = "الحالة: جاري رفع الملفات ومعالجتها...";
     progFill.style.width = '30%';
 
     const fd = new FormData();
     fd.append('media_file', mediaInput.files[0]);
     fd.append('lang', langSelect.value || 'ar');
     
-    // الأولوية دائماً للملف المرفوع، ثم العينة الجاهزة
+    // 💡 الإصلاح هنا: 
+    // 1. إذا رفع عينة، نرسلها.
+    // 2. إذا اختار صوتاً جاهزاً (ليس original)، نرسل رابطه.
+    // 3. إذا اختار "original"، لا نرسل حقل voice_id أبداً لكي لا يتعطل السيرفر.
     if (customVoiceInput && customVoiceInput.files.length > 0) {
         fd.append('voice_sample', customVoiceInput.files[0]);
         fd.append('voice_id', 'custom');
-    } else {
-        // نرسل رابط كلاوديناري مباشرة للسيرفر!
+    } else if (voiceSelect && voiceSelect.value !== 'original') {
         fd.append('voice_id', voiceSelect.value);
     }
 
@@ -219,9 +221,17 @@ async function startDubbing() {
         const res = await fetch(`${API_BASE}/api/dub`, {
             method: 'POST',
             body: fd,
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
         });
         
+        // التحقق مما إذا كان السيرفر أرجع خطأ 500 قبل محاولة قراءة الـ JSON
+        if (!res.ok) {
+            throw new Error(`Server Error: ${res.status}`);
+        }
+
         const data = await res.json();
         
         if (data.success) {
@@ -240,13 +250,13 @@ async function startDubbing() {
             }
         } else {
             showToast(data.error || "حدث خطأ أثناء المعالجة", COLORS.TOAST_ERROR);
-            statusTxt.innerText = "الحالة: فشلت المعالجة";
+            statusTxt.innerText = `الحالة: ${data.error || 'فشلت المعالجة'}`;
             progFill.style.background = COLORS.TOAST_ERROR;
         }
     } catch (e) {
         console.error("Dubbing Error:", e);
-        showToast("خطأ في الاتصال بالسيرفر", COLORS.TOAST_ERROR);
-        statusTxt.innerText = "الحالة: خطأ في الاتصال";
+        showToast("تعطل الخادم أثناء المعالجة (الرجاء التحقق من Railway)", COLORS.TOAST_ERROR);
+        statusTxt.innerText = "الحالة: خطأ داخلي في الخادم (500)";
         progFill.style.background = COLORS.TOAST_ERROR;
     } finally {
         dubBtn.disabled = false;
