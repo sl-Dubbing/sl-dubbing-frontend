@@ -1,46 +1,59 @@
 /* الأنماط الأساسية */
 html, body { height: 100%; margin: 0; background: var(--bg-dark); color: var(--text); overflow-x: hidden; }
 
-/* زر الهامبرغر المطور */
-.hamburger-menu {
-    position: fixed; top: 50%; right: calc(var(--sidebar-w) - 25px);
-    transform: translateY(-50%); width: 50px; height: 50px;
+/* زر القائمة العلوي الجديد */
+.top-menu-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px; /* ثابت في أعلى اليمين */
+    z-index: 2000;
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    border: none; border-radius: 12px; color: white; cursor: pointer;
-    z-index: 3000; transition: var(--transition);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 15px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: var(--transition);
 }
-.hamburger-menu.sidebar-collapsed { right: 20px; }
 
-.menu-label-text {
-    position: absolute; top: -30px; right: 50%; transform: translateX(50%);
-    font-size: 0.8rem; color: var(--gold); font-weight: bold; white-space: nowrap;
+.top-menu-toggle i { font-size: 1.2rem; }
+.top-menu-toggle .toggle-text { font-size: 0.9rem; color: var(--gold); }
+
+/* تحريك الزر مع الشريط الجانبي */
+.top-menu-toggle.active {
+    right: calc(var(--sidebar-w) - 20px);
 }
 
 /* الشريط الجانبي */
 .sidebar {
-    position: fixed; top: 0; right: 0; width: var(--sidebar-w); height: 100vh;
+    position: fixed; right: 0; top: 0; width: var(--sidebar-w); height: 100vh;
     background: var(--sidebar-bg); border-left: 1px solid var(--border);
-    padding-top: 80px; z-index: 2000; transition: var(--transition);
+    padding: 20px; z-index: 1000; transition: transform var(--transition);
 }
 .sidebar.collapsed { transform: translateX(100%); }
 
-/* المحتوى */
-.main-content { margin-right: var(--sidebar-w); padding: 40px; transition: var(--transition); }
+.sidebar-header-space { height: 60px; } /* مساحة للزر العلوي */
+
+.logo-area h2 { color: var(--gold); text-align: center; margin-bottom: 30px; font-size: 1.4rem; }
+
+/* المحتوى وتمدده */
+.main-content { margin-right: var(--sidebar-w); transition: margin-right var(--transition); padding: 40px; }
 .main-content.expanded { margin-right: 0; }
 
-.workspace-grid { display: grid; grid-template-columns: 1fr 340px; gap: 25px; }
+/* تنسيق الكروت */
+.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 15px; padding: 25px; margin-bottom: 20px; }
+.prog-fill { height: 100%; background: var(--progress-accent); width: 0%; transition: 0.5s; border-radius: 10px; }
+.progress-bar { height: 10px; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; margin-top: 15px; }
 
-.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 25px; margin-bottom: 20px; }
-
-.styled-select { width: 100%; padding: 12px; background: #000; color: #fff; border: 1px solid var(--border); border-radius: 10px; }
-
-.prog-fill { height: 100%; background: var(--progress-accent); width: 0%; transition: 0.5s; }
-.progress-bar { height: 10px; background: #333; border-radius: 10px; overflow: hidden; margin-top: 15px; }
-
-.btn-primary-action { width: 100%; padding: 18px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; }
+.btn-primary-action { width: 100%; padding: 15px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
 .btn-secondary { background: rgba(255,255,255,0.03); color: var(--text); border: 1px solid var(--border); padding: 10px 14px; border-radius: 10px; cursor: pointer; }
 
 @media (max-width: 1024px) {
-    .hamburger-menu { top: 20px; transform: none; right: 20px; }
     .main-content { margin-right: 0 !important; }
+    .top-menu-toggle.active { right: 20px; } /* يبقى في مكانه في الجوال */
 }
