@@ -1,29 +1,34 @@
-```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Dubbing Studio | sl-Dubbing</title>
+    <link rel="stylesheet" href="css/layout.css" />
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 <body>
 
-    <!-- Overlay for small screens (controlled by JS) -->
+    <!-- Overlay for small screens (added/removed by JS) -->
     <div class="overlay-for-sidebar" id="sidebarOverlay" aria-hidden="true"></div>
 
-    <!-- Hamburger button (يبقى فوق الشريط الجانبي) -->
+    <!-- زر القائمة: كلمة "القائمة" فوق ثلاث خطوط (hamburger) -->
     <button
-        class="hamburger-menu"
-        id="hamburgerBtn"
-        aria-label="إظهار أو إخفاء القائمة"
+        class="menu-toggle"
+        id="menuToggle"
+        aria-label="القائمة"
+        aria-expanded="true"
         title="إظهار/إخفاء القائمة"
-        onclick="toggleSidebar()"
+        type="button"
     >
-        <i class="fas fa-bars" aria-hidden="true"></i>
+        <span class="label">القائمة</span>
+        <span class="btn-circle" aria-hidden="true">
+            <span class="hamburger" aria-hidden="true"></span>
+        </span>
     </button>
 
+    <!-- الشريط الجانبي -->
     <aside class="sidebar" id="sidebar" role="navigation" aria-label="القائمة الجانبية">
         <div class="sidebar-header">
             <span class="menu-label">القائمة</span>
@@ -45,6 +50,7 @@
         </nav>
     </aside>
 
+    <!-- المحتوى الرئيسي -->
     <main class="main-content" id="mainContent" role="main">
         <header class="main-header">
             <h1>استوديو الدبلجة الاحترافي</h1>
@@ -68,7 +74,6 @@
                     <h3 id="langHeading"><i class="fas fa-globe" aria-hidden="true"></i> 2. لغة الهدف</h3>
                     <select id="langSelect" class="styled-select" onchange="setLang(this.value)" aria-label="اختر لغة الهدف">
                         <option value="" disabled selected>اختر اللغة المطلوبة...</option>
-                        <!-- خيارات يمكن تعبئتها ديناميكياً -->
                         <option value="ar">العربية</option>
                         <option value="en">الإنجليزية</option>
                         <option value="es">الإسبانية</option>
@@ -121,4 +126,3 @@
     <script src="js/dubbing.js" defer></script>
 </body>
 </html>
-```
