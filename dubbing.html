@@ -5,149 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Dubbing Studio | sl-Dubbing</title>
 
-    <!-- متغيرات الألوان والموضع (يمكنك نقلها إلى css/style.css أو css/layout.css) -->
     <style>
-    :root{
-        --bg-dark: #0b1020;
-        --sidebar-bg: #0f1724;
+    :root {
+        --bg-dark: #0b1020;         /* لون الخلفية الأساسي */
+        --sidebar-bg: #0f1724;      /* لون الشريط الجانبي */
         --card-bg: rgba(255,255,255,0.04);
         --border: rgba(167,139,250,0.12);
-        --accent: #7c3aed;
-        --accent-2: #2563eb;
-        --gold: #ffb800;
-        --text: #e6e7ff;
-        --muted-text: #9ca3af;
-        --progress-accent: #34d399;
-        --download-bg: #065f2c;
-        --toast-error: #ef4444;
-        --toast-success: #10b981;
+        --accent: #7c3aed;          /* اللون البنفسجي الرئيسي */
+        --accent-2: #2563eb;        /* اللون الأزرق الثانوي */
+        --gold: #ffb800;            /* لون الذهب للتمييز */
+        --text: #e6e7ff;            /* لون النصوص */
+        --muted-text: #9ca3af;      /* لون النصوص الباهتة */
+        --progress-accent: #34d399; /* لون شريط التقدم عند النجاح */
+        --download-bg: #065f2c;     /* لون زر التحميل */
+        --toast-error: #ef4444;     /* لون تنبيه الخطأ */
+        --toast-success: #10b981;   /* لون تنبيه النجاح */
         --overlay: rgba(0,0,0,0.45);
-        --sidebar-w: 280px;
+        --sidebar-w: 280px;         /* عرض الشريط الجانبي */
         --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
-    /* قواعد أساسية مختصرة (ألوان + موضع زر القائمة في الوسط) */
-    html, body { height:100%; margin:0; font-family: 'Segoe UI', sans-serif; background:var(--bg-dark); color:var(--text); direction:rtl; }
-
-    /* الشريط الجانبي */
-    .sidebar {
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: var(--sidebar-w);
-        height: 100vh;
-        background: var(--sidebar-bg);
-        border-left: 1px solid var(--border);
-        padding: 80px 20px 20px;
-        z-index: 1000;
-        transition: transform var(--transition);
-        overflow: auto;
-    }
-    .sidebar.collapsed { transform: translateX(100%); }
-
-    /* زر القائمة (ثلاث خطوط + كلمة "القائمة" فوقه) */
-    .menu-toggle {
-      position: fixed;
-      width: 56px;
-      height: 56px;
-      border: none;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1200;
-      transition: right 0.18s ease, top 0.18s ease, transform 0.18s ease;
-      background: linear-gradient(180deg, var(--accent), var(--accent-2));
-      color: #fff;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
-      right: calc(var(--sidebar-w) - 34px);
-      top: 20px;
-    }
-
-    .menu-toggle .label {
-      position: absolute;
-      top: -28px;
-      right: 50%;
-      transform: translateX(50%);
-      font-size: 0.85rem;
-      color: var(--gold);
-      background: rgba(0,0,0,0.25);
-      padding: 4px 8px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,184,0,0.08);
-      pointer-events: none;
-      font-weight:700;
-      z-index:1300;
-      white-space:nowrap;
-    }
-
-    .menu-toggle .btn-circle { width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:12px; }
-    .menu-toggle .hamburger { position:relative; width:22px; height:2px; background:#fff; }
-    .menu-toggle .hamburger::before, .menu-toggle .hamburger::after {
-      content:""; position:absolute; left:0; width:22px; height:2px; background:#fff; transition: all .18s ease;
-    }
-    .menu-toggle .hamburger::before { top:-7px; }
-    .menu-toggle .hamburger::after  { top:7px; }
-
-    /* ===== وضع الزر في منتصف الشريط عمودياً ===== */
-    .menu-toggle.position-center {
-      top: 50%;
-      transform: translateY(-50%);
-      right: calc(var(--sidebar-w) - 34px);
-    }
-
-    /* عند إغلاق الشريط (مصغر) نحول الهامبرغر إلى X بصرياً */
-    .sidebar.collapsed ~ .menu-toggle.position-center .hamburger { background: transparent; }
-    .sidebar.collapsed ~ .menu-toggle.position-center .hamburger::before { transform: translateY(7px) rotate(45deg); }
-    .sidebar.collapsed ~ .menu-toggle.position-center .hamburger::after  { transform: translateY(-7px) rotate(-45deg); }
-
-    /* استجابة للجوال: نضع الزر في الزاوية لتجنب تغطية المحتوى */
-    @media (max-width: 1024px) {
-      .menu-toggle.position-center {
-        top: 14px;
-        right: 20px;
-        transform: none;
-      }
-    }
-
-    /* تطبيق ألوان على عناصر أساسية (مقتطف من style.css) */
-    .card { background: var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:18px; color:var(--text); }
-    .btn-primary-action { background: linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; border-radius:12px; padding:12px 16px; border:none; cursor:pointer; }
-    .btn-secondary { background: rgba(255,255,255,0.03); color:var(--text); border:1px solid var(--border); padding:10px 14px; border-radius:10px; cursor:pointer; }
-    .file-info { color: var(--muted-text); font-size:0.9rem; margin-top:8px; }
-    .prog-fill { background: linear-gradient(90deg,var(--accent),var(--progress-accent)); height:100%; width:0%; transition: width .5s ease; border-radius:10px; }
-    .btn-download { background: var(--download-bg); color:#fff; padding:10px 12px; border-radius:8px; display:inline-block; text-decoration:none; }
-    #toasts .toast { color:#fff; background:var(--toast-error); padding:10px 14px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.35); margin-top:8px; }
-    #toasts .toast.success { background:var(--toast-success); }
     </style>
 
-    <!-- روابط CSS الخارجية (إن وجدت) -->
-    <link rel="stylesheet" href="css/layout.css" />
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 <body>
 
-    <!-- Overlay (يتحكم به JS عند فتح الشريط على الجوال) -->
-    <div class="overlay-for-sidebar" id="sidebarOverlay" aria-hidden="true"></div>
+    <div class="overlay-for-sidebar" id="sidebarOverlay"></div>
 
-    <!-- زر القائمة في منتصف الشريط عمودياً -->
-    <button
-        class="menu-toggle position-center"
-        id="menuToggle"
-        aria-label="القائمة"
-        aria-expanded="true"
-        title="إظهار/إخفاء القائمة"
-        type="button"
-    >
+    <button class="menu-toggle position-center" id="menuToggle" title="إظهار/إخفاء القائمة">
         <span class="label">القائمة</span>
-        <span class="btn-circle" aria-hidden="true">
-            <span class="hamburger" aria-hidden="true"></span>
+        <span class="btn-circle">
+            <span class="hamburger"></span>
         </span>
     </button>
 
-    <!-- الشريط الجانبي -->
-    <aside class="sidebar" id="sidebar" role="navigation" aria-label="القائمة الجانبية">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <span class="menu-label">القائمة</span>
             <div class="logo-area">
@@ -155,103 +48,89 @@
             </div>
         </div>
 
-        <div id="authSection" class="auth-zone" aria-live="polite">
+        <div id="authSection" class="auth-zone">
             <div style="color: #666; font-size: 0.8rem; text-align: center;">جاري التحقق...</div>
         </div>
 
-        <nav class="sidebar-nav" aria-label="روابط التنقل">
+        <nav class="sidebar-nav">
             <ul>
-                <li><a href="index.html"><i class="fas fa-home" aria-hidden="true"></i> الرئيسية</a></li>
-                <li><a href="dubbing.html" class="active"><i class="fas fa-film" aria-hidden="true"></i> استوديو الدبلجة</a></li>
-                <li><a href="tts.html"><i class="fas fa-microphone" aria-hidden="true"></i> تحويل النص لصوت</a></li>
+                <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
+                <li><a href="dubbing.html" class="active"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
+                <li><a href="tts.html"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
             </ul>
         </nav>
     </aside>
 
-    <!-- المحتوى الرئيسي -->
-    <main class="main-content" id="mainContent" role="main" style="margin-right:var(--sidebar-w); padding:32px;">
+    <main class="main-content" id="mainContent">
         <header class="main-header">
             <h1>استوديو الدبلجة الاحترافي</h1>
             <p>ارفع ملفك الآن وابدأ الدبلجة بأحدث تقنيات الذكاء الاصطناعي</p>
         </header>
 
-        <div class="workspace-grid" role="region" aria-label="منطقة العمل" style="display:grid; grid-template-columns:1fr 340px; gap:24px; max-width:1200px;">
+        <div class="workspace-grid">
             <div class="tools-container">
-                <section class="card" aria-labelledby="uploadHeading">
-                    <h3 id="uploadHeading"><i class="fas fa-upload" aria-hidden="true"></i> 1. رفع الوسائط</h3>
+                <section class="card">
+                    <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
                     <div class="upload-wrapper">
-                        <input type="file" id="mediaFile" hidden onchange="updateFileName()" aria-label="اختر ملف وسائط" />
-                        <button onclick="document.getElementById('mediaFile').click()" class="btn-secondary" type="button">
-                            <i class="fas fa-file-video" aria-hidden="true"></i> اختر فيديو أو صوت
+                        <input type="file" id="mediaFile" hidden onchange="updateFileName()" />
+                        <button onclick="document.getElementById('mediaFile').click()" class="btn-secondary">
+                            <i class="fas fa-file-video"></i> اختر فيديو أو صوت
                         </button>
                         <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
                     </div>
                 </section>
 
-                <section class="card" aria-labelledby="langHeading">
-                    <h3 id="langHeading"><i class="fas fa-globe" aria-hidden="true"></i> 2. لغة الهدف</h3>
-                    <select id="langSelect" class="styled-select" onchange="setLang(this.value)" aria-label="اختر لغة الهدف" style="width:100%; padding:12px; border-radius:10px; background:rgba(0,0,0,0.6); color:var(--text); border:1px solid var(--border);">
+                <section class="card">
+                    <h3><i class="fas fa-globe"></i> 2. لغة الهدف</h3>
+                    <select id="langSelect" class="styled-select" onchange="setLang(this.value)">
                         <option value="" disabled selected>اختر اللغة المطلوبة...</option>
                         <option value="ar">العربية</option>
                         <option value="en">الإنجليزية</option>
                         <option value="es">الإسبانية</option>
                         <option value="fr">الفرنسية</option>
-                        <option value="de">الألمانية</option>
                     </select>
                 </section>
 
-                <section class="card" aria-labelledby="cloneHeading">
-                    <h3 id="cloneHeading"><i class="fas fa-microphone-alt" aria-hidden="true"></i> 3. استنساخ الصوت (Voice Clone)</h3>
+                <section class="card">
+                    <h3><i class="fas fa-microphone-alt"></i> 3. استنساخ الصوت</h3>
                     <div class="voice-clone-box">
-                        <input type="file" id="customVoice" hidden onchange="handleCustomVoice(this)" aria-label="رفع عينة صوتية" />
-                        <button onclick="document.getElementById('customVoice').click()" class="btn-secondary" type="button">
-                            <i class="fas fa-plus" aria-hidden="true"></i> رفع عينة صوتية
+                        <input type="file" id="customVoice" hidden onchange="handleCustomVoice(this)" />
+                        <button onclick="document.getElementById('customVoice').click()" class="btn-secondary">
+                            <i class="fas fa-plus"></i> رفع عينة صوتية
                         </button>
                         <p id="customVoiceTxt" class="file-info"></p>
                     </div>
                 </section>
 
-                <button id="dubBtn" class="btn-primary-action" type="button" aria-live="polite" style="margin-top:12px;">
-                    <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> بدء الدبلجة الآن
+                <button id="dubBtn" class="btn-primary-action">
+                    <i class="fas fa-wand-magic-sparkles"></i> بدء الدبلجة الآن
                 </button>
             </div>
 
-            <div class="results-container" aria-live="polite">
+            <div class="results-container">
                 <section class="card" id="progressArea" style="display:none;">
-                    <h3><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> جاري المعالجة...</h3>
+                    <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
                     <p id="statusTxt">الحالة: في الانتظار</p>
-                    <div class="progress-bar" style="background:rgba(0,0,0,0.45); height:10px; border-radius:10px; overflow:hidden;">
-                        <div id="progFill" class="prog-fill" style="width:0%; height:100%;"></div>
+                    <div class="progress-bar">
+                        <div id="progFill" class="prog-fill"></div>
                     </div>
                 </section>
 
                 <section class="card" id="resCard" style="display:none;">
-                    <h3><i class="fas fa-check-circle" aria-hidden="true"></i> النتيجة جاهزة</h3>
-                    <audio id="dubAud" controls style="width:100%; margin-top:10px; display:none;"></audio>
+                    <h3><i class="fas fa-check-circle"></i> النتيجة جاهزة</h3>
+                    <audio id="dubAud" controls style="width:100%; margin-top:10px;"></audio>
                     <video id="dubVid" controls style="width:100%; margin-top:10px; display:none;"></video>
-                    <a id="dlBtn" href="#" download class="btn-download" style="display:none; margin-top:12px;">
-                        <i class="fas fa-download" aria-hidden="true"></i> تحميل النتيجة
+                    <a id="dlBtn" href="#" download class="btn-download">
+                        <i class="fas fa-download"></i> تحميل النتيجة
                     </a>
                 </section>
             </div>
         </div>
     </main>
 
-    <div id="toasts" aria-live="polite" aria-atomic="true"></div>
+    <div id="toasts"></div>
 
-    <!-- سكربتات: shared.js ثم dubbing.js -->
     <script src="js/shared.js" defer></script>
     <script src="js/dubbing.js" defer></script>
-
-    <!-- تهيئة بسيطة: تأكد أن الزر في الوسط عند التحميل -->
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const btn = document.getElementById('menuToggle');
-        if (btn) {
-          // تأكد من وجود الكلاس position-center (موجود افتراضياً في HTML أعلاه)
-          btn.classList.add('position-center');
-        }
-      });
-    </script>
 </body>
 </html>
