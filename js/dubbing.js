@@ -7,7 +7,6 @@ const COLORS = {
     GOLD: '#ffb800',
     TEXT: '#e0e0ff',
     PROGRESS: '#34d399',
-    DOWNLOAD_BG: '#065f2c',
     TOAST_ERROR: '#ef4444',
     TOAST_SUCCESS: '#10b981',
     TOAST_WARNING: '#f59e0b'
@@ -21,11 +20,7 @@ function showToast(msg, color = COLORS.TOAST_ERROR) {
     if (!t) return;
     const box = document.createElement('div');
     box.className = 'toast';
-    box.style.cssText = `
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-        background: ${color}; color: white; padding: 12px 25px; border-radius: 10px;
-        z-index: 9999; font-weight: bold; box-shadow: 0 6px 18px rgba(0,0,0,0.3);
-    `;
+    box.style.background = color;
     box.innerText = msg;
     t.appendChild(box);
     setTimeout(() => box.remove(), 4000);
@@ -36,22 +31,27 @@ function showToast(msg, color = COLORS.TOAST_ERROR) {
 // ==========================================
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
+    const overlay = document.getElementById('overlay');
     
-    // التبديل بين الكلاسات
-    sidebar.classList.toggle('collapsed');
-    mainContent.classList.toggle('expanded');
+    // تفعيل وإلغاء تفعيل القائمة والطبقة الشفافة
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
 }
 
 // ==========================================
 // 🟢 جلب بيانات المستخدم (المصادقة والرصيد)
 // ==========================================
-async function checkAuth() {
-    const authBox = document.getElementById('authSection');
+async function updateSidebarAuth() {
+    const authSection = document.getElementById('authSection');
     const token = localStorage.getItem('token');
     
+    // إذا لم يكن مسجلاً للدخول
     if (!token) {
-        authBox.innerHTML = `<a href="login.html" style="color:${COLORS.GOLD}; text-decoration:none; font-weight:bold;">تسجيل الدخول</a>`;
+        authSection.innerHTML = `
+            <div class="user-info-card">
+                <p style="margin-bottom:15px; font-size:0.95rem; color: #fff;">أهلاً بك في sl-Dubbing</p>
+                <a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a>
+            </div>`;
         return;
     }
 
@@ -61,19 +61,23 @@ async function checkAuth() {
         });
         const data = await res.json();
         
+        // إذا كان التوكن صحيحاً وجلبنا البيانات بنجاح
         if (data.success) {
-            authBox.innerHTML = `
-                <div style="font-weight:bold; color:#fff;">${data.user.name}</div>
-                <div style="color:${COLORS.GOLD}; font-size:0.9rem; margin-top:5px;">الرصيد: ${data.user.credits} نقطة 💰</div>
-                <button onclick="logout()" style="background:none; border:1px solid #f87171; color:#f87171; padding:4px 10px; border-radius:8px; cursor:pointer; font-size:0.8rem; margin-top:8px;">تسجيل خروج</button>
+            authSection.innerHTML = `
+                <div class="user-info-card">
+                    <div class="user-name">${data.user.name}</div>
+                    <div class="user-points">رصيدك: ${data.user.credits} نقطة 💰</div>
+                    <button onclick="logout()" style="margin-top:12px; background:none; border:none; color:#ff4444; cursor:pointer; font-size:0.85rem; font-weight:bold;"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</button>
+                </div>
             `;
         } else {
+            // إذا كان التوكن منتهي الصلاحية أو غير صحيح
             localStorage.removeItem('token');
-            authBox.innerHTML = `<a href="login.html" style="color:${COLORS.GOLD}; text-decoration:none; font-weight:bold;">تسجيل الدخول</a>`;
+            updateSidebarAuth();
         }
     } catch (e) {
         console.error("Auth Error:", e);
-        authBox.innerHTML = `<div style="color:#ff4444; font-size:0.8rem;">خطأ في الاتصال</div>`;
+        authSection.innerHTML = `<div style="color:#ff4444; font-size:0.8rem;">خطأ في الاتصال بالخادم</div>`;
     }
 }
 
@@ -84,7 +88,7 @@ function logout() {
 }
 
 // ==========================================
-// 🟢 تحديث واجهة المستخدم (تغيير النصوص)
+// 🟢 تحديث نصوص الملفات المرفوعة
 // ==========================================
 function updateFileName() {
     const inp = document.getElementById('mediaFile');
@@ -104,7 +108,7 @@ function handleCustomVoice(input) {
 }
 
 function setLang(val) {
-    console.log("تم اختيار لغة الهدف:", val);
+    console.log("تم اختيار اللغة:", val);
 }
 
 // ==========================================
@@ -116,11 +120,9 @@ async function startDubbing() {
     const customVoiceInput = document.getElementById('customVoice');
     const token = localStorage.getItem('token');
 
-    // التحققات قبل البدء
     if (!token) return showToast("يرجى تسجيل الدخول أولاً", COLORS.TOAST_WARNING);
     if (!mediaInput || mediaInput.files.length === 0) return showToast("يرجى رفع ملف الفيديو أو الصوت أولاً", COLORS.TOAST_ERROR);
 
-    // تجهيز واجهة التحميل
     const dubBtn = document.getElementById('dubBtn');
     const progressArea = document.getElementById('progressArea');
     const statusTxt = document.getElementById('statusTxt');
@@ -130,14 +132,13 @@ async function startDubbing() {
     dubBtn.disabled = true;
     progressArea.style.display = 'block';
     resCard.style.display = 'none';
-    statusTxt.innerText = "الحالة: جاري رفع الملفات ومعالجتها...";
+    statusTxt.innerText = "الحالة: جاري رفع الملفات...";
     progFill.style.width = '30%';
 
     const fd = new FormData();
     fd.append('media_file', mediaInput.files[0]);
     fd.append('lang', langSelect.value || 'ar');
     
-    // إذا تم رفع عينة صوت استنساخ
     if (customVoiceInput && customVoiceInput.files.length > 0) {
         fd.append('voice_sample', customVoiceInput.files[0]);
         fd.append('voice_id', 'custom');
@@ -154,10 +155,9 @@ async function startDubbing() {
         
         if (data.success) {
             progFill.style.width = '100%';
-            statusTxt.innerText = "الحالة: تمت الدبلجة بنجاح!";
-            showToast("اكتملت المعالجة بنجاح!", COLORS.TOAST_SUCCESS);
+            statusTxt.innerText = "الحالة: تمت المعالجة بنجاح!";
+            showToast("اكتملت الدبلجة بنجاح!", COLORS.TOAST_SUCCESS);
             
-            // إظهار النتائج
             resCard.style.display = 'block';
             const dubAud = document.getElementById('dubAud');
             const dubVid = document.getElementById('dubVid');
@@ -187,12 +187,6 @@ async function startDubbing() {
 // 🟢 تهيئة الأحداث عند تحميل الصفحة
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // جلب بيانات المستخدم
-    checkAuth();
-
-    // ربط زر الدبلجة بالدالة إذا لم يكن مربوطاً في HTML
-    const dubBtn = document.getElementById('dubBtn');
-    if (dubBtn) {
-        dubBtn.addEventListener('click', startDubbing);
-    }
+    // جلب بيانات المستخدم وعرض الرصيد
+    updateSidebarAuth();
 });
