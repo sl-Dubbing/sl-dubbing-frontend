@@ -9,92 +9,96 @@
 </head>
 <body>
 
-    <button class="main-toggle-btn" onclick="toggleSidebar()">
+    <button class="hamburger-menu" onclick="toggleSidebar()" title="إظهار/إخفاء القائمة">
         <i class="fas fa-bars"></i>
     </button>
 
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-top">
-            <span class="menu-title">القائمة</span>
-        </div>
-        
-        <div class="logo-area">
-            <h2>|| sl-Dubbing</h2>
+        <div class="sidebar-header">
+            <span class="menu-label">القائمة</span>
+            <div class="logo-area">
+                <h2>|| sl-Dubbing</h2>
+            </div>
         </div>
 
-        <div id="authSection">
+        <div id="authSection" class="auth-zone">
             <div style="color: #666; font-size: 0.8rem; text-align: center;">جاري التحقق...</div>
         </div>
 
-        <nav>
+        <nav class="sidebar-nav">
             <ul>
-                <li><a href="index.html"><i class="fas fa-th-large"></i> الرئيسية</a></li>
+                <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
                 <li><a href="dubbing.html" class="active"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
-                <li><a href="tts.html"><i class="fas fa-comment-dots"></i> تحويل النص لصوت</a></li>
+                <li><a href="tts.html"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
             </ul>
         </nav>
     </aside>
 
     <main class="main-content" id="mainContent">
-        <header>
+        <header class="main-header">
             <h1>استوديو الدبلجة الاحترافي</h1>
-            <p>قم برفع الفيديو واختيار لغة الهدف للبدء</p>
+            <p>ارفع ملفك الآن وابدأ الدبلجة بأحدث تقنيات الذكاء الاصطناعي</p>
         </header>
 
-        <div class="workspace">
-            <div class="main-area">
+        <div class="workspace-grid">
+            <div class="tools-container">
                 <section class="card">
-                    <h3><i class="fas fa-cloud-upload-alt"></i> 1. رفع الوسائط</h3>
-                    <div class="upload-box">
-                        <input type="file" id="mediaFile" accept="video/*,audio/*" style="display: none;" onchange="updateFileName()">
+                    <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
+                    <div class="upload-wrapper">
+                        <input type="file" id="mediaFile" hidden onchange="updateFileName()">
                         <button onclick="document.getElementById('mediaFile').click()" class="btn-secondary">
-                            <i class="fas fa-file-video"></i> اختر ملف
+                            <i class="fas fa-file-video"></i> اختر فيديو أو صوت
                         </button>
-                        <div id="fileTxt">لم يتم اختيار ملف</div>
+                        <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
                     </div>
                 </section>
 
                 <section class="card">
-                    <h3><i class="fas fa-language"></i> 2. لغة الهدف</h3>
-                    <select id="langSelect" class="lang-dropdown" onchange="setLang(this.value)">
-                        <option value="" disabled selected>اختر لغة الهدف...</option>
-                    </select>
+                    <h3><i class="fas fa-globe"></i> 2. لغة الهدف</h3>
+                    <select id="langSelect" class="styled-select" onchange="setLang(this.value)">
+                        <option value="" disabled selected>اختر اللغة المطلوبة...</option>
+                        </select>
                 </section>
 
                 <section class="card">
-                    <h3><i class="fas fa-microphone-alt"></i> 3. استنساخ الصوت</h3>
-                    <div class="custom-voice-area">
-                        <input type="file" id="customVoice" onchange="handleCustomVoice(this)" style="display: none;">
+                    <h3><i class="fas fa-microphone-alt"></i> 3. استنساخ الصوت (Voice Clone)</h3>
+                    <div class="voice-clone-box">
+                        <input type="file" id="customVoice" hidden onchange="handleCustomVoice(this)">
                         <button onclick="document.getElementById('customVoice').click()" class="btn-sm">
-                            <i class="fas fa-plus"></i> رفع عينة صوت
+                            <i class="fas fa-plus"></i> رفع عينة صوتية
                         </button>
-                        <span id="customVoiceTxt"></span>
+                        <p id="customVoiceTxt" class="file-info"></p>
                     </div>
                 </section>
 
-                <button id="dubBtn" onclick="startDubbing()" class="btn-primary">
+                <button id="dubBtn" onclick="startDubbing()" class="btn-primary-action">
                     <i class="fas fa-wand-magic-sparkles"></i> بدء الدبلجة الآن
                 </button>
             </div>
 
-            <div class="side-options">
+            <div class="results-container">
                 <section class="card" id="progressArea" style="display: none;">
-                    <h3><i class="fas fa-spinner fa-spin"></i> جاري العمل...</h3>
-                    <p id="statusTxt">الحالة: الانتظار</p>
-                    <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
+                    <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
+                    <p id="statusTxt">الحالة: في الانتظار</p>
+                    <div class="progress-bar">
+                        <div id="progFill" class="prog-fill"></div>
+                    </div>
                 </section>
 
                 <section class="card" id="resCard" style="display: none;">
-                    <h3><i class="fas fa-check-double"></i> النتيجة</h3>
-                    <audio id="dubAud" controls style="width:100%"></audio>
-                    <video id="dubVid" controls style="width:100%; display:none;"></video>
-                    <a id="dlBtn" href="#" download class="btn-primary" style="margin-top:10px; background:#065f2c; text-align:center; text-decoration:none;">تحميل</a>
+                    <h3><i class="fas fa-check-circle"></i> النتيجة جاهزة</h3>
+                    <audio id="dubAud" controls class="media-player"></audio>
+                    <video id="dubVid" controls class="media-player" style="display: none;"></video>
+                    <a id="dlBtn" href="#" download class="btn-download">
+                        <i class="fas fa-download"></i> تحميل النتيجة
+                    </a>
                 </section>
             </div>
         </div>
     </main>
 
     <div id="toasts"></div>
+
     <script src="js/shared.js"></script>
     <script src="js/dubbing.js"></script>
 </body>
