@@ -1,1176 +1,406 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>تحويل النص إلى صوت | sl-Dubbing</title>
+import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
-    <style>
-    :root {
-        --bg-dark: #0b1020;
-        --sidebar-bg: #0f1724;
-        --card-bg: rgba(255,255,255,0.04);
-        --border: rgba(167,139,250,0.12);
-        --accent: #7c3aed;
-        --accent-2: #2563eb;
-        --gold: #ffb800;
-        --text: #e6e7ff;
-        --muted-text: #9ca3af;
-        --progress-accent: #34d399;
-        --download-bg: #065f2c;
-        --sidebar-w: 280px;
-        --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+type Language = { code: string; label: string; region: string };
+type VoiceId = "original" | "noura" | "salem" | "mira" | "custom";
+type Toast = { id: number; message: string; type: "success" | "error" | "info" };
 
-    .styled-textarea {
-        width: 100%; padding: 15px; background: rgba(0,0,0,0.4); color: #fff;
-        border: 1px solid var(--border); border-radius: 12px; outline: none;
-        font-family: inherit; font-size: 1rem; resize: vertical; min-height: 150px;
-        transition: 0.3s;
-    }
-    .styled-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2); }
+const languages: Language[] = [
+  { code: "ar", label: "العربية", region: "Saudi Arabia" },
+  { code: "en", label: "English", region: "United States" },
+  { code: "es", label: "Espanol", region: "Spain" },
+  { code: "fr", label: "Francais", region: "France" },
+  { code: "de", label: "Deutsch", region: "Germany" },
+  { code: "it", label: "Italiano", region: "Italy" },
+  { code: "pt", label: "Portugues", region: "Brazil" },
+  { code: "ru", label: "Русский", region: "Russia" },
+  { code: "zh", label: "中文", region: "China" },
+  { code: "ja", label: "日本語", region: "Japan" },
+  { code: "ko", label: "한국어", region: "Korea" },
+  { code: "hi", label: "हिन्दी", region: "India" },
+  { code: "ur", label: "اردو", region: "Pakistan" },
+  { code: "tr", label: "Turkce", region: "Turkey" },
+  { code: "nl", label: "Nederlands", region: "Netherlands" },
+  { code: "sv", label: "Svenska", region: "Sweden" },
+  { code: "no", label: "Norsk", region: "Norway" },
+  { code: "da", label: "Dansk", region: "Denmark" },
+  { code: "fi", label: "Suomi", region: "Finland" },
+  { code: "pl", label: "Polski", region: "Poland" },
+  { code: "cs", label: "Cestina", region: "Czech Republic" },
+  { code: "sk", label: "Slovencina", region: "Slovakia" },
+  { code: "hu", label: "Magyar", region: "Hungary" },
+  { code: "ro", label: "Romana", region: "Romania" },
+  { code: "bg", label: "Български", region: "Bulgaria" },
+  { code: "el", label: "Ελληνικά", region: "Greece" },
+  { code: "he", label: "עברית", region: "Israel" },
+  { code: "fa", label: "فارسی", region: "Iran" },
+  { code: "id", label: "Bahasa Indonesia", region: "Indonesia" },
+  { code: "ms", label: "Bahasa Melayu", region: "Malaysia" },
+  { code: "th", label: "ไทย", region: "Thailand" },
+  { code: "vi", label: "Tieng Viet", region: "Vietnam" },
+  { code: "fil", label: "Filipino", region: "Philippines" },
+  { code: "bn", label: "বাংলা", region: "Bangladesh" },
+  { code: "ta", label: "தமிழ்", region: "India" },
+  { code: "te", label: "తెలుగు", region: "India" },
+  { code: "mr", label: "मराठी", region: "India" },
+  { code: "gu", label: "ગુજરાતી", region: "India" },
+  { code: "kn", label: "ಕನ್ನಡ", region: "India" },
+  { code: "ml", label: "മലയാളം", region: "India" },
+  { code: "pa", label: "ਪੰਜਾਬੀ", region: "India" },
+  { code: "sw", label: "Kiswahili", region: "Kenya" },
+  { code: "am", label: "አማርኛ", region: "Ethiopia" },
+  { code: "zu", label: "isiZulu", region: "South Africa" },
+  { code: "af", label: "Afrikaans", region: "South Africa" },
+  { code: "uk", label: "Українська", region: "Ukraine" },
+  { code: "sr", label: "Srpski", region: "Serbia" },
+  { code: "hr", label: "Hrvatski", region: "Croatia" },
+  { code: "sl", label: "Slovenscina", region: "Slovenia" },
+  { code: "lt", label: "Lietuviu", region: "Lithuania" },
+  { code: "lv", label: "Latviesu", region: "Latvia" },
+  { code: "et", label: "Eesti", region: "Estonia" },
+  { code: "ca", label: "Catala", region: "Spain" },
+  { code: "eu", label: "Euskara", region: "Spain" },
+  { code: "gl", label: "Galego", region: "Spain" },
+  { code: "is", label: "Islenska", region: "Iceland" },
+  { code: "ga", label: "Gaeilge", region: "Ireland" },
+  { code: "cy", label: "Cymraeg", region: "Wales" },
+  { code: "mt", label: "Malti", region: "Malta" },
+  { code: "mk", label: "Македонски", region: "North Macedonia" },
+  { code: "sq", label: "Shqip", region: "Albania" },
+  { code: "bs", label: "Bosanski", region: "Bosnia" },
+  { code: "kk", label: "Қазақ", region: "Kazakhstan" },
+  { code: "uz", label: "Ozbek", region: "Uzbekistan" },
+  { code: "az", label: "Azerbaycanca", region: "Azerbaijan" },
+  { code: "ka", label: "ქართული", region: "Georgia" },
+  { code: "hy", label: "Հայերեն", region: "Armenia" },
+  { code: "ne", label: "नेपाली", region: "Nepal" },
+  { code: "si", label: "සිංහල", region: "Sri Lanka" },
+  { code: "km", label: "ខ្មែរ", region: "Cambodia" },
+  { code: "lo", label: "ລາວ", region: "Laos" },
+  { code: "my", label: "မြန်မာ", region: "Myanmar" },
+  { code: "mn", label: "Монгол", region: "Mongolia" },
+  { code: "ps", label: "پښتو", region: "Afghanistan" },
+  { code: "ku", label: "Kurdi", region: "Kurdistan" },
+  { code: "so", label: "Soomaali", region: "Somalia" },
+  { code: "ha", label: "Hausa", region: "Nigeria" },
+  { code: "yo", label: "Yoruba", region: "Nigeria" },
+  { code: "ig", label: "Igbo", region: "Nigeria" },
+  { code: "rw", label: "Kinyarwanda", region: "Rwanda" },
+  { code: "mg", label: "Malagasy", region: "Madagascar" },
+  { code: "st", label: "Sesotho", region: "Lesotho" },
+  { code: "xh", label: "isiXhosa", region: "South Africa" },
+  { code: "lb", label: "Letzebuergesch", region: "Luxembourg" },
+  { code: "be", label: "Беларуская", region: "Belarus" },
+  { code: "ky", label: "Кыргызча", region: "Kyrgyzstan" },
+  { code: "tg", label: "Тоҷикӣ", region: "Tajikistan" },
+  { code: "tk", label: "Turkmen", region: "Turkmenistan" },
+  { code: "tt", label: "Татар", region: "Tatarstan" },
+  { code: "mi", label: "Maori", region: "New Zealand" },
+  { code: "sm", label: "Gagana Samoa", region: "Samoa" },
+  { code: "to", label: "Faka Tonga", region: "Tonga" },
+  { code: "fj", label: "Fijian", region: "Fiji" },
+  { code: "ht", label: "Kreyol Ayisyen", region: "Haiti" },
+  { code: "jv", label: "Basa Jawa", region: "Indonesia" },
+  { code: "su", label: "Basa Sunda", region: "Indonesia" },
+  { code: "ceb", label: "Cebuano", region: "Philippines" },
+  { code: "la", label: "Latina", region: "Classical" },
+  { code: "eo", label: "Esperanto", region: "International" },
+  { code: "br", label: "Brezhoneg", region: "Brittany" },
+  { code: "oc", label: "Occitan", region: "France" },
+];
 
-    /* 🟢 مفتاح اختيار الوضع */
-    .mode-switcher {
-        display: flex; gap: 10px; background: rgba(0,0,0,0.3);
-        padding: 8px; border-radius: 14px; border: 1px solid var(--border);
-        margin-bottom: 18px;
-    }
-    .mode-option {
-        flex: 1; padding: 14px 16px; background: transparent;
-        border: 2px solid transparent; border-radius: 10px;
-        cursor: pointer; transition: all 0.3s; color: var(--muted-text);
-        text-align: right;
-    }
-    .mode-option:hover { background: rgba(124, 58, 237, 0.1); color: var(--text); }
-    .mode-option.active {
-        background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(37, 99, 235, 0.2));
-        border-color: var(--accent); color: var(--text);
-    }
-    .mode-option .mode-title {
-        display: flex; align-items: center; gap: 8px;
-        font-weight: bold; font-size: 1rem; margin-bottom: 4px;
-    }
-    .mode-option .mode-desc { font-size: 0.78rem; color: var(--muted-text); line-height: 1.4; }
-    .mode-option.active .mode-desc { color: rgba(230, 231, 255, 0.8); }
-    .mode-badge {
-        display: inline-block; padding: 2px 8px; border-radius: 8px;
-        font-size: 0.7rem; font-weight: bold; margin-right: 4px;
-    }
-    .badge-fast { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; }
-    .badge-quality { background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; }
+const voices: { id: VoiceId; label: string; details: string }[] = [
+  { id: "original", label: "المحافظة على الصوت الأصلي", details: "استنساخ نبرة المتحدث تلقائيا" },
+  { id: "noura", label: "نورة - تعليق عربي واضح", details: "مناسب للدورات والمحتوى التعليمي" },
+  { id: "salem", label: "سالم - صوت سينمائي", details: "حضور عميق للإعلانات والفيديوهات" },
+  { id: "mira", label: "Mira - Global Narrator", details: "إنجليزية مرنة للمحتوى العالمي" },
+];
 
-    /* 🟢 إخفاء/إظهار */
-    .quality-only { display: none; }
-    body[data-mode="quality"] .quality-only { display: block; }
+const processSteps = ["قراءة الملف", "استخراج الكلام", "ترجمة النص", "توليد الصوت عبر Edge-TTS", "مطابقة النبرة عبر OpenVoice v2", "مزج النتيجة"];
 
-    /* 🟢 إحصائيات الأداء */
-    .perf-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 0.85rem; }
-    .perf-stat {
-        background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.3);
-        color: var(--progress-accent); padding: 6px 12px; border-radius: 8px;
-        display: flex; align-items: center; gap: 6px;
-    }
-    .perf-stat .stat-label { color: var(--muted-text); }
-    .perf-stat .stat-value { font-weight: bold; }
+function Icon({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
 
-    .progress-bar { background: rgba(0,0,0,0.4); }
-    .prog-fill {
-        background: linear-gradient(90deg, var(--accent), var(--progress-accent));
-        height: 100%; width: 0%; transition: width 0.3s ease; border-radius: 8px;
-    }
+function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [customVoice, setCustomVoice] = useState<File | null>(null);
+  const [language, setLanguage] = useState("ar");
+  const [voice, setVoice] = useState<VoiceId>("original");
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState("الحالة: في الانتظار");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  const customInputRef = useRef<HTMLInputElement | null>(null);
 
-    /* 🟢 خيارات متقدمة */
-    .advanced-toggle {
-        background: none; border: none; color: var(--accent); cursor: pointer;
-        font-size: 0.9rem; padding: 8px 0; text-align: right; width: 100%;
-    }
-    .advanced-toggle:hover { color: var(--gold); }
-    .advanced-options {
-        display: none; gap: 12px; flex-wrap: wrap; margin-top: 10px;
-        padding-top: 10px; border-top: 1px solid var(--border);
-    }
-    .advanced-options.show { display: flex; }
-    .control-group { flex: 1; min-width: 120px; }
-    .control-group label {
-        font-size: 0.85rem; color: var(--muted-text);
-        display: block; margin-bottom: 5px;
-    }
-    .styled-select-sm {
-        width: 100%; padding: 10px; background: rgba(0,0,0,0.4);
-        color: #fff; border: 1px solid var(--border);
-        border-radius: 8px; font-size: 0.9rem;
-    }
+  const mediaUrl = useMemo(() => (mediaFile ? URL.createObjectURL(mediaFile) : ""), [mediaFile]);
+  const isVideo = mediaFile?.type.startsWith("video/") ?? false;
+  const selectedLanguage = languages.find((item) => item.code === language) ?? languages[0];
 
-    /* 🟢 صناديق اختيار اللغة المتقدم */
-    .lang-search-box {
-        position: relative;
-        margin-bottom: 10px;
-    }
-    .lang-search-box input {
-        width: 100%; padding: 12px 40px 12px 12px;
-        background: rgba(0,0,0,0.4); color: #fff;
-        border: 1px solid var(--border); border-radius: 10px;
-        outline: none; font-size: 0.95rem;
-    }
-    .lang-search-box input:focus { border-color: var(--accent); }
-    .lang-search-box::before {
-        content: "🔍"; position: absolute; right: 12px; top: 50%;
-        transform: translateY(-50%); pointer-events: none;
-    }
-    .styled-select {
-        width: 100%; padding: 12px; background: rgba(0,0,0,0.4);
-        color: #fff; border: 1px solid var(--border);
-        border-radius: 10px; font-size: 0.95rem;
-    }
-    .styled-select optgroup {
-        background: var(--sidebar-bg); color: var(--gold);
-        font-weight: bold; padding: 8px;
-    }
-    .styled-select option {
-        background: var(--bg-dark); color: var(--text); padding: 6px;
-    }
-
-    /* 🚀 زر التشغيل المباشر */
-    .btn-instant {
-        background: linear-gradient(135deg, #f59e0b, #ef4444);
-        color: #fff; border: none; padding: 16px 24px;
-        border-radius: 12px; font-weight: bold; font-size: 1.05rem;
-        cursor: pointer; width: 100%; margin-top: 12px;
-        transition: transform 0.15s; display: flex;
-        align-items: center; justify-content: center; gap: 10px;
-    }
-    .btn-instant:hover:not(:disabled) {
-        transform: translateY(-1px);
-        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
-    }
-    .btn-instant:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* 🟢 السجل */
-    .history-list { max-height: 300px; overflow-y: auto; margin-top: 12px; }
-    .history-item {
-        display: flex; align-items: center; gap: 10px;
-        padding: 10px; background: rgba(0,0,0,0.3);
-        border-radius: 8px; margin-bottom: 6px; font-size: 0.85rem;
-    }
-    .history-item button {
-        background: var(--accent); color: #fff; border: none;
-        padding: 6px 10px; border-radius: 6px;
-        cursor: pointer; font-size: 0.75rem;
-    }
-    .history-text {
-        flex: 1; color: var(--muted-text);
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-
-    /* 🌍 شارة عدد اللغات */
-    .lang-count-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        color: #fff; font-size: 0.75rem; font-weight: bold;
-        padding: 3px 10px; border-radius: 10px; margin-right: 6px;
-    }
-    </style>
-
-    <link rel="stylesheet" href="css/style.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-</head>
-<body data-mode="fast">
-
-    <header class="top-bar">
-        <button class="menu-btn" onclick="toggleSidebar()">
-            <i class="fas fa-bars"></i>
-            <span>القائمة</span>
-        </button>
-        <div class="top-logo">
-            <h2 style="color: var(--gold); margin: 0; font-size: 1.2rem;">sl-Dubbing</h2>
-        </div>
-    </header>
-
-    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-user-section" id="authSection">
-            <div style="color: #666; font-size: 0.8rem; text-align: center;">جاري التحقق...</div>
-        </div>
-        <nav class="sidebar-nav">
-            <div class="nav-label">القائمة الرئيسية</div>
-            <ul>
-                <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
-                <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
-                <li><a href="tts.html" class="active"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
-            </ul>
-        </nav>
-    </aside>
-
-    <main class="main-content" id="mainContent">
-        <div class="container">
-            <header class="main-header">
-                <h1>تحويل النص إلى صوت (TTS)</h1>
-                <p>أكثر من 70 لغة و 320 صوت بشري طبيعي بتقنية Microsoft Neural</p>
-            </header>
-            
-            <div class="workspace-grid">
-                <div class="tools-container">
-
-                    <!-- 🎯 مفتاح اختيار الوضع -->
-                    <section class="card">
-                        <h3><i class="fas fa-bolt"></i> اختر الوضع</h3>
-                        <div class="mode-switcher">
-                            <button class="mode-option active" data-mode="fast" onclick="switchMode('fast')">
-                                <div class="mode-title">
-                                    <i class="fas fa-bolt" style="color: #f59e0b;"></i>
-                                    <span>سريع</span>
-                                    <span class="mode-badge badge-fast">⚡ 0.5s</span>
-                                </div>
-                                <div class="mode-desc">تشغيل فوري — 320+ صوت — 74 لغة</div>
-                            </button>
-                            <button class="mode-option" data-mode="quality" onclick="switchMode('quality')">
-                                <div class="mode-title">
-                                    <i class="fas fa-gem" style="color: #7c3aed;"></i>
-                                    <span>عالي الجودة</span>
-                                    <span class="mode-badge badge-quality">🎨 1.5s</span>
-                                </div>
-                                <div class="mode-desc">استنساخ صوتي بالذكاء الاصطناعي</div>
-                            </button>
-                        </div>
-                    </section>
-
-                    <section class="card">
-                        <h3><i class="fas fa-edit"></i> 1. اكتب النص هنا</h3>
-                        <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص الذي تريد تحويله إلى صوت هنا..."></textarea>
-                        <div style="font-size: 0.8rem; color: var(--muted-text); margin-top: 6px;">
-                            <span id="charCount">0</span> حرف
-                        </div>
-                    </section>
-
-                    <section class="card">
-                        <h3>
-                            <i class="fas fa-globe"></i> 2. اللغة والصوت
-                            <span class="lang-count-badge" id="langCountBadge">74 لغة</span>
-                        </h3>
-
-                        <!-- 🌍 اختيار اللغة -->
-                        <label style="font-size: 0.85rem; color: var(--muted-text); display: block; margin-bottom: 5px;">
-                            اللغة:
-                        </label>
-                        <select id="langSelect" class="styled-select" style="margin-bottom: 12px;" onchange="onLangChange()">
-                            <!-- 🌟 الأكثر استخداماً -->
-                            <optgroup label="🌟 الأكثر استخداماً">
-                                <option value="ar" data-flag="🇸🇦">العربية</option>
-                                <option value="en">🇺🇸 الإنجليزية</option>
-                                <option value="fr">🇫🇷 الفرنسية</option>
-                                <option value="es">🇪🇸 الإسبانية</option>
-                                <option value="de">🇩🇪 الألمانية</option>
-                                <option value="zh-CN">🇨🇳 الصينية (مبسطة)</option>
-                                <option value="hi">🇮🇳 الهندية</option>
-                                <option value="ja">🇯🇵 اليابانية</option>
-                                <option value="ko">🇰🇷 الكورية</option>
-                                <option value="ru">🇷🇺 الروسية</option>
-                            </optgroup>
-
-                            <!-- 🌍 الشرق الأوسط -->
-                            <optgroup label="🌍 الشرق الأوسط">
-                                <option value="ar-SA">🇸🇦 العربية (السعودية)</option>
-                                <option value="ar-EG">🇪🇬 العربية (مصر)</option>
-                                <option value="ar-AE">🇦🇪 العربية (الإمارات)</option>
-                                <option value="ar-BH">🇧🇭 العربية (البحرين)</option>
-                                <option value="ar-DZ">🇩🇿 العربية (الجزائر)</option>
-                                <option value="ar-IQ">🇮🇶 العربية (العراق)</option>
-                                <option value="ar-JO">🇯🇴 العربية (الأردن)</option>
-                                <option value="ar-KW">🇰🇼 العربية (الكويت)</option>
-                                <option value="ar-LB">🇱🇧 العربية (لبنان)</option>
-                                <option value="ar-LY">🇱🇾 العربية (ليبيا)</option>
-                                <option value="ar-MA">🇲🇦 العربية (المغرب)</option>
-                                <option value="ar-OM">🇴🇲 العربية (عمان)</option>
-                                <option value="ar-QA">🇶🇦 العربية (قطر)</option>
-                                <option value="ar-SY">🇸🇾 العربية (سوريا)</option>
-                                <option value="ar-TN">🇹🇳 العربية (تونس)</option>
-                                <option value="ar-YE">🇾🇪 العربية (اليمن)</option>
-                                <option value="he">🇮🇱 العبرية</option>
-                                <option value="fa">🇮🇷 الفارسية</option>
-                                <option value="tr">🇹🇷 التركية</option>
-                                <option value="ur">🇵🇰 الأوردو</option>
-                                <option value="ps">🇦🇫 البشتو</option>
-                                <option value="ku">📍 الكردية</option>
-                                <option value="az">🇦🇿 الأذرية</option>
-                            </optgroup>
-
-                            <!-- 🇪🇺 أوروبا -->
-                            <optgroup label="🇪🇺 أوروبا">
-                                <option value="en-GB">🇬🇧 الإنجليزية (بريطانيا)</option>
-                                <option value="en-US">🇺🇸 الإنجليزية (أمريكا)</option>
-                                <option value="en-AU">🇦🇺 الإنجليزية (أستراليا)</option>
-                                <option value="en-CA">🇨🇦 الإنجليزية (كندا)</option>
-                                <option value="en-IE">🇮🇪 الإنجليزية (أيرلندا)</option>
-                                <option value="fr-FR">🇫🇷 الفرنسية (فرنسا)</option>
-                                <option value="fr-CA">🇨🇦 الفرنسية (كندا)</option>
-                                <option value="fr-CH">🇨🇭 الفرنسية (سويسرا)</option>
-                                <option value="es-ES">🇪🇸 الإسبانية (إسبانيا)</option>
-                                <option value="es-MX">🇲🇽 الإسبانية (المكسيك)</option>
-                                <option value="es-AR">🇦🇷 الإسبانية (الأرجنتين)</option>
-                                <option value="de-DE">🇩🇪 الألمانية (ألمانيا)</option>
-                                <option value="de-AT">🇦🇹 الألمانية (النمسا)</option>
-                                <option value="de-CH">🇨🇭 الألمانية (سويسرا)</option>
-                                <option value="it">🇮🇹 الإيطالية</option>
-                                <option value="pt-PT">🇵🇹 البرتغالية (البرتغال)</option>
-                                <option value="pt-BR">🇧🇷 البرتغالية (البرازيل)</option>
-                                <option value="nl">🇳🇱 الهولندية</option>
-                                <option value="nl-BE">🇧🇪 الهولندية (بلجيكا)</option>
-                                <option value="pl">🇵🇱 البولندية</option>
-                                <option value="cs">🇨🇿 التشيكية</option>
-                                <option value="sk">🇸🇰 السلوفاكية</option>
-                                <option value="sl">🇸🇮 السلوفينية</option>
-                                <option value="hu">🇭🇺 الهنغارية</option>
-                                <option value="ro">🇷🇴 الرومانية</option>
-                                <option value="bg">🇧🇬 البلغارية</option>
-                                <option value="hr">🇭🇷 الكرواتية</option>
-                                <option value="sr">🇷🇸 الصربية</option>
-                                <option value="el">🇬🇷 اليونانية</option>
-                                <option value="da">🇩🇰 الدنماركية</option>
-                                <option value="sv">🇸🇪 السويدية</option>
-                                <option value="no">🇳🇴 النرويجية</option>
-                                <option value="fi">🇫🇮 الفنلندية</option>
-                                <option value="is">🇮🇸 الأيسلندية</option>
-                                <option value="et">🇪🇪 الإستونية</option>
-                                <option value="lv">🇱🇻 اللاتفية</option>
-                                <option value="lt">🇱🇹 الليتوانية</option>
-                                <option value="uk">🇺🇦 الأوكرانية</option>
-                                <option value="be">🇧🇾 البيلاروسية</option>
-                                <option value="ru-RU">🇷🇺 الروسية (روسيا)</option>
-                                <option value="cy">🏴󠁧󠁢󠁷󠁬󠁳󠁿 الويلزية</option>
-                                <option value="ga">🇮🇪 الأيرلندية</option>
-                                <option value="mt">🇲🇹 المالطية</option>
-                                <option value="mk">🇲🇰 المقدونية</option>
-                                <option value="sq">🇦🇱 الألبانية</option>
-                                <option value="bs">🇧🇦 البوسنية</option>
-                                <option value="ca">📍 الكتالانية</option>
-                                <option value="eu">📍 الباسكية</option>
-                                <option value="gl">📍 الغاليسية</option>
-                            </optgroup>
-
-                            <!-- 🌏 آسيا -->
-                            <optgroup label="🌏 آسيا">
-                                <option value="zh-HK">🇭🇰 الصينية (هونغ كونغ)</option>
-                                <option value="zh-TW">🇹🇼 الصينية (تايوان)</option>
-                                <option value="ja-JP">🇯🇵 اليابانية (اليابان)</option>
-                                <option value="ko-KR">🇰🇷 الكورية (كوريا)</option>
-                                <option value="th">🇹🇭 التايلاندية</option>
-                                <option value="vi">🇻🇳 الفيتنامية</option>
-                                <option value="id">🇮🇩 الإندونيسية</option>
-                                <option value="ms">🇲🇾 الماليزية</option>
-                                <option value="tl">🇵🇭 الفلبينية</option>
-                                <option value="my">🇲🇲 البورمية</option>
-                                <option value="km">🇰🇭 الخميرية (كمبوديا)</option>
-                                <option value="lo">🇱🇦 اللاوية</option>
-                                <option value="hi-IN">🇮🇳 الهندية (الهند)</option>
-                                <option value="bn">🇧🇩 البنغالية</option>
-                                <option value="ta">📍 التاميلية</option>
-                                <option value="te">📍 التيلوغوية</option>
-                                <option value="ml">📍 المالايالامية</option>
-                                <option value="kn">📍 الكانادية</option>
-                                <option value="gu">📍 الغوجاراتية</option>
-                                <option value="mr">📍 الماراثية</option>
-                                <option value="ne">🇳🇵 النيبالية</option>
-                                <option value="si">🇱🇰 السنهالية</option>
-                                <option value="mn">🇲🇳 المنغولية</option>
-                                <option value="kk">🇰🇿 الكازاخية</option>
-                                <option value="uz">🇺🇿 الأوزبكية</option>
-                                <option value="jv">📍 الجاوية</option>
-                                <option value="su">📍 السودانية</option>
-                            </optgroup>
-
-                            <!-- 🌍 أفريقيا -->
-                            <optgroup label="🌍 أفريقيا">
-                                <option value="sw">🇰🇪 السواحلية</option>
-                                <option value="am">🇪🇹 الأمهرية (إثيوبيا)</option>
-                                <option value="zu">🇿🇦 الزولوية</option>
-                                <option value="af">🇿🇦 الأفريكانية</option>
-                                <option value="so">🇸🇴 الصومالية</option>
-                                <option value="ig">🇳🇬 الإيبوية</option>
-                                <option value="yo">🇳🇬 اليوروبية</option>
-                                <option value="ha">🇳🇬 الهوسا</option>
-                            </optgroup>
-                        </select>
-
-                        <!-- 🎤 اختيار الصوت -->
-                        <label style="font-size: 0.85rem; color: var(--muted-text); display: block; margin-bottom: 5px;">
-                            الصوت <span id="voiceCountInfo" style="color: var(--gold);"></span>:
-                        </label>
-                        <select id="edgeVoiceSelect" class="styled-select">
-                            <option value="">صوت تلقائي (الافتراضي)</option>
-                        </select>
-
-                        <!-- خيارات متقدمة -->
-                        <button type="button" class="advanced-toggle" onclick="toggleAdvanced()">
-                            <i class="fas fa-sliders-h"></i> خيارات متقدمة
-                        </button>
-                        <div class="advanced-options" id="advancedOptions">
-                            <div class="control-group">
-                                <label>السرعة</label>
-                                <select id="rateSelect" class="styled-select-sm">
-                                    <option value="-50%">🐢 بطيء جداً</option>
-                                    <option value="-25%">بطيء</option>
-                                    <option value="+0%" selected>عادي</option>
-                                    <option value="+15%">سريع قليلاً</option>
-                                    <option value="+30%">🏃 سريع</option>
-                                    <option value="+50%">⚡ سريع جداً</option>
-                                </select>
-                            </div>
-                            <div class="control-group">
-                                <label>طبقة الصوت</label>
-                                <select id="pitchSelect" class="styled-select-sm">
-                                    <option value="-20Hz">🎵 منخفضة جداً</option>
-                                    <option value="-10Hz">منخفضة</option>
-                                    <option value="+0Hz" selected>عادية</option>
-                                    <option value="+10Hz">عالية</option>
-                                    <option value="+20Hz">🎶 عالية جداً</option>
-                                </select>
-                            </div>
-                            <div class="control-group">
-                                <label>الترجمة التلقائية</label>
-                                <select id="translateSelect" class="styled-select-sm">
-                                    <option value="true" selected>نعم (ترجم تلقائياً)</option>
-                                    <option value="false">لا (احتفظ بالنص)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- 🎨 صوت مرجعي (Quality only) -->
-                    <section class="card quality-only">
-                        <h3><i class="fas fa-microphone-alt"></i> 3. الصوت المرجعي (للاستنساخ)</h3>
-                        <p style="color: var(--muted-text); font-size: 0.85rem; margin-bottom: 10px;">
-                            اختر عينة جاهزة أو ارفع تسجيل صوتي
-                        </p>
-                        <select id="voiceSelect" class="styled-select" style="margin-bottom: 12px;">
-                            <option value="">🎤 اختر عينة صوتية</option>
-                        </select>
-                        <input type="file" id="customVoice" accept="audio/*" style="display:none;" onchange="handleCustomVoice(this)">
-                        <button type="button" class="btn-secondary" onclick="document.getElementById('customVoice').click()" style="width: 100%;">
-                            <i class="fas fa-upload"></i> أو ارفع تسجيلك الخاص
-                        </button>
-                        <div id="customVoiceTxt" style="font-size: 0.85rem; color: var(--muted-text); margin-top: 8px;"></div>
-                    </section>
-
-                    <!-- 🚀 الأزرار -->
-                    <button id="ttsBtn" class="btn-primary-action" onclick="startTTS()">
-                        <i class="fas fa-volume-up"></i> توليد الصوت الآن
-                    </button>
-                    <button id="ttsInstantBtn" class="btn-instant" onclick="instantPlay()">
-                        <i class="fas fa-play-circle"></i> ⚡ تشغيل فوري (بدون تنزيل)
-                    </button>
-                </div>
-
-                <div class="results-container">
-                    <section class="card" id="progressArea" style="display:none;">
-                        <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
-                        <p id="statusTxt">الحالة: يتم الآن توليد الصوت</p>
-                        <div class="progress-bar">
-                            <div id="progFill" class="prog-fill"></div>
-                        </div>
-                        <div class="perf-stats" id="perfStats"></div>
-                    </section>
-
-                    <section class="card" id="resCard" style="display:none;">
-                        <h3><i class="fas fa-check-circle" style="color: #10b981;"></i> تم إنشاء المقطع بنجاح</h3>
-                        <audio id="audioResult" controls style="width:100%; margin-top:15px;"></audio>
-                        <a id="dlBtn" href="#" download class="btn-download" style="margin-top:15px;">
-                            <i class="fas fa-download"></i> تحميل المقطع الصوتي
-                        </a>
-                    </section>
-
-                    <section class="card" id="historyCard" style="display:none;">
-                        <h3><i class="fas fa-history"></i> آخر التوليدات</h3>
-                        <div class="history-list" id="historyList"></div>
-                    </section>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <div id="toasts"></div>
-
-    <script src="js/tts-quick.js"></script>
-    <script src="js/tts.js"></script>
-
-    <script>
-    // ==========================================
-    // 🌐 خريطة الأصوات الموسّعة لكل لغة
-    // (مأخوذة من Edge-TTS الرسمية)
-    // ==========================================
-    const VOICES_MAP = {
-        // 🇸🇦 العربية
-        'ar': [
-            { id: 'ar-SA-HamedNeural', name: 'حامد (سعودي - ذكر)' },
-            { id: 'ar-SA-ZariyahNeural', name: 'زاريا (سعودي - أنثى)' },
-            { id: 'ar-EG-ShakirNeural', name: 'شاكر (مصري - ذكر)' },
-            { id: 'ar-EG-SalmaNeural', name: 'سلمى (مصري - أنثى)' },
-        ],
-        'ar-SA': [
-            { id: 'ar-SA-HamedNeural', name: 'حامد (ذكر)' },
-            { id: 'ar-SA-ZariyahNeural', name: 'زاريا (أنثى)' },
-        ],
-        'ar-EG': [
-            { id: 'ar-EG-ShakirNeural', name: 'شاكر (ذكر)' },
-            { id: 'ar-EG-SalmaNeural', name: 'سلمى (أنثى)' },
-        ],
-        'ar-AE': [
-            { id: 'ar-AE-HamdanNeural', name: 'حمدان (ذكر)' },
-            { id: 'ar-AE-FatimaNeural', name: 'فاطمة (أنثى)' },
-        ],
-        'ar-BH': [
-            { id: 'ar-BH-AliNeural', name: 'علي (ذكر)' },
-            { id: 'ar-BH-LailaNeural', name: 'ليلى (أنثى)' },
-        ],
-        'ar-DZ': [
-            { id: 'ar-DZ-IsmaelNeural', name: 'إسماعيل (ذكر)' },
-            { id: 'ar-DZ-AminaNeural', name: 'أمينة (أنثى)' },
-        ],
-        'ar-IQ': [
-            { id: 'ar-IQ-BasselNeural', name: 'باسل (ذكر)' },
-            { id: 'ar-IQ-RanaNeural', name: 'رنا (أنثى)' },
-        ],
-        'ar-JO': [
-            { id: 'ar-JO-TaimNeural', name: 'تيم (ذكر)' },
-            { id: 'ar-JO-SanaNeural', name: 'سناء (أنثى)' },
-        ],
-        'ar-KW': [
-            { id: 'ar-KW-FahedNeural', name: 'فهد (ذكر)' },
-            { id: 'ar-KW-NouraNeural', name: 'نورة (أنثى)' },
-        ],
-        'ar-LB': [
-            { id: 'ar-LB-RamiNeural', name: 'رامي (ذكر)' },
-            { id: 'ar-LB-LaylaNeural', name: 'ليلى (أنثى)' },
-        ],
-        'ar-LY': [
-            { id: 'ar-LY-OmarNeural', name: 'عمر (ذكر)' },
-            { id: 'ar-LY-ImanNeural', name: 'إيمان (أنثى)' },
-        ],
-        'ar-MA': [
-            { id: 'ar-MA-JamalNeural', name: 'جمال (ذكر)' },
-            { id: 'ar-MA-MounaNeural', name: 'منى (أنثى)' },
-        ],
-        'ar-OM': [
-            { id: 'ar-OM-AbdullahNeural', name: 'عبدالله (ذكر)' },
-            { id: 'ar-OM-AyshaNeural', name: 'عائشة (أنثى)' },
-        ],
-        'ar-QA': [
-            { id: 'ar-QA-MoazNeural', name: 'معاذ (ذكر)' },
-            { id: 'ar-QA-AmalNeural', name: 'أمل (أنثى)' },
-        ],
-        'ar-SY': [
-            { id: 'ar-SY-LaithNeural', name: 'ليث (ذكر)' },
-            { id: 'ar-SY-AmanyNeural', name: 'أماني (أنثى)' },
-        ],
-        'ar-TN': [
-            { id: 'ar-TN-HediNeural', name: 'هادي (ذكر)' },
-            { id: 'ar-TN-ReemNeural', name: 'ريم (أنثى)' },
-        ],
-        'ar-YE': [
-            { id: 'ar-YE-SalehNeural', name: 'صالح (ذكر)' },
-            { id: 'ar-YE-MaryamNeural', name: 'مريم (أنثى)' },
-        ],
-
-        // English
-        'en': [
-            { id: 'en-US-AriaNeural', name: 'Aria (US - Female)' },
-            { id: 'en-US-GuyNeural', name: 'Guy (US - Male)' },
-            { id: 'en-US-JennyNeural', name: 'Jenny (US - Female)' },
-            { id: 'en-GB-SoniaNeural', name: 'Sonia (UK - Female)' },
-            { id: 'en-GB-RyanNeural', name: 'Ryan (UK - Male)' },
-        ],
-        'en-US': [
-            { id: 'en-US-AriaNeural', name: 'Aria (Female)' },
-            { id: 'en-US-AvaNeural', name: 'Ava (Female)' },
-            { id: 'en-US-GuyNeural', name: 'Guy (Male)' },
-            { id: 'en-US-JennyNeural', name: 'Jenny (Female)' },
-            { id: 'en-US-AndrewNeural', name: 'Andrew (Male)' },
-            { id: 'en-US-EmmaNeural', name: 'Emma (Female)' },
-            { id: 'en-US-BrianNeural', name: 'Brian (Male)' },
-        ],
-        'en-GB': [
-            { id: 'en-GB-SoniaNeural', name: 'Sonia (Female)' },
-            { id: 'en-GB-RyanNeural', name: 'Ryan (Male)' },
-            { id: 'en-GB-LibbyNeural', name: 'Libby (Female)' },
-        ],
-        'en-AU': [
-            { id: 'en-AU-NatashaNeural', name: 'Natasha (Female)' },
-            { id: 'en-AU-WilliamNeural', name: 'William (Male)' },
-        ],
-        'en-CA': [
-            { id: 'en-CA-ClaraNeural', name: 'Clara (Female)' },
-            { id: 'en-CA-LiamNeural', name: 'Liam (Male)' },
-        ],
-        'en-IE': [
-            { id: 'en-IE-EmilyNeural', name: 'Emily (Female)' },
-            { id: 'en-IE-ConnorNeural', name: 'Connor (Male)' },
-        ],
-
-        // Spanish
-        'es': [
-            { id: 'es-ES-ElviraNeural', name: 'Elvira (Spain - Female)' },
-            { id: 'es-ES-AlvaroNeural', name: 'Alvaro (Spain - Male)' },
-            { id: 'es-MX-DaliaNeural', name: 'Dalia (Mexico - Female)' },
-            { id: 'es-MX-JorgeNeural', name: 'Jorge (Mexico - Male)' },
-        ],
-        'es-ES': [
-            { id: 'es-ES-ElviraNeural', name: 'Elvira (Female)' },
-            { id: 'es-ES-AlvaroNeural', name: 'Alvaro (Male)' },
-            { id: 'es-ES-XimenaNeural', name: 'Ximena (Female)' },
-        ],
-        'es-MX': [
-            { id: 'es-MX-DaliaNeural', name: 'Dalia (Female)' },
-            { id: 'es-MX-JorgeNeural', name: 'Jorge (Male)' },
-        ],
-        'es-AR': [
-            { id: 'es-AR-ElenaNeural', name: 'Elena (Female)' },
-            { id: 'es-AR-TomasNeural', name: 'Tomas (Male)' },
-        ],
-
-        // French
-        'fr': [
-            { id: 'fr-FR-DeniseNeural', name: 'Denise (France - Female)' },
-            { id: 'fr-FR-HenriNeural', name: 'Henri (France - Male)' },
-            { id: 'fr-CA-SylvieNeural', name: 'Sylvie (Canada - Female)' },
-        ],
-        'fr-FR': [
-            { id: 'fr-FR-DeniseNeural', name: 'Denise (Female)' },
-            { id: 'fr-FR-HenriNeural', name: 'Henri (Male)' },
-            { id: 'fr-FR-EloiseNeural', name: 'Eloise (Female)' },
-        ],
-        'fr-CA': [
-            { id: 'fr-CA-SylvieNeural', name: 'Sylvie (Female)' },
-            { id: 'fr-CA-AntoineNeural', name: 'Antoine (Male)' },
-        ],
-        'fr-CH': [
-            { id: 'fr-CH-ArianeNeural', name: 'Ariane (Female)' },
-            { id: 'fr-CH-FabriceNeural', name: 'Fabrice (Male)' },
-        ],
-
-        // German
-        'de': [
-            { id: 'de-DE-KatjaNeural', name: 'Katja (Germany - Female)' },
-            { id: 'de-DE-ConradNeural', name: 'Conrad (Germany - Male)' },
-        ],
-        'de-DE': [
-            { id: 'de-DE-KatjaNeural', name: 'Katja (Female)' },
-            { id: 'de-DE-ConradNeural', name: 'Conrad (Male)' },
-        ],
-        'de-AT': [
-            { id: 'de-AT-IngridNeural', name: 'Ingrid (Female)' },
-            { id: 'de-AT-JonasNeural', name: 'Jonas (Male)' },
-        ],
-        'de-CH': [
-            { id: 'de-CH-LeniNeural', name: 'Leni (Female)' },
-            { id: 'de-CH-JanNeural', name: 'Jan (Male)' },
-        ],
-
-        // Italian
-        'it': [
-            { id: 'it-IT-ElsaNeural', name: 'Elsa (Female)' },
-            { id: 'it-IT-IsabellaNeural', name: 'Isabella (Female)' },
-            { id: 'it-IT-DiegoNeural', name: 'Diego (Male)' },
-        ],
-
-        // Portuguese
-        'pt-PT': [
-            { id: 'pt-PT-RaquelNeural', name: 'Raquel (Female)' },
-            { id: 'pt-PT-DuarteNeural', name: 'Duarte (Male)' },
-        ],
-        'pt-BR': [
-            { id: 'pt-BR-FranciscaNeural', name: 'Francisca (Female)' },
-            { id: 'pt-BR-AntonioNeural', name: 'Antonio (Male)' },
-        ],
-
-        // Russian
-        'ru': [
-            { id: 'ru-RU-SvetlanaNeural', name: 'Svetlana (Female)' },
-            { id: 'ru-RU-DmitryNeural', name: 'Dmitry (Male)' },
-        ],
-        'ru-RU': [
-            { id: 'ru-RU-SvetlanaNeural', name: 'Svetlana (Female)' },
-            { id: 'ru-RU-DmitryNeural', name: 'Dmitry (Male)' },
-        ],
-
-        // Chinese
-        'zh-CN': [
-            { id: 'zh-CN-XiaoxiaoNeural', name: 'Xiaoxiao (Female)' },
-            { id: 'zh-CN-YunxiNeural', name: 'Yunxi (Male)' },
-            { id: 'zh-CN-YunjianNeural', name: 'Yunjian (Male)' },
-            { id: 'zh-CN-XiaoyiNeural', name: 'Xiaoyi (Female)' },
-        ],
-        'zh-HK': [
-            { id: 'zh-HK-HiuMaanNeural', name: 'HiuMaan (Female)' },
-            { id: 'zh-HK-WanLungNeural', name: 'WanLung (Male)' },
-        ],
-        'zh-TW': [
-            { id: 'zh-TW-HsiaoChenNeural', name: 'HsiaoChen (Female)' },
-            { id: 'zh-TW-YunJheNeural', name: 'YunJhe (Male)' },
-        ],
-
-        // Japanese
-        'ja': [
-            { id: 'ja-JP-NanamiNeural', name: 'Nanami (Female)' },
-            { id: 'ja-JP-KeitaNeural', name: 'Keita (Male)' },
-        ],
-        'ja-JP': [
-            { id: 'ja-JP-NanamiNeural', name: 'Nanami (Female)' },
-            { id: 'ja-JP-KeitaNeural', name: 'Keita (Male)' },
-        ],
-
-        // Korean
-        'ko': [
-            { id: 'ko-KR-SunHiNeural', name: 'SunHi (Female)' },
-            { id: 'ko-KR-InJoonNeural', name: 'InJoon (Male)' },
-        ],
-        'ko-KR': [
-            { id: 'ko-KR-SunHiNeural', name: 'SunHi (Female)' },
-            { id: 'ko-KR-InJoonNeural', name: 'InJoon (Male)' },
-        ],
-
-        // Hindi & Indian languages
-        'hi': [
-            { id: 'hi-IN-SwaraNeural', name: 'Swara (Female)' },
-            { id: 'hi-IN-MadhurNeural', name: 'Madhur (Male)' },
-        ],
-        'hi-IN': [
-            { id: 'hi-IN-SwaraNeural', name: 'Swara (Female)' },
-            { id: 'hi-IN-MadhurNeural', name: 'Madhur (Male)' },
-        ],
-        'bn': [{ id: 'bn-IN-TanishaaNeural', name: 'Tanishaa (Female)' }],
-        'ta': [
-            { id: 'ta-IN-PallaviNeural', name: 'Pallavi (Female)' },
-            { id: 'ta-IN-ValluvarNeural', name: 'Valluvar (Male)' },
-        ],
-        'te': [
-            { id: 'te-IN-ShrutiNeural', name: 'Shruti (Female)' },
-            { id: 'te-IN-MohanNeural', name: 'Mohan (Male)' },
-        ],
-        'ml': [
-            { id: 'ml-IN-SobhanaNeural', name: 'Sobhana (Female)' },
-            { id: 'ml-IN-MidhunNeural', name: 'Midhun (Male)' },
-        ],
-        'kn': [
-            { id: 'kn-IN-SapnaNeural', name: 'Sapna (Female)' },
-            { id: 'kn-IN-GaganNeural', name: 'Gagan (Male)' },
-        ],
-        'gu': [
-            { id: 'gu-IN-DhwaniNeural', name: 'Dhwani (Female)' },
-            { id: 'gu-IN-NiranjanNeural', name: 'Niranjan (Male)' },
-        ],
-        'mr': [
-            { id: 'mr-IN-AarohiNeural', name: 'Aarohi (Female)' },
-            { id: 'mr-IN-ManoharNeural', name: 'Manohar (Male)' },
-        ],
-
-        // Other Asian
-        'th': [
-            { id: 'th-TH-PremwadeeNeural', name: 'Premwadee (Female)' },
-            { id: 'th-TH-NiwatNeural', name: 'Niwat (Male)' },
-        ],
-        'vi': [
-            { id: 'vi-VN-HoaiMyNeural', name: 'HoaiMy (Female)' },
-            { id: 'vi-VN-NamMinhNeural', name: 'NamMinh (Male)' },
-        ],
-        'id': [
-            { id: 'id-ID-GadisNeural', name: 'Gadis (Female)' },
-            { id: 'id-ID-ArdiNeural', name: 'Ardi (Male)' },
-        ],
-        'ms': [
-            { id: 'ms-MY-YasminNeural', name: 'Yasmin (Female)' },
-            { id: 'ms-MY-OsmanNeural', name: 'Osman (Male)' },
-        ],
-        'tl': [
-            { id: 'fil-PH-BlessicaNeural', name: 'Blessica (Female)' },
-            { id: 'fil-PH-AngeloNeural', name: 'Angelo (Male)' },
-        ],
-        'my': [
-            { id: 'my-MM-NilarNeural', name: 'Nilar (Female)' },
-            { id: 'my-MM-ThihaNeural', name: 'Thiha (Male)' },
-        ],
-        'km': [
-            { id: 'km-KH-SreymomNeural', name: 'Sreymom (Female)' },
-            { id: 'km-KH-PisethNeural', name: 'Piseth (Male)' },
-        ],
-        'lo': [
-            { id: 'lo-LA-KeomanyNeural', name: 'Keomany (Female)' },
-            { id: 'lo-LA-ChanthavongNeural', name: 'Chanthavong (Male)' },
-        ],
-
-        // Persian, Urdu, Hebrew, Turkish
-        'fa': [
-            { id: 'fa-IR-DilaraNeural', name: 'Dilara (Female)' },
-            { id: 'fa-IR-FaridNeural', name: 'Farid (Male)' },
-        ],
-        'ur': [
-            { id: 'ur-PK-UzmaNeural', name: 'Uzma (Female)' },
-            { id: 'ur-PK-AsadNeural', name: 'Asad (Male)' },
-        ],
-        'ps': [{ id: 'ps-AF-LatifaNeural', name: 'Latifa (Female)' }],
-        'he': [
-            { id: 'he-IL-HilaNeural', name: 'Hila (Female)' },
-            { id: 'he-IL-AvriNeural', name: 'Avri (Male)' },
-        ],
-        'tr': [
-            { id: 'tr-TR-EmelNeural', name: 'Emel (Female)' },
-            { id: 'tr-TR-AhmetNeural', name: 'Ahmet (Male)' },
-        ],
-        'az': [
-            { id: 'az-AZ-BabekNeural', name: 'Babek (Male)' },
-            { id: 'az-AZ-BanuNeural', name: 'Banu (Female)' },
-        ],
-        'kk': [
-            { id: 'kk-KZ-AigulNeural', name: 'Aigul (Female)' },
-            { id: 'kk-KZ-DauletNeural', name: 'Daulet (Male)' },
-        ],
-        'uz': [
-            { id: 'uz-UZ-MadinaNeural', name: 'Madina (Female)' },
-            { id: 'uz-UZ-SardorNeural', name: 'Sardor (Male)' },
-        ],
-        'mn': [
-            { id: 'mn-MN-BataaNeural', name: 'Bataa (Male)' },
-            { id: 'mn-MN-YesuiNeural', name: 'Yesui (Female)' },
-        ],
-
-        // European
-        'nl': [
-            { id: 'nl-NL-FennaNeural', name: 'Fenna (Female)' },
-            { id: 'nl-NL-MaartenNeural', name: 'Maarten (Male)' },
-        ],
-        'nl-BE': [
-            { id: 'nl-BE-DenaNeural', name: 'Dena (Female)' },
-            { id: 'nl-BE-ArnaudNeural', name: 'Arnaud (Male)' },
-        ],
-        'pl': [
-            { id: 'pl-PL-AgnieszkaNeural', name: 'Agnieszka (Female)' },
-            { id: 'pl-PL-MarekNeural', name: 'Marek (Male)' },
-        ],
-        'cs': [
-            { id: 'cs-CZ-VlastaNeural', name: 'Vlasta (Female)' },
-            { id: 'cs-CZ-AntoninNeural', name: 'Antonin (Male)' },
-        ],
-        'sk': [
-            { id: 'sk-SK-ViktoriaNeural', name: 'Viktoria (Female)' },
-            { id: 'sk-SK-LukasNeural', name: 'Lukas (Male)' },
-        ],
-        'sl': [
-            { id: 'sl-SI-PetraNeural', name: 'Petra (Female)' },
-            { id: 'sl-SI-RokNeural', name: 'Rok (Male)' },
-        ],
-        'hu': [
-            { id: 'hu-HU-NoemiNeural', name: 'Noemi (Female)' },
-            { id: 'hu-HU-TamasNeural', name: 'Tamas (Male)' },
-        ],
-        'ro': [
-            { id: 'ro-RO-AlinaNeural', name: 'Alina (Female)' },
-            { id: 'ro-RO-EmilNeural', name: 'Emil (Male)' },
-        ],
-        'bg': [
-            { id: 'bg-BG-KalinaNeural', name: 'Kalina (Female)' },
-            { id: 'bg-BG-BorislavNeural', name: 'Borislav (Male)' },
-        ],
-        'hr': [
-            { id: 'hr-HR-GabrijelaNeural', name: 'Gabrijela (Female)' },
-            { id: 'hr-HR-SreckoNeural', name: 'Srecko (Male)' },
-        ],
-        'sr': [{ id: 'sr-RS-SophieNeural', name: 'Sophie (Female)' }],
-        'el': [
-            { id: 'el-GR-AthinaNeural', name: 'Athina (Female)' },
-            { id: 'el-GR-NestorasNeural', name: 'Nestoras (Male)' },
-        ],
-        'da': [
-            { id: 'da-DK-ChristelNeural', name: 'Christel (Female)' },
-            { id: 'da-DK-JeppeNeural', name: 'Jeppe (Male)' },
-        ],
-        'sv': [
-            { id: 'sv-SE-SofieNeural', name: 'Sofie (Female)' },
-            { id: 'sv-SE-MattiasNeural', name: 'Mattias (Male)' },
-        ],
-        'no': [
-            { id: 'nb-NO-PernilleNeural', name: 'Pernille (Female)' },
-            { id: 'nb-NO-FinnNeural', name: 'Finn (Male)' },
-        ],
-        'fi': [
-            { id: 'fi-FI-SelmaNeural', name: 'Selma (Female)' },
-            { id: 'fi-FI-HarriNeural', name: 'Harri (Male)' },
-        ],
-        'is': [
-            { id: 'is-IS-GudrunNeural', name: 'Gudrun (Female)' },
-            { id: 'is-IS-GunnarNeural', name: 'Gunnar (Male)' },
-        ],
-        'et': [
-            { id: 'et-EE-AnuNeural', name: 'Anu (Female)' },
-            { id: 'et-EE-KertNeural', name: 'Kert (Male)' },
-        ],
-        'lv': [
-            { id: 'lv-LV-EveritaNeural', name: 'Everita (Female)' },
-            { id: 'lv-LV-NilsNeural', name: 'Nils (Male)' },
-        ],
-        'lt': [
-            { id: 'lt-LT-OnaNeural', name: 'Ona (Female)' },
-            { id: 'lt-LT-LeonasNeural', name: 'Leonas (Male)' },
-        ],
-        'uk': [
-            { id: 'uk-UA-PolinaNeural', name: 'Polina (Female)' },
-            { id: 'uk-UA-OstapNeural', name: 'Ostap (Male)' },
-        ],
-        'cy': [
-            { id: 'cy-GB-NiaNeural', name: 'Nia (Female)' },
-            { id: 'cy-GB-AledNeural', name: 'Aled (Male)' },
-        ],
-        'ga': [
-            { id: 'ga-IE-OrlaNeural', name: 'Orla (Female)' },
-            { id: 'ga-IE-ColmNeural', name: 'Colm (Male)' },
-        ],
-        'mt': [
-            { id: 'mt-MT-GraceNeural', name: 'Grace (Female)' },
-            { id: 'mt-MT-JosephNeural', name: 'Joseph (Male)' },
-        ],
-        'mk': [
-            { id: 'mk-MK-MarijaNeural', name: 'Marija (Female)' },
-            { id: 'mk-MK-AleksandarNeural', name: 'Aleksandar (Male)' },
-        ],
-        'sq': [
-            { id: 'sq-AL-AnilaNeural', name: 'Anila (Female)' },
-            { id: 'sq-AL-IlirNeural', name: 'Ilir (Male)' },
-        ],
-        'bs': [
-            { id: 'bs-BA-VesnaNeural', name: 'Vesna (Female)' },
-            { id: 'bs-BA-GoranNeural', name: 'Goran (Male)' },
-        ],
-        'ca': [
-            { id: 'ca-ES-JoanaNeural', name: 'Joana (Female)' },
-            { id: 'ca-ES-EnricNeural', name: 'Enric (Male)' },
-        ],
-        'eu': [{ id: 'eu-ES-AinhoaNeural', name: 'Ainhoa (Female)' }],
-        'gl': [{ id: 'gl-ES-SabelaNeural', name: 'Sabela (Female)' }],
-
-        // African
-        'sw': [
-            { id: 'sw-KE-ZuhuraNeural', name: 'Zuhura (Female)' },
-            { id: 'sw-KE-RafikiNeural', name: 'Rafiki (Male)' },
-        ],
-        'am': [
-            { id: 'am-ET-MekdesNeural', name: 'Mekdes (Female)' },
-            { id: 'am-ET-AmehaNeural', name: 'Ameha (Male)' },
-        ],
-        'zu': [
-            { id: 'zu-ZA-ThandoNeural', name: 'Thando (Female)' },
-            { id: 'zu-ZA-ThembaNeural', name: 'Themba (Male)' },
-        ],
-        'af': [
-            { id: 'af-ZA-AdriNeural', name: 'Adri (Female)' },
-            { id: 'af-ZA-WillemNeural', name: 'Willem (Male)' },
-        ],
-        'so': [
-            { id: 'so-SO-UbaxNeural', name: 'Ubax (Female)' },
-            { id: 'so-SO-MuuseNeural', name: 'Muuse (Male)' },
-        ],
-        'ig': [{ id: 'ig-NG-EzinneNeural', name: 'Ezinne (Female)' }],
-        'yo': [
-            { id: 'yo-NG-AyoNeural', name: 'Ayo (Male)' },
-            { id: 'yo-NG-AdebolaNeural', name: 'Adebola (Female)' },
-        ],
-
-        // Other
-        'ne': [
-            { id: 'ne-NP-HemkalaNeural', name: 'Hemkala (Female)' },
-            { id: 'ne-NP-SagarNeural', name: 'Sagar (Male)' },
-        ],
-        'si': [
-            { id: 'si-LK-ThiliniNeural', name: 'Thilini (Female)' },
-            { id: 'si-LK-SameeraNeural', name: 'Sameera (Male)' },
-        ],
-        'jv': [
-            { id: 'jv-ID-SitiNeural', name: 'Siti (Female)' },
-            { id: 'jv-ID-DimasNeural', name: 'Dimas (Male)' },
-        ],
-        'su': [
-            { id: 'su-ID-TutiNeural', name: 'Tuti (Female)' },
-            { id: 'su-ID-JajangNeural', name: 'Jajang (Male)' },
-        ],
+  useEffect(() => {
+    return () => {
+      if (mediaUrl) URL.revokeObjectURL(mediaUrl);
     };
+  }, [mediaUrl]);
 
-    // ==========================================
-    // 🌐 تحديث قائمة الأصوات حسب اللغة المختارة
-    // ==========================================
-    function onLangChange() {
-        const langSel = document.getElementById('langSelect');
-        const voiceSel = document.getElementById('edgeVoiceSelect');
-        const voiceCountInfo = document.getElementById('voiceCountInfo');
-        if (!langSel || !voiceSel) return;
+  useEffect(() => {
+    if (!isProcessing) return;
 
-        const lang = langSel.value;
-        const voices = VOICES_MAP[lang] || [];
+    const timer = window.setInterval(() => {
+      setProgress((current) => {
+        const next = Math.min(current + Math.floor(Math.random() * 13) + 7, 100);
+        const stepIndex = Math.min(Math.floor((next / 100) * processSteps.length), processSteps.length - 1);
+        setStatus(next >= 100 ? "الحالة: اكتملت الدبلجة بنجاح" : `الحالة: ${processSteps[stepIndex]}...`);
 
-        voiceSel.innerHTML = '<option value="">صوت تلقائي (الافتراضي)</option>';
-        voices.forEach(v => {
-            const opt = document.createElement('option');
-            opt.value = v.id;
-            opt.textContent = v.name;
-            voiceSel.appendChild(opt);
-        });
-
-        if (voiceCountInfo) {
-            voiceCountInfo.textContent = voices.length > 0 ? `(${voices.length} صوت متاح)` : '';
+        if (next >= 100) {
+          window.clearInterval(timer);
+          setIsProcessing(false);
+          setIsReady(true);
+          pushToast("تم تجهيز المعاينة. يمكنك تشغيلها أو تحميلها الآن.", "success");
         }
+
+        return next;
+      });
+    }, 650);
+
+    return () => window.clearInterval(timer);
+  }, [isProcessing]);
+
+  function pushToast(message: string, type: Toast["type"] = "info") {
+    const id = Date.now();
+    setToasts((items) => [...items, { id, message, type }]);
+    window.setTimeout(() => setToasts((items) => items.filter((toast) => toast.id !== id)), 3400);
+  }
+
+  function handleMediaChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setMediaFile(file);
+    setIsReady(false);
+    setProgress(0);
+    setStatus("الحالة: في الانتظار");
+    if (file) pushToast(`تم اختيار الملف: ${file.name}`, "success");
+  }
+
+  function handleCustomVoice(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setCustomVoice(file);
+    if (file) {
+      setVoice("custom");
+      pushToast("تم اعتماد العينة الصوتية المخصصة.", "success");
+    }
+  }
+
+  function startDubbing() {
+    if (!mediaFile) {
+      pushToast("يرجى اختيار ملف فيديو أو صوت أولا.", "error");
+      mediaInputRef.current?.focus();
+      return;
     }
 
-    // ==========================================
-    // 🎯 إدارة الوضع
-    // ==========================================
-    let currentMode = localStorage.getItem('tts_mode') || 'fast';
-    document.body.dataset.mode = currentMode;
+    setProgress(0);
+    setIsReady(false);
+    setIsProcessing(true);
+    setStatus("الحالة: بدء تجهيز مشروع الدبلجة...");
+    pushToast(`بدأت الدبلجة إلى ${selectedLanguage.label} عبر Edge-TTS + OpenVoice v2.`, "info");
+  }
 
-    function switchMode(mode) {
-        currentMode = mode;
-        document.body.dataset.mode = mode;
-        localStorage.setItem('tts_mode', mode);
+  return (
+    <div dir="rtl" className="min-h-screen overflow-x-hidden bg-[#0b1020] text-[#e6e7ff] selection:bg-violet-500/40">
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_12%,rgba(124,58,237,0.35),transparent_28%),radial-gradient(circle_at_82%_6%,rgba(37,99,235,0.28),transparent_24%),linear-gradient(135deg,#0b1020_0%,#10142a_45%,#080b16_100%)]" />
+      <div className="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[#0b1020]/82 backdrop-blur-xl lg:hidden">
+        <div className="flex h-16 items-center justify-between px-4">
+          <button onClick={() => setSidebarOpen(true)} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-violet-300/40 hover:bg-white/5">
+            <Icon className="h-5 w-5"><path d="M4 6h16M4 12h16M4 18h16" /></Icon>
+            القائمة
+          </button>
+          <h2 className="text-lg font-black tracking-wide text-[#ffb800]">sl-Dubbing</h2>
+        </div>
+      </div>
 
-        document.querySelectorAll('.mode-option').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.mode === mode);
-        });
+      <button aria-label="إغلاق القائمة" onClick={() => setSidebarOpen(false)} className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition lg:hidden ${sidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"}`} />
 
-        document.getElementById('ttsInstantBtn').style.display =
-            mode === 'fast' ? 'flex' : 'none';
+      <aside className={`fixed inset-y-0 right-0 z-50 w-[280px] border-l border-violet-300/10 bg-[#0f1724]/95 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "translate-x-full"}`}>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-slate-400">AI Dubbing Studio</p>
+            <h1 className="text-2xl font-black text-[#ffb800]">sl-Dubbing</h1>
+          </div>
+          <button onClick={() => setSidebarOpen(false)} className="rounded-full p-2 text-slate-400 transition hover:bg-white/5 hover:text-white lg:hidden" aria-label="إغلاق">
+            <Icon className="h-5 w-5"><path d="M18 6 6 18M6 6l12 12" /></Icon>
+          </button>
+        </div>
 
-        const mainBtn = document.getElementById('ttsBtn');
-        if (mode === 'fast') {
-            mainBtn.innerHTML = '<i class="fas fa-bolt"></i> توليد سريع وحفظ';
-        } else {
-            mainBtn.innerHTML = '<i class="fas fa-gem"></i> توليد بجودة عالية';
-        }
-    }
-
-    function toggleAdvanced() {
-        document.getElementById('advancedOptions').classList.toggle('show');
-    }
-
-    // ==========================================
-    // 🔢 عداد الأحرف
-    // ==========================================
-    document.addEventListener('DOMContentLoaded', () => {
-        switchMode(currentMode);
-        onLangChange();  // تحميل الأصوات الافتراضية للعربية
-
-        document.getElementById('ttsInput')?.addEventListener('input', (e) => {
-            document.getElementById('charCount').textContent = e.target.value.length;
-        });
-    });
-
-    // ==========================================
-    // ⚡ التشغيل الفوري
-    // ==========================================
-    let sessionHistory = [];
-
-    async function instantPlay() {
-        const text = document.getElementById('ttsInput').value.trim();
-        const lang = document.getElementById('langSelect').value;
-        const edge_voice = document.getElementById('edgeVoiceSelect').value;
-        const rate = document.getElementById('rateSelect').value;
-        const pitch = document.getElementById('pitchSelect').value;
-        const translate = document.getElementById('translateSelect').value === 'true';
-
-        if (!text) return showToast('اكتب النص أولاً', '#ef4444');
-        if (!localStorage.getItem('token'))
-            return showToast('يرجى تسجيل الدخول أولاً', '#f59e0b');
-
-        const instantBtn = document.getElementById('ttsInstantBtn');
-        const progArea = document.getElementById('progressArea');
-        const statusTxt = document.getElementById('statusTxt');
-        const progFill = document.getElementById('progFill');
-        const perfStats = document.getElementById('perfStats');
-        const resCard = document.getElementById('resCard');
-
-        instantBtn.disabled = true;
-        progArea.style.display = 'block';
-        if (resCard) resCard.style.display = 'none';
-        statusTxt.innerText = '⚡ التواصل مع الخادم...';
-        progFill.style.width = '20%';
-        perfStats.innerHTML = '';
-
-        try {
-            const result = await quickTTS(text, { lang, edge_voice, translate, rate, pitch });
-
-            statusTxt.innerText = '✅ يتم التشغيل الآن...';
-            progFill.style.width = '100%';
-
-            result.audio.play().catch(e => {
-                console.warn('Autoplay blocked:', e);
-                showToast('اضغط ▶️ في المشغّل للاستماع', '#f59e0b');
-            });
-
-            const audioEl = document.getElementById('audioResult');
-            const dlBtn = document.getElementById('dlBtn');
-            audioEl.src = result.url;
-            dlBtn.href = result.url;
-            dlBtn.download = `tts_${Date.now()}.mp3`;
-            if (resCard) resCard.style.display = 'block';
-
-            perfStats.innerHTML = `
-                <div class="perf-stat">
-                    <i class="fas fa-rocket"></i>
-                    <span class="stat-label">TTFB:</span>
-                    <span class="stat-value">${result.ttfb.toFixed(0)}ms</span>
-                </div>
-                <div class="perf-stat">
-                    <i class="fas fa-clock"></i>
-                    <span class="stat-label">المجموع:</span>
-                    <span class="stat-value">${result.totalTime.toFixed(0)}ms</span>
-                </div>
-                <div class="perf-stat">
-                    <i class="fas fa-coins"></i>
-                    <span class="stat-label">الرصيد:</span>
-                    <span class="stat-value">${result.remainingCredits}</span>
-                </div>`;
-
-            addToHistory(text, result.url);
-            showToast(`✅ ${result.totalTime.toFixed(0)}ms — تم!`, '#10b981');
-            if (typeof updateSidebarAuth === 'function') updateSidebarAuth();
-
-        } catch (e) {
-            console.error('Instant TTS error:', e);
-            showToast(e.message || 'فشل التوليد', '#ef4444');
-            statusTxt.innerText = `❌ ${e.message}`;
-            progFill.style.background = '#ef4444';
-        } finally {
-            instantBtn.disabled = false;
-        }
-    }
-
-    function addToHistory(text, url) {
-        sessionHistory.unshift({ text, url, time: Date.now() });
-        if (sessionHistory.length > 10) sessionHistory.pop();
-        renderHistory();
-    }
-
-    function renderHistory() {
-        const card = document.getElementById('historyCard');
-        const list = document.getElementById('historyList');
-        if (sessionHistory.length === 0) {
-            card.style.display = 'none';
-            return;
-        }
-        card.style.display = 'block';
-        list.innerHTML = sessionHistory.map((item, idx) => `
-            <div class="history-item">
-                <button onclick="replayHistory(${idx})" title="إعادة التشغيل">
-                    <i class="fas fa-play"></i>
-                </button>
-                <span class="history-text">${item.text.substring(0, 50)}${item.text.length > 50 ? '...' : ''}</span>
+        <div className="mb-9 border-y border-white/10 py-5">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-blue-600 text-sm font-bold">SL</div>
+            <div>
+              <p className="text-sm font-semibold text-white">حساب تجريبي نشط</p>
+              <p className="text-xs text-slate-400">جاهز لمعالجة 3 ملفات اليوم</p>
             </div>
-        `).join('');
-    }
+          </div>
+        </div>
 
-    function replayHistory(idx) {
-        const item = sessionHistory[idx];
-        if (!item) return;
-        const audio = new Audio(item.url);
-        audio.play();
-    }
+        <nav aria-label="القائمة الرئيسية">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">القائمة الرئيسية</p>
+          <a className="mb-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-white/5 hover:text-white" href="#home">
+            <Icon className="h-5 w-5"><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10" /></Icon>
+            الرئيسية
+          </a>
+          <a className="mb-2 flex items-center gap-3 rounded-2xl bg-violet-500/16 px-4 py-3 font-semibold text-white ring-1 ring-violet-300/20" href="#studio">
+            <Icon className="h-5 w-5 text-[#ffb800]"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m10 9 5 3-5 3V9Z" /></Icon>
+            استوديو الدبلجة
+          </a>
+          <a className="flex items-center gap-3 rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-white/5 hover:text-white" href="#tts">
+            <Icon className="h-5 w-5"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3" /></Icon>
+            تحويل النص لصوت
+          </a>
+        </nav>
+      </aside>
 
-    window.replayHistory = replayHistory;
-    </script>
-</body>
-</html>
+      <main id="studio" className="pt-20 lg:mr-[280px] lg:pt-0">
+        <section className="relative isolate min-h-screen px-5 py-8 sm:px-8 lg:px-12 lg:py-10">
+          <div className="absolute inset-0 -z-10 opacity-60 [background-image:linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:72px_72px]" />
+
+          <header className="mx-auto mb-8 max-w-6xl animate-[rise_0.7s_ease-out_both]">
+            <p className="mb-3 text-sm font-semibold tracking-[0.2em] text-[#ffb800]">AI DUBBING STUDIO</p>
+            <div className="max-w-4xl">
+              <h2 className="text-4xl font-black leading-tight text-white sm:text-6xl lg:text-7xl">sl-Dubbing</h2>
+              <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-300">معمارية دبلجة حديثة تعتمد Edge-TTS لتوليد الكلام متعدد اللغات و OpenVoice v2 لمطابقة النبرة أو استخدام عينة صوتية مخصصة.</p>
+              <p className="mt-3 text-sm font-semibold text-violet-200">يدعم الآن {languages.length} لغة هدف مع مسار معالجة واضح من الوسائط إلى النتيجة النهائية.</p>
+            </div>
+          </header>
+
+          <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.8fr)]">
+            <div className="space-y-5 animate-[rise_0.8s_0.08s_ease-out_both]">
+              <section className="rounded-[2rem] border border-white/10 bg-white/[0.045] p-5 backdrop-blur-xl sm:p-6">
+                <StepTitle number="1" title="رفع الوسائط" icon={<path d="M12 16V4m0 0 4 4m-4-4-4 4" />} />
+                <input ref={mediaInputRef} type="file" hidden onChange={handleMediaChange} accept="video/*,audio/*" />
+                <button onClick={() => mediaInputRef.current?.click()} className="group mt-5 flex min-h-36 w-full flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-violet-300/25 bg-[#090d1c]/70 px-5 text-center transition hover:border-[#ffb800]/60 hover:bg-white/[0.06]">
+                  <Icon className="mb-3 h-8 w-8 text-[#ffb800] transition group-hover:-translate-y-1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><path d="m10 13 2-2 2 2" /><path d="M12 11v6" /></Icon>
+                  <span className="font-semibold text-white">اختر فيديو أو صوت</span>
+                  <span className="mt-2 text-sm text-slate-400">{mediaFile ? mediaFile.name : "لم يتم اختيار ملف بعد"}</span>
+                </button>
+              </section>
+
+              <section className="grid gap-5 md:grid-cols-2">
+                <div className="rounded-[2rem] border border-white/10 bg-white/[0.045] p-5 backdrop-blur-xl sm:p-6">
+                  <StepTitle number="2" title={`لغة الهدف (${languages.length})`} icon={<><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15 15 0 0 1 0 20" /><path d="M12 2a15 15 0 0 0 0 20" /></>} />
+                  <select value={language} onChange={(event) => setLanguage(event.target.value)} className="mt-5 w-full rounded-2xl border border-white/10 bg-[#0b1020] px-4 py-4 text-white outline-none transition focus:border-violet-300/60">
+                    {languages.map((item) => (
+                      <option key={item.code} value={item.code}>{item.label} - {item.region}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="rounded-[2rem] border border-white/10 bg-white/[0.045] p-5 backdrop-blur-xl sm:p-6">
+                  <StepTitle number="3" title="اختيار الصوت" icon={<><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /></>} />
+                  <select value={voice} onChange={(event) => setVoice(event.target.value as VoiceId)} className="mt-5 w-full rounded-2xl border border-white/10 bg-[#0b1020] px-4 py-4 text-white outline-none transition focus:border-violet-300/60">
+                    {voices.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                    {customVoice && <option value="custom">العينة المخصصة: {customVoice.name}</option>}
+                  </select>
+                </div>
+              </section>
+
+              <section className="rounded-[2rem] border border-white/10 bg-white/[0.045] p-5 backdrop-blur-xl sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">عينة صوتية مخصصة</h3>
+                    <p className="mt-1 text-sm leading-6 text-slate-400">استخدم ملفا صوتيا قصيرا إذا أردت نبرة محددة بدل الأصوات الجاهزة.</p>
+                  </div>
+                  <input ref={customInputRef} type="file" hidden onChange={handleCustomVoice} accept="audio/*" />
+                  <button onClick={() => customInputRef.current?.click()} className="rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:border-violet-300/50 hover:bg-white/5">رفع عينة من جهازك</button>
+                </div>
+                {customVoice && <p className="mt-4 text-sm text-[#ffb800]">تم اختيار: {customVoice.name}</p>}
+              </section>
+
+              <button onClick={startDubbing} disabled={isProcessing} className="relative w-full overflow-hidden rounded-[1.6rem] bg-gradient-to-l from-violet-600 to-blue-600 px-6 py-5 text-lg font-black text-white shadow-2xl shadow-violet-950/40 transition before:absolute before:inset-0 before:translate-x-full before:bg-white/20 before:transition before:duration-700 hover:-translate-y-1 hover:shadow-violet-700/30 hover:before:translate-x-[-120%] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0">
+                {isProcessing ? "جاري الدبلجة..." : "بدء الدبلجة الآن"}
+              </button>
+            </div>
+
+            <div className="space-y-5 animate-[rise_0.8s_0.16s_ease-out_both]">
+              <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#080c19]/80 p-6 backdrop-blur-xl">
+                <div className="absolute -left-20 -top-20 h-52 w-52 rounded-full bg-violet-500/20 blur-3xl" />
+                <h3 className="relative text-xl font-black text-white">لوحة المعالجة</h3>
+                  <p className="relative mt-2 text-sm leading-6 text-slate-400">تابع مسار Edge-TTS + OpenVoice v2 ومعاينة النتيجة في نفس المساحة دون مغادرة الاستوديو.</p>
+
+                <div className="relative mt-8">
+                  <div className="mb-3 flex items-center justify-between text-sm">
+                    <span className="text-slate-300">{status}</span>
+                    <span className="font-black text-[#ffb800]">{progress}%</span>
+                  </div>
+                  <div className="h-3 overflow-hidden rounded-full bg-white/8">
+                    <div className="h-full rounded-full bg-gradient-to-l from-[#ffb800] via-violet-500 to-blue-500 transition-all duration-500" style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+
+                <div className="relative mt-8 rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-5">
+                  <p className="text-sm text-slate-400">ملخص المشروع</p>
+                  <dl className="mt-4 space-y-3 text-sm">
+                    <SummaryRow label="الملف" value={mediaFile?.name ?? "لم يتم الاختيار"} />
+                    <SummaryRow label="المعمارية" value="Edge-TTS + OpenVoice v2" />
+                    <SummaryRow label="اللغة" value={`${selectedLanguage.label} - ${selectedLanguage.region}`} />
+                    <SummaryRow label="الصوت" value={voice === "custom" && customVoice ? customVoice.name : voices.find((item) => item.id === voice)?.label ?? "صوت مخصص"} />
+                  </dl>
+                </div>
+              </section>
+
+              <section className="rounded-[2rem] border border-white/10 bg-white/[0.045] p-6 backdrop-blur-xl">
+                <div className="flex items-center gap-3">
+                  <span className={`h-3 w-3 rounded-full ${isReady ? "animate-pulse bg-emerald-400" : "bg-slate-600"}`} />
+                  <h3 className="text-xl font-black text-white">النتيجة</h3>
+                </div>
+
+                {isReady && mediaUrl ? (
+                  <div className="mt-5 space-y-4">
+                    {isVideo ? <video src={mediaUrl} controls className="max-h-72 w-full rounded-2xl bg-black" /> : <audio src={mediaUrl} controls className="w-full" />}
+                    <a href={mediaUrl} download={`sl-dubbing-${mediaFile?.name ?? "result"}`} className="inline-flex w-full items-center justify-center rounded-2xl bg-[#ffb800] px-5 py-4 font-black text-[#111827] transition hover:-translate-y-1 hover:bg-amber-300">تحميل النتيجة</a>
+                  </div>
+                ) : (
+                  <div className="mt-5 grid min-h-44 place-items-center rounded-[1.5rem] border border-dashed border-white/10 bg-black/10 text-center text-sm leading-6 text-slate-500">
+                    ابدأ الدبلجة لعرض المشغل ورابط التحميل هنا.
+                  </div>
+                )}
+              </section>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <div className="fixed bottom-5 left-5 z-[60] space-y-3">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`w-80 max-w-[calc(100vw-2.5rem)] animate-[toastIn_0.25s_ease-out_both] rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-xl ${toast.type === "error" ? "border-red-400/30 bg-red-950/75 text-red-50" : toast.type === "success" ? "border-emerald-400/30 bg-emerald-950/75 text-emerald-50" : "border-violet-300/30 bg-[#11182b]/90 text-white"}`}>
+            {toast.message}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepTitle({ number, title, icon }: { number: string; title: string; icon: ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="grid h-9 w-9 place-items-center rounded-full bg-[#ffb800] text-sm font-black text-[#111827]">{number}</span>
+      <Icon className="h-5 w-5 text-violet-300">{icon}</Icon>
+      <h3 className="text-lg font-black text-white">{title}</h3>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-white/8 pb-3 last:border-0 last:pb-0">
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="max-w-[65%] truncate text-left font-semibold text-slate-200" dir="auto">{value}</dd>
+    </div>
+  );
+}
+
+export default App;
