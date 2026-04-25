@@ -22,7 +22,6 @@
         --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* تنسيق مربع النص المخصص لهذه الصفحة */
     .styled-textarea {
         width: 100%; padding: 15px; background: rgba(0,0,0,0.4); color: #fff;
         border: 1px solid var(--border); border-radius: 12px; outline: none;
@@ -30,12 +29,212 @@
         transition: 0.3s;
     }
     .styled-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2); }
+
+    /* 🟢 مفتاح اختيار الوضع (Mode Switcher) */
+    .mode-switcher {
+        display: flex;
+        gap: 10px;
+        background: rgba(0,0,0,0.3);
+        padding: 8px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        margin-bottom: 18px;
+    }
+    .mode-option {
+        flex: 1;
+        padding: 14px 16px;
+        background: transparent;
+        border: 2px solid transparent;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+        color: var(--muted-text);
+        text-align: right;
+    }
+    .mode-option:hover {
+        background: rgba(124, 58, 237, 0.1);
+        color: var(--text);
+    }
+    .mode-option.active {
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(37, 99, 235, 0.2));
+        border-color: var(--accent);
+        color: var(--text);
+    }
+    .mode-option .mode-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: bold;
+        font-size: 1rem;
+        margin-bottom: 4px;
+    }
+    .mode-option .mode-desc {
+        font-size: 0.78rem;
+        color: var(--muted-text);
+        line-height: 1.4;
+    }
+    .mode-option.active .mode-desc {
+        color: rgba(230, 231, 255, 0.8);
+    }
+    .mode-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        margin-right: 4px;
+    }
+    .badge-fast {
+        background: linear-gradient(135deg, #f59e0b, #ef4444);
+        color: #fff;
+    }
+    .badge-quality {
+        background: linear-gradient(135deg, #7c3aed, #2563eb);
+        color: #fff;
+    }
+
+    /* 🟢 إخفاء/إظهار حسب الوضع */
+    .quality-only { display: none; }
+    body[data-mode="quality"] .quality-only { display: block; }
+    body[data-mode="fast"] .quality-only { display: none; }
+
+    /* 🟢 إحصائيات الأداء */
+    .perf-stats {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+        font-size: 0.85rem;
+    }
+    .perf-stat {
+        background: rgba(52, 211, 153, 0.1);
+        border: 1px solid rgba(52, 211, 153, 0.3);
+        color: var(--progress-accent);
+        padding: 6px 12px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .perf-stat .stat-label { color: var(--muted-text); }
+    .perf-stat .stat-value { font-weight: bold; }
+
+    /* 🟢 شريط التقدم المحسّن */
+    .progress-bar { background: rgba(0,0,0,0.4); }
+    .prog-fill {
+        background: linear-gradient(90deg, var(--accent), var(--progress-accent));
+        height: 100%;
+        width: 0%;
+        transition: width 0.3s ease;
+        border-radius: 8px;
+    }
+
+    /* 🟢 خيارات متقدمة (للوضع السريع) */
+    .advanced-toggle {
+        background: none;
+        border: none;
+        color: var(--accent);
+        cursor: pointer;
+        font-size: 0.9rem;
+        padding: 8px 0;
+        text-align: right;
+        width: 100%;
+    }
+    .advanced-toggle:hover { color: var(--gold); }
+    .advanced-options {
+        display: none;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
+    }
+    .advanced-options.show { display: flex; }
+    .control-group {
+        flex: 1;
+        min-width: 120px;
+    }
+    .control-group label {
+        font-size: 0.85rem;
+        color: var(--muted-text);
+        display: block;
+        margin-bottom: 5px;
+    }
+    .styled-select-sm {
+        width: 100%;
+        padding: 10px;
+        background: rgba(0,0,0,0.4);
+        color: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+
+    /* 🚀 زر التشغيل المباشر */
+    .btn-instant {
+        background: linear-gradient(135deg, #f59e0b, #ef4444);
+        color: #fff;
+        border: none;
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 1.05rem;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 12px;
+        transition: transform 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .btn-instant:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+    }
+    .btn-instant:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* 🟢 السجل الأخير */
+    .history-list {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 12px;
+    }
+    .history-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        background: rgba(0,0,0,0.3);
+        border-radius: 8px;
+        margin-bottom: 6px;
+        font-size: 0.85rem;
+    }
+    .history-item button {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.75rem;
+    }
+    .history-text {
+        flex: 1;
+        color: var(--muted-text);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
     </style>
 
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
-<body>
+<body data-mode="fast">
 
     <header class="top-bar">
         <button class="menu-btn" onclick="toggleSidebar()">
@@ -73,9 +272,36 @@
             
             <div class="workspace-grid">
                 <div class="tools-container">
+
+                    <!-- 🎯 مفتاح اختيار الوضع -->
+                    <section class="card">
+                        <h3><i class="fas fa-bolt"></i> اختر الوضع</h3>
+                        <div class="mode-switcher">
+                            <button class="mode-option active" data-mode="fast" onclick="switchMode('fast')">
+                                <div class="mode-title">
+                                    <i class="fas fa-bolt" style="color: #f59e0b;"></i>
+                                    <span>سريع</span>
+                                    <span class="mode-badge badge-fast">⚡ 0.5s</span>
+                                </div>
+                                <div class="mode-desc">تشغيل فوري — أصوات Microsoft Neural — مثالي للتجربة السريعة</div>
+                            </button>
+                            <button class="mode-option" data-mode="quality" onclick="switchMode('quality')">
+                                <div class="mode-title">
+                                    <i class="fas fa-gem" style="color: #7c3aed;"></i>
+                                    <span>عالي الجودة</span>
+                                    <span class="mode-badge badge-quality">🎨 1.5s</span>
+                                </div>
+                                <div class="mode-desc">استنساخ بصمتك الصوتية — مثالي للمحتوى الاحترافي</div>
+                            </button>
+                        </div>
+                    </section>
+
                     <section class="card">
                         <h3><i class="fas fa-edit"></i> 1. اكتب النص هنا</h3>
                         <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص الذي تريد تحويله إلى صوت هنا..."></textarea>
+                        <div style="font-size: 0.8rem; color: var(--muted-text); margin-top: 6px;">
+                            <span id="charCount">0</span> حرف
+                        </div>
                     </section>
 
                     <section class="card">
@@ -85,29 +311,103 @@
                             <option value="en">🇺🇸 الإنجليزية</option>
                             <option value="es">🇪🇸 الإسبانية</option>
                             <option value="fr">🇫🇷 الفرنسية</option>
+                            <option value="de">🇩🇪 الألمانية</option>
+                            <option value="it">🇮🇹 الإيطالية</option>
+                            <option value="pt">🇧🇷 البرتغالية</option>
+                            <option value="ru">🇷🇺 الروسية</option>
+                            <option value="tr">🇹🇷 التركية</option>
+                            <option value="ja">🇯🇵 اليابانية</option>
+                            <option value="ko">🇰🇷 الكورية</option>
+                            <option value="zh">🇨🇳 الصينية</option>
+                            <option value="hi">🇮🇳 الهندية</option>
+                            <option value="ur">🇵🇰 الأوردو</option>
+                            <option value="fa">🇮🇷 الفارسية</option>
+                            <option value="id">🇮🇩 الإندونيسية</option>
+                            <option value="th">🇹🇭 التايلاندية</option>
+                            <option value="vi">🇻🇳 الفيتنامية</option>
+                            <option value="nl">🇳🇱 الهولندية</option>
+                            <option value="he">🇮🇱 العبرية</option>
                         </select>
+
+                        <!-- خيارات متقدمة -->
+                        <button type="button" class="advanced-toggle" onclick="toggleAdvanced()">
+                            <i class="fas fa-sliders-h"></i> خيارات متقدمة
+                        </button>
+                        <div class="advanced-options" id="advancedOptions">
+                            <div class="control-group">
+                                <label>السرعة</label>
+                                <select id="rateSelect" class="styled-select-sm">
+                                    <option value="-25%">🐢 بطيء</option>
+                                    <option value="+0%" selected>عادي</option>
+                                    <option value="+15%">🏃 سريع قليلاً</option>
+                                    <option value="+30%">⚡ سريع</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label>طبقة الصوت</label>
+                                <select id="pitchSelect" class="styled-select-sm">
+                                    <option value="-10Hz">🎵 منخفضة</option>
+                                    <option value="+0Hz" selected>عادية</option>
+                                    <option value="+10Hz">🎶 عالية</option>
+                                </select>
+                            </div>
+                        </div>
                     </section>
 
+                    <!-- 🎨 صوت مرجعي (يظهر فقط في وضع Quality) -->
+                    <section class="card quality-only">
+                        <h3><i class="fas fa-microphone-alt"></i> 3. الصوت المرجعي (للاستنساخ)</h3>
+                        <p style="color: var(--muted-text); font-size: 0.85rem; margin-bottom: 10px;">
+                            اختر عينة جاهزة أو ارفع تسجيل صوتي لاستنساخه
+                        </p>
+
+                        <select id="voiceSelect" class="styled-select" style="margin-bottom: 12px;">
+                            <option value="">🎤 اختر عينة صوتية</option>
+                        </select>
+
+                        <input type="file" id="customVoice" accept="audio/*" style="display:none;" onchange="handleCustomVoice(this)">
+                        <button type="button" class="btn-secondary" onclick="document.getElementById('customVoice').click()" style="width: 100%;">
+                            <i class="fas fa-upload"></i> أو ارفع تسجيلك الخاص
+                        </button>
+                        <div id="customVoiceTxt" style="font-size: 0.85rem; color: var(--muted-text); margin-top: 8px;"></div>
+                    </section>
+
+                    <!-- 🚀 الأزرار -->
                     <button id="ttsBtn" class="btn-primary-action" onclick="startTTS()">
                         <i class="fas fa-volume-up"></i> توليد الصوت الآن
+                    </button>
+
+                    <!-- زر التشغيل الفوري (يظهر في وضع Fast فقط) -->
+                    <button id="ttsInstantBtn" class="btn-instant" onclick="instantPlay()">
+                        <i class="fas fa-play-circle"></i> ⚡ تشغيل فوري (بدون تنزيل)
                     </button>
                 </div>
 
                 <div class="results-container">
+
+                    <!-- شريط التقدم -->
                     <section class="card" id="progressArea" style="display:none;">
                         <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
                         <p id="statusTxt">الحالة: يتم الآن توليد الصوت</p>
                         <div class="progress-bar">
                             <div id="progFill" class="prog-fill"></div>
                         </div>
+                        <div class="perf-stats" id="perfStats"></div>
                     </section>
 
+                    <!-- النتيجة -->
                     <section class="card" id="resCard" style="display:none;">
                         <h3><i class="fas fa-check-circle" style="color: #10b981;"></i> تم إنشاء المقطع بنجاح</h3>
                         <audio id="audioResult" controls style="width:100%; margin-top:15px;"></audio>
                         <a id="dlBtn" href="#" download class="btn-download" style="margin-top:15px;">
                             <i class="fas fa-download"></i> تحميل المقطع الصوتي
                         </a>
+                    </section>
+
+                    <!-- 📜 سجل المحاولات الأخيرة (وضع Fast) -->
+                    <section class="card" id="historyCard" style="display:none;">
+                        <h3><i class="fas fa-history"></i> آخر التوليدات (هذه الجلسة)</h3>
+                        <div class="history-list" id="historyList"></div>
                     </section>
                 </div>
             </div>
@@ -116,6 +416,188 @@
 
     <div id="toasts"></div>
     
+    <!-- ✨ الملفات: الترتيب مهم -->
+    <script src="js/tts-quick.js"></script>
     <script src="js/tts.js"></script>
+
+    <script>
+    // ==========================================
+    // 🎯 إدارة الوضع (Fast vs Quality)
+    // ==========================================
+    let currentMode = localStorage.getItem('tts_mode') || 'fast';
+    document.body.dataset.mode = currentMode;
+
+    function switchMode(mode) {
+        currentMode = mode;
+        document.body.dataset.mode = mode;
+        localStorage.setItem('tts_mode', mode);
+
+        // تحديث الأزرار النشطة
+        document.querySelectorAll('.mode-option').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+
+        // إظهار/إخفاء زر التشغيل الفوري
+        document.getElementById('ttsInstantBtn').style.display =
+            mode === 'fast' ? 'flex' : 'none';
+
+        // تحديث نص الزر الرئيسي
+        const mainBtn = document.getElementById('ttsBtn');
+        if (mode === 'fast') {
+            mainBtn.innerHTML = '<i class="fas fa-bolt"></i> توليد سريع وحفظ';
+        } else {
+            mainBtn.innerHTML = '<i class="fas fa-gem"></i> توليد بجودة عالية';
+        }
+    }
+
+    // تطبيق الوضع المحفوظ عند التحميل
+    document.addEventListener('DOMContentLoaded', () => {
+        switchMode(currentMode);
+    });
+
+    // ==========================================
+    // 🎚️ خيارات متقدمة
+    // ==========================================
+    function toggleAdvanced() {
+        document.getElementById('advancedOptions').classList.toggle('show');
+    }
+
+    // ==========================================
+    // 🔢 عداد الأحرف
+    // ==========================================
+    document.getElementById('ttsInput')?.addEventListener('input', (e) => {
+        document.getElementById('charCount').textContent = e.target.value.length;
+    });
+
+    // ==========================================
+    // ⚡ التشغيل الفوري (Streaming)
+    // ==========================================
+    let sessionHistory = []; // سجل الجلسة الحالية
+
+    async function instantPlay() {
+        const text = document.getElementById('ttsInput').value.trim();
+        const lang = document.getElementById('langSelect').value;
+        const rate = document.getElementById('rateSelect').value;
+        const pitch = document.getElementById('pitchSelect').value;
+
+        if (!text) {
+            showToast('اكتب النص أولاً', '#ef4444');
+            return;
+        }
+        if (!localStorage.getItem('token')) {
+            showToast('يرجى تسجيل الدخول أولاً', '#f59e0b');
+            return;
+        }
+
+        const instantBtn = document.getElementById('ttsInstantBtn');
+        const progArea = document.getElementById('progressArea');
+        const statusTxt = document.getElementById('statusTxt');
+        const progFill = document.getElementById('progFill');
+        const perfStats = document.getElementById('perfStats');
+        const resCard = document.getElementById('resCard');
+
+        instantBtn.disabled = true;
+        progArea.style.display = 'block';
+        if (resCard) resCard.style.display = 'none';
+        statusTxt.innerText = '⚡ التواصل مع الخادم...';
+        progFill.style.width = '20%';
+        perfStats.innerHTML = '';
+
+        try {
+            const t0 = performance.now();
+
+            // ✅ استخدام quickTTS من tts-quick.js
+            const result = await quickTTS(text, { lang, rate, pitch });
+
+            // 🎵 تشغيل فوري
+            statusTxt.innerText = '✅ يتم التشغيل الآن...';
+            progFill.style.width = '100%';
+
+            result.audio.play().catch(e => {
+                console.warn('Autoplay blocked:', e);
+                showToast('اضغط ▶️ في المشغّل أدناه للاستماع', '#f59e0b');
+            });
+
+            // إظهار في مشغّل النتيجة
+            const audioEl = document.getElementById('audioResult');
+            const dlBtn = document.getElementById('dlBtn');
+            audioEl.src = result.url;
+            dlBtn.href = result.url;
+            dlBtn.download = `tts_${Date.now()}.mp3`;
+            if (resCard) resCard.style.display = 'block';
+
+            // عرض الإحصائيات
+            perfStats.innerHTML = `
+                <div class="perf-stat">
+                    <i class="fas fa-rocket"></i>
+                    <span class="stat-label">TTFB:</span>
+                    <span class="stat-value">${result.ttfb.toFixed(0)}ms</span>
+                </div>
+                <div class="perf-stat">
+                    <i class="fas fa-clock"></i>
+                    <span class="stat-label">المجموع:</span>
+                    <span class="stat-value">${result.totalTime.toFixed(0)}ms</span>
+                </div>
+                <div class="perf-stat">
+                    <i class="fas fa-coins"></i>
+                    <span class="stat-label">الرصيد:</span>
+                    <span class="stat-value">${result.remainingCredits}</span>
+                </div>
+            `;
+
+            // إضافة للسجل
+            addToHistory(text, result.url);
+
+            showToast(`✅ ${result.totalTime.toFixed(0)}ms — تم!`, '#10b981');
+
+            // تحديث رصيد الـ sidebar
+            if (typeof updateSidebarAuth === 'function') updateSidebarAuth();
+
+        } catch (e) {
+            console.error('Instant TTS error:', e);
+            showToast(e.message || 'فشل التوليد الفوري', '#ef4444');
+            statusTxt.innerText = `❌ ${e.message}`;
+            progFill.style.background = '#ef4444';
+        } finally {
+            instantBtn.disabled = false;
+        }
+    }
+
+    // ==========================================
+    // 📜 سجل الجلسة
+    // ==========================================
+    function addToHistory(text, url) {
+        sessionHistory.unshift({ text, url, time: Date.now() });
+        if (sessionHistory.length > 10) sessionHistory.pop();
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const card = document.getElementById('historyCard');
+        const list = document.getElementById('historyList');
+        if (sessionHistory.length === 0) {
+            card.style.display = 'none';
+            return;
+        }
+        card.style.display = 'block';
+        list.innerHTML = sessionHistory.map((item, idx) => `
+            <div class="history-item">
+                <button onclick="replayHistory(${idx})" title="إعادة التشغيل">
+                    <i class="fas fa-play"></i>
+                </button>
+                <span class="history-text">${item.text.substring(0, 50)}${item.text.length > 50 ? '...' : ''}</span>
+            </div>
+        `).join('');
+    }
+
+    function replayHistory(idx) {
+        const item = sessionHistory[idx];
+        if (!item) return;
+        const audio = new Audio(item.url);
+        audio.play();
+    }
+
+    window.replayHistory = replayHistory;
+    </script>
 </body>
 </html>
