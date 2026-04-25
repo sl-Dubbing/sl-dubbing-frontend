@@ -2,6 +2,7 @@
 // 🎨 ثوابت الألوان والإعدادات
 // ==========================================
 const API_BASE = 'https://web-production-14a1.up.railway.app';
+const SAMPLES_BASE = 'samples';
 const COLORS = {
     ACCENT: '#7c3aed',
     GOLD: '#ffb800',
@@ -12,25 +13,49 @@ const COLORS = {
 };
 
 // ==========================================
-// 🔧 استخراج اسم الصوت من URL Cloudinary (لو احتجت)
+// 🎙️ جلب العينات للـ TTS من نفس manifest.json
 // ==========================================
-function extractVoiceName(value) {
-    if (!value) return '';
-    const v = String(value).trim();
-    if (v === 'original' || v === 'source' || v === '') return '';
-    if (v.startsWith('http')) {
-        try {
-            const tail = v.split('/').pop() || '';
-            return tail.split('.').shift() || '';
-        } catch (e) {
-            return '';
+async function renderVoices() {
+    const select = document.getElementById('voiceSelect');
+    if (!select) return;
+
+    // ✅ TTS يحتاج صوت مرجعي دائماً، لذا أول خيار هو الافتراضي
+    select.innerHTML = '<option value="" selected>🎤 اختر عينة صوتية</option>';
+
+    try {
+        const res = await fetch(`${SAMPLES_BASE}/manifest.json?t=${Date.now()}`);
+        if (!res.ok) throw new Error('manifest.json not found');
+
+        const data = await res.json();
+        const voices = Array.isArray(data.voices) ? data.voices : [];
+
+        voices.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.textContent = `${v.icon || '🎤'} ${v.label || v.id}`;
+            opt.dataset.file = v.file || `${v.id}.mp3`;
+            select.appendChild(opt);
+        });
+
+        // اختيار أول عينة كافتراضي إن وُجدت
+        if (voices.length > 0) {
+            select.value = voices[0].id;
         }
+    } catch (e) {
+        console.warn('فشل قراءة manifest.json:', e);
+        const fallback = [{ id: 'muhammad', label: 'محمد', icon: '👨' }];
+        fallback.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.textContent = `${v.icon} ${v.label}`;
+            select.appendChild(opt);
+        });
+        select.value = 'muhammad';
     }
-    return v;
 }
 
 // ==========================================
-// 🟢 إظهار التنبيهات
+// 🟢 تنبيهات
 // ==========================================
 function showToast(msg, color = COLORS.TOAST_ERROR) {
     const t = document.getElementById('toasts');
@@ -47,9 +72,6 @@ function showToast(msg, color = COLORS.TOAST_ERROR) {
     setTimeout(() => box.remove(), 4000);
 }
 
-// ==========================================
-// 🟢 الشريط الجانبي + المصادقة
-// ==========================================
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('active');
     document.getElementById('overlay').classList.toggle('active');
@@ -94,21 +116,41 @@ async function updateSidebarAuth() {
 function logout() { localStorage.removeItem('token'); location.reload(); }
 
 // ==========================================
-// 🟢 إرسال النص للسيرفر (TTS) — أصبح غير متزامن
+// 🔧 جلب ملف العينة كـ base64
+// ==========================================
+async function fetchSampleAsBase64(fileName) {
+    const url = `${SAMPLES_BASE}/${fileName}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`فشل جلب العينة: ${fileName}`);
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            // النتيجة بصيغة "data:audio/mp3;base64,XXXX..." → نأخذ الجزء بعد الفاصلة
+            const base64 = String(reader.result || '').split(',')[1] || '';
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+// ==========================================
+// 🟢 إرسال النص للسيرفر (TTS)
 // ==========================================
 async function startTTS() {
     const ttsInput = document.getElementById('ttsInput');
     const langSelectEl = document.getElementById('langSelect');
-    const voiceSelectEl = document.getElementById('voiceSelect'); // اختياري
+    const voiceSelectEl = document.getElementById('voiceSelect');
     const token = localStorage.getItem('token');
 
     const textInput = (ttsInput?.value || '').trim();
     const lang = langSelectEl?.value || 'en';
-    const rawVoice = voiceSelectEl?.value || '';
-    const voiceId = extractVoiceName(rawVoice);
+    const voiceId = voiceSelectEl?.value || '';
 
     if (!token) return showToast("يرجى تسجيل الدخول أولاً", COLORS.TOAST_WARNING);
     if (!textInput) return showToast("يرجى كتابة النص الذي تريد تحويله!", COLORS.TOAST_ERROR);
+    if (!voiceId) return showToast("يرجى اختيار عينة صوتية", COLORS.TOAST_WARNING);
 
     const btn = document.getElementById('ttsBtn');
     const progressArea = document.getElementById('progressArea');
@@ -120,14 +162,28 @@ async function startTTS() {
     if (progressArea) progressArea.style.display = 'block';
     if (resCard) resCard.style.display = 'none';
     if (progFill) {
-        progFill.style.width = '20%';
+        progFill.style.width = '15%';
         progFill.style.background = COLORS.PROGRESS;
     }
-    if (statusTxt) statusTxt.innerText = "الحالة: يتم الآن إرسال النص...";
+    if (statusTxt) statusTxt.innerText = "الحالة: جاري تحميل العينة الصوتية...";
 
     try {
-        const body = { text: textInput, lang };
-        if (voiceId) body.voice_id = voiceId;
+        // ✅ نقرأ العينة من samples/ ونحوّلها لـ base64
+        const selectedOpt = voiceSelectEl.options[voiceSelectEl.selectedIndex];
+        const fileName = selectedOpt?.dataset?.file || `${voiceId}.mp3`;
+        let sample_b64 = '';
+        try {
+            sample_b64 = await fetchSampleAsBase64(fileName);
+        } catch (e) {
+            console.warn('Failed to load local sample:', e);
+            // بدون base64، السيرفر سيعتمد على voice_id
+        }
+
+        if (statusTxt) statusTxt.innerText = "الحالة: جاري إرسال النص...";
+        if (progFill) progFill.style.width = '30%';
+
+        const body = { text: textInput, lang, voice_id: voiceId };
+        if (sample_b64) body.sample_b64 = sample_b64;
 
         const res = await fetch(`${API_BASE}/api/tts`, {
             method: 'POST',
@@ -140,12 +196,9 @@ async function startTTS() {
 
         const data = await res.json().catch(() => ({}));
 
-        if (!res.ok) {
-            throw new Error(data.error || `Server Error: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(data.error || `Server Error: ${res.status}`);
 
         if (data.success && data.job_id) {
-            // ✅ المهمة دخلت قائمة الانتظار — نتابع عبر SSE
             if (statusTxt) statusTxt.innerText = "الحالة: جاري توليد الصوت...";
             if (progFill) progFill.style.width = '50%';
 
@@ -198,12 +251,12 @@ async function startTTS() {
 }
 
 // ==========================================
-// 🔄 polling احتياطي (يُستخدم إذا فشل SSE)
+// 🔄 polling احتياطي
 // ==========================================
 async function pollTtsStatus(jobId, btn, statusTxt, progFill, resCard) {
     const token = localStorage.getItem('token');
     const start = Date.now();
-    const TIMEOUT_MS = 10 * 60 * 1000; // 10 دقائق للـ TTS
+    const TIMEOUT_MS = 10 * 60 * 1000;
 
     const poll = async () => {
         if (Date.now() - start > TIMEOUT_MS) {
@@ -249,4 +302,5 @@ async function pollTtsStatus(jobId, btn, statusTxt, progFill, resCard) {
 
 document.addEventListener('DOMContentLoaded', () => {
     updateSidebarAuth();
+    renderVoices();
 });
