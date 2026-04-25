@@ -1,0 +1,12 @@
+{
+  "voices": [
+    {
+      "id": "muhammad",
+      "file": "muhammad.mp3",
+      "label": "محمد",
+      "gender": "male",
+      "lang": "ar",
+      "icon": "👨"
+    }
+  ]
+}
