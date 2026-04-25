@@ -12,6 +12,24 @@ const COLORS = {
 };
 
 // ==========================================
+// 🔧 استخراج اسم الصوت من URL Cloudinary (لو احتجت)
+// ==========================================
+function extractVoiceName(value) {
+    if (!value) return '';
+    const v = String(value).trim();
+    if (v === 'original' || v === 'source' || v === '') return '';
+    if (v.startsWith('http')) {
+        try {
+            const tail = v.split('/').pop() || '';
+            return tail.split('.').shift() || '';
+        } catch (e) {
+            return '';
+        }
+    }
+    return v;
+}
+
+// ==========================================
 // 🟢 إظهار التنبيهات
 // ==========================================
 function showToast(msg, color = COLORS.TOAST_ERROR) {
@@ -30,7 +48,7 @@ function showToast(msg, color = COLORS.TOAST_ERROR) {
 }
 
 // ==========================================
-// 🟢 التحكم في القائمة الجانبية والمصادقة
+// 🟢 الشريط الجانبي + المصادقة
 // ==========================================
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('active');
@@ -39,8 +57,9 @@ function toggleSidebar() {
 
 async function updateSidebarAuth() {
     const authSection = document.getElementById('authSection');
+    if (!authSection) return;
     const token = localStorage.getItem('token');
-    
+
     if (!token) {
         authSection.innerHTML = `
             <div class="user-info-card">
@@ -55,7 +74,7 @@ async function updateSidebarAuth() {
             method: 'GET', headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
-        
+
         if (data.success || data.user) {
             const userName = data.user?.name || data.user?.username || data.name || 'مستخدم';
             const userCredits = data.user?.credits ?? data.user?.points ?? data.credits ?? 0;
@@ -75,14 +94,19 @@ async function updateSidebarAuth() {
 function logout() { localStorage.removeItem('token'); location.reload(); }
 
 // ==========================================
-// 🟢 إرسال النص للسيرفر (Text to Speech)
+// 🟢 إرسال النص للسيرفر (TTS) — أصبح غير متزامن
 // ==========================================
 async function startTTS() {
-    const textInput = document.getElementById('ttsInput').value.trim();
-    const langSelect = document.getElementById('langSelect').value;
+    const ttsInput = document.getElementById('ttsInput');
+    const langSelectEl = document.getElementById('langSelect');
+    const voiceSelectEl = document.getElementById('voiceSelect'); // اختياري
     const token = localStorage.getItem('token');
 
-    // التحققات الأساسية
+    const textInput = (ttsInput?.value || '').trim();
+    const lang = langSelectEl?.value || 'en';
+    const rawVoice = voiceSelectEl?.value || '';
+    const voiceId = extractVoiceName(rawVoice);
+
     if (!token) return showToast("يرجى تسجيل الدخول أولاً", COLORS.TOAST_WARNING);
     if (!textInput) return showToast("يرجى كتابة النص الذي تريد تحويله!", COLORS.TOAST_ERROR);
 
@@ -93,47 +117,136 @@ async function startTTS() {
     const resCard = document.getElementById('resCard');
 
     btn.disabled = true;
-    progressArea.style.display = 'block';
-    resCard.style.display = 'none';
-    progFill.style.width = '40%';
-    statusTxt.innerText = "الحالة: يتم الآن قراءة وتوليد النص...";
+    if (progressArea) progressArea.style.display = 'block';
+    if (resCard) resCard.style.display = 'none';
+    if (progFill) {
+        progFill.style.width = '20%';
+        progFill.style.background = COLORS.PROGRESS;
+    }
+    if (statusTxt) statusTxt.innerText = "الحالة: يتم الآن إرسال النص...";
 
     try {
-        // إرسال البيانات كـ JSON بدلاً من FormData (لأننا نرسل نص وليس ملف فيديو)
+        const body = { text: textInput, lang };
+        if (voiceId) body.voice_id = voiceId;
+
         const res = await fetch(`${API_BASE}/api/tts`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json' 
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ text: textInput, lang: langSelect })
+            body: JSON.stringify(body)
         });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-            progFill.style.width = '100%';
-            statusTxt.innerText = "الحالة: تم توليد الصوت بنجاح!";
-            showToast("تم التحويل بنجاح!", COLORS.TOAST_SUCCESS);
-            
-            // إظهار مشغل الصوت
-            resCard.style.display = 'block';
-            document.getElementById('audioResult').src = data.audio_url;
-            document.getElementById('dlBtn').href = data.audio_url;
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            throw new Error(data.error || `Server Error: ${res.status}`);
+        }
+
+        if (data.success && data.job_id) {
+            // ✅ المهمة دخلت قائمة الانتظار — نتابع عبر SSE
+            if (statusTxt) statusTxt.innerText = "الحالة: جاري توليد الصوت...";
+            if (progFill) progFill.style.width = '50%';
+
+            const evtSource = new EventSource(`${API_BASE}/api/progress/${data.job_id}`);
+
+            evtSource.onmessage = function (event) {
+                let progData;
+                try { progData = JSON.parse(event.data); } catch (e) { return; }
+
+                if (progData.status === 'completed') {
+                    evtSource.close();
+                    if (progFill) progFill.style.width = '100%';
+                    if (statusTxt) statusTxt.innerText = "الحالة: تم توليد الصوت بنجاح!";
+                    showToast("تم التحويل بنجاح!", COLORS.TOAST_SUCCESS);
+
+                    if (resCard) resCard.style.display = 'block';
+                    const audEl = document.getElementById('audioResult');
+                    const dl = document.getElementById('dlBtn');
+                    if (audEl) audEl.src = progData.audio_url;
+                    if (dl) dl.href = progData.audio_url;
+                    btn.disabled = false;
+                    updateSidebarAuth();
+                } else if (progData.status === 'failed') {
+                    evtSource.close();
+                    showToast("فشل توليد الصوت", COLORS.TOAST_ERROR);
+                    if (statusTxt) statusTxt.innerText = "الحالة: فشل التوليد";
+                    if (progFill) progFill.style.background = COLORS.TOAST_ERROR;
+                    btn.disabled = false;
+                    updateSidebarAuth();
+                } else if (progData.status === 'not_found') {
+                    evtSource.close();
+                    showToast("المهمة غير موجودة", COLORS.TOAST_ERROR);
+                    btn.disabled = false;
+                }
+            };
+
+            evtSource.onerror = function () {
+                evtSource.close();
+                pollTtsStatus(data.job_id, btn, statusTxt, progFill, resCard);
+            };
         } else {
-            showToast(data.error || "حدث خطأ أثناء التوليد", COLORS.TOAST_ERROR);
-            progFill.style.background = COLORS.TOAST_ERROR;
+            throw new Error(data.error || "خطأ أثناء بدء التوليد");
         }
     } catch (e) {
         console.error("TTS Error:", e);
-        showToast("خطأ في الاتصال بالسيرفر", COLORS.TOAST_ERROR);
-        progFill.style.background = COLORS.TOAST_ERROR;
-    } finally {
+        showToast(e.message || "خطأ في الاتصال بالسيرفر", COLORS.TOAST_ERROR);
+        if (progFill) progFill.style.background = COLORS.TOAST_ERROR;
         btn.disabled = false;
     }
 }
 
-// تهيئة الصفحة
+// ==========================================
+// 🔄 polling احتياطي (يُستخدم إذا فشل SSE)
+// ==========================================
+async function pollTtsStatus(jobId, btn, statusTxt, progFill, resCard) {
+    const token = localStorage.getItem('token');
+    const start = Date.now();
+    const TIMEOUT_MS = 10 * 60 * 1000; // 10 دقائق للـ TTS
+
+    const poll = async () => {
+        if (Date.now() - start > TIMEOUT_MS) {
+            showToast("انتهت مهلة التوليد", COLORS.TOAST_ERROR);
+            btn.disabled = false;
+            return;
+        }
+        try {
+            const res = await fetch(`${API_BASE}/api/job/${jobId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json().catch(() => ({}));
+            if (data.status === 'completed') {
+                if (progFill) progFill.style.width = '100%';
+                if (statusTxt) statusTxt.innerText = "الحالة: تم توليد الصوت بنجاح!";
+                showToast("تم التحويل بنجاح!", COLORS.TOAST_SUCCESS);
+                if (resCard) resCard.style.display = 'block';
+                const audEl = document.getElementById('audioResult');
+                const dl = document.getElementById('dlBtn');
+                if (audEl) audEl.src = data.audio_url;
+                if (dl) dl.href = data.audio_url;
+                btn.disabled = false;
+                updateSidebarAuth();
+                return;
+            }
+            if (data.status === 'failed') {
+                showToast("فشل التوليد", COLORS.TOAST_ERROR);
+                if (statusTxt) statusTxt.innerText = "الحالة: فشل التوليد";
+                if (progFill) progFill.style.background = COLORS.TOAST_ERROR;
+                btn.disabled = false;
+                updateSidebarAuth();
+                return;
+            }
+            if (statusTxt) statusTxt.innerText = "الحالة: التوليد جارٍ...";
+            setTimeout(poll, 3000);
+        } catch (e) {
+            console.error("Poll error:", e);
+            setTimeout(poll, 5000);
+        }
+    };
+    poll();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     updateSidebarAuth();
 });
