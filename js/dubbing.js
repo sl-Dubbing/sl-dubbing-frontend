@@ -2,6 +2,7 @@
 // 🎨 ثوابت الألوان والإعدادات
 // ==========================================
 const API_BASE = 'https://web-production-14a1.up.railway.app';
+const SAMPLES_BASE = 'samples'; // مجلد العينات المحلي
 const COLORS = {
     ACCENT: '#7c3aed', GOLD: '#ffb800', TEXT: '#e0e0ff',
     PROGRESS: '#34d399', TOAST_ERROR: '#ef4444',
@@ -9,28 +10,7 @@ const COLORS = {
 };
 
 // ==========================================
-// 🔧 دالة مساعدة: استخراج اسم الصوت من URL Cloudinary
-// ==========================================
-function extractVoiceName(value) {
-    if (!value) return 'source';
-    const v = String(value).trim();
-    if (v === 'original' || v === 'source' || v === '') return 'source';
-    if (v === 'custom') return 'custom';
-    if (v.startsWith('http')) {
-        // مثال: https://res.cloudinary.com/.../sl_voice/muhammad_ar.wav -> "muhammad_ar"
-        try {
-            const tail = v.split('/').pop() || '';
-            const name = tail.split('.').shift() || '';
-            return name || 'source';
-        } catch (e) {
-            return 'source';
-        }
-    }
-    return v;
-}
-
-// ==========================================
-// 🎙️ جلب العينات من Cloudinary
+// 🎙️ جلب العينات من manifest.json (يدعم الإضافة التلقائية)
 // ==========================================
 async function renderVoices() {
     const select = document.getElementById('voiceSelect');
@@ -39,36 +19,38 @@ async function renderVoices() {
     select.innerHTML = '<option value="original" selected>🎙️ الصوت الأصلي للوسائط (بدون استنساخ)</option>';
 
     try {
-        const res = await fetch('https://res.cloudinary.com/dxbmvzsiz/video/list/sl_voice.json');
-        if (res.ok) {
-            const data = await res.json();
-            data.resources.forEach(file => {
-                const opt = document.createElement('option');
-                // ✅ نضع اسم الملف فقط في value بدلاً من URL الكامل
-                const baseName = (file.public_id.split('/').pop() || '').trim();
-                opt.value = baseName;  // مثل "muhammad_ar"
-                let cleanName = baseName.replace(/_/g, ' ');
-                opt.textContent = `👤 عينة: ${cleanName}`;
-                // نخزن الـ URL في data attribute للعرض إذا احتجناه
-                opt.dataset.url = `https://res.cloudinary.com/dxbmvzsiz/video/upload/v${file.version}/${file.public_id}.${file.format}`;
-                select.appendChild(opt);
-            });
+        // ✅ نقرأ من manifest.json المحلي
+        const res = await fetch(`${SAMPLES_BASE}/manifest.json?t=${Date.now()}`);
+        if (!res.ok) throw new Error('manifest.json not found');
+
+        const data = await res.json();
+        const voices = Array.isArray(data.voices) ? data.voices : [];
+
+        if (voices.length === 0) {
+            console.warn('manifest.json فارغ — لا توجد عينات.');
             return;
         }
-    } catch (e) {
-        console.warn("استخدام القائمة الاحتياطية للعينات.");
-    }
 
-    // القائمة الاحتياطية
-    const fallbackVoices = [
-        { id: 'muhammad', name: 'محمد (عينة ذكورية)' }
-    ];
-    fallbackVoices.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.id;
-        opt.textContent = `👨 عينة: ${v.name}`;
-        select.appendChild(opt);
-    });
+        voices.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id; // معرّف الصوت
+            opt.textContent = `${v.icon || '🎤'} عينة: ${v.label || v.id}`;
+            // نخزن مسار الملف للتحميل لاحقاً
+            opt.dataset.file = v.file || `${v.id}.mp3`;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.warn('فشل قراءة manifest.json:', e);
+        // قائمة احتياطية صلبة
+        const fallback = [{ id: 'muhammad', file: 'muhammad.mp3', label: 'محمد', icon: '👨' }];
+        fallback.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.textContent = `${v.icon} عينة: ${v.label}`;
+            opt.dataset.file = v.file;
+            select.appendChild(opt);
+        });
+    }
 }
 
 // ==========================================
@@ -112,7 +94,6 @@ async function updateSidebarAuth() {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
         });
-
         if (!res.ok) throw new Error('Invalid Response');
         const data = await res.json();
 
@@ -144,7 +125,7 @@ async function updateSidebarAuth() {
 function logout() { localStorage.removeItem('token'); location.reload(); }
 
 // ==========================================
-// 🟢 إدارة الملفات المرفوعة
+// 🟢 إدارة الملفات
 // ==========================================
 function updateFileName() {
     const inp = document.getElementById('mediaFile');
@@ -182,7 +163,17 @@ function handleCustomVoice(input) {
 function setLang(val) { console.log("Language selected:", val); }
 
 // ==========================================
-// 🟢 بدء الدبلجة وشريط التقدم (SSE)
+// 🔧 جلب ملف العينة من samples/ كـ Blob
+// ==========================================
+async function fetchSampleAsBlob(fileName) {
+    const url = `${SAMPLES_BASE}/${fileName}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`فشل جلب العينة: ${fileName} (HTTP ${res.status})`);
+    return await res.blob();
+}
+
+// ==========================================
+// 🟢 بدء الدبلجة
 // ==========================================
 async function startDubbing() {
     const mediaInput = document.getElementById('mediaFile');
@@ -204,43 +195,53 @@ async function startDubbing() {
     dubBtn.disabled = true;
     progressArea.style.display = 'block';
     if (resCard) resCard.style.display = 'none';
-    statusTxt.innerText = "الحالة: جاري رفع الملف للسيرفر...";
-    progFill.style.width = '20%';
+    statusTxt.innerText = "الحالة: جاري تجهيز الملفات...";
+    progFill.style.width = '15%';
     progFill.style.background = COLORS.PROGRESS;
 
     const fd = new FormData();
     fd.append('media_file', mediaInput.files[0]);
     fd.append('lang', langSelect.value || 'ar');
 
-    // ✅ منطق voice_id الصحيح
-    if (customVoiceInput && customVoiceInput.files.length > 0) {
-        // بصمة مرفوعة → الأولوية لـ voice_sample
-        fd.append('voice_sample', customVoiceInput.files[0]);
-        // لا حاجة لـ voice_id لأن server.py يجعله 'source' عند وجود sample
-    } else if (voiceSelect && voiceSelect.value && voiceSelect.value !== 'original') {
-        // ✅ نستخرج اسم الملف فقط (بدون URL)
-        const cleanVoiceId = extractVoiceName(voiceSelect.value);
-        fd.append('voice_id', cleanVoiceId);
-    } else {
-        fd.append('voice_id', 'source');
-    }
-
     try {
+        // ✅ منطق اختيار الصوت بالأولوية:
+        // 1) بصمة مرفوعة من المستخدم
+        // 2) عينة من مجلد samples/
+        // 3) الصوت الأصلي للوسائط (لا نُرسل voice_sample)
+
+        if (customVoiceInput && customVoiceInput.files.length > 0) {
+            fd.append('voice_sample', customVoiceInput.files[0]);
+            statusTxt.innerText = "الحالة: استخدام بصمتك الصوتية...";
+        } else if (voiceSelect && voiceSelect.value && voiceSelect.value !== 'original') {
+            const selectedOpt = voiceSelect.options[voiceSelect.selectedIndex];
+            const fileName = selectedOpt?.dataset?.file || `${voiceSelect.value}.mp3`;
+            const labelText = (selectedOpt.textContent || '').replace(/^.*عينة:\s*/, '');
+
+            statusTxt.innerText = `الحالة: تحميل عينة "${labelText}"...`;
+            try {
+                const sampleBlob = await fetchSampleAsBlob(fileName);
+                fd.append('voice_sample', sampleBlob, fileName);
+            } catch (e) {
+                console.error('Sample fetch failed:', e);
+                showToast(`تعذّر جلب العينة، سيتم استخدام الصوت الأصلي`, COLORS.TOAST_WARNING);
+            }
+        }
+
+        statusTxt.innerText = "الحالة: جاري رفع الملف للسيرفر...";
+        progFill.style.width = '30%';
+
         const res = await fetch(`${API_BASE}/api/dub`, {
             method: 'POST', body: fd, headers: { 'Authorization': `Bearer ${token}` }
         });
 
         const data = await res.json().catch(() => ({}));
 
-        if (!res.ok) {
-            throw new Error(data.error || `Server Error: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(data.error || `Server Error: ${res.status}`);
 
         if (data.success && data.job_id) {
             statusTxt.innerText = "الحالة: جاري معالجة الذكاء الاصطناعي...";
             progFill.style.width = '50%';
 
-            // 📡 SSE
             const evtSource = new EventSource(`${API_BASE}/api/progress/${data.job_id}`);
 
             evtSource.onmessage = function (event) {
@@ -262,16 +263,14 @@ async function startDubbing() {
                     }
                     if (dl) dl.href = progData.audio_url;
                     dubBtn.disabled = false;
-
-                    // تحديث الرصيد بعد النجاح
                     updateSidebarAuth();
                 } else if (progData.status === 'failed') {
                     evtSource.close();
-                    showToast("فشلت المعالجة في خادم الذكاء الاصطناعي", COLORS.TOAST_ERROR);
+                    showToast("فشلت المعالجة", COLORS.TOAST_ERROR);
                     statusTxt.innerText = "الحالة: فشلت المعالجة";
                     progFill.style.background = COLORS.TOAST_ERROR;
                     dubBtn.disabled = false;
-                    updateSidebarAuth();  // قد يكون تم استرجاع الرصيد
+                    updateSidebarAuth();
                 } else if (progData.status === 'not_found') {
                     evtSource.close();
                     showToast("المهمة غير موجودة", COLORS.TOAST_ERROR);
@@ -284,7 +283,6 @@ async function startDubbing() {
 
             evtSource.onerror = function () {
                 evtSource.close();
-                // محاولة polling احتياطية في حال انقطاع SSE
                 pollJobStatus(data.job_id, dubBtn, statusTxt, progFill, resCard);
             };
         } else {
@@ -300,12 +298,12 @@ async function startDubbing() {
 }
 
 // ==========================================
-// 🔄 polling احتياطي إذا فشل SSE
+// 🔄 polling احتياطي
 // ==========================================
 async function pollJobStatus(jobId, btn, statusTxt, progFill, resCard) {
     const token = localStorage.getItem('token');
     const start = Date.now();
-    const TIMEOUT_MS = 30 * 60 * 1000; // 30 دقيقة
+    const TIMEOUT_MS = 30 * 60 * 1000;
 
     const poll = async () => {
         if (Date.now() - start > TIMEOUT_MS) {
