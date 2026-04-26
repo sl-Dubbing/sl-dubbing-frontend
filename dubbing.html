@@ -8,149 +8,123 @@
   <!-- أيقونات -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
-  <!-- ملف الأنماط (ضع css/style.css في مشروعك) -->
+  <!-- ملف الأنماط -->
   <link rel="stylesheet" href="css/style.css" />
-
-  <!-- أنماط صغيرة مطلوبة لعمل التنبيهات والـ overlay بشكل صحيح -->
-  <style>
-    :root {
-      --gold: #ffb800;
-      --muted-text: #9ca3af;
-      --toast-bg: rgba(0,0,0,0.7);
-    }
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; z-index: 40; }
-    .overlay.active { display: block; }
-    .sidebar.active { transform: translateX(0); }
-    .toast { color: #fff; padding: 10px 14px; border-radius: 8px; margin-top: 8px; box-shadow: 0 6px 18px rgba(2,6,23,0.6); font-size: 0.95rem; }
-    .user-info-card { padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; text-align: center; }
-    .btn-login-sidebar { display:inline-block; margin-top:8px; padding:8px 12px; background:linear-gradient(90deg,#7c3aed,#2563eb); color:#fff; border-radius:8px; text-decoration:none; }
-    .progress-bar { height:10px; background:rgba(255,255,255,0.03); border-radius:999px; overflow:hidden; }
-    .prog-fill { height:100%; width:0; background:linear-gradient(90deg,var(--gold),#10b981); transition: width 400ms ease; }
-    .btn-secondary { background:transparent; border:1px solid rgba(255,255,255,0.04); color:inherit; padding:10px 12px; border-radius:8px; cursor:pointer; }
-    .btn-primary-action { background:linear-gradient(90deg,#7c3aed,#2563eb); color:#fff; padding:12px 16px; border-radius:12px; border:none; cursor:pointer; }
-    .btn-download { display:inline-block; padding:10px 12px; border-radius:8px; background:#10b981; color:#fff; text-decoration:none; }
-    @media (max-width:900px) { .sidebar { display:none; } .main-content { margin-left:0; } }
-  </style>
 </head>
 <body>
   <!-- شريط علوي -->
-  <header class="top-bar" style="height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 18px; border-bottom:1px solid rgba(255,255,255,0.03);">
+  <header class="top-bar">
     <div style="display:flex; align-items:center; gap:12px;">
-      <button class="menu-btn" onclick="toggleSidebar()" style="background:transparent; border:1px solid rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px; color:var(--muted-text); display:flex; gap:8px; align-items:center;">
+      <button class="menu-btn" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i><span>القائمة</span>
       </button>
       <div class="top-logo"><h2 style="color:var(--gold); margin:0; font-size:1.15rem;">sl-Dubbing</h2></div>
     </div>
     <div class="top-actions">
-      <span class="account-badge" style="background:linear-gradient(90deg,#7c3aed,#2563eb); padding:6px 10px; border-radius:999px; color:#fff; font-weight:600;">حساب تجريبي</span>
+      <span class="account-badge">حساب تجريبي</span>
     </div>
   </header>
 
   <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
   <!-- الشريط الجانبي -->
-  <aside class="sidebar" id="sidebar" style="position:fixed; left:0; top:64px; bottom:0; width:280px; padding:18px; background:linear-gradient(180deg,#0f1724,#071026); border-right:1px solid rgba(167,139,250,0.08); overflow:auto;">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-user-section" id="authSection">
       <div style="color:var(--muted-text); font-size:0.9rem; text-align:center;">جاري التحقق من بياناتك...</div>
     </div>
 
-    <nav class="sidebar-nav" style="margin-top:18px;">
-      <div class="nav-label" style="color:var(--muted-text); margin-bottom:8px;">القائمة الرئيسية</div>
-      <ul style="list-style:none; padding:0; margin:0;">
-        <li style="margin:8px 0;"><a href="index.html" style="color:inherit; text-decoration:none; display:flex; gap:10px; align-items:center;"><i class="fas fa-home"></i> الرئيسية</a></li>
-        <li style="margin:8px 0;"><a href="dubbing.html" class="active" style="color:inherit; text-decoration:none; display:flex; gap:10px; align-items:center;"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
-        <li style="margin:8px 0;"><a href="tts.html" style="color:inherit; text-decoration:none; display:flex; gap:10px; align-items:center;"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
+    <nav class="sidebar-nav">
+      <div class="nav-label">القائمة الرئيسية</div>
+      <ul>
+        <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
+        <li><a href="dubbing.html" class="active"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
+        <li><a href="tts.html"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
       </ul>
     </nav>
 
-    <div class="panel summary" style="margin-top:18px; padding:12px; background:rgba(255,255,255,0.02); border-radius:10px;">
-      <h4 style="margin:0 0 8px 0;">لوحة الدبلجة</h4>
-      <div style="margin-bottom:6px;"><strong>الحالة:</strong> <span id="miniStatus">في الانتظار 0%</span></div>
-      <div style="margin-bottom:6px;"><strong>المعمارية:</strong> Edge‑TTS + OpenVoice v2</div>
-      <div style="margin-bottom:6px;"><strong>اللغة:</strong> <span id="miniLang">العربية</span></div>
-      <div><strong>الصوت:</strong> المحافظة على الصوت الأصلي</div>
+    <div class="panel summary">
+      <h4>لوحة الدبلجة</h4>
+      <div class="meta"><strong>الحالة:</strong> <span id="miniStatus">في الانتظار 0%</span></div>
+      <div class="meta"><strong>المعمارية:</strong> Edge‑TTS + OpenVoice v2</div>
+      <div class="meta"><strong>اللغة:</strong> <span id="miniLang">العربية</span></div>
+      <div class="meta"><strong>الصوت:</strong> المحافظة على الصوت الأصلي</div>
     </div>
   </aside>
 
   <!-- المحتوى الرئيسي -->
-  <main class="main-content" id="mainContent" style="margin-left:280px; padding:28px;">
-    <div class="container" style="max-width:1100px; margin:0 auto;">
+  <main class="main-content" id="mainContent">
+    <div class="container">
       <header class="main-header">
-        <h1 style="margin:0 0 6px 0;">استوديو الدبلجة الاحترافي</h1>
-        <p class="lead" style="margin:0 0 12px 0; color:var(--muted-text);">ارفع ملفك الآن وابدأ الدبلجة بأحدث تقنيات الذكاء الاصطناعي — يدعم 100 لغة.</p>
+        <h1>استوديو الدبلجة الاحترافي</h1>
+        <p class="lead">ارفع ملفك الآن وابدأ الدبلجة بأحدث تقنيات الذكاء الاصطناعي — يدعم 100 لغة.</p>
       </header>
 
-      <div class="workspace-grid" style="display:grid; grid-template-columns:420px 1fr; gap:20px; margin-top:18px;">
-        <!-- أدوات -->
+      <div class="workspace-grid">
         <div class="tools-container">
-          <section class="card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(167,139,250,0.08); padding:18px; border-radius:12px;">
-            <h3 style="margin:0 0 10px 0;"><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
-            <div class="upload-wrapper" style="display:flex;flex-direction:column;gap:10px;">
+          <section class="card">
+            <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
+            <div class="upload-wrapper">
               <input type="file" id="mediaFile" hidden onchange="updateFileName()" accept="video/*,audio/*" />
               <button onclick="document.getElementById('mediaFile').click()" class="btn-secondary">
                 <i class="fas fa-file-video"></i> اختر فيديو أو صوت
               </button>
-              <p id="fileTxt" class="file-info" style="color:var(--muted-text); margin:0;">لم يتم اختيار ملف بعد</p>
+              <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
             </div>
           </section>
 
-          <section class="card" style="margin-top:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(167,139,250,0.08); padding:18px; border-radius:12px;">
-            <h3 style="margin:0 0 10px 0;"><i class="fas fa-globe"></i> 2. لغة الهدف</h3>
-            <select id="langSelect" class="styled-select" onchange="setLang(this.value)" style="width:100%; padding:10px; border-radius:8px;">
-              <!-- تُملأ ديناميكياً من data/languages.json -->
-            </select>
+          <section class="card">
+            <h3><i class="fas fa-globe"></i> 2. لغة الهدف</h3>
+            <select id="langSelect" class="styled-select" onchange="setLang(this.value)"></select>
           </section>
 
-          <section class="card" style="margin-top:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(167,139,250,0.08); padding:18px; border-radius:12px;">
-            <h3 style="margin:0 0 10px 0;"><i class="fas fa-microphone-alt"></i> 3. اختيار الصوت</h3>
-
+          <section class="card">
+            <h3><i class="fas fa-microphone-alt"></i> 3. اختيار الصوت</h3>
             <div style="margin-bottom:12px;">
-              <label class="muted" style="display:block; color:var(--muted-text); margin-bottom:8px;">الخيار الأول: استخدم صوتاً جاهزاً أو الأصلي</label>
-              <select id="voiceSelect" class="styled-select" onchange="setVoice(this.value)" style="width:100%; padding:10px; border-radius:8px;">
+              <label class="muted">الخيار الأول: استخدم صوتاً جاهزاً أو الأصلي</label>
+              <select id="voiceSelect" class="styled-select" onchange="setVoice(this.value)">
                 <option value="original" selected>المحافظة على الصوت الأصلي</option>
-                <!-- تُملأ ديناميكياً من samples/manifest.json -->
               </select>
             </div>
 
-            <div class="voice-clone-box" style="border-top:1px dashed rgba(167,139,250,0.08); padding-top:12px;">
-              <label class="muted" style="display:block; color:var(--muted-text); margin-bottom:8px;">الخيار الثاني: رفع عينة صوتية مخصصة</label>
+            <div class="voice-clone-box">
+              <label class="muted">الخيار الثاني: رفع عينة صوتية مخصصة</label>
               <input type="file" id="customVoice" hidden onchange="handleCustomVoice(this)" accept="audio/*" />
               <button onclick="document.getElementById('customVoice').click()" class="btn-secondary">
                 <i class="fas fa-plus"></i> رفع عينة من جهازك
               </button>
-              <p id="customVoiceTxt" class="file-info" style="color:var(--muted-text); margin-top:8px;"></p>
+              <p id="customVoiceTxt" class="file-info"></p>
             </div>
           </section>
 
-          <button id="dubBtn" class="btn-primary-action" onclick="startDubbing()" style="margin-top:14px;">
+          <button id="dubBtn" class="btn-primary-action" onclick="startDubbing()">
             <i class="fas fa-wand-magic-sparkles"></i> بدء الدبلجة الآن
           </button>
         </div>
 
-        <!-- نتائج -->
         <div class="results-container">
-          <section class="card" id="progressArea" style="display:none; background:rgba(255,255,255,0.03); border:1px solid rgba(167,139,250,0.08); padding:18px; border-radius:12px;">
-            <h3 style="margin:0 0 8px 0;"><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
-            <p id="statusTxt" style="margin:0 0 8px 0; color:var(--muted-text);">الحالة: في الانتظار</p>
+          <section class="card" id="progressArea" style="display:none;">
+            <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
+            <p id="statusTxt">الحالة: في الانتظار</p>
             <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
           </section>
 
-          <section class="card" id="resCard" style="display:none; margin-top:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(167,139,250,0.08); padding:18px; border-radius:12px;">
-            <h3 style="margin:0 0 8px 0;"><i class="fas fa-check-circle" style="color:#10b981;"></i> النتيجة جاهزة</h3>
-            <audio id="dubAud" controls style="width:100%; margin-top:10px; display:block;"></audio>
+          <section class="card" id="resCard" style="display:none;">
+            <h3><i class="fas fa-check-circle" style="color:#10b981;"></i> النتيجة جاهزة</h3>
+            <audio id="dubAud" controls style="width:100%; margin-top:10px;"></audio>
             <video id="dubVid" controls style="width:100%; margin-top:10px; display:none;"></video>
-            <a id="dlBtn" href="#" download class="btn-download" style="margin-top:12px; display:inline-block;"> <i class="fas fa-download"></i> تحميل النتيجة</a>
+            <a id="dlBtn" href="#" download class="btn-download">
+              <i class="fas fa-download"></i> تحميل النتيجة
+            </a>
           </section>
         </div>
       </div>
     </div>
   </main>
 
-  <div id="toasts" style="position:fixed; left:20px; bottom:20px; z-index:9999;"></div>
+  <div id="toasts"></div>
 
-  <!-- سكربتات -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
-  <!-- ملف الجافاسكربت الخاص بك -->
+  <!-- تحميل ملف اللغات أولاً ثم سكربت الواجهة -->
+  <script src="js/languages-data.js"></script>
   <script src="js/dubbing.js"></script>
 </body>
 </html>
