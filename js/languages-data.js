@@ -1,0 +1,139 @@
+// languages-data.js — قائمة 100 لغة مدعومة من Edge-TTS
+// تشمل اللغات الرئيسية واللهجات الأكثر استخداماً
+
+const LANGUAGES = [
+    // 🌟 الأكثر استخداماً (تظهر أولاً)
+    { code: "ar", flag: "🇸🇦", name_ar: "العربية", name_en: "Arabic", popular: true },
+    { code: "en", flag: "🇺🇸", name_ar: "الإنجليزية", name_en: "English", popular: true },
+    { code: "fr", flag: "🇫🇷", name_ar: "الفرنسية", name_en: "French", popular: true },
+    { code: "es", flag: "🇪🇸", name_ar: "الإسبانية", name_en: "Spanish", popular: true },
+    { code: "de", flag: "🇩🇪", name_ar: "الألمانية", name_en: "German", popular: true },
+    { code: "tr", flag: "🇹🇷", name_ar: "التركية", name_en: "Turkish", popular: true },
+    { code: "ru", flag: "🇷🇺", name_ar: "الروسية", name_en: "Russian", popular: true },
+    { code: "zh", flag: "🇨🇳", name_ar: "الصينية", name_en: "Chinese", popular: true },
+    { code: "ja", flag: "🇯🇵", name_ar: "اليابانية", name_en: "Japanese", popular: true },
+    { code: "ko", flag: "🇰🇷", name_ar: "الكورية", name_en: "Korean", popular: true },
+    { code: "hi", flag: "🇮🇳", name_ar: "الهندية", name_en: "Hindi", popular: true },
+    { code: "ur", flag: "🇵🇰", name_ar: "الأوردو", name_en: "Urdu", popular: true },
+    { code: "fa", flag: "🇮🇷", name_ar: "الفارسية", name_en: "Persian", popular: true },
+    { code: "pt", flag: "🇧🇷", name_ar: "البرتغالية", name_en: "Portuguese", popular: true },
+    { code: "it", flag: "🇮🇹", name_ar: "الإيطالية", name_en: "Italian", popular: true },
+
+    // 🌍 الأوروبية
+    { code: "nl", flag: "🇳🇱", name_ar: "الهولندية", name_en: "Dutch" },
+    { code: "pl", flag: "🇵🇱", name_ar: "البولندية", name_en: "Polish" },
+    { code: "ro", flag: "🇷🇴", name_ar: "الرومانية", name_en: "Romanian" },
+    { code: "uk", flag: "🇺🇦", name_ar: "الأوكرانية", name_en: "Ukrainian" },
+    { code: "cs", flag: "🇨🇿", name_ar: "التشيكية", name_en: "Czech" },
+    { code: "sk", flag: "🇸🇰", name_ar: "السلوفاكية", name_en: "Slovak" },
+    { code: "hu", flag: "🇭🇺", name_ar: "المجرية", name_en: "Hungarian" },
+    { code: "el", flag: "🇬🇷", name_ar: "اليونانية", name_en: "Greek" },
+    { code: "bg", flag: "🇧🇬", name_ar: "البلغارية", name_en: "Bulgarian" },
+    { code: "hr", flag: "🇭🇷", name_ar: "الكرواتية", name_en: "Croatian" },
+    { code: "sr", flag: "🇷🇸", name_ar: "الصربية", name_en: "Serbian" },
+    { code: "sl", flag: "🇸🇮", name_ar: "السلوفينية", name_en: "Slovenian" },
+    { code: "bs", flag: "🇧🇦", name_ar: "البوسنية", name_en: "Bosnian" },
+    { code: "mk", flag: "🇲🇰", name_ar: "المقدونية", name_en: "Macedonian" },
+    { code: "sq", flag: "🇦🇱", name_ar: "الألبانية", name_en: "Albanian" },
+    { code: "fi", flag: "🇫🇮", name_ar: "الفنلندية", name_en: "Finnish" },
+    { code: "sv", flag: "🇸🇪", name_ar: "السويدية", name_en: "Swedish" },
+    { code: "da", flag: "🇩🇰", name_ar: "الدنماركية", name_en: "Danish" },
+    { code: "nb", flag: "🇳🇴", name_ar: "النرويجية", name_en: "Norwegian" },
+    { code: "is", flag: "🇮🇸", name_ar: "الأيسلندية", name_en: "Icelandic" },
+    { code: "et", flag: "🇪🇪", name_ar: "الإستونية", name_en: "Estonian" },
+    { code: "lv", flag: "🇱🇻", name_ar: "اللاتفية", name_en: "Latvian" },
+    { code: "lt", flag: "🇱🇹", name_ar: "الليتوانية", name_en: "Lithuanian" },
+    { code: "ga", flag: "🇮🇪", name_ar: "الأيرلندية", name_en: "Irish" },
+    { code: "cy", flag: "🏴󠁧󠁢󠁷󠁬󠁳󠁿", name_ar: "الويلزية", name_en: "Welsh" },
+    { code: "mt", flag: "🇲🇹", name_ar: "المالطية", name_en: "Maltese" },
+    { code: "ca", flag: "🇪🇸", name_ar: "الكتالانية", name_en: "Catalan" },
+    { code: "gl", flag: "🇪🇸", name_ar: "الجاليكية", name_en: "Galician" },
+    { code: "eu", flag: "🇪🇸", name_ar: "الباسكية", name_en: "Basque" },
+
+    // 🌏 الآسيوية
+    { code: "th", flag: "🇹🇭", name_ar: "التايلاندية", name_en: "Thai" },
+    { code: "vi", flag: "🇻🇳", name_ar: "الفيتنامية", name_en: "Vietnamese" },
+    { code: "id", flag: "🇮🇩", name_ar: "الإندونيسية", name_en: "Indonesian" },
+    { code: "ms", flag: "🇲🇾", name_ar: "الملايو", name_en: "Malay" },
+    { code: "tl", flag: "🇵🇭", name_ar: "الفلبينية (تاغالوغ)", name_en: "Filipino" },
+    { code: "my", flag: "🇲🇲", name_ar: "البورمية", name_en: "Burmese" },
+    { code: "km", flag: "🇰🇭", name_ar: "الخميرية", name_en: "Khmer" },
+    { code: "lo", flag: "🇱🇦", name_ar: "اللاوية", name_en: "Lao" },
+    { code: "si", flag: "🇱🇰", name_ar: "السنهالية", name_en: "Sinhala" },
+    { code: "ne", flag: "🇳🇵", name_ar: "النيبالية", name_en: "Nepali" },
+    { code: "mn", flag: "🇲🇳", name_ar: "المنغولية", name_en: "Mongolian" },
+    { code: "kk", flag: "🇰🇿", name_ar: "الكازاخية", name_en: "Kazakh" },
+    { code: "uz", flag: "🇺🇿", name_ar: "الأوزبكية", name_en: "Uzbek" },
+    { code: "ky", flag: "🇰🇬", name_ar: "القيرغيزية", name_en: "Kyrgyz" },
+    { code: "tg", flag: "🇹🇯", name_ar: "الطاجيكية", name_en: "Tajik" },
+    { code: "tk", flag: "🇹🇲", name_ar: "التركمانية", name_en: "Turkmen" },
+    { code: "az", flag: "🇦🇿", name_ar: "الأذربيجانية", name_en: "Azerbaijani" },
+    { code: "ka", flag: "🇬🇪", name_ar: "الجورجية", name_en: "Georgian" },
+    { code: "hy", flag: "🇦🇲", name_ar: "الأرمينية", name_en: "Armenian" },
+
+    // 🇮🇳 لغات شبه القارة الهندية
+    { code: "bn", flag: "🇧🇩", name_ar: "البنغالية", name_en: "Bengali" },
+    { code: "ta", flag: "🇮🇳", name_ar: "التاميلية", name_en: "Tamil" },
+    { code: "te", flag: "🇮🇳", name_ar: "التيلوغو", name_en: "Telugu" },
+    { code: "ml", flag: "🇮🇳", name_ar: "المالايالامية", name_en: "Malayalam" },
+    { code: "kn", flag: "🇮🇳", name_ar: "الكانادا", name_en: "Kannada" },
+    { code: "gu", flag: "🇮🇳", name_ar: "الغوجاراتية", name_en: "Gujarati" },
+    { code: "mr", flag: "🇮🇳", name_ar: "الماراتية", name_en: "Marathi" },
+    { code: "pa", flag: "🇮🇳", name_ar: "البنجابية", name_en: "Punjabi" },
+    { code: "or", flag: "🇮🇳", name_ar: "الأوديا", name_en: "Odia" },
+    { code: "ps", flag: "🇦🇫", name_ar: "البشتو", name_en: "Pashto" },
+
+    // 🌍 الأفريقية
+    { code: "sw", flag: "🇰🇪", name_ar: "السواحلية", name_en: "Swahili" },
+    { code: "am", flag: "🇪🇹", name_ar: "الأمهرية", name_en: "Amharic" },
+    { code: "so", flag: "🇸🇴", name_ar: "الصومالية", name_en: "Somali" },
+    { code: "zu", flag: "🇿🇦", name_ar: "الزولو", name_en: "Zulu" },
+    { code: "af", flag: "🇿🇦", name_ar: "الأفريكانية", name_en: "Afrikaans" },
+    { code: "yo", flag: "🇳🇬", name_ar: "اليوروبا", name_en: "Yoruba" },
+
+    // 🕊️ لغات أخرى مهمة
+    { code: "he", flag: "🇮🇱", name_ar: "العبرية", name_en: "Hebrew" },
+    { code: "iw", flag: "🇮🇱", name_ar: "العبرية (Edge)", name_en: "Hebrew (Edge)" },
+    { code: "lb", flag: "🇱🇺", name_ar: "اللوكسمبورغية", name_en: "Luxembourgish" },
+    { code: "fil", flag: "🇵🇭", name_ar: "الفلبينية", name_en: "Filipino (fil)" },
+
+    // 🇨🇳 لهجات صينية
+    { code: "zh-HK", flag: "🇭🇰", name_ar: "الصينية - هونغ كونغ", name_en: "Chinese (HK)" },
+    { code: "zh-TW", flag: "🇹🇼", name_ar: "الصينية - تايوان", name_en: "Chinese (TW)" },
+
+    // 🌐 الإنجليزية بلهجات
+    { code: "en-GB", flag: "🇬🇧", name_ar: "الإنجليزية - بريطانيا", name_en: "English (UK)" },
+    { code: "en-AU", flag: "🇦🇺", name_ar: "الإنجليزية - أستراليا", name_en: "English (AU)" },
+    { code: "en-CA", flag: "🇨🇦", name_ar: "الإنجليزية - كندا", name_en: "English (CA)" },
+    { code: "en-IN", flag: "🇮🇳", name_ar: "الإنجليزية - الهند", name_en: "English (IN)" },
+    { code: "en-IE", flag: "🇮🇪", name_ar: "الإنجليزية - أيرلندا", name_en: "English (IE)" },
+    { code: "en-NZ", flag: "🇳🇿", name_ar: "الإنجليزية - نيوزيلندا", name_en: "English (NZ)" },
+    { code: "en-ZA", flag: "🇿🇦", name_ar: "الإنجليزية - جنوب أفريقيا", name_en: "English (ZA)" },
+
+    // 🌐 الإسبانية بلهجات
+    { code: "es-MX", flag: "🇲🇽", name_ar: "الإسبانية - المكسيك", name_en: "Spanish (MX)" },
+    { code: "es-AR", flag: "🇦🇷", name_ar: "الإسبانية - الأرجنتين", name_en: "Spanish (AR)" },
+    { code: "es-CO", flag: "🇨🇴", name_ar: "الإسبانية - كولومبيا", name_en: "Spanish (CO)" },
+    { code: "es-CL", flag: "🇨🇱", name_ar: "الإسبانية - تشيلي", name_en: "Spanish (CL)" },
+    { code: "es-PE", flag: "🇵🇪", name_ar: "الإسبانية - بيرو", name_en: "Spanish (PE)" },
+
+    // 🌐 العربية بلهجات
+    { code: "ar-EG", flag: "🇪🇬", name_ar: "العربية - مصر", name_en: "Arabic (EG)" },
+    { code: "ar-AE", flag: "🇦🇪", name_ar: "العربية - الإمارات", name_en: "Arabic (AE)" },
+    { code: "ar-MA", flag: "🇲🇦", name_ar: "العربية - المغرب", name_en: "Arabic (MA)" },
+    { code: "ar-IQ", flag: "🇮🇶", name_ar: "العربية - العراق", name_en: "Arabic (IQ)" },
+    { code: "ar-LB", flag: "🇱🇧", name_ar: "العربية - لبنان", name_en: "Arabic (LB)" },
+    { code: "ar-JO", flag: "🇯🇴", name_ar: "العربية - الأردن", name_en: "Arabic (JO)" },
+
+    // 🇫🇷 الفرنسية بلهجات
+    { code: "fr-CA", flag: "🇨🇦", name_ar: "الفرنسية - كندا", name_en: "French (CA)" },
+    { code: "fr-CH", flag: "🇨🇭", name_ar: "الفرنسية - سويسرا", name_en: "French (CH)" },
+
+    // 🇵🇹 البرتغالية
+    { code: "pt-PT", flag: "🇵🇹", name_ar: "البرتغالية - البرتغال", name_en: "Portuguese (PT)" },
+];
+
+// تصدير للوصول من ملفات أخرى
+if (typeof window !== 'undefined') {
+    window.LANGUAGES = LANGUAGES;
+}
