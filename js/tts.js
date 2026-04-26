@@ -1,5 +1,5 @@
 // ==========================================
-// 🎨 tts.js — يدعم الوضعين Fast & Quality
+// 🎨 tts.js — يدعم Fast & Quality + 100 لغة
 // ==========================================
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 const SAMPLES_BASE = 'samples';
@@ -13,13 +13,13 @@ const COLORS = {
 };
 
 // ==========================================
-// 🎙️ جلب العينات للـ TTS
+// 🎙️ جلب العينات من manifest.json
 // ==========================================
-async function renderVoices() {
+async function renderSampleVoices() {
     const select = document.getElementById('voiceSelect');
     if (!select) return;
 
-    select.innerHTML = '<option value="">🎤 اختر عينة صوتية</option>';
+    select.innerHTML = '<option value="">🎤 اختر عينة جاهزة</option>';
 
     try {
         const res = await fetch(`${SAMPLES_BASE}/manifest.json?t=${Date.now()}`);
@@ -37,11 +37,12 @@ async function renderVoices() {
         });
     } catch (e) {
         console.warn('فشل قراءة manifest.json:', e);
-        const fallback = [{ id: 'muhammad', label: 'محمد', icon: '👨' }];
+        const fallback = [{ id: 'muhammad', label: 'محمد', icon: '👨', file: 'muhammad.mp3' }];
         fallback.forEach(v => {
             const opt = document.createElement('option');
             opt.value = v.id;
             opt.textContent = `${v.icon} ${v.label}`;
+            opt.dataset.file = v.file;
             select.appendChild(opt);
         });
     }
@@ -65,9 +66,6 @@ function showToast(msg, color = COLORS.TOAST_ERROR) {
     setTimeout(() => box.remove(), 4000);
 }
 
-// ==========================================
-// 🟢 الشريط الجانبي + المصادقة
-// ==========================================
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('active');
     document.getElementById('overlay').classList.toggle('active');
@@ -112,7 +110,7 @@ async function updateSidebarAuth() {
 function logout() { localStorage.removeItem('token'); location.reload(); }
 
 // ==========================================
-// 🔧 معالجة رفع البصمة الصوتية
+// 🔧 معالجة رفع البصمة
 // ==========================================
 function handleCustomVoice(input) {
     const txt = document.getElementById('customVoiceTxt');
@@ -126,9 +124,6 @@ function handleCustomVoice(input) {
     }
 }
 
-// ==========================================
-// 🔧 جلب ملف العينة كـ base64
-// ==========================================
 async function fetchSampleAsBase64(fileName) {
     const url = `${SAMPLES_BASE}/${fileName}`;
     const res = await fetch(url);
@@ -158,35 +153,107 @@ async function fileToBase64(file) {
 }
 
 // ==========================================
-// 🟢 الزر الرئيسي — يدعم الوضعين
+// ⚡ التشغيل الفوري (Fast mode فقط)
 // ==========================================
-async function startTTS() {
-    const ttsInput = document.getElementById('ttsInput');
-    const langSelectEl = document.getElementById('langSelect');
-    const rateSelect = document.getElementById('rateSelect');
-    const pitchSelect = document.getElementById('pitchSelect');
-    const token = localStorage.getItem('token');
+async function instantPlay() {
+    const text = document.getElementById('ttsInput').value.trim();
+    const lang = window.getCurrentLang ? window.getCurrentLang() : 'ar';
+    const rate = document.getElementById('rateSelect')?.value || '+0%';
+    const pitch = document.getElementById('pitchSelect')?.value || '+0Hz';
 
-    const textInput = (ttsInput?.value || '').trim();
-    const lang = langSelectEl?.value || 'en';
-    const rate = rateSelect?.value || '+0%';
-    const pitch = pitchSelect?.value || '+0Hz';
+    if (!text) {
+        showToast('اكتب النص أولاً', COLORS.TOAST_ERROR);
+        return;
+    }
+    if (!localStorage.getItem('token')) {
+        showToast('يرجى تسجيل الدخول أولاً', COLORS.TOAST_WARNING);
+        return;
+    }
 
-    if (!token) return showToast('يرجى تسجيل الدخول أولاً', COLORS.TOAST_WARNING);
-    if (!textInput) return showToast('يرجى كتابة النص!', COLORS.TOAST_ERROR);
+    const instantBtn = document.getElementById('ttsInstantBtn');
+    const progArea = document.getElementById('progressArea');
+    const statusTxt = document.getElementById('statusTxt');
+    const progFill = document.getElementById('progFill');
+    const perfStats = document.getElementById('perfStats');
+    const resCard = document.getElementById('resCard');
 
-    const currentMode = document.body.dataset.mode || 'fast';
+    instantBtn.disabled = true;
+    progArea.style.display = 'block';
+    if (resCard) resCard.style.display = 'none';
+    statusTxt.innerText = '⚡ التواصل مع الخادم...';
+    progFill.style.width = '20%';
+    perfStats.innerHTML = '';
 
-    if (currentMode === 'quality') {
-        await runQualityMode(textInput, lang, rate, pitch, token);
-    } else {
-        await runFastModeWithSave(textInput, lang, rate, pitch, token);
+    try {
+        const result = await quickTTS(text, { lang, rate, pitch });
+
+        statusTxt.innerText = '✅ يتم التشغيل الآن...';
+        progFill.style.width = '100%';
+
+        result.audio.play().catch(e => {
+            console.warn('Autoplay blocked:', e);
+            showToast('اضغط ▶️ في المشغّل', COLORS.TOAST_WARNING);
+        });
+
+        const audioEl = document.getElementById('audioResult');
+        const dlBtn = document.getElementById('dlBtn');
+        audioEl.src = result.url;
+        dlBtn.href = result.url;
+        dlBtn.download = `tts_${Date.now()}.mp3`;
+        if (resCard) resCard.style.display = 'block';
+
+        perfStats.innerHTML = `
+            <div class="perf-stat">
+                <i class="fas fa-rocket"></i>
+                <span class="stat-label">TTFB:</span>
+                <span class="stat-value">${result.ttfb.toFixed(0)}ms</span>
+            </div>
+            <div class="perf-stat">
+                <i class="fas fa-clock"></i>
+                <span class="stat-label">المجموع:</span>
+                <span class="stat-value">${result.totalTime.toFixed(0)}ms</span>
+            </div>
+            <div class="perf-stat">
+                <i class="fas fa-coins"></i>
+                <span class="stat-label">الرصيد:</span>
+                <span class="stat-value">${result.remainingCredits}</span>
+            </div>
+        `;
+
+        showToast(`⚡ ${result.totalTime.toFixed(0)}ms`, COLORS.TOAST_SUCCESS);
+        updateSidebarAuth();
+    } catch (e) {
+        console.error('Instant TTS error:', e);
+        showToast(e.message || 'فشل التوليد الفوري', COLORS.TOAST_ERROR);
+        statusTxt.innerText = `❌ ${e.message}`;
+        progFill.style.background = COLORS.TOAST_ERROR;
+    } finally {
+        instantBtn.disabled = false;
     }
 }
 
 // ==========================================
-// ⚡ وضع Fast — توليد + حفظ في DB
+// 🟢 الزر الرئيسي (Fast or Quality)
 // ==========================================
+async function startTTS() {
+    const text = document.getElementById('ttsInput').value.trim();
+    const lang = window.getCurrentLang ? window.getCurrentLang() : 'ar';
+    const rate = document.getElementById('rateSelect')?.value || '+0%';
+    const pitch = document.getElementById('pitchSelect')?.value || '+0Hz';
+    const token = localStorage.getItem('token');
+
+    if (!token) return showToast('يرجى تسجيل الدخول أولاً', COLORS.TOAST_WARNING);
+    if (!text) return showToast('يرجى كتابة النص!', COLORS.TOAST_ERROR);
+
+    const currentMode = document.body.dataset.mode || 'fast';
+
+    if (currentMode === 'quality') {
+        await runQualityMode(text, lang, rate, pitch, token);
+    } else {
+        await runFastModeWithSave(text, lang, rate, pitch, token);
+    }
+}
+
 async function runFastModeWithSave(text, lang, rate, pitch, token) {
     const btn = document.getElementById('ttsBtn');
     const progressArea = document.getElementById('progressArea');
@@ -196,14 +263,12 @@ async function runFastModeWithSave(text, lang, rate, pitch, token) {
     const perfStats = document.getElementById('perfStats');
 
     btn.disabled = true;
-    if (progressArea) progressArea.style.display = 'block';
+    progressArea.style.display = 'block';
     if (resCard) resCard.style.display = 'none';
-    if (progFill) {
-        progFill.style.width = '20%';
-        progFill.style.background = COLORS.PROGRESS;
-    }
-    if (perfStats) perfStats.innerHTML = '';
-    if (statusTxt) statusTxt.innerText = 'الحالة: جاري الإرسال...';
+    progFill.style.width = '20%';
+    progFill.style.background = COLORS.PROGRESS;
+    perfStats.innerHTML = '';
+    statusTxt.innerText = 'الحالة: جاري الإرسال...';
 
     const t0 = performance.now();
 
@@ -223,10 +288,9 @@ async function runFastModeWithSave(text, lang, rate, pitch, token) {
         if (!res.ok) throw new Error(data.error || `Server Error: ${res.status}`);
 
         if (data.success && data.job_id) {
-            if (statusTxt) statusTxt.innerText = 'الحالة: جاري التوليد...';
-            if (progFill) progFill.style.width = '50%';
+            statusTxt.innerText = 'الحالة: جاري التوليد...';
+            progFill.style.width = '50%';
 
-            // متابعة عبر SSE
             const evtSource = new EventSource(`${API_BASE}/api/progress/${data.job_id}`);
             evtSource.onmessage = function (event) {
                 let progData;
@@ -235,9 +299,9 @@ async function runFastModeWithSave(text, lang, rate, pitch, token) {
                 if (progData.status === 'completed') {
                     evtSource.close();
                     const totalMs = (performance.now() - t0).toFixed(0);
-                    if (progFill) progFill.style.width = '100%';
-                    if (statusTxt) statusTxt.innerText = '✅ تم بنجاح!';
-                    showToast(`تم التحويل في ${totalMs}ms`, COLORS.TOAST_SUCCESS);
+                    progFill.style.width = '100%';
+                    statusTxt.innerText = '✅ تم بنجاح!';
+                    showToast(`تم في ${totalMs}ms`, COLORS.TOAST_SUCCESS);
 
                     if (resCard) resCard.style.display = 'block';
                     const audEl = document.getElementById('audioResult');
@@ -248,26 +312,24 @@ async function runFastModeWithSave(text, lang, rate, pitch, token) {
                         dl.download = `tts_${Date.now()}.mp3`;
                     }
 
-                    if (perfStats) {
-                        perfStats.innerHTML = `
-                            <div class="perf-stat">
-                                <i class="fas fa-clock"></i>
-                                <span class="stat-label">المدة:</span>
-                                <span class="stat-value">${totalMs}ms</span>
-                            </div>
-                            <div class="perf-stat">
-                                <i class="fas fa-save"></i>
-                                <span class="stat-label">محفوظ في الحساب</span>
-                            </div>`;
-                    }
+                    perfStats.innerHTML = `
+                        <div class="perf-stat">
+                            <i class="fas fa-clock"></i>
+                            <span class="stat-label">المدة:</span>
+                            <span class="stat-value">${totalMs}ms</span>
+                        </div>
+                        <div class="perf-stat">
+                            <i class="fas fa-save"></i>
+                            <span class="stat-label">محفوظ في الحساب</span>
+                        </div>`;
 
                     btn.disabled = false;
                     updateSidebarAuth();
                 } else if (progData.status === 'failed') {
                     evtSource.close();
                     showToast('فشل التوليد', COLORS.TOAST_ERROR);
-                    if (statusTxt) statusTxt.innerText = '❌ فشل التوليد';
-                    if (progFill) progFill.style.background = COLORS.TOAST_ERROR;
+                    statusTxt.innerText = '❌ فشل التوليد';
+                    progFill.style.background = COLORS.TOAST_ERROR;
                     btn.disabled = false;
                     updateSidebarAuth();
                 }
@@ -282,14 +344,11 @@ async function runFastModeWithSave(text, lang, rate, pitch, token) {
     } catch (e) {
         console.error('TTS Error:', e);
         showToast(e.message || 'خطأ في الاتصال', COLORS.TOAST_ERROR);
-        if (progFill) progFill.style.background = COLORS.TOAST_ERROR;
+        progFill.style.background = COLORS.TOAST_ERROR;
         btn.disabled = false;
     }
 }
 
-// ==========================================
-// 🎨 وضع Quality — مع Voice Cloning
-// ==========================================
 async function runQualityMode(text, lang, rate, pitch, token) {
     const voiceSelectEl = document.getElementById('voiceSelect');
     const customVoiceInput = document.getElementById('customVoice');
@@ -302,30 +361,26 @@ async function runQualityMode(text, lang, rate, pitch, token) {
     const perfStats = document.getElementById('perfStats');
 
     btn.disabled = true;
-    if (progressArea) progressArea.style.display = 'block';
+    progressArea.style.display = 'block';
     if (resCard) resCard.style.display = 'none';
-    if (progFill) {
-        progFill.style.width = '15%';
-        progFill.style.background = COLORS.PROGRESS;
-    }
-    if (perfStats) perfStats.innerHTML = '';
-    if (statusTxt) statusTxt.innerText = 'الحالة: جاري تحضير الصوت المرجعي...';
+    progFill.style.width = '15%';
+    progFill.style.background = COLORS.PROGRESS;
+    perfStats.innerHTML = '';
+    statusTxt.innerText = 'الحالة: جاري تحضير الصوت المرجعي...';
 
     const t0 = performance.now();
 
     try {
         const body = { text, lang, rate, pitch, translate: true };
 
-        // أولوية: ملف مرفوع → عينة من samples → بدون
+        // أولوية: ملف مرفوع → عينة من samples
         if (customVoiceInput?.files?.length > 0) {
-            const sample_b64 = await fileToBase64(customVoiceInput.files[0]);
-            body.sample_b64 = sample_b64;
+            body.sample_b64 = await fileToBase64(customVoiceInput.files[0]);
         } else if (voiceSelectEl?.value) {
             const selectedOpt = voiceSelectEl.options[voiceSelectEl.selectedIndex];
             const fileName = selectedOpt?.dataset?.file || `${voiceSelectEl.value}.mp3`;
             try {
-                const sample_b64 = await fetchSampleAsBase64(fileName);
-                body.sample_b64 = sample_b64;
+                body.sample_b64 = await fetchSampleAsBase64(fileName);
                 body.voice_id = voiceSelectEl.value;
             } catch (e) {
                 console.warn('Sample fetch failed:', e);
@@ -333,8 +388,15 @@ async function runQualityMode(text, lang, rate, pitch, token) {
             }
         }
 
-        if (statusTxt) statusTxt.innerText = 'الحالة: جاري الإرسال...';
-        if (progFill) progFill.style.width = '30%';
+        if (!body.sample_b64 && !body.voice_id) {
+            showToast('يرجى اختيار عينة أو رفع تسجيل في الوضع عالي الجودة', COLORS.TOAST_WARNING);
+            btn.disabled = false;
+            progressArea.style.display = 'none';
+            return;
+        }
+
+        statusTxt.innerText = 'الحالة: جاري الإرسال...';
+        progFill.style.width = '30%';
 
         const res = await fetch(`${API_BASE}/api/tts`, {
             method: 'POST',
@@ -349,8 +411,8 @@ async function runQualityMode(text, lang, rate, pitch, token) {
         if (!res.ok) throw new Error(data.error || `Server Error: ${res.status}`);
 
         if (data.success && data.job_id) {
-            if (statusTxt) statusTxt.innerText = '🎨 جاري الاستنساخ بالذكاء الاصطناعي...';
-            if (progFill) progFill.style.width = '60%';
+            statusTxt.innerText = '🎨 جاري الاستنساخ بالذكاء الاصطناعي...';
+            progFill.style.width = '60%';
 
             const evtSource = new EventSource(`${API_BASE}/api/progress/${data.job_id}`);
             evtSource.onmessage = function (event) {
@@ -360,8 +422,8 @@ async function runQualityMode(text, lang, rate, pitch, token) {
                 if (progData.status === 'completed') {
                     evtSource.close();
                     const totalMs = (performance.now() - t0).toFixed(0);
-                    if (progFill) progFill.style.width = '100%';
-                    if (statusTxt) statusTxt.innerText = '✅ تم استنساخ الصوت بنجاح!';
+                    progFill.style.width = '100%';
+                    statusTxt.innerText = '✅ تم استنساخ الصوت بنجاح!';
                     showToast(`اكتمل في ${(totalMs / 1000).toFixed(1)}s`, COLORS.TOAST_SUCCESS);
 
                     if (resCard) resCard.style.display = 'block';
@@ -373,26 +435,24 @@ async function runQualityMode(text, lang, rate, pitch, token) {
                         dl.download = `tts_quality_${Date.now()}.wav`;
                     }
 
-                    if (perfStats) {
-                        perfStats.innerHTML = `
-                            <div class="perf-stat">
-                                <i class="fas fa-clock"></i>
-                                <span class="stat-label">المدة:</span>
-                                <span class="stat-value">${(totalMs / 1000).toFixed(1)}s</span>
-                            </div>
-                            <div class="perf-stat">
-                                <i class="fas fa-gem"></i>
-                                <span class="stat-label">جودة عالية + استنساخ</span>
-                            </div>`;
-                    }
+                    perfStats.innerHTML = `
+                        <div class="perf-stat">
+                            <i class="fas fa-clock"></i>
+                            <span class="stat-label">المدة:</span>
+                            <span class="stat-value">${(totalMs / 1000).toFixed(1)}s</span>
+                        </div>
+                        <div class="perf-stat">
+                            <i class="fas fa-gem"></i>
+                            <span class="stat-label">جودة عالية + استنساخ</span>
+                        </div>`;
 
                     btn.disabled = false;
                     updateSidebarAuth();
                 } else if (progData.status === 'failed') {
                     evtSource.close();
                     showToast('فشل التوليد', COLORS.TOAST_ERROR);
-                    if (statusTxt) statusTxt.innerText = '❌ فشل التوليد';
-                    if (progFill) progFill.style.background = COLORS.TOAST_ERROR;
+                    statusTxt.innerText = '❌ فشل التوليد';
+                    progFill.style.background = COLORS.TOAST_ERROR;
                     btn.disabled = false;
                     updateSidebarAuth();
                 }
@@ -407,14 +467,11 @@ async function runQualityMode(text, lang, rate, pitch, token) {
     } catch (e) {
         console.error('Quality TTS Error:', e);
         showToast(e.message || 'خطأ في الاتصال', COLORS.TOAST_ERROR);
-        if (progFill) progFill.style.background = COLORS.TOAST_ERROR;
+        progFill.style.background = COLORS.TOAST_ERROR;
         btn.disabled = false;
     }
 }
 
-// ==========================================
-// 🔄 polling احتياطي
-// ==========================================
 async function pollTtsStatus(jobId, btn, statusTxt, progFill, resCard, t0, perfStats) {
     const token = localStorage.getItem('token');
     const start = Date.now();
@@ -433,8 +490,8 @@ async function pollTtsStatus(jobId, btn, statusTxt, progFill, resCard, t0, perfS
             const data = await res.json().catch(() => ({}));
             if (data.status === 'completed') {
                 const totalMs = (performance.now() - t0).toFixed(0);
-                if (progFill) progFill.style.width = '100%';
-                if (statusTxt) statusTxt.innerText = '✅ تم بنجاح!';
+                progFill.style.width = '100%';
+                statusTxt.innerText = '✅ تم بنجاح!';
                 showToast(`اكتمل في ${(totalMs / 1000).toFixed(1)}s`, COLORS.TOAST_SUCCESS);
                 if (resCard) resCard.style.display = 'block';
                 const audEl = document.getElementById('audioResult');
@@ -454,8 +511,8 @@ async function pollTtsStatus(jobId, btn, statusTxt, progFill, resCard, t0, perfS
             }
             if (data.status === 'failed') {
                 showToast('فشل التوليد', COLORS.TOAST_ERROR);
-                if (statusTxt) statusTxt.innerText = '❌ فشل التوليد';
-                if (progFill) progFill.style.background = COLORS.TOAST_ERROR;
+                statusTxt.innerText = '❌ فشل التوليد';
+                progFill.style.background = COLORS.TOAST_ERROR;
                 btn.disabled = false;
                 updateSidebarAuth();
                 return;
@@ -470,10 +527,7 @@ async function pollTtsStatus(jobId, btn, statusTxt, progFill, resCard, t0, perfS
     poll();
 }
 
-// ==========================================
-// 🟢 تهيئة
-// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     updateSidebarAuth();
-    renderVoices();
+    renderSampleVoices();
 });
