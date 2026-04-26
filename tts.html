@@ -1,19 +1,11 @@
-هذه صفحة HTML متكاملة لتطبيق تحويل النص إلى صوت (TTS) بواجهة عربية احترافية، تدعم أكثر من 70 لغة و320 صوتًا بشريًا طبيعيًا (باستخدام Web Speech API كبديل عملي مع دعم كامل للغالبية العظمى من اللغات في المتصفحات الحديثة). التطبيق يعمل فوراً بدون الحاجة لأي خادم خارجي، ويحتوي على وضعين: سريع (تشغيل فوري باستخدام أصوات المتصفح المتاحة) وعالي الجودة (نفس الآلية مع إعدادات متقدمة للسرعة وطبقة الصوت). جميع الخيارات (اللغة، الصوت، السرعة، التردد، الترجمة التلقائية) تعمل بشكل مباشر، مع إمكانية تحميل الملف الصوتي الناتج بصيغة MP3، وحفظ آخر 10 مولدات في السجل، وعرض إحصائيات الأداء. زر التشغيل الفوري يولد الصوت ويعرضه مباشرة، ويمكن إعادة تشغيل أي توليد سابق بنقرة واحدة.
-```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>تحويل النص إلى صوت | sl-Dubbing</title>
 
     <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
     :root {
         --bg-dark: #0b1020;
         --sidebar-bg: #0f1724;
@@ -30,669 +22,459 @@
         --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    body {
-        background: var(--bg-dark);
-        color: var(--text);
-        font-family: system-ui, 'Segoe UI', 'Cairo', sans-serif;
-        margin: 0;
-        padding: 0;
-        transition: background 0.2s;
-    }
-
-    .top-bar {
-        position: fixed;
-        top: 0;
-        right: 0;
-        left: 0;
-        height: 60px;
-        background: rgba(15, 23, 36, 0.95);
-        backdrop-filter: blur(12px);
-        display: flex;
-        align-items: center;
-        padding: 0 20px;
-        border-bottom: 1px solid var(--border);
-        z-index: 1000;
-    }
-
-    .menu-btn {
-        background: rgba(124,58,237,0.15);
-        border: 1px solid var(--border);
-        color: var(--gold);
-        padding: 8px 18px;
-        border-radius: 40px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: bold;
-        transition: 0.2s;
-    }
-    .menu-btn:hover {
-        background: var(--accent);
-        color: white;
-        border-color: var(--accent);
-    }
-
-    .top-logo h2 {
-        margin-right: auto;
-        margin-left: 20px;
-    }
-
-    .sidebar {
-        position: fixed;
-        top: 0;
-        right: -300px;
-        width: var(--sidebar-w);
-        height: 100%;
-        background: var(--sidebar-bg);
-        backdrop-filter: blur(20px);
-        border-left: 1px solid var(--border);
-        z-index: 1100;
-        transition: 0.3s ease;
-        padding: 20px;
-        overflow-y: auto;
-    }
-
-    .sidebar.open {
-        right: 0;
-    }
-
-    .overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.7);
-        backdrop-filter: blur(4px);
-        z-index: 1050;
-        display: none;
-    }
-    .overlay.show {
-        display: block;
-    }
-
-    .sidebar-user-section {
-        padding: 20px 0;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 20px;
-        text-align: center;
-    }
-
-    .sidebar-nav .nav-label {
-        font-size: 0.8rem;
-        color: var(--muted-text);
-        margin-bottom: 12px;
-    }
-
-    .sidebar-nav ul {
-        list-style: none;
-        padding: 0;
-    }
-
-    .sidebar-nav li {
-        margin: 12px 0;
-    }
-
-    .sidebar-nav a {
-        color: var(--text);
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border-radius: 12px;
-        transition: 0.2s;
-    }
-    .sidebar-nav a.active, .sidebar-nav a:hover {
-        background: var(--accent);
-        color: white;
-    }
-
-    .main-content {
-        margin-top: 70px;
-        padding: 20px;
-        transition: 0.3s;
-    }
-
-    .container {
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-
-    .workspace-grid {
-        display: grid;
-        grid-template-columns: 1fr 380px;
-        gap: 24px;
-    }
-
-    @media (max-width: 800px) {
-        .workspace-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .card {
-        background: var(--card-bg);
-        backdrop-filter: blur(4px);
-        border: 1px solid var(--border);
-        border-radius: 24px;
-        padding: 20px;
-        margin-bottom: 24px;
-    }
-
     .styled-textarea {
-        width: 100%;
-        padding: 15px;
-        background: rgba(0,0,0,0.4);
-        color: #fff;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        outline: none;
-        font-family: inherit;
-        font-size: 1rem;
-        resize: vertical;
-        min-height: 150px;
+        width: 100%; padding: 15px; background: rgba(0,0,0,0.4); color: #fff;
+        border: 1px solid var(--border); border-radius: 12px; outline: none;
+        font-family: inherit; font-size: 1rem; resize: vertical; min-height: 150px;
         transition: 0.3s;
     }
     .styled-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2); }
 
+    /* Mode Switcher */
     .mode-switcher {
-        display: flex;
-        gap: 10px;
+        display: flex; gap: 10px;
         background: rgba(0,0,0,0.3);
-        padding: 8px;
-        border-radius: 14px;
+        padding: 8px; border-radius: 14px;
         border: 1px solid var(--border);
         margin-bottom: 18px;
     }
     .mode-option {
-        flex: 1;
-        padding: 14px 16px;
-        background: transparent;
-        border: 2px solid transparent;
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all 0.3s;
-        color: var(--muted-text);
+        flex: 1; padding: 14px 16px;
+        background: transparent; border: 2px solid transparent;
+        border-radius: 10px; cursor: pointer;
+        transition: all 0.3s; color: var(--muted-text);
         text-align: right;
     }
+    .mode-option:hover { background: rgba(124, 58, 237, 0.1); color: var(--text); }
     .mode-option.active {
         background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(37, 99, 235, 0.2));
-        border-color: var(--accent);
-        color: var(--text);
+        border-color: var(--accent); color: var(--text);
     }
+    .mode-option .mode-title {
+        display: flex; align-items: center; gap: 8px;
+        font-weight: bold; font-size: 1rem; margin-bottom: 4px;
+    }
+    .mode-option .mode-desc { font-size: 0.78rem; color: var(--muted-text); line-height: 1.4; }
+    .mode-option.active .mode-desc { color: rgba(230, 231, 255, 0.8); }
     .mode-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 8px;
-        font-size: 0.7rem;
-        font-weight: bold;
-        margin-right: 4px;
+        display: inline-block; padding: 2px 8px; border-radius: 8px;
+        font-size: 0.7rem; font-weight: bold; margin-right: 4px;
     }
     .badge-fast { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; }
     .badge-quality { background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; }
+
     .quality-only { display: none; }
     body[data-mode="quality"] .quality-only { display: block; }
 
+    /* 🌍 صندوق البحث في اللغات */
+    .lang-search-wrapper {
+        position: relative; margin-bottom: 12px;
+    }
+    .lang-search {
+        width: 100%; padding: 12px 40px 12px 15px;
+        background: rgba(0,0,0,0.4); color: #fff;
+        border: 1px solid var(--border); border-radius: 10px;
+        font-size: 0.95rem; outline: none;
+    }
+    .lang-search:focus { border-color: var(--accent); }
+    .lang-search-icon {
+        position: absolute; left: 12px; top: 50%;
+        transform: translateY(-50%); color: var(--muted-text);
+    }
+
+    /* قائمة اللغات */
+    .lang-list {
+        max-height: 320px;
+        overflow-y: auto;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 6px;
+    }
+    .lang-item {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+        margin: 2px 0;
+    }
+    .lang-item:hover {
+        background: rgba(124, 58, 237, 0.1);
+    }
+    .lang-item.selected {
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(37, 99, 235, 0.25));
+        border: 1px solid var(--accent);
+    }
+    .lang-item .flag { font-size: 1.6rem; }
+    .lang-item .lang-info { flex: 1; }
+    .lang-item .lang-ar { font-weight: bold; color: var(--text); font-size: 0.95rem; }
+    .lang-item .lang-en { font-size: 0.75rem; color: var(--muted-text); margin-top: 2px; }
+    .lang-item.popular .lang-ar::after {
+        content: "⭐"; margin-right: 4px; font-size: 0.7rem;
+    }
+
+    .lang-counter {
+        font-size: 0.85rem; color: var(--gold); margin-bottom: 8px;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .selected-lang-display {
+        background: linear-gradient(135deg, rgba(255,184,0,0.1), rgba(124,58,237,0.1));
+        border: 1px solid rgba(255,184,0,0.3);
+        padding: 12px 16px; border-radius: 10px;
+        margin-bottom: 12px;
+        display: flex; align-items: center; gap: 12px;
+    }
+    .selected-lang-display .flag { font-size: 1.8rem; }
+    .selected-lang-display .info { flex: 1; }
+    .selected-lang-display .label { font-size: 0.75rem; color: var(--muted-text); }
+    .selected-lang-display .name { font-weight: bold; color: var(--gold); font-size: 1.05rem; }
+
+    /* الإحصائيات */
     .perf-stats {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 12px;
-        font-size: 0.85rem;
+        display: flex; gap: 12px; flex-wrap: wrap;
+        margin-top: 12px; font-size: 0.85rem;
     }
     .perf-stat {
         background: rgba(52, 211, 153, 0.1);
         border: 1px solid rgba(52, 211, 153, 0.3);
         color: var(--progress-accent);
-        padding: 6px 12px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        padding: 6px 12px; border-radius: 8px;
+        display: flex; align-items: center; gap: 6px;
     }
-    .btn-primary-action {
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        border: none;
-        width: 100%;
-        padding: 14px;
-        border-radius: 40px;
-        font-weight: bold;
-        font-size: 1rem;
-        color: white;
-        margin-top: 10px;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-    .btn-primary-action:hover { filter: brightness(1.05); transform: translateY(-1px); }
+    .perf-stat .stat-label { color: var(--muted-text); }
+    .perf-stat .stat-value { font-weight: bold; }
 
-    .btn-instant {
-        background: linear-gradient(135deg, #f59e0b, #ef4444);
-        color: #fff;
-        border: none;
-        padding: 16px 24px;
-        border-radius: 12px;
-        font-weight: bold;
-        font-size: 1.05rem;
-        cursor: pointer;
-        width: 100%;
-        margin-top: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-    }
-    .btn-download {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--download-bg);
-        padding: 8px 16px;
-        border-radius: 40px;
-        color: white;
-        text-decoration: none;
-    }
-    .progress-bar {
-        background: rgba(0,0,0,0.4);
-        height: 8px;
-        border-radius: 8px;
-        margin: 12px 0;
-        overflow: hidden;
-    }
+    .progress-bar { background: rgba(0,0,0,0.4); }
     .prog-fill {
         background: linear-gradient(90deg, var(--accent), var(--progress-accent));
-        height: 100%;
-        width: 0%;
-        transition: width 0.3s ease;
+        height: 100%; width: 0%;
+        transition: width 0.3s ease; border-radius: 8px;
     }
+
     .advanced-toggle {
-        background: none;
-        border: none;
-        color: var(--accent);
-        cursor: pointer;
-        font-size: 0.9rem;
-        padding: 8px 0;
-        width: 100%;
-        text-align: right;
+        background: none; border: none; color: var(--accent);
+        cursor: pointer; font-size: 0.9rem; padding: 8px 0;
+        text-align: right; width: 100%;
     }
+    .advanced-toggle:hover { color: var(--gold); }
     .advanced-options {
-        display: none;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 10px;
-        padding-top: 10px;
+        display: none; gap: 12px; flex-wrap: wrap;
+        margin-top: 10px; padding-top: 10px;
         border-top: 1px solid var(--border);
     }
     .advanced-options.show { display: flex; }
-    .styled-select-sm, .styled-select {
-        background: rgba(0,0,0,0.5);
-        border: 1px solid var(--border);
-        color: #fff;
-        padding: 10px;
-        border-radius: 12px;
-        width: 100%;
+    .control-group { flex: 1; min-width: 120px; }
+    .control-group label {
+        font-size: 0.85rem; color: var(--muted-text);
+        display: block; margin-bottom: 5px;
     }
-    .history-list { max-height: 300px; overflow-y: auto; margin-top: 12px; }
-    .history-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: rgba(0,0,0,0.3);
-        padding: 8px;
-        border-radius: 12px;
-        margin-bottom: 6px;
-    }
-    .lang-count-badge {
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        border-radius: 40px;
-        padding: 2px 12px;
-        font-size: 0.7rem;
-    }
-    #toasts {
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        z-index: 2000;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-    .toast {
-        background: #1f2937;
-        border-right: 4px solid var(--accent);
-        padding: 10px 18px;
-        border-radius: 12px;
-        color: white;
+    .styled-select-sm {
+        width: 100%; padding: 10px;
+        background: rgba(0,0,0,0.4); color: #fff;
+        border: 1px solid var(--border); border-radius: 8px;
         font-size: 0.9rem;
-        box-shadow: 0 4px 12px black;
-        animation: fadein 0.2s;
     }
-    @keyframes fadein {
-        from { opacity: 0; transform: translateX(20px);}
-        to { opacity: 1; transform: translateX(0);}
+
+    .btn-instant {
+        background: linear-gradient(135deg, #f59e0b, #ef4444);
+        color: #fff; border: none;
+        padding: 16px 24px; border-radius: 12px;
+        font-weight: bold; font-size: 1.05rem; cursor: pointer;
+        width: 100%; margin-top: 12px;
+        transition: transform 0.15s;
+        display: flex; align-items: center; justify-content: center; gap: 10px;
     }
+    .btn-instant:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+    }
+    .btn-instant:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
+
+    <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 <body data-mode="fast">
 
-<header class="top-bar">
-    <button class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i><span>القائمة</span></button>
-    <div class="top-logo"><h2 style="color: var(--gold); margin: 0;">sl-Dubbing</h2></div>
-</header>
-<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-<aside class="sidebar" id="sidebar">
-    <div class="sidebar-user-section" id="authSection"><div style="color:#9ca3af;">✨ وضع الضيف · جميع الميزات متاحة</div></div>
-    <nav class="sidebar-nav">
-        <div class="nav-label">القائمة الرئيسية</div>
-        <ul><li><a href="#" onclick="toggleSidebar()"><i class="fas fa-home"></i> الرئيسية</a></li>
-        <li><a href="#" onclick="toggleSidebar()"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
-        <li><a href="#" class="active"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li></ul>
-    </nav>
-</aside>
+    <header class="top-bar">
+        <button class="menu-btn" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+            <span>القائمة</span>
+        </button>
+        <div class="top-logo">
+            <h2 style="color: var(--gold); margin: 0; font-size: 1.2rem;">sl-Dubbing</h2>
+        </div>
+    </header>
 
-<main class="main-content">
-    <div class="container">
-        <div class="main-header"><h1>تحويل النص إلى صوت (TTS)</h1><p>70+ لغة · أصوات طبيعية متعددة · تشغيل فوري</p></div>
-        <div class="workspace-grid">
-            <div class="tools-container">
-                <section class="card"><h3><i class="fas fa-bolt"></i> اختر الوضع</h3>
-                    <div class="mode-switcher">
-                        <button class="mode-option active" data-mode="fast" onclick="switchMode('fast')"><div class="mode-title"><i class="fas fa-bolt" style="color:#f59e0b;"></i><span>سريع</span><span class="mode-badge badge-fast">⚡ فوري</span></div><div class="mode-desc">Web Speech API · دعم 70 لغة</div></button>
-                        <button class="mode-option" data-mode="quality" onclick="switchMode('quality')"><div class="mode-title"><i class="fas fa-gem" style="color:#7c3aed;"></i><span>عالي الجودة</span><span class="mode-badge badge-quality">🎨 تحكم كامل</span></div><div class="mode-desc">سرعة، طبقة صوت، تخصيص متقدم</div></button>
-                    </div>
-                </section>
-                <section class="card"><h3><i class="fas fa-edit"></i> 1. النص</h3>
-                    <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب أو الصق النص المراد تحويله إلى صوت..."></textarea>
-                    <div style="font-size:0.8rem; margin-top:6px;"><span id="charCount">0</span> حرف</div>
-                </section>
-                <section class="card"><h3><i class="fas fa-globe"></i> 2. اللغة والصوت <span class="lang-count-badge" id="langCountBadge">70 لغة</span></h3>
-                    <label>اللغة:</label>
-                    <select id="langSelect" class="styled-select" style="margin-bottom:12px;" onchange="onLangChange()">
-                        <optgroup label="🌟 الأكثر استخداماً"><option value="ar" selected>العربية</option><option value="en">الإنجليزية</option><option value="fr">الفرنسية</option><option value="es">الإسبانية</option><option value="de">الألمانية</option><option value="zh-CN">الصينية</option><option value="ja">اليابانية</option><option value="ko">الكورية</option><option value="ru">الروسية</option></optgroup>
-                        <optgroup label="🌍 الشرق الأوسط"><option value="ar-EG">العربية (مصر)</option><option value="he">العبرية</option><option value="fa">الفارسية</option><option value="tr">التركية</option><option value="ur">الأردية</option></optgroup>
-                        <optgroup label="🇪🇺 أوروبا"><option value="it">الإيطالية</option><option value="pt-PT">البرتغالية</option><option value="nl">الهولندية</option><option value="pl">البولندية</option><option value="sv">السويدية</option></optgroup>
-                        <optgroup label="🌏 آسيا"><option value="th">التايلاندية</option><option value="vi">الفيتنامية</option><option value="hi">الهندية</option><option value="id">الإندونيسية</option></optgroup>
-                    </select>
-                    <label>الصوت <span id="voiceCountInfo"></span>:</label>
-                    <select id="edgeVoiceSelect" class="styled-select"><option value="">الصوت الافتراضي (أفضل اختيار)</option></select>
-                    <button type="button" class="advanced-toggle" onclick="toggleAdvanced()"><i class="fas fa-sliders-h"></i> خيارات متقدمة</button>
-                    <div class="advanced-options" id="advancedOptions">
-                        <div class="control-group"><label>السرعة</label><select id="rateSelect" class="styled-select-sm"><option value="0.5">بطيء جداً</option><option value="0.75">بطيء</option><option value="1" selected>عادي</option><option value="1.25">سريع</option><option value="1.5">سريع جداً</option></select></div>
-                        <div class="control-group"><label>طبقة الصوت</label><select id="pitchSelect" class="styled-select-sm"><option value="0.5">منخفضة جداً</option><option value="0.8">منخفضة</option><option value="1" selected>عادية</option><option value="1.3">عالية</option><option value="1.8">عالية جداً</option></select></div>
-                        <div class="control-group"><label>الترجمة التلقائية</label><select id="translateSelect" class="styled-select-sm"><option value="false" selected>لا (احتفظ بالنص)</option><option value="true">نعم (محاكاة)</option></select></div>
-                    </div>
-                </section>
-                <section class="card quality-only"><h3><i class="fas fa-microphone-alt"></i> 3. الصوت المرجعي (الوضع المتطور)</h3><p style="color:var(--muted-text); font-size:0.85rem;">رفع الملفات لاستنساخ الصوت يتطلب خادم متخصص، لكن يمكنك استخدام خيار الصوت الافتراضي.</p>
-                    <select id="voiceSelect" class="styled-select"><option value="">🎤 اختر عينة افتراضية</option></select>
-                    <input type="file" id="customVoice" accept="audio/*" style="display:none;"><button class="btn-secondary" onclick="document.getElementById('customVoice').click()" style="width:100%;background:#1e293b;color:#fff;padding:10px;border-radius:12px;border:none;">رفع تسجيلك (تجريبي)</button>
-                </section>
-                <button id="ttsBtn" class="btn-primary-action" onclick="startTTS()"><i class="fas fa-volume-up"></i> توليد الصوت الآن</button>
-                <button id="ttsInstantBtn" class="btn-instant" onclick="instantPlay()"><i class="fas fa-play-circle"></i> ⚡ تشغيل فوري (بدون تنزيل)</button>
-            </div>
-            <div class="results-container">
-                <section class="card" id="progressArea" style="display:none;"><h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3><p id="statusTxt">الحالة: تحضير الصوت</p><div class="progress-bar"><div id="progFill" class="prog-fill"></div></div><div class="perf-stats" id="perfStats"></div></section>
-                <section class="card" id="resCard" style="display:none;"><h3><i class="fas fa-check-circle" style="color:#10b981;"></i> تم إنشاء المقطع</h3><audio id="audioResult" controls style="width:100%; margin-top:12px;"></audio><a id="dlBtn" href="#" download class="btn-download" style="margin-top:12px; display:inline-block;"><i class="fas fa-download"></i> تحميل MP3</a></section>
-                <section class="card" id="historyCard" style="display:none;"><h3><i class="fas fa-history"></i> آخر التوليدات</h3><div class="history-list" id="historyList"></div></section>
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-user-section" id="authSection">
+            <div style="color: #666; font-size: 0.8rem; text-align: center;">جاري التحقق...</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-label">القائمة الرئيسية</div>
+            <ul>
+                <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
+                <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
+                <li><a href="tts.html" class="active"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content" id="mainContent">
+        <div class="container">
+            <header class="main-header">
+                <h1>تحويل النص إلى صوت (TTS)</h1>
+                <p>أكثر من 100 لغة مدعومة بأصوات Microsoft Neural عالية الجودة</p>
+            </header>
+            
+            <div class="workspace-grid">
+                <div class="tools-container">
+
+                    <!-- 🎯 مفتاح اختيار الوضع -->
+                    <section class="card">
+                        <h3><i class="fas fa-bolt"></i> اختر الوضع</h3>
+                        <div class="mode-switcher">
+                            <button class="mode-option active" data-mode="fast" onclick="switchMode('fast')">
+                                <div class="mode-title">
+                                    <i class="fas fa-bolt" style="color: #f59e0b;"></i>
+                                    <span>سريع</span>
+                                    <span class="mode-badge badge-fast">⚡ 0.5s</span>
+                                </div>
+                                <div class="mode-desc">صوت Microsoft الافتراضي للغة المختارة</div>
+                            </button>
+                            <button class="mode-option" data-mode="quality" onclick="switchMode('quality')">
+                                <div class="mode-title">
+                                    <i class="fas fa-gem" style="color: #7c3aed;"></i>
+                                    <span>عالي الجودة</span>
+                                    <span class="mode-badge badge-quality">🎨 1.5s</span>
+                                </div>
+                                <div class="mode-desc">استنساخ بصمتك الصوتية الخاصة</div>
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- 1. النص -->
+                    <section class="card">
+                        <h3><i class="fas fa-edit"></i> 1. اكتب النص هنا</h3>
+                        <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص الذي تريد تحويله إلى صوت..."></textarea>
+                        <div style="font-size: 0.8rem; color: var(--muted-text); margin-top: 6px;">
+                            <span id="charCount">0</span> حرف
+                        </div>
+                    </section>
+
+                    <!-- 2. اختيار اللغة -->
+                    <section class="card">
+                        <h3><i class="fas fa-globe"></i> 2. اختر اللغة المراد التحدث بها</h3>
+
+                        <!-- اللغة المختارة حالياً -->
+                        <div class="selected-lang-display" id="selectedLangDisplay">
+                            <div class="flag">🇸🇦</div>
+                            <div class="info">
+                                <div class="label">اللغة المختارة</div>
+                                <div class="name">العربية</div>
+                            </div>
+                        </div>
+
+                        <!-- صندوق البحث -->
+                        <div class="lang-search-wrapper">
+                            <input type="text" id="langSearch" class="lang-search"
+                                placeholder="ابحث عن لغة... (مثال: عربي، فرنسي، japan)"
+                                oninput="filterLanguages(this.value)">
+                            <i class="fas fa-search lang-search-icon"></i>
+                        </div>
+
+                        <div class="lang-counter">
+                            <span id="langCount">100+ لغة متاحة</span>
+                            <span style="color: var(--muted-text); font-size: 0.75rem;">⭐ = الأكثر استخداماً</span>
+                        </div>
+
+                        <div class="lang-list" id="langList"></div>
+
+                        <button type="button" class="advanced-toggle" onclick="toggleAdvanced()">
+                            <i class="fas fa-sliders-h"></i> خيارات متقدمة (السرعة وطبقة الصوت)
+                        </button>
+                        <div class="advanced-options" id="advancedOptions">
+                            <div class="control-group">
+                                <label>السرعة</label>
+                                <select id="rateSelect" class="styled-select-sm">
+                                    <option value="-25%">🐢 بطيء</option>
+                                    <option value="+0%" selected>عادي</option>
+                                    <option value="+15%">🏃 سريع قليلاً</option>
+                                    <option value="+30%">⚡ سريع</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label>طبقة الصوت</label>
+                                <select id="pitchSelect" class="styled-select-sm">
+                                    <option value="-10Hz">🎵 منخفضة</option>
+                                    <option value="+0Hz" selected>عادية</option>
+                                    <option value="+10Hz">🎶 عالية</option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 3. البصمة الصوتية (وضع Quality فقط) -->
+                    <section class="card quality-only">
+                        <h3><i class="fas fa-microphone-alt"></i> 3. البصمة الصوتية للاستنساخ</h3>
+                        <p style="color: var(--muted-text); font-size: 0.85rem; margin-bottom: 12px;">
+                            اختر صوتاً جاهزاً من العينات أو ارفع تسجيلك الخاص (5-15 ثانية)
+                        </p>
+
+                        <select id="voiceSelect" class="styled-select" style="margin-bottom: 12px;">
+                            <option value="">🎤 اختر عينة جاهزة</option>
+                        </select>
+
+                        <input type="file" id="customVoice" accept="audio/*" style="display:none;" onchange="handleCustomVoice(this)">
+                        <button type="button" class="btn-secondary" onclick="document.getElementById('customVoice').click()" style="width: 100%;">
+                            <i class="fas fa-upload"></i> أو ارفع تسجيلك الخاص (5-15 ثانية)
+                        </button>
+                        <div id="customVoiceTxt" style="font-size: 0.85rem; color: var(--muted-text); margin-top: 8px;"></div>
+                    </section>
+
+                    <button id="ttsBtn" class="btn-primary-action" onclick="startTTS()">
+                        <i class="fas fa-volume-up"></i> توليد الصوت الآن
+                    </button>
+
+                    <button id="ttsInstantBtn" class="btn-instant" onclick="instantPlay()">
+                        <i class="fas fa-play-circle"></i> ⚡ تشغيل فوري (بدون تنزيل)
+                    </button>
+                </div>
+
+                <div class="results-container">
+                    <section class="card" id="progressArea" style="display:none;">
+                        <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
+                        <p id="statusTxt">الحالة: يتم الآن توليد الصوت</p>
+                        <div class="progress-bar">
+                            <div id="progFill" class="prog-fill"></div>
+                        </div>
+                        <div class="perf-stats" id="perfStats"></div>
+                    </section>
+
+                    <section class="card" id="resCard" style="display:none;">
+                        <h3><i class="fas fa-check-circle" style="color: #10b981;"></i> تم إنشاء المقطع بنجاح</h3>
+                        <audio id="audioResult" controls style="width:100%; margin-top:15px;"></audio>
+                        <a id="dlBtn" href="#" download class="btn-download" style="margin-top:15px;">
+                            <i class="fas fa-download"></i> تحميل المقطع الصوتي
+                        </a>
+                    </section>
+                </div>
             </div>
         </div>
-    </div>
-</main>
-<div id="toasts"></div>
+    </main>
 
-<script>
-    // Web Speech API based TTS - يعمل بجميع المتصفحات الحديثة
+    <div id="toasts"></div>
+    
+    <script src="js/languages-data.js"></script>
+    <script src="js/tts-quick.js"></script>
+    <script src="js/tts.js"></script>
+
+    <script>
+    // ==========================================
+    // 🎯 إدارة الوضع
+    // ==========================================
     let currentMode = localStorage.getItem('tts_mode') || 'fast';
-    let sessionHistory = [];
-    let currentAudioBlobUrl = null;
-    let synth = window.speechSynthesis;
-    let availableVoices = [];
-
-    function updateVoiceList() {
-        availableVoices = synth.getVoices();
-        if (availableVoices.length === 0) {
-            synth.addEventListener('voiceschanged', () => { availableVoices = synth.getVoices(); populateVoicesByLang(); });
-        } else populateVoicesByLang();
-    }
-    if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = updateVoiceList;
-    updateVoiceList();
-
-    function populateVoicesByLang() {
-        const lang = document.getElementById('langSelect').value;
-        const voiceSelect = document.getElementById('edgeVoiceSelect');
-        if (!voiceSelect) return;
-        let filtered = availableVoices.filter(v => v.lang.startsWith(lang.split('-')[0]) || v.lang === lang);
-        if (filtered.length === 0) filtered = availableVoices.filter(v => v.lang.includes(lang.substring(0,2)));
-        voiceSelect.innerHTML = '<option value="">الصوت التلقائي (الأفضل)</option>';
-        filtered.forEach(voice => {
-            const opt = document.createElement('option');
-            opt.value = voice.name;
-            opt.textContent = `${voice.name} (${voice.lang}) - ${voice.default ? 'افتراضي' : (voice.localService ? 'محلي' : 'شبكة')}`;
-            voiceSelect.appendChild(opt);
-        });
-        document.getElementById('voiceCountInfo').innerHTML = filtered.length ? `(${filtered.length} صوت)` : '';
-    }
-
-    function onLangChange() {
-        populateVoicesByLang();
-    }
+    document.body.dataset.mode = currentMode;
 
     function switchMode(mode) {
         currentMode = mode;
         document.body.dataset.mode = mode;
         localStorage.setItem('tts_mode', mode);
-        document.querySelectorAll('.mode-option').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
-        document.getElementById('ttsInstantBtn').style.display = mode === 'fast' ? 'flex' : 'none';
+        document.querySelectorAll('.mode-option').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+        document.getElementById('ttsInstantBtn').style.display =
+            mode === 'fast' ? 'flex' : 'none';
         const mainBtn = document.getElementById('ttsBtn');
-        mainBtn.innerHTML = mode === 'fast' ? '<i class="fas fa-bolt"></i> توليد سريع وحفظ' : '<i class="fas fa-gem"></i> توليد بجودة عالية';
+        if (mode === 'fast') {
+            mainBtn.innerHTML = '<i class="fas fa-bolt"></i> توليد سريع وحفظ';
+        } else {
+            mainBtn.innerHTML = '<i class="fas fa-gem"></i> توليد بجودة عالية';
+        }
     }
 
-    function toggleAdvanced() { document.getElementById('advancedOptions').classList.toggle('show'); }
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-        document.getElementById('overlay').classList.toggle('show');
-    }
-    function showToast(msg, bg = '#7c3aed') {
-        const toastDiv = document.createElement('div');
-        toastDiv.className = 'toast';
-        toastDiv.style.background = bg;
-        toastDiv.innerHTML = `<i class="fas fa-info-circle"></i> ${msg}`;
-        document.getElementById('toasts').appendChild(toastDiv);
-        setTimeout(() => toastDiv.remove(), 3000);
+    document.addEventListener('DOMContentLoaded', () => {
+        switchMode(currentMode);
+        renderLanguages();
+    });
+
+    function toggleAdvanced() {
+        document.getElementById('advancedOptions').classList.toggle('show');
     }
 
-    // تسجيل الاستماع والتخزين المحلي
-    async function generateSpeech(text, options = {}) {
-        return new Promise((resolve, reject) => {
-            if (!text.trim()) reject(new Error('النص فارغ'));
-            const utterance = new SpeechSynthesisUtterance(text);
-            const lang = options.lang || document.getElementById('langSelect').value;
-            const selectedVoiceName = options.voiceName || document.getElementById('edgeVoiceSelect').value;
-            const rate = parseFloat(options.rate || document.getElementById('rateSelect').value);
-            const pitch = parseFloat(options.pitch || document.getElementById('pitchSelect').value);
-            utterance.lang = lang;
-            utterance.rate = rate;
-            utterance.pitch = pitch;
-            if (selectedVoiceName && selectedVoiceName !== "") {
-                const voiceObj = availableVoices.find(v => v.name === selectedVoiceName);
-                if (voiceObj) utterance.voice = voiceObj;
-            } else {
-                const fallback = availableVoices.find(v => v.lang.startsWith(lang.split('-')[0]));
-                if (fallback) utterance.voice = fallback;
-            }
-            let start = performance.now();
-            utterance.onstart = () => { console.log('speech started'); };
-            utterance.onend = () => {
-                const endTime = performance.now();
-                resolve({ success: true, duration: endTime - start, audioBlob: null });
-            };
-            utterance.onerror = (e) => reject(new Error(`فشل النطق: ${e.error}`));
-            synth.speak(utterance);
+    document.getElementById('ttsInput')?.addEventListener('input', (e) => {
+        document.getElementById('charCount').textContent = e.target.value.length;
+    });
+
+    // ==========================================
+    // 🌍 عرض اللغات + البحث
+    // ==========================================
+    let selectedLang = localStorage.getItem('tts_lang') || 'ar';
+
+    function renderLanguages(filter = '') {
+        const container = document.getElementById('langList');
+        const langCount = document.getElementById('langCount');
+        if (!container) return;
+
+        const filterLower = filter.toLowerCase().trim();
+        const filtered = LANGUAGES.filter(l => {
+            if (!filterLower) return true;
+            return (
+                l.name_ar.toLowerCase().includes(filterLower) ||
+                l.name_en.toLowerCase().includes(filterLower) ||
+                l.code.toLowerCase().includes(filterLower)
+            );
+        });
+
+        // ترتيب: الشائعة أولاً
+        filtered.sort((a, b) => {
+            if (a.popular && !b.popular) return -1;
+            if (!a.popular && b.popular) return 1;
+            return 0;
+        });
+
+        langCount.textContent = `${filtered.length} لغة` + (filter ? ` (تصفية)` : ' متاحة');
+
+        container.innerHTML = filtered.map(l => `
+            <div class="lang-item ${l.popular ? 'popular' : ''} ${l.code === selectedLang ? 'selected' : ''}"
+                 data-code="${l.code}"
+                 onclick="selectLanguage('${l.code}')">
+                <div class="flag">${l.flag}</div>
+                <div class="lang-info">
+                    <div class="lang-ar">${l.name_ar}</div>
+                    <div class="lang-en">${l.name_en}</div>
+                </div>
+            </div>
+        `).join('') || '<div style="text-align:center;padding:30px;color:var(--muted-text);">لم يُعثر على نتائج</div>';
+    }
+
+    function filterLanguages(query) {
+        renderLanguages(query);
+    }
+
+    function selectLanguage(code) {
+        selectedLang = code;
+        localStorage.setItem('tts_lang', code);
+
+        const lang = LANGUAGES.find(l => l.code === code);
+        if (lang) {
+            const display = document.getElementById('selectedLangDisplay');
+            display.querySelector('.flag').textContent = lang.flag;
+            display.querySelector('.name').textContent = lang.name_ar;
+        }
+
+        // تحديث الكلاس selected
+        document.querySelectorAll('.lang-item').forEach(el => {
+            el.classList.toggle('selected', el.dataset.code === code);
         });
     }
 
-    // دالة تسجيل الصوت عبر MediaRecorder (لتوفير تحميل MP3)
-    async function recordSpeechToBlob(text, options) {
-        return new Promise(async (resolve, reject) => {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            let mediaRecorder = new MediaRecorder(stream);
-            let chunks = [];
-            mediaRecorder.ondataavailable = e => chunks.push(e.data);
-            let speechCompleted = false;
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'audio/mp3' });
-                stream.getTracks().forEach(track => track.stop());
-                resolve(blob);
-            };
-            mediaRecorder.start();
-            let utteranceDone = false;
-            const startGen = async () => {
-                try {
-                    await generateSpeech(text, options);
-                    utteranceDone = true;
-                    setTimeout(() => { if (mediaRecorder.state === 'recording') mediaRecorder.stop(); }, 200);
-                } catch(e) { reject(e); }
-            };
-            startGen();
-            setTimeout(() => {
-                if (!utteranceDone && mediaRecorder.state === 'recording') mediaRecorder.stop();
-            }, 30000);
-        }).catch(() => { throw new Error('مطلوب إذن الميكروفون لتسجيل الصوت للتحميل، لكن التشغيل متاح'); });
-    }
-
-    async function startTTS() {
-        const text = document.getElementById('ttsInput').value.trim();
-        if (!text) return showToast('أدخل النص أولاً', '#ef4444');
-        const progArea = document.getElementById('progressArea');
-        const resCard = document.getElementById('resCard');
-        const statusTxt = document.getElementById('statusTxt');
-        const progFill = document.getElementById('progFill');
-        const perfStatsDiv = document.getElementById('perfStats');
-        progArea.style.display = 'block';
-        resCard.style.display = 'none';
-        statusTxt.innerText = '⏳ جاري توليد الصوت وتجهيزه...';
-        progFill.style.width = '30%';
-        try {
-            const lang = document.getElementById('langSelect').value;
-            const voiceName = document.getElementById('edgeVoiceSelect').value;
-            const rate = document.getElementById('rateSelect').value;
-            const pitch = document.getElementById('pitchSelect').value;
-            const translateMode = document.getElementById('translateSelect').value === 'true';
-            let finalText = text;
-            if (translateMode && lang !== 'ar') {
-                finalText = `[ترجمة تلقائية محاكاة] ${text}`;
-                showToast('تنبيه: الترجمة الفعلية تحتاج API خارجي، تم تمرير النص الأصلي', '#f59e0b');
-            }
-            const startPerf = performance.now();
-            // محاولة تسجيل الصوت للحصول على blob للتحميل
-            let audioBlob = null;
-            try {
-                audioBlob = await recordSpeechToBlob(finalText, { lang, voiceName, rate, pitch });
-            } catch (recErr) {
-                console.warn("تسجيل الصوت فشل، التشغيل فقط متاح:", recErr);
-                await generateSpeech(finalText, { lang, voiceName, rate, pitch });
-                audioBlob = null;
-            }
-            const totalTime = performance.now() - startPerf;
-            let audioUrl = null;
-            if (audioBlob) {
-                audioUrl = URL.createObjectURL(audioBlob);
-                const audioEl = document.getElementById('audioResult');
-                const dlBtn = document.getElementById('dlBtn');
-                audioEl.src = audioUrl;
-                dlBtn.href = audioUrl;
-                dlBtn.download = `tts_${Date.now()}.mp3`;
-                resCard.style.display = 'block';
-            } else {
-                resCard.style.display = 'none';
-                showToast('تم التشغيل فقط، لا يمكن التحميل بدون إذن الميكروفون', '#f59e0b');
-            }
-            progFill.style.width = '100%';
-            statusTxt.innerText = '✅ تم التوليد بنجاح';
-            perfStatsDiv.innerHTML = `<div class="perf-stat"><i class="fas fa-clock"></i><span class="stat-label">الزمن:</span><span class="stat-value">${totalTime.toFixed(0)}ms</span></div>
-            <div class="perf-stat"><i class="fas fa-microphone"></i><span class="stat-label">المحرك:</span><span class="stat-value">Web Speech API</span></div>`;
-            if (audioUrl) addToHistory(finalText, audioUrl);
-            else {
-                showToast('لا يمكن الحفظ في السجل بدون ملف صوتي', '#888');
-            }
-        } catch (err) {
-            console.error(err);
-            showToast(err.message, '#ef4444');
-            statusTxt.innerText = `❌ خطأ: ${err.message}`;
-            progFill.style.backgroundColor = '#ef4444';
-        }
-    }
-
-    async function instantPlay() {
-        const text = document.getElementById('ttsInput').value.trim();
-        if (!text) return showToast('اكتب النص أولاً', '#ef4444');
-        const progArea = document.getElementById('progressArea');
-        const statusTxt = document.getElementById('statusTxt');
-        const progFill = document.getElementById('progFill');
-        const perfStatsDiv = document.getElementById('perfStats');
-        const resCard = document.getElementById('resCard');
-        progArea.style.display = 'block';
-        resCard.style.display = 'none';
-        statusTxt.innerText = '⚡ تشغيل فوري عبر المحرك الصوتي...';
-        progFill.style.width = '50%';
-        const startPerf = performance.now();
-        try {
-            const lang = document.getElementById('langSelect').value;
-            const voiceName = document.getElementById('edgeVoiceSelect').value;
-            const rate = document.getElementById('rateSelect').value;
-            const pitch = document.getElementById('pitchSelect').value;
-            await generateSpeech(text, { lang, voiceName, rate, pitch });
-            const total = performance.now() - startPerf;
-            statusTxt.innerText = '✅ تم التشغيل';
-            progFill.style.width = '100%';
-            perfStatsDiv.innerHTML = `<div class="perf-stat"><i class="fas fa-bolt"></i><span class="stat-label">وقت التشغيل:</span><span class="stat-value">${total.toFixed(0)}ms</span></div>`;
-            showToast(`تم التشغيل الفوري · ${total.toFixed(0)} مللي ثانية`, '#10b981');
-            setTimeout(() => { progArea.style.display = 'none'; }, 1800);
-        } catch (e) {
-            showToast(e.message, '#ef4444');
-            statusTxt.innerText = `خطأ: ${e.message}`;
-        }
-    }
-
-    function addToHistory(text, url) {
-        sessionHistory.unshift({ text: text.substring(0, 70), url, time: Date.now() });
-        if (sessionHistory.length > 10) sessionHistory.pop();
-        renderHistory();
-    }
-
-    function renderHistory() {
-        const card = document.getElementById('historyCard');
-        const list = document.getElementById('historyList');
-        if (sessionHistory.length === 0) { card.style.display = 'none'; return; }
-        card.style.display = 'block';
-        list.innerHTML = sessionHistory.map((item, idx) => `
-            <div class="history-item"><button onclick="replayHistory(${idx})"><i class="fas fa-play"></i></button>
-            <span class="history-text">${item.text}...</span></div>
-        `).join('');
-    }
-
-    function replayHistory(idx) {
-        const item = sessionHistory[idx];
-        if (item && item.url) {
-            const audio = new Audio(item.url);
-            audio.play().catch(e => showToast('لا يمكن التشغيل', '#ef4444'));
-        } else showToast('الصوت غير متاح', '#ef4444');
-    }
-
-    document.getElementById('ttsInput').addEventListener('input', (e) => {
-        document.getElementById('charCount').innerText = e.target.value.length;
-    });
-    window.replayHistory = replayHistory;
-    window.onLangChange = onLangChange;
-    window.switchMode = switchMode;
-    window.startTTS = startTTS;
-    window.instantPlay = instantPlay;
-    window.toggleSidebar = toggleSidebar;
-    window.toggleAdvanced = toggleAdvanced;
-    document.body.dataset.mode = currentMode;
-    switchMode(currentMode);
-    onLangChange();
-    setInterval(() => { if (synth.speaking) { } }, 500);
-    showToast("تم تحميل المحرك الصوتي - اختر نص واستمع فوراً", "#2563eb");
-</script>
+    // exports for tts.js
+    window.getCurrentLang = () => selectedLang;
+    </script>
 </body>
 </html>
-```
