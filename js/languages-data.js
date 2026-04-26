@@ -1,402 +1,107 @@
-// js/dubbing.js
-// نسخة مُحسّنة ومتكاملة: تعبئة اللغات من LANGUAGES (إذا موجود) أو من /data/languages.json
-// تتوافق مع dubbing.html و css/style.css و samples/manifest.json
+// languages-data.js — قائمة 100 لغة مدعومة من Edge-TTS
+const LANGUAGES = [
+    { code: "ar", flag: "🇸🇦", name_ar: "العربية", name_en: "Arabic", popular: true },
+    { code: "en", flag: "🇺🇸", name_ar: "الإنجليزية", name_en: "English", popular: true },
+    { code: "fr", flag: "🇫🇷", name_ar: "الفرنسية", name_en: "French", popular: true },
+    { code: "es", flag: "🇪🇸", name_ar: "الإسبانية", name_en: "Spanish", popular: true },
+    { code: "de", flag: "🇩🇪", name_ar: "الألمانية", name_en: "German", popular: true },
+    { code: "tr", flag: "🇹🇷", name_ar: "التركية", name_en: "Turkish", popular: true },
+    { code: "ru", flag: "🇷🇺", name_ar: "الروسية", name_en: "Russian", popular: true },
+    { code: "zh", flag: "🇨🇳", name_ar: "الصينية", name_en: "Chinese", popular: true },
+    { code: "ja", flag: "🇯🇵", name_ar: "اليابانية", name_en: "Japanese", popular: true },
+    { code: "ko", flag: "🇰🇷", name_ar: "الكورية", name_en: "Korean", popular: true },
+    { code: "hi", flag: "🇮🇳", name_ar: "الهندية", name_en: "Hindi", popular: true },
+    { code: "ur", flag: "🇵🇰", name_ar: "الأوردو", name_en: "Urdu", popular: true },
+    { code: "fa", flag: "🇮🇷", name_ar: "الفارسية", name_en: "Persian", popular: true },
+    { code: "pt", flag: "🇧🇷", name_ar: "البرتغالية", name_en: "Portuguese", popular: true },
+    { code: "it", flag: "🇮🇹", name_ar: "الإيطالية", name_en: "Italian", popular: true },
+    { code: "nl", flag: "🇳🇱", name_ar: "الهولندية", name_en: "Dutch" },
+    { code: "pl", flag: "🇵🇱", name_ar: "البولندية", name_en: "Polish" },
+    { code: "ro", flag: "🇷🇴", name_ar: "الرومانية", name_en: "Romanian" },
+    { code: "uk", flag: "🇺🇦", name_ar: "الأوكرانية", name_en: "Ukrainian" },
+    { code: "cs", flag: "🇨🇿", name_ar: "التشيكية", name_en: "Czech" },
+    { code: "sk", flag: "🇸🇰", name_ar: "السلوفاكية", name_en: "Slovak" },
+    { code: "hu", flag: "🇭🇺", name_ar: "المجرية", name_en: "Hungarian" },
+    { code: "el", flag: "🇬🇷", name_ar: "اليونانية", name_en: "Greek" },
+    { code: "bg", flag: "🇧🇬", name_ar: "البلغارية", name_en: "Bulgarian" },
+    { code: "hr", flag: "🇭🇷", name_ar: "الكرواتية", name_en: "Croatian" },
+    { code: "sr", flag: "🇷🇸", name_ar: "الصربية", name_en: "Serbian" },
+    { code: "sl", flag: "🇸🇮", name_ar: "السلوفينية", name_en: "Slovenian" },
+    { code: "bs", flag: "🇧🇦", name_ar: "البوسنية", name_en: "Bosnian" },
+    { code: "mk", flag: "🇲🇰", name_ar: "المقدونية", name_en: "Macedonian" },
+    { code: "sq", flag: "🇦🇱", name_ar: "الألبانية", name_en: "Albanian" },
+    { code: "fi", flag: "🇫🇮", name_ar: "الفنلندية", name_en: "Finnish" },
+    { code: "sv", flag: "🇸🇪", name_ar: "السويدية", name_en: "Swedish" },
+    { code: "da", flag: "🇩🇰", name_ar: "الدنماركية", name_en: "Danish" },
+    { code: "nb", flag: "🇳🇴", name_ar: "النرويجية", name_en: "Norwegian" },
+    { code: "is", flag: "🇮🇸", name_ar: "الأيسلندية", name_en: "Icelandic" },
+    { code: "et", flag: "🇪🇪", name_ar: "الإستونية", name_en: "Estonian" },
+    { code: "lv", flag: "🇱🇻", name_ar: "اللاتفية", name_en: "Latvian" },
+    { code: "lt", flag: "🇱🇹", name_ar: "الليتوانية", name_en: "Lithuanian" },
+    { code: "ga", flag: "🇮🇪", name_ar: "الأيرلندية", name_en: "Irish" },
+    { code: "cy", flag: "🏴", name_ar: "الويلزية", name_en: "Welsh" },
+    { code: "mt", flag: "🇲🇹", name_ar: "المالطية", name_en: "Maltese" },
+    { code: "ca", flag: "🇪🇸", name_ar: "الكتالانية", name_en: "Catalan" },
+    { code: "gl", flag: "🇪🇸", name_ar: "الجاليكية", name_en: "Galician" },
+    { code: "eu", flag: "🇪🇸", name_ar: "الباسكية", name_en: "Basque" },
+    { code: "th", flag: "🇹🇭", name_ar: "التايلاندية", name_en: "Thai" },
+    { code: "vi", flag: "🇻🇳", name_ar: "الفيتنامية", name_en: "Vietnamese" },
+    { code: "id", flag: "🇮🇩", name_ar: "الإندونيسية", name_en: "Indonesian" },
+    { code: "ms", flag: "🇲🇾", name_ar: "الملايو", name_en: "Malay" },
+    { code: "tl", flag: "🇵🇭", name_ar: "الفلبينية (تاغالوغ)", name_en: "Filipino" },
+    { code: "my", flag: "🇲🇲", name_ar: "البورمية", name_en: "Burmese" },
+    { code: "km", flag: "🇰🇭", name_ar: "الخميرية", name_en: "Khmer" },
+    { code: "lo", flag: "🇱🇦", name_ar: "اللاوية", name_en: "Lao" },
+    { code: "si", flag: "🇱🇰", name_ar: "السنهالية", name_en: "Sinhala" },
+    { code: "ne", flag: "🇳🇵", name_ar: "النيبالية", name_en: "Nepali" },
+    { code: "mn", flag: "🇲🇳", name_ar: "المنغولية", name_en: "Mongolian" },
+    { code: "kk", flag: "🇰🇿", name_ar: "الكازاخية", name_en: "Kazakh" },
+    { code: "uz", flag: "🇺🇿", name_ar: "الأوزبكية", name_en: "Uzbek" },
+    { code: "ky", flag: "🇰🇬", name_ar: "القيرغيزية", name_en: "Kyrgyz" },
+    { code: "tg", flag: "🇹🇯", name_ar: "الطاجيكية", name_en: "Tajik" },
+    { code: "tk", flag: "🇹🇲", name_ar: "التركمانية", name_en: "Turkmen" },
+    { code: "az", flag: "🇦🇿", name_ar: "الأذربيجانية", name_en: "Azerbaijani" },
+    { code: "ka", flag: "🇬🇪", name_ar: "الجورجية", name_en: "Georgian" },
+    { code: "hy", flag: "🇦🇲", name_ar: "الأرمينية", name_en: "Armenian" },
+    { code: "bn", flag: "🇧🇩", name_ar: "البنغالية", name_en: "Bengali" },
+    { code: "ta", flag: "🇮🇳", name_ar: "التاميلية", name_en: "Tamil" },
+    { code: "te", flag: "🇮🇳", name_ar: "التيلوغو", name_en: "Telugu" },
+    { code: "ml", flag: "🇮🇳", name_ar: "المالايالامية", name_en: "Malayalam" },
+    { code: "kn", flag: "🇮🇳", name_ar: "الكانادا", name_en: "Kannada" },
+    { code: "gu", flag: "🇮🇳", name_ar: "الغوجاراتية", name_en: "Gujarati" },
+    { code: "mr", flag: "🇮🇳", name_ar: "الماراتية", name_en: "Marathi" },
+    { code: "pa", flag: "🇮🇳", name_ar: "البنجابية", name_en: "Punjabi" },
+    { code: "or", flag: "🇮🇳", name_ar: "الأوديا", name_en: "Odia" },
+    { code: "ps", flag: "🇦🇫", name_ar: "البشتو", name_en: "Pashto" },
+    { code: "sw", flag: "🇰🇪", name_ar: "السواحلية", name_en: "Swahili" },
+    { code: "am", flag: "🇪🇹", name_ar: "الأمهرية", name_en: "Amharic" },
+    { code: "so", flag: "🇸🇴", name_ar: "الصومالية", name_en: "Somali" },
+    { code: "zu", flag: "🇿🇦", name_ar: "الزولو", name_en: "Zulu" },
+    { code: "af", flag: "🇿🇦", name_ar: "الأفريكانية", name_en: "Afrikaans" },
+    { code: "yo", flag: "🇳🇬", name_ar: "اليوروبا", name_en: "Yoruba" },
+    { code: "he", flag: "🇮🇱", name_ar: "العبرية", name_en: "Hebrew" },
+    { code: "iw", flag: "🇮🇱", name_ar: "العبرية (Edge)", name_en: "Hebrew (Edge)" },
+    { code: "lb", flag: "🇱🇺", name_ar: "اللوكسمبورغية", name_en: "Luxembourgish" },
+    { code: "fil", flag: "🇵🇭", name_ar: "الفلبينية", name_en: "Filipino (fil)" },
+    { code: "zh-HK", flag: "🇭🇰", name_ar: "الصينية - هونغ كونغ", name_en: "Chinese (HK)" },
+    { code: "zh-TW", flag: "🇹🇼", name_ar: "الصينية - تايوان", name_en: "Chinese (TW)" },
+    { code: "en-GB", flag: "🇬🇧", name_ar: "الإنجليزية - بريطانيا", name_en: "English (UK)" },
+    { code: "en-AU", flag: "🇦🇺", name_ar: "الإنجليزية - أستراليا", name_en: "English (AU)" },
+    { code: "en-CA", flag: "🇨🇦", name_ar: "الإنجليزية - كندا", name_en: "English (CA)" },
+    { code: "en-IN", flag: "🇮🇳", name_ar: "الإنجليزية - الهند", name_en: "English (IN)" },
+    { code: "es-MX", flag: "🇲🇽", name_ar: "الإسبانية - المكسيك", name_en: "Spanish (MX)" },
+    { code: "es-AR", flag: "🇦🇷", name_ar: "الإسبانية - الأرجنتين", name_en: "Spanish (AR)" },
+    { code: "ar-EG", flag: "🇪🇬", name_ar: "العربية - مصر", name_en: "Arabic (EG)" },
+    { code: "ar-AE", flag: "🇦🇪", name_ar: "العربية - الإمارات", name_en: "Arabic (AE)" },
+    { code: "ar-MA", flag: "🇲🇦", name_ar: "العربية - المغرب", name_en: "Arabic (MA)" },
+    { code: "ar-IQ", flag: "🇮🇶", name_ar: "العربية - العراق", name_en: "Arabic (IQ)" },
+    { code: "ar-LB", flag: "🇱🇧", name_ar: "العربية - لبنان", name_en: "Arabic (LB)" },
+    { code: "ar-JO", flag: "🇯🇴", name_ar: "العربية - الأردن", name_en: "Arabic (JO)" },
+    { code: "fr-CA", flag: "🇨🇦", name_ar: "الفرنسية - كندا", name_en: "French (CA)" },
+    { code: "fr-CH", flag: "🇨🇭", name_ar: "الفرنسية - سويسرا", name_en: "French (CH)" },
+    { code: "pt-PT", flag: "🇵🇹", name_ar: "البرتغالية - البرتغال", name_en: "Portuguese (PT)" }
+];
 
-const API_BASE = 'https://web-production-14a1.up.railway.app';
-const SAMPLES_BASE = 'samples';
-const LANG_MAP_URL = window.location.origin + '/data/languages.json';
-const COLORS = {
-  ACCENT: '#7c3aed', GOLD: '#ffb800', TEXT: '#e0e0ff',
-  PROGRESS: '#34d399', TOAST_ERROR: '#ef4444',
-  TOAST_SUCCESS: '#10b981', TOAST_WARNING: '#f59e0b'
-};
-
-// -----------------------------
-// مساعدة: إظهار تنبيه (toast)
-// -----------------------------
-function showToast(msg, color = COLORS.TOAST_ERROR) {
-  const t = document.getElementById('toasts');
-  if (!t) return console.warn('toasts container missing:', msg);
-  const box = document.createElement('div');
-  box.className = 'toast';
-  box.style.background = color;
-  box.innerText = msg;
-  t.appendChild(box);
-  setTimeout(() => box.remove(), 4000);
+if (typeof window !== 'undefined') {
+    window.LANGUAGES = LANGUAGES;
 }
-
-// -----------------------------
-// تعبئة قائمة اللغات
-// - أولاً: إذا window.LANGUAGES موجود (languages-data.js) نستخدمه
-// - ثانياً: نحاول جلب /data/languages.json
-// - ثالثاً: نستخدم fallback بسيط
-// -----------------------------
-async function loadLanguages() {
-  const sel = document.getElementById('langSelect');
-  if (!sel) return console.warn('langSelect element not found');
-
-  // مسح المحتوى مؤقتاً
-  sel.innerHTML = '<option value="ar">العربية (تحميل...)</option>';
-
-  // 1) إذا LANGUAGES مُعرّف في النافذة، استخدمه
-  if (typeof window !== 'undefined' && Array.isArray(window.LANGUAGES) && window.LANGUAGES.length > 0) {
-    sel.innerHTML = '';
-    window.LANGUAGES.forEach(lang => {
-      const opt = document.createElement('option');
-      opt.value = lang.code;
-      opt.textContent = `${lang.flag || ''} ${lang.name_ar || lang.name_en || lang.code}`;
-      sel.appendChild(opt);
-    });
-    // افتراضي إلى العربية إذا موجودة
-    if ([...sel.options].some(o => o.value === 'ar')) sel.value = 'ar';
-    return;
-  }
-
-  // 2) حاول جلب ملف JSON من الخادم
-  try {
-    const res = await fetch(LANG_MAP_URL, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`languages.json HTTP ${res.status}`);
-    const data = await res.json();
-    sel.innerHTML = '';
-    // data متوقع أن يكون كائن: { "ar": {name:"...", flag:"..."} , ... }
-    if (Array.isArray(data)) {
-      // إن كان مصفوفة من كائنات
-      data.forEach(item => {
-        const code = item.code || item.id || item.lang;
-        if (!code) return;
-        const opt = document.createElement('option');
-        opt.value = code;
-        opt.textContent = `${item.flag || ''} ${item.name_ar || item.name || code}`;
-        sel.appendChild(opt);
-      });
-    } else {
-      Object.entries(data).forEach(([code, meta]) => {
-        const opt = document.createElement('option');
-        opt.value = code;
-        opt.textContent = `${meta.flag || ''} ${meta.name || meta.name_ar || code}`;
-        sel.appendChild(opt);
-      });
-    }
-    if (sel.options.length === 0) throw new Error('languages.json empty');
-    if ([...sel.options].some(o => o.value === 'ar')) sel.value = 'ar';
-    return;
-  } catch (err) {
-    console.warn('Failed to load languages.json:', err);
-  }
-
-  // 3) fallback بسيط
-  sel.innerHTML = '<option value="ar">العربية</option><option value="en">English</option>';
-  showToast('تعذّر تحميل قائمة اللغات — تم استخدام إعداد افتراضي', COLORS.TOAST_WARNING);
-}
-
-// -----------------------------
-// تحميل عينات الصوت من samples/manifest.json
-// -----------------------------
-async function renderVoices() {
-  const select = document.getElementById('voiceSelect');
-  if (!select) return console.warn('voiceSelect element not found');
-  select.innerHTML = '<option value="original" selected>🎙️ الصوت الأصلي للوسائط (بدون استنساخ)</option>';
-
-  try {
-    const res = await fetch(`${SAMPLES_BASE}/manifest.json?t=${Date.now()}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`manifest.json HTTP ${res.status}`);
-    const data = await res.json();
-    const voices = Array.isArray(data.voices) ? data.voices : (Array.isArray(data) ? data : []);
-    if (voices.length === 0) {
-      console.warn('manifest.json فارغ — لا توجد عينات.');
-      return;
-    }
-    voices.forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = v.id || v.name || v.file;
-      opt.textContent = `${v.icon || '🎤'} عينة: ${v.label || v.id || v.name || v.file}`;
-      opt.dataset.file = v.file || `${v.id || v.name}.mp3`;
-      select.appendChild(opt);
-    });
-  } catch (e) {
-    console.warn('فشل قراءة manifest.json:', e);
-    // fallback بسيط
-    const fallback = [{ id: 'muhammad', file: 'muhammad.mp3', label: 'محمد', icon: '👨' }];
-    fallback.forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = v.id;
-      opt.textContent = `${v.icon} عينة: ${v.label}`;
-      opt.dataset.file = v.file;
-      select.appendChild(opt);
-    });
-    showToast('تعذّر تحميل عينات الصوت المحلية — تم استخدام عينات افتراضية', COLORS.TOAST_WARNING);
-  }
-}
-
-// -----------------------------
-// مساعدة: جلب عينة كـ Blob
-// -----------------------------
-async function fetchSampleAsBlob(fileName) {
-  const url = `${SAMPLES_BASE}/${fileName}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`فشل جلب العينة: ${fileName} (HTTP ${res.status})`);
-  return await res.blob();
-}
-
-// -----------------------------
-// تحديث الشريط الجانبي (المصادقة)
-// -----------------------------
-async function updateSidebarAuth() {
-  const authSection = document.getElementById('authSection');
-  if (!authSection) return;
-  const token = localStorage.getItem('token');
-  if (!token) {
-    authSection.innerHTML = `
-      <div class="user-info-card">
-        <p style="margin-bottom:15px; font-size:0.95rem; color: #fff;">أهلاً بك في sl-Dubbing</p>
-        <a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a>
-      </div>`;
-    return;
-  }
-  try {
-    const res = await fetch(`${API_BASE}/api/user`, {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-    });
-    if (!res.ok) throw new Error('Invalid Response');
-    const data = await res.json();
-    if (data.success || data.user) {
-      const userName = data.user?.name || data.user?.username || data.name || 'مستخدم';
-      const userCredits = data.user?.credits ?? data.user?.points ?? data.credits ?? 0;
-      authSection.innerHTML = `
-        <div class="user-info-card">
-          <div class="user-name">${userName}</div>
-          <div class="user-points">رصيدك: ${userCredits} نقطة 💰</div>
-          <button onclick="logout()" style="margin-top:12px; background:none; border:none; color:#ff4444; cursor:pointer; font-size:0.85rem; font-weight:bold;">
-            <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
-          </button>
-        </div>`;
-    } else {
-      throw new Error('Incomplete data');
-    }
-  } catch (e) {
-    console.warn('Auth fetch failed:', e);
-    localStorage.removeItem('token');
-    authSection.innerHTML = `
-      <div class="user-info-card">
-        <p style="margin-bottom:10px; font-size:0.85rem; color: #ff4444;">انتهت الجلسة</p>
-        <a href="login.html" class="btn-login-sidebar">تسجيل الدخول مجدداً</a>
-      </div>`;
-  }
-}
-function logout() { localStorage.removeItem('token'); location.reload(); }
-
-// -----------------------------
-// إدارة الملفات (واجهة المستخدم)
-// -----------------------------
-function updateFileName() {
-  const inp = document.getElementById('mediaFile');
-  const txt = document.getElementById('fileTxt');
-  if (inp && inp.files && inp.files[0]) {
-    txt.innerText = "✅ ملف الوسائط: " + inp.files[0].name;
-    txt.style.color = COLORS.GOLD;
-  }
-}
-function setVoice(val) {
-  const customInput = document.getElementById('customVoice');
-  const customTxt = document.getElementById('customVoiceTxt');
-  if (val !== 'original' && customInput && customInput.files.length > 0) {
-    customInput.value = '';
-    if (customTxt) {
-      customTxt.innerText = "تم إلغاء المرفق لأنك اخترت عينة جاهزة";
-      customTxt.style.color = COLORS.TOAST_WARNING;
-    }
-  }
-}
-function handleCustomVoice(input) {
-  const txt = document.getElementById('customVoiceTxt');
-  const voiceSelect = document.getElementById('voiceSelect');
-  if (input.files && input.files[0]) {
-    if (txt) {
-      txt.innerText = "✅ عينة خاصة: " + input.files[0].name;
-      txt.style.color = COLORS.PROGRESS;
-    }
-    if (voiceSelect) voiceSelect.value = 'original';
-  }
-}
-function setLang(val) {
-  const mini = document.getElementById('miniLang');
-  if (mini) {
-    const sel = document.getElementById('langSelect');
-    mini.textContent = sel?.options[sel.selectedIndex]?.text || val;
-  }
-}
-
-// -----------------------------
-// بدء الدبلجة (رفع وبدء المهمة)
-// -----------------------------
-async function startDubbing() {
-  const mediaInput = document.getElementById('mediaFile');
-  const langSelect = document.getElementById('langSelect');
-  const voiceSelect = document.getElementById('voiceSelect');
-  const customVoiceInput = document.getElementById('customVoice');
-  const token = localStorage.getItem('token');
-
-  if (!token) return showToast("يرجى تسجيل الدخول أولاً", COLORS.TOAST_WARNING);
-  if (!mediaInput || mediaInput.files.length === 0) return showToast("يرجى رفع ملف الفيديو أولاً", COLORS.TOAST_ERROR);
-
-  const dubBtn = document.getElementById('dubBtn');
-  const progressArea = document.getElementById('progressArea');
-  const statusTxt = document.getElementById('statusTxt');
-  const progFill = document.getElementById('progFill');
-  const resCard = document.getElementById('resCard');
-
-  dubBtn.disabled = true;
-  progressArea.style.display = 'block';
-  if (resCard) resCard.style.display = 'none';
-  statusTxt.innerText = "الحالة: جاري تجهيز الملفات...";
-  progFill.style.width = '15%';
-  progFill.style.background = COLORS.PROGRESS;
-
-  const fd = new FormData();
-  fd.append('media_file', mediaInput.files[0]);
-  fd.append('lang', langSelect?.value || 'ar');
-
-  try {
-    if (customVoiceInput && customVoiceInput.files.length > 0) {
-      fd.append('voice_sample', customVoiceInput.files[0]);
-      statusTxt.innerText = "الحالة: استخدام بصمتك الصوتية...";
-    } else if (voiceSelect && voiceSelect.value && voiceSelect.value !== 'original') {
-      const selectedOpt = voiceSelect.options[voiceSelect.selectedIndex];
-      const fileName = selectedOpt?.dataset?.file || `${voiceSelect.value}.mp3`;
-      const labelText = (selectedOpt.textContent || '').replace(/^.*عينة:\s*/, '');
-      statusTxt.innerText = `الحالة: تحميل عينة "${labelText}"...`;
-      try {
-        const sampleBlob = await fetchSampleAsBlob(fileName);
-        fd.append('voice_sample', sampleBlob, fileName);
-      } catch (e) {
-        console.warn('Sample fetch failed:', e);
-        showToast(`تعذّر جلب العينة، سيتم استخدام الصوت الأصلي`, COLORS.TOAST_WARNING);
-      }
-    }
-
-    statusTxt.innerText = "الحالة: جاري رفع الملف للسيرفر...";
-    progFill.style.width = '30%';
-
-    const res = await fetch(`${API_BASE}/api/dub`, {
-      method: 'POST', body: fd, headers: { 'Authorization': `Bearer ${token}` }
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `Server Error: ${res.status}`);
-
-    if (data.success && data.job_id) {
-      statusTxt.innerText = "الحالة: جاري معالجة الذكاء الاصطناعي...";
-      progFill.style.width = '50%';
-
-      const evtSource = new EventSource(`${API_BASE}/api/progress/${data.job_id}`);
-      evtSource.onmessage = function (event) {
-        let progData;
-        try { progData = JSON.parse(event.data); } catch (e) { return; }
-
-        if (progData.status === 'completed') {
-          evtSource.close();
-          progFill.style.width = '100%';
-          statusTxt.innerText = "الحالة: تمت المعالجة بنجاح!";
-          showToast("اكتملت الدبلجة بنجاح!", COLORS.TOAST_SUCCESS);
-          if (resCard) resCard.style.display = 'block';
-          const aud = document.getElementById('dubAud');
-          const dl = document.getElementById('dlBtn');
-          if (aud) { aud.src = progData.audio_url; aud.style.display = 'block'; }
-          if (dl) dl.href = progData.audio_url;
-          dubBtn.disabled = false;
-          updateSidebarAuth();
-        } else if (progData.status === 'failed') {
-          evtSource.close();
-          showToast("فشلت المعالجة", COLORS.TOAST_ERROR);
-          statusTxt.innerText = "الحالة: فشلت المعالجة";
-          progFill.style.background = COLORS.TOAST_ERROR;
-          dubBtn.disabled = false;
-          updateSidebarAuth();
-        } else if (progData.status === 'processing') {
-          statusTxt.innerText = "الحالة: المعالجة جارية...";
-          progFill.style.width = '70%';
-        }
-      };
-
-      evtSource.onerror = function () {
-        evtSource.close();
-        pollJobStatus(data.job_id, dubBtn, statusTxt, progFill, resCard);
-      };
-    } else {
-      throw new Error(data.error || "خطأ أثناء الرفع");
-    }
-  } catch (e) {
-    console.error("Dubbing Error:", e);
-    showToast(e.message || "تعطل الخادم أثناء المعالجة", COLORS.TOAST_ERROR);
-    statusTxt.innerText = `الحالة: خطأ — ${e.message || ''}`;
-    progFill.style.background = COLORS.TOAST_ERROR;
-    dubBtn.disabled = false;
-  }
-}
-
-// -----------------------------
-// polling احتياطي
-// -----------------------------
-async function pollJobStatus(jobId, btn, statusTxt, progFill, resCard) {
-  const token = localStorage.getItem('token');
-  const start = Date.now();
-  const TIMEOUT_MS = 30 * 60 * 1000;
-
-  const poll = async () => {
-    if (Date.now() - start > TIMEOUT_MS) {
-      showToast("انتهت مهلة المعالجة", COLORS.TOAST_ERROR);
-      btn.disabled = false;
-      return;
-    }
-    try {
-      const res = await fetch(`${API_BASE}/api/job/${jobId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json().catch(() => ({}));
-      if (data.status === 'completed') {
-        progFill.style.width = '100%';
-        statusTxt.innerText = "الحالة: تمت المعالجة بنجاح!";
-        showToast("اكتملت الدبلجة بنجاح!", COLORS.TOAST_SUCCESS);
-        if (resCard) resCard.style.display = 'block';
-        const aud = document.getElementById('dubAud');
-        const dl = document.getElementById('dlBtn');
-        if (aud) { aud.src = data.audio_url; aud.style.display = 'block'; }
-        if (dl) dl.href = data.audio_url;
-        btn.disabled = false;
-        updateSidebarAuth();
-        return;
-      }
-      if (data.status === 'failed') {
-        showToast("فشلت المعالجة", COLORS.TOAST_ERROR);
-        statusTxt.innerText = "الحالة: فشلت المعالجة";
-        progFill.style.background = COLORS.TOAST_ERROR;
-        btn.disabled = false;
-        updateSidebarAuth();
-        return;
-      }
-      statusTxt.innerText = "الحالة: المعالجة جارية...";
-      setTimeout(poll, 3000);
-    } catch (e) {
-      console.error("Poll error:", e);
-      setTimeout(poll, 5000);
-    }
-  };
-  poll();
-}
-
-// -----------------------------
-// تهيئة عند تحميل الصفحة
-// -----------------------------
-document.addEventListener('DOMContentLoaded', () => {
-  // ربط أحداث بسيطة
-  const mediaFile = document.getElementById('mediaFile');
-  if (mediaFile) mediaFile.addEventListener('change', updateFileName);
-  const customVoice = document.getElementById('customVoice');
-  if (customVoice) customVoice.addEventListener('change', function(){ handleCustomVoice(this); });
-
-  // تحميل القوائم والبيانات
-  loadLanguages();
-  renderVoices();
-  updateSidebarAuth();
-});
