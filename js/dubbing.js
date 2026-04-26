@@ -1,5 +1,4 @@
-// js/dubbing.js
-// نسخة مُحسّنة من سكربت الواجهة — تعبئة لغات، عينات، ورفع الدبلجة
+// js/dubbing.js — نسخة مُحسّنة ومتوافقة مع languages-data.js و dubbing.html
 
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 const SAMPLES_BASE = 'samples';
@@ -10,9 +9,6 @@ const COLORS = {
   TOAST_SUCCESS: '#10b981', TOAST_WARNING: '#f59e0b'
 };
 
-// -----------------------------
-// مساعدة: إظهار تنبيه (toast)
-// -----------------------------
 function showToast(msg, color = COLORS.TOAST_ERROR) {
   const t = document.getElementById('toasts');
   if (!t) return console.warn('toasts container missing:', msg);
@@ -24,40 +20,58 @@ function showToast(msg, color = COLORS.TOAST_ERROR) {
   setTimeout(() => box.remove(), 4000);
 }
 
-// -----------------------------
-// تحميل قائمة اللغات وتعبئتها
-// -----------------------------
 async function loadLanguages() {
   const sel = document.getElementById('langSelect');
   if (!sel) return console.warn('langSelect element not found');
-  sel.innerHTML = '<option value="ar">العربية (افتراضي)</option>'; // افتراضي مؤقت
+
+  sel.innerHTML = '<option value="ar">العربية (تحميل...)</option>';
+  console.log("Attempting to load languages...");
+
+  if (window.LANGUAGES && Array.isArray(window.LANGUAGES) && window.LANGUAGES.length) {
+    sel.innerHTML = '';
+    window.LANGUAGES.forEach(lang => {
+      const opt = document.createElement('option');
+      opt.value = lang.code;
+      opt.textContent = `${lang.flag || ''} ${lang.name_ar || lang.name_en || lang.code}`;
+      sel.appendChild(opt);
+    });
+    if ([...sel.options].some(o => o.value === 'ar')) sel.value = 'ar';
+    return;
+  }
 
   try {
     const res = await fetch(LANG_MAP_URL, { cache: 'no-store' });
     if (!res.ok) throw new Error(`languages.json HTTP ${res.status}`);
     const data = await res.json();
-    sel.innerHTML = ''; // مسح الافتراضي
-    Object.entries(data).forEach(([code, meta]) => {
-      const opt = document.createElement('option');
-      opt.value = code;
-      opt.textContent = `${meta.flag || ''} ${meta.name || code}`;
-      sel.appendChild(opt);
-    });
-    // حدّ افتراضي إذا لم تُملأ
-    if (sel.options.length === 0) {
-      sel.innerHTML = '<option value="ar">العربية</option><option value="en">English</option>';
-      showToast('قائمة اللغات فارغة — تم استخدام إعداد افتراضي', COLORS.TOAST_WARNING);
+    sel.innerHTML = '';
+    if (Array.isArray(data)) {
+      data.forEach(item => {
+        const code = item.code || item.id || item.lang;
+        if (!code) return;
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = `${item.flag || ''} ${item.name_ar || item.name || code}`;
+        sel.appendChild(opt);
+      });
+    } else {
+      Object.entries(data).forEach(([code, meta]) => {
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = `${meta.flag || ''} ${meta.name || meta.name_ar || code}`;
+        sel.appendChild(opt);
+      });
     }
+    if (sel.options.length === 0) throw new Error('languages.json empty');
+    if ([...sel.options].some(o => o.value === 'ar')) sel.value = 'ar';
+    return;
   } catch (err) {
-    console.error('Failed to load languages.json:', err);
-    sel.innerHTML = '<option value="ar">العربية</option><option value="en">English</option>';
-    showToast('تعذّر تحميل قائمة اللغات — تم استخدام إعداد افتراضي', COLORS.TOAST_WARNING);
+    console.warn('Failed to load languages.json:', err);
   }
+
+  sel.innerHTML = '<option value="ar">العربية</option><option value="en">English</option>';
+  showToast('تعذّر تحميل قائمة اللغات — تم استخدام إعداد افتراضي', COLORS.TOAST_WARNING);
 }
 
-// -----------------------------
-// تحميل عينات الصوت من samples/manifest.json
-// -----------------------------
 async function renderVoices() {
   const select = document.getElementById('voiceSelect');
   if (!select) return console.warn('voiceSelect element not found');
@@ -67,21 +81,17 @@ async function renderVoices() {
     const res = await fetch(`${SAMPLES_BASE}/manifest.json?t=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) throw new Error(`manifest.json HTTP ${res.status}`);
     const data = await res.json();
-    const voices = Array.isArray(data.voices) ? data.voices : [];
-    if (voices.length === 0) {
-      console.warn('manifest.json فارغ — لا توجد عينات.');
-      return;
-    }
+    const voices = Array.isArray(data.voices) ? data.voices : (Array.isArray(data) ? data : []);
+    if (voices.length === 0) return;
     voices.forEach(v => {
       const opt = document.createElement('option');
-      opt.value = v.id;
-      opt.textContent = `${v.icon || '🎤'} عينة: ${v.label || v.id}`;
-      opt.dataset.file = v.file || `${v.id}.mp3`;
+      opt.value = v.id || v.name || v.file;
+      opt.textContent = `${v.icon || '🎤'} عينة: ${v.label || v.id || v.name || v.file}`;
+      opt.dataset.file = v.file || `${v.id || v.name}.mp3`;
       select.appendChild(opt);
     });
   } catch (e) {
-    console.warn('فشل قراءة manifest.json:', e);
-    // fallback بسيط
+    console.warn('Failed to load samples manifest:', e);
     const fallback = [{ id: 'muhammad', file: 'muhammad.mp3', label: 'محمد', icon: '👨' }];
     fallback.forEach(v => {
       const opt = document.createElement('option');
@@ -94,9 +104,6 @@ async function renderVoices() {
   }
 }
 
-// -----------------------------
-// مساعدة: جلب عينة كـ Blob
-// -----------------------------
 async function fetchSampleAsBlob(fileName) {
   const url = `${SAMPLES_BASE}/${fileName}`;
   const res = await fetch(url);
@@ -104,9 +111,6 @@ async function fetchSampleAsBlob(fileName) {
   return await res.blob();
 }
 
-// -----------------------------
-// تحديث الشريط الجانبي (المصادقة)
-// -----------------------------
 async function updateSidebarAuth() {
   const authSection = document.getElementById('authSection');
   if (!authSection) return;
@@ -152,9 +156,6 @@ async function updateSidebarAuth() {
 }
 function logout() { localStorage.removeItem('token'); location.reload(); }
 
-// -----------------------------
-// إدارة الملفات (واجهة المستخدم)
-// -----------------------------
 function updateFileName() {
   const inp = document.getElementById('mediaFile');
   const txt = document.getElementById('fileTxt');
@@ -193,9 +194,6 @@ function setLang(val) {
   }
 }
 
-// -----------------------------
-// بدء الدبلجة (رفع وبدء المهمة)
-// -----------------------------
 async function startDubbing() {
   const mediaInput = document.getElementById('mediaFile');
   const langSelect = document.getElementById('langSelect');
@@ -301,9 +299,6 @@ async function startDubbing() {
   }
 }
 
-// -----------------------------
-// polling احتياطي
-// -----------------------------
 async function pollJobStatus(jobId, btn, statusTxt, progFill, resCard) {
   const token = localStorage.getItem('token');
   const start = Date.now();
@@ -351,24 +346,12 @@ async function pollJobStatus(jobId, btn, statusTxt, progFill, resCard) {
   poll();
 }
 
-// -----------------------------
-// تهيئة عند تحميل الصفحة
-// -----------------------------
 document.addEventListener('DOMContentLoaded', () => {
-  // تأكد من وجود العناصر الأساسية قبل استدعاء الدوال
-  if (!document.getElementById('langSelect')) {
-    console.warn('langSelect not found in DOM');
-  }
-  if (!document.getElementById('voiceSelect')) {
-    console.warn('voiceSelect not found in DOM');
-  }
-  // ربط أحداث بسيطة
   const mediaFile = document.getElementById('mediaFile');
   if (mediaFile) mediaFile.addEventListener('change', updateFileName);
   const customVoice = document.getElementById('customVoice');
   if (customVoice) customVoice.addEventListener('change', function(){ handleCustomVoice(this); });
 
-  // تهيئة القوائم
   loadLanguages();
   renderVoices();
   updateSidebarAuth();
