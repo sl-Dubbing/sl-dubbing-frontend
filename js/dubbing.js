@@ -1,358 +1,455 @@
-// js/dubbing.js — نسخة مُحسّنة ومتوافقة مع languages-data.js و dubbing.html
-
+// ==========================================
+// 🎬 dubbing.js — متعدد اللغات + Sidebar fix
+// ==========================================
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 const SAMPLES_BASE = 'samples';
-const LANG_MAP_URL = window.location.origin + '/data/languages.json';
-const COLORS = {
-  ACCENT: '#7c3aed', GOLD: '#ffb800', TEXT: '#e0e0ff',
-  PROGRESS: '#34d399', TOAST_ERROR: '#ef4444',
-  TOAST_SUCCESS: '#10b981', TOAST_WARNING: '#f59e0b'
-};
 
-function showToast(msg, color = COLORS.TOAST_ERROR) {
-  const t = document.getElementById('toasts');
-  if (!t) return console.warn('toasts container missing:', msg);
-  const box = document.createElement('div');
-  box.className = 'toast';
-  box.style.background = color;
-  box.innerText = msg;
-  t.appendChild(box);
-  setTimeout(() => box.remove(), 4000);
-}
+// ==========================================
+// 🟢 Sidebar Toggle (إصلاح كامل)
+// ==========================================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    if (!sidebar || !overlay) return;
 
-async function loadLanguages() {
-  const sel = document.getElementById('langSelect');
-  if (!sel) return console.warn('langSelect element not found');
-
-  sel.innerHTML = '<option value="ar">العربية (تحميل...)</option>';
-  console.log("Attempting to load languages...");
-
-  if (window.LANGUAGES && Array.isArray(window.LANGUAGES) && window.LANGUAGES.length) {
-    sel.innerHTML = '';
-    window.LANGUAGES.forEach(lang => {
-      const opt = document.createElement('option');
-      opt.value = lang.code;
-      opt.textContent = `${lang.flag || ''} ${lang.name_ar || lang.name_en || lang.code}`;
-      sel.appendChild(opt);
-    });
-    if ([...sel.options].some(o => o.value === 'ar')) sel.value = 'ar';
-    return;
-  }
-
-  try {
-    const res = await fetch(LANG_MAP_URL, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`languages.json HTTP ${res.status}`);
-    const data = await res.json();
-    sel.innerHTML = '';
-    if (Array.isArray(data)) {
-      data.forEach(item => {
-        const code = item.code || item.id || item.lang;
-        if (!code) return;
-        const opt = document.createElement('option');
-        opt.value = code;
-        opt.textContent = `${item.flag || ''} ${item.name_ar || item.name || code}`;
-        sel.appendChild(opt);
-      });
+    const isActive = sidebar.classList.contains('active');
+    if (isActive) {
+        closeSidebar();
     } else {
-      Object.entries(data).forEach(([code, meta]) => {
-        const opt = document.createElement('option');
-        opt.value = code;
-        opt.textContent = `${meta.flag || ''} ${meta.name || meta.name_ar || code}`;
-        sel.appendChild(opt);
-      });
+        openSidebar();
     }
-    if (sel.options.length === 0) throw new Error('languages.json empty');
-    if ([...sel.options].some(o => o.value === 'ar')) sel.value = 'ar';
-    return;
-  } catch (err) {
-    console.warn('Failed to load languages.json:', err);
-  }
-
-  sel.innerHTML = '<option value="ar">العربية</option><option value="en">English</option>';
-  showToast('تعذّر تحميل قائمة اللغات — تم استخدام إعداد افتراضي', COLORS.TOAST_WARNING);
 }
 
-async function renderVoices() {
-  const select = document.getElementById('voiceSelect');
-  if (!select) return console.warn('voiceSelect element not found');
-  select.innerHTML = '<option value="original" selected>🎙️ الصوت الأصلي للوسائط (بدون استنساخ)</option>';
-
-  try {
-    const res = await fetch(`${SAMPLES_BASE}/manifest.json?t=${Date.now()}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`manifest.json HTTP ${res.status}`);
-    const data = await res.json();
-    const voices = Array.isArray(data.voices) ? data.voices : (Array.isArray(data) ? data : []);
-    if (voices.length === 0) return;
-    voices.forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = v.id || v.name || v.file;
-      opt.textContent = `${v.icon || '🎤'} عينة: ${v.label || v.id || v.name || v.file}`;
-      opt.dataset.file = v.file || `${v.id || v.name}.mp3`;
-      select.appendChild(opt);
-    });
-  } catch (e) {
-    console.warn('Failed to load samples manifest:', e);
-    const fallback = [{ id: 'muhammad', file: 'muhammad.mp3', label: 'محمد', icon: '👨' }];
-    fallback.forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = v.id;
-      opt.textContent = `${v.icon} عينة: ${v.label}`;
-      opt.dataset.file = v.file;
-      select.appendChild(opt);
-    });
-    showToast('تعذّر تحميل عينات الصوت المحلية — تم استخدام عينات افتراضية', COLORS.TOAST_WARNING);
-  }
+function openSidebar() {
+    document.getElementById('sidebar')?.classList.add('active');
+    document.getElementById('overlay')?.classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 
-async function fetchSampleAsBlob(fileName) {
-  const url = `${SAMPLES_BASE}/${fileName}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`فشل جلب العينة: ${fileName} (HTTP ${res.status})`);
-  return await res.blob();
+function closeSidebar() {
+    document.getElementById('sidebar')?.classList.remove('active');
+    document.getElementById('overlay')?.classList.remove('active');
+    document.body.style.overflow = '';
 }
 
-async function updateSidebarAuth() {
-  const authSection = document.getElementById('authSection');
-  if (!authSection) return;
-  const token = localStorage.getItem('token');
-  if (!token) {
-    authSection.innerHTML = `
-      <div class="user-info-card">
-        <p style="margin-bottom:15px; font-size:0.95rem; color: #fff;">أهلاً بك في sl-Dubbing</p>
-        <a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a>
-      </div>`;
-    return;
-  }
-  try {
-    const res = await fetch(`${API_BASE}/api/user`, {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-    });
-    if (!res.ok) throw new Error('Invalid Response');
-    const data = await res.json();
-    if (data.success || data.user) {
-      const userName = data.user?.name || data.user?.username || data.name || 'مستخدم';
-      const userCredits = data.user?.credits ?? data.user?.points ?? data.credits ?? 0;
-      authSection.innerHTML = `
-        <div class="user-info-card">
-          <div class="user-name">${userName}</div>
-          <div class="user-points">رصيدك: ${userCredits} نقطة 💰</div>
-          <button onclick="logout()" style="margin-top:12px; background:none; border:none; color:#ff4444; cursor:pointer; font-size:0.85rem; font-weight:bold;">
-            <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
-          </button>
-        </div>`;
-    } else {
-      throw new Error('Incomplete data');
-    }
-  } catch (e) {
-    console.warn('Auth fetch failed:', e);
-    localStorage.removeItem('token');
-    authSection.innerHTML = `
-      <div class="user-info-card">
-        <p style="margin-bottom:10px; font-size:0.85rem; color: #ff4444;">انتهت الجلسة</p>
-        <a href="login.html" class="btn-login-sidebar">تسجيل الدخول مجدداً</a>
-      </div>`;
-  }
-}
-function logout() { localStorage.removeItem('token'); location.reload(); }
-
-function updateFileName() {
-  const inp = document.getElementById('mediaFile');
-  const txt = document.getElementById('fileTxt');
-  if (inp && inp.files && inp.files[0]) {
-    txt.innerText = "✅ ملف الوسائط: " + inp.files[0].name;
-    txt.style.color = COLORS.GOLD;
-  }
-}
-function setVoice(val) {
-  const customInput = document.getElementById('customVoice');
-  const customTxt = document.getElementById('customVoiceTxt');
-  if (val !== 'original' && customInput && customInput.files.length > 0) {
-    customInput.value = '';
-    if (customTxt) {
-      customTxt.innerText = "تم إلغاء المرفق لأنك اخترت عينة جاهزة";
-      customTxt.style.color = COLORS.TOAST_WARNING;
-    }
-  }
-}
-function handleCustomVoice(input) {
-  const txt = document.getElementById('customVoiceTxt');
-  const voiceSelect = document.getElementById('voiceSelect');
-  if (input.files && input.files[0]) {
-    if (txt) {
-      txt.innerText = "✅ عينة خاصة: " + input.files[0].name;
-      txt.style.color = COLORS.PROGRESS;
-    }
-    if (voiceSelect) voiceSelect.value = 'original';
-  }
-}
-function setLang(val) {
-  const mini = document.getElementById('miniLang');
-  if (mini) {
-    const sel = document.getElementById('langSelect');
-    mini.textContent = sel?.options[sel.selectedIndex]?.text || val;
-  }
-}
-
-async function startDubbing() {
-  const mediaInput = document.getElementById('mediaFile');
-  const langSelect = document.getElementById('langSelect');
-  const voiceSelect = document.getElementById('voiceSelect');
-  const customVoiceInput = document.getElementById('customVoice');
-  const token = localStorage.getItem('token');
-
-  if (!token) return showToast("يرجى تسجيل الدخول أولاً", COLORS.TOAST_WARNING);
-  if (!mediaInput || mediaInput.files.length === 0) return showToast("يرجى رفع ملف الفيديو أولاً", COLORS.TOAST_ERROR);
-
-  const dubBtn = document.getElementById('dubBtn');
-  const progressArea = document.getElementById('progressArea');
-  const statusTxt = document.getElementById('statusTxt');
-  const progFill = document.getElementById('progFill');
-  const resCard = document.getElementById('resCard');
-
-  dubBtn.disabled = true;
-  progressArea.style.display = 'block';
-  if (resCard) resCard.style.display = 'none';
-  statusTxt.innerText = "الحالة: جاري تجهيز الملفات...";
-  progFill.style.width = '15%';
-  progFill.style.background = COLORS.PROGRESS;
-
-  const fd = new FormData();
-  fd.append('media_file', mediaInput.files[0]);
-  fd.append('lang', langSelect?.value || 'ar');
-
-  try {
-    if (customVoiceInput && customVoiceInput.files.length > 0) {
-      fd.append('voice_sample', customVoiceInput.files[0]);
-      statusTxt.innerText = "الحالة: استخدام بصمتك الصوتية...";
-    } else if (voiceSelect && voiceSelect.value && voiceSelect.value !== 'original') {
-      const selectedOpt = voiceSelect.options[voiceSelect.selectedIndex];
-      const fileName = selectedOpt?.dataset?.file || `${voiceSelect.value}.mp3`;
-      const labelText = (selectedOpt.textContent || '').replace(/^.*عينة:\s*/, '');
-      statusTxt.innerText = `الحالة: تحميل عينة "${labelText}"...`;
-      try {
-        const sampleBlob = await fetchSampleAsBlob(fileName);
-        fd.append('voice_sample', sampleBlob, fileName);
-      } catch (e) {
-        console.warn('Sample fetch failed:', e);
-        showToast(`تعذّر جلب العينة، سيتم استخدام الصوت الأصلي`, COLORS.TOAST_WARNING);
-      }
-    }
-
-    statusTxt.innerText = "الحالة: جاري رفع الملف للسيرفر...";
-    progFill.style.width = '30%';
-
-    const res = await fetch(`${API_BASE}/api/dub`, {
-      method: 'POST', body: fd, headers: { 'Authorization': `Bearer ${token}` }
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `Server Error: ${res.status}`);
-
-    if (data.success && data.job_id) {
-      statusTxt.innerText = "الحالة: جاري معالجة الذكاء الاصطناعي...";
-      progFill.style.width = '50%';
-
-      const evtSource = new EventSource(`${API_BASE}/api/progress/${data.job_id}`);
-      evtSource.onmessage = function (event) {
-        let progData;
-        try { progData = JSON.parse(event.data); } catch (e) { return; }
-
-        if (progData.status === 'completed') {
-          evtSource.close();
-          progFill.style.width = '100%';
-          statusTxt.innerText = "الحالة: تمت المعالجة بنجاح!";
-          showToast("اكتملت الدبلجة بنجاح!", COLORS.TOAST_SUCCESS);
-          if (resCard) resCard.style.display = 'block';
-          const aud = document.getElementById('dubAud');
-          const dl = document.getElementById('dlBtn');
-          if (aud) { aud.src = progData.audio_url; aud.style.display = 'block'; }
-          if (dl) dl.href = progData.audio_url;
-          dubBtn.disabled = false;
-          updateSidebarAuth();
-        } else if (progData.status === 'failed') {
-          evtSource.close();
-          showToast("فشلت المعالجة", COLORS.TOAST_ERROR);
-          statusTxt.innerText = "الحالة: فشلت المعالجة";
-          progFill.style.background = COLORS.TOAST_ERROR;
-          dubBtn.disabled = false;
-          updateSidebarAuth();
-        } else if (progData.status === 'processing') {
-          statusTxt.innerText = "الحالة: المعالجة جارية...";
-          progFill.style.width = '70%';
-        }
-      };
-
-      evtSource.onerror = function () {
-        evtSource.close();
-        pollJobStatus(data.job_id, dubBtn, statusTxt, progFill, resCard);
-      };
-    } else {
-      throw new Error(data.error || "خطأ أثناء الرفع");
-    }
-  } catch (e) {
-    console.error("Dubbing Error:", e);
-    showToast(e.message || "تعطل الخادم أثناء المعالجة", COLORS.TOAST_ERROR);
-    statusTxt.innerText = `الحالة: خطأ — ${e.message || ''}`;
-    progFill.style.background = COLORS.TOAST_ERROR;
-    dubBtn.disabled = false;
-  }
-}
-
-async function pollJobStatus(jobId, btn, statusTxt, progFill, resCard) {
-  const token = localStorage.getItem('token');
-  const start = Date.now();
-  const TIMEOUT_MS = 30 * 60 * 1000;
-
-  const poll = async () => {
-    if (Date.now() - start > TIMEOUT_MS) {
-      showToast("انتهت مهلة المعالجة", COLORS.TOAST_ERROR);
-      btn.disabled = false;
-      return;
-    }
-    try {
-      const res = await fetch(`${API_BASE}/api/job/${jobId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json().catch(() => ({}));
-      if (data.status === 'completed') {
-        progFill.style.width = '100%';
-        statusTxt.innerText = "الحالة: تمت المعالجة بنجاح!";
-        showToast("اكتملت الدبلجة بنجاح!", COLORS.TOAST_SUCCESS);
-        if (resCard) resCard.style.display = 'block';
-        const aud = document.getElementById('dubAud');
-        const dl = document.getElementById('dlBtn');
-        if (aud) { aud.src = data.audio_url; aud.style.display = 'block'; }
-        if (dl) dl.href = data.audio_url;
-        btn.disabled = false;
-        updateSidebarAuth();
-        return;
-      }
-      if (data.status === 'failed') {
-        showToast("فشلت المعالجة", COLORS.TOAST_ERROR);
-        statusTxt.innerText = "الحالة: فشلت المعالجة";
-        progFill.style.background = COLORS.TOAST_ERROR;
-        btn.disabled = false;
-        updateSidebarAuth();
-        return;
-      }
-      statusTxt.innerText = "الحالة: المعالجة جارية...";
-      setTimeout(poll, 3000);
-    } catch (e) {
-      console.error("Poll error:", e);
-      setTimeout(poll, 5000);
-    }
-  };
-  poll();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const mediaFile = document.getElementById('mediaFile');
-  if (mediaFile) mediaFile.addEventListener('change', updateFileName);
-  const customVoice = document.getElementById('customVoice');
-  if (customVoice) customVoice.addEventListener('change', function(){ handleCustomVoice(this); });
-
-  loadLanguages();
-  renderVoices();
-  updateSidebarAuth();
+// إغلاق Sidebar عند Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSidebar();
 });
+
+// ==========================================
+// 🟢 Toasts
+// ==========================================
+function showToast(msg, type = 'info') {
+    const t = document.getElementById('toasts');
+    if (!t) return;
+    const box = document.createElement('div');
+    box.className = 'toast';
+    box.innerText = msg;
+    if (type === 'error') box.style.borderColor = 'var(--error)';
+    if (type === 'success') box.style.borderColor = 'var(--text-primary)';
+    t.appendChild(box);
+    setTimeout(() => box.remove(), 4000);
+}
+
+// ==========================================
+// 🌍 إدارة اللغات (multi-select)
+// ==========================================
+let selectedLangs = new Set(JSON.parse(localStorage.getItem('dub_langs') || '["ar"]'));
+
+function renderLanguages(filter = '') {
+    const container = document.getElementById('langList');
+    const langCount = document.getElementById('langCount');
+    if (!container || !window.LANGUAGES) return;
+
+    const filterLower = filter.toLowerCase().trim();
+    const filtered = LANGUAGES.filter(l => {
+        if (!filterLower) return true;
+        return (
+            l.name_ar.toLowerCase().includes(filterLower) ||
+            l.name_en.toLowerCase().includes(filterLower) ||
+            l.code.toLowerCase().includes(filterLower)
+        );
+    });
+
+    // ترتيب: المختارة → الشائعة → الباقي
+    filtered.sort((a, b) => {
+        const aSel = selectedLangs.has(a.code);
+        const bSel = selectedLangs.has(b.code);
+        if (aSel && !bSel) return -1;
+        if (!aSel && bSel) return 1;
+        if (a.popular && !b.popular) return -1;
+        if (!a.popular && b.popular) return 1;
+        return 0;
+    });
+
+    langCount.textContent = `${filtered.length} لغة` + (filter ? ' (تصفية)' : '');
+
+    container.innerHTML = filtered.map(l => `
+        <div class="lang-item ${l.popular ? 'popular' : ''} ${selectedLangs.has(l.code) ? 'selected' : ''}"
+             data-code="${l.code}"
+             onclick="toggleLanguage('${l.code}')">
+            <div class="checkbox"></div>
+            <div class="flag">${l.flag}</div>
+            <div class="lang-info">
+                <div class="lang-ar">${l.name_ar}</div>
+                <div class="lang-en">${l.name_en}</div>
+            </div>
+        </div>
+    `).join('') || '<div style="text-align:center;padding:30px;color:var(--text-muted);">لم يُعثر على نتائج</div>';
+}
+
+function filterLanguages(query) {
+    renderLanguages(query);
+}
+
+function toggleLanguage(code) {
+    if (selectedLangs.has(code)) {
+        selectedLangs.delete(code);
+    } else {
+        if (selectedLangs.size >= 10) {
+            showToast('الحد الأقصى 10 لغات في عملية واحدة', 'error');
+            return;
+        }
+        selectedLangs.add(code);
+    }
+    localStorage.setItem('dub_langs', JSON.stringify([...selectedLangs]));
+    renderSelectedLangs();
+    renderLanguages(document.getElementById('langSearch')?.value || '');
+    updateMiniSummary();
+}
+
+function removeLanguage(code) {
+    selectedLangs.delete(code);
+    localStorage.setItem('dub_langs', JSON.stringify([...selectedLangs]));
+    renderSelectedLangs();
+    renderLanguages(document.getElementById('langSearch')?.value || '');
+    updateMiniSummary();
+}
+
+function renderSelectedLangs() {
+    const display = document.getElementById('selectedLangsDisplay');
+    if (!display) return;
+
+    if (selectedLangs.size === 0) {
+        display.innerHTML = '<div class="selected-langs-empty">لم يتم اختيار لغة بعد. ابحث واضغط لاختيار لغة أو أكثر.</div>';
+        return;
+    }
+
+    const pills = [...selectedLangs].map(code => {
+        const lang = LANGUAGES.find(l => l.code === code);
+        if (!lang) return '';
+        return `
+            <div class="lang-pill" onclick="removeLanguage('${code}')" title="إزالة">
+                <span>${lang.flag}</span>
+                <span>${lang.name_ar}</span>
+                <span class="remove-icon">✕</span>
+            </div>
+        `;
+    }).join('');
+
+    display.innerHTML = `<div class="selected-langs-pills">${pills}</div>`;
+}
+
+function updateMiniSummary() {
+    const miniLangs = document.getElementById('miniLangs');
+    if (!miniLangs) return;
+    if (selectedLangs.size === 0) {
+        miniLangs.textContent = 'لم تُختر بعد';
+    } else {
+        const names = [...selectedLangs].slice(0, 3).map(code => {
+            const l = LANGUAGES.find(x => x.code === code);
+            return l ? l.name_ar : code;
+        });
+        let text = names.join('، ');
+        if (selectedLangs.size > 3) text += ` +${selectedLangs.size - 3}`;
+        miniLangs.textContent = text;
+    }
+}
+
+// ==========================================
+// 🎤 رفع الوسائط
+// ==========================================
+function updateFileName() {
+    const f = document.getElementById('mediaFile');
+    const txt = document.getElementById('fileTxt');
+    if (f?.files?.length) {
+        txt.innerText = '✓ ' + f.files[0].name;
+        txt.style.color = 'var(--text-primary)';
+    }
+}
+
+function handleCustomVoice(input) {
+    const txt = document.getElementById('customVoiceTxt');
+    if (input.files && input.files[0]) {
+        txt.innerText = '✓ تم اختيار: ' + input.files[0].name;
+        txt.style.color = 'var(--text-primary)';
+        document.getElementById('voiceSelect').value = 'custom';
+        const miniVoice = document.getElementById('miniVoice');
+        if (miniVoice) miniVoice.textContent = 'بصمة مخصصة';
+    }
+}
+
+document.getElementById('voiceSelect')?.addEventListener('change', (e) => {
+    const miniVoice = document.getElementById('miniVoice');
+    if (!miniVoice) return;
+    const val = e.target.value;
+    const map = {
+        'original': 'الصوت الأصلي',
+        'custom': 'بصمة مخصصة',
+    };
+    miniVoice.textContent = map[val] || val;
+});
+
+// ==========================================
+// 🎬 جلب العينات الصوتية للقائمة
+// ==========================================
+async function loadSampleVoices() {
+    const select = document.getElementById('voiceSelect');
+    if (!select) return;
+
+    try {
+        const res = await fetch(`${SAMPLES_BASE}/manifest.json?t=${Date.now()}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const voices = Array.isArray(data.voices) ? data.voices : [];
+        voices.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.textContent = `${v.icon || '🎤'} ${v.label || v.id}`;
+            opt.dataset.file = v.file || `${v.id}.mp3`;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.warn('manifest.json failed:', e);
+    }
+}
+
+// ==========================================
+// 🔧 المصادقة
+// ==========================================
+async function updateSidebarAuth() {
+    const authSection = document.getElementById('authSection');
+    if (!authSection) return;
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+        authSection.innerHTML = `
+            <div class="user-info-card">
+                <p style="margin-bottom:12px; font-size:0.9rem; color: var(--text-secondary);">أهلاً بك في sl-Dubbing</p>
+                <a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a>
+            </div>`;
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/api/user`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success || data.user) {
+            const user = data.user || {};
+            authSection.innerHTML = `
+                <div class="user-info-card">
+                    <div class="user-name">${user.name || 'مستخدم'}</div>
+                    <div class="user-points">رصيدك: ${user.credits ?? 0} نقطة</div>
+                    <button onclick="logout()" style="margin-top:10px; background:none; border:none; color:var(--error); cursor:pointer; font-size:0.82rem; font-weight:600;">تسجيل الخروج</button>
+                </div>`;
+        }
+    } catch (e) {
+        localStorage.removeItem('token');
+        authSection.innerHTML = `<a href="login.html" class="btn-login-sidebar">تسجيل الدخول مجدداً</a>`;
+    }
+}
+
+function logout() {
+    localStorage.removeItem('token');
+    location.reload();
+}
+
+// ==========================================
+// 🎬 بدء الدبلجة (متعدد اللغات)
+// ==========================================
+async function startDubbing() {
+    const file = document.getElementById('mediaFile')?.files?.[0];
+    const voiceSelect = document.getElementById('voiceSelect');
+    const customVoice = document.getElementById('customVoice');
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+        showToast('يرجى تسجيل الدخول أولاً', 'error');
+        return;
+    }
+    if (!file) {
+        showToast('يرجى اختيار ملف فيديو/صوت', 'error');
+        return;
+    }
+    if (selectedLangs.size === 0) {
+        showToast('يرجى اختيار لغة هدف واحدة على الأقل', 'error');
+        return;
+    }
+
+    const dubBtn = document.getElementById('dubBtn');
+    const progressArea = document.getElementById('progressArea');
+    const resultsCard = document.getElementById('resultsCard');
+    const resultsList = document.getElementById('resultsList');
+    const statusTxt = document.getElementById('statusTxt');
+    const progFill = document.getElementById('progFill');
+    const miniStatus = document.getElementById('miniStatus');
+
+    dubBtn.disabled = true;
+    progressArea.style.display = 'block';
+    resultsCard.style.display = 'block';
+    resultsList.innerHTML = '';
+
+    // إنشاء بطاقة لكل لغة
+    const langs = [...selectedLangs];
+    langs.forEach(code => {
+        const lang = LANGUAGES.find(l => l.code === code);
+        if (!lang) return;
+        const card = document.createElement('div');
+        card.className = 'result-item';
+        card.id = `result-${code}`;
+        card.innerHTML = `
+            <div class="result-item-header">
+                <span class="result-item-flag">${lang.flag}</span>
+                <span class="result-item-name">${lang.name_ar}</span>
+                <span class="result-item-status" id="status-${code}">في الانتظار</span>
+            </div>
+            <div class="result-item-body" id="body-${code}">
+                <div style="color:var(--text-muted); font-size:0.85rem; padding:8px;">جاري الإرسال...</div>
+            </div>
+        `;
+        resultsList.appendChild(card);
+    });
+
+    statusTxt.innerText = `بدء معالجة ${langs.length} لغة...`;
+    miniStatus.textContent = `يعالج ${langs.length} لغة`;
+    progFill.style.width = '5%';
+
+    let completed = 0;
+    const total = langs.length;
+
+    // معالجة كل لغة بالتوازي
+    const promises = langs.map(async (langCode) => {
+        const lang = LANGUAGES.find(l => l.code === langCode);
+        const statusEl = document.getElementById(`status-${langCode}`);
+        const bodyEl = document.getElementById(`body-${langCode}`);
+
+        try {
+            statusEl.textContent = 'جاري الرفع...';
+
+            const formData = new FormData();
+            formData.append('media_file', file);
+            formData.append('lang', langCode);
+
+            // الصوت
+            const voiceVal = voiceSelect.value;
+            if (customVoice?.files?.[0]) {
+                formData.append('voice_sample', customVoice.files[0]);
+                formData.append('voice_id', 'custom');
+            } else if (voiceVal && voiceVal !== 'original') {
+                formData.append('voice_id', voiceVal);
+            } else {
+                formData.append('voice_id', 'source');
+            }
+
+            const res = await fetch(`${API_BASE}/api/dub`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || `HTTP ${res.status}`);
+            }
+
+            statusEl.textContent = 'جاري المعالجة...';
+            bodyEl.innerHTML = '<div style="color:var(--text-secondary); font-size:0.85rem; padding:8px;">⏳ Modal تعالج المقاطع...</div>';
+
+            // متابعة عبر SSE/polling
+            const finalData = await waitForJob(data.job_id, token, statusEl);
+
+            statusEl.textContent = '✓ مكتمل';
+            statusEl.classList.add('success');
+            bodyEl.innerHTML = `
+                <audio controls style="width:100%; margin-top:6px;" src="${finalData.audio_url}"></audio>
+                <a href="${finalData.audio_url}" download="dub_${langCode}_${Date.now()}.wav"
+                   class="btn-download" style="margin-top:10px;">
+                    <i class="fas fa-download"></i> تحميل ${lang.name_ar}
+                </a>
+            `;
+        } catch (e) {
+            console.error(`Lang ${langCode} failed:`, e);
+            statusEl.textContent = '✗ فشل';
+            statusEl.classList.add('error');
+            bodyEl.innerHTML = `<div style="color:var(--error); font-size:0.85rem; padding:8px;">${e.message}</div>`;
+        } finally {
+            completed++;
+            const pct = Math.round((completed / total) * 95) + 5;
+            progFill.style.width = pct + '%';
+            statusTxt.innerText = `${completed}/${total} لغة مكتملة`;
+        }
+    });
+
+    await Promise.all(promises);
+
+    progFill.style.width = '100%';
+    statusTxt.innerText = '✓ اكتملت معالجة جميع اللغات!';
+    miniStatus.textContent = 'مكتمل';
+    showToast(`تمت دبلجة ${total} لغة`, 'success');
+    dubBtn.disabled = false;
+    updateSidebarAuth();
+}
+
+// ==========================================
+// 🔄 متابعة المهمة
+// ==========================================
+async function waitForJob(jobId, token, statusEl) {
+    const start = Date.now();
+    const TIMEOUT = 30 * 60 * 1000;
+
+    while (Date.now() - start < TIMEOUT) {
+        try {
+            const res = await fetch(`${API_BASE}/api/job/${jobId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+
+            if (data.status === 'completed') {
+                return data;
+            }
+            if (data.status === 'failed') {
+                throw new Error('فشلت المعالجة');
+            }
+            statusEl.textContent = `جاري المعالجة... ${Math.round((Date.now() - start) / 1000)}ث`;
+        } catch (e) {
+            console.warn('Poll error:', e);
+        }
+        await new Promise(r => setTimeout(r, 3000));
+    }
+    throw new Error('انتهت مهلة الانتظار');
+}
+
+// ==========================================
+// 🟢 تهيئة
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    updateSidebarAuth();
+    loadSampleVoices();
+    renderLanguages();
+    renderSelectedLangs();
+    updateMiniSummary();
+});
+
+// Exports
+window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;
+window.toggleLanguage = toggleLanguage;
+window.removeLanguage = removeLanguage;
+window.filterLanguages = filterLanguages;
+window.startDubbing = startDubbing;
+window.updateFileName = updateFileName;
+window.handleCustomVoice = handleCustomVoice;
+window.logout = logout;
