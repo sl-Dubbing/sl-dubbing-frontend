@@ -46,8 +46,13 @@ function showToast(msg, type = 'info') {
     const box = document.createElement('div');
     box.className = 'toast';
     box.innerText = msg;
-    if (type === 'error') box.style.borderColor = 'var(--error)';
-    if (type === 'success') box.style.borderColor = 'var(--text-primary)';
+    if (type === 'error') {
+        box.style.background = 'var(--error)';
+    } else if (type === 'success') {
+        box.style.background = 'var(--success)';
+    } else if (type === 'warning') {
+        box.style.background = 'var(--warning)';
+    }
     t.appendChild(box);
     setTimeout(() => box.remove(), 4000);
 }
