@@ -9,6 +9,10 @@
   <link rel="stylesheet" href="css/style.css" />
 
   <style>
+    /* 🟢 كود CSS إجباري لضمان عمل الشريط الجانبي حتى لو كان مفقوداً من ملف style.css */
+    .sidebar.active { right: 0 !important; visibility: visible !important; opacity: 1 !important; transform: translateX(0) !important; }
+    .overlay.active { display: block !important; opacity: 1 !important; visibility: visible !important; }
+    
     .mode-switcher {
       display: flex; gap: 10px;
       background: var(--bg-secondary, #f7f8fa);
@@ -90,19 +94,21 @@
 
   <header class="top-bar">
     <div style="display:flex; align-items:center; gap:12px;">
-      <!-- 🟢 الإصلاح: إضافة onclick هنا ليعمل تماماً مثل صفحة الدبلجة -->
       <button class="menu-btn" id="menuBtn" type="button" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i>
         <span>القائمة</span>
       </button>
       <div class="top-logo"><h2>sl-Dubbing</h2></div>
     </div>
+    
+    <!-- 🟢 الزاوية العلوية: سيظهر فيها النقاط هنا -->
     <div class="top-actions">
-      <span class="account-badge">حساب تجريبي</span>
+      <span class="account-badge" id="topAccountBadge" style="transition: 0.3s; padding: 5px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;">
+        <i class="fas fa-spinner fa-spin"></i> جاري التحقق...
+      </span>
     </div>
   </header>
 
-  <!-- 🟢 الإصلاح: إضافة onclick للإغلاق عند الضغط على الخلفية المعتمة -->
   <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
   <aside class="sidebar" id="sidebar">
@@ -246,41 +252,114 @@
 
   <div id="toasts"></div>
 
-  <!-- 1. تحميل ملف بيانات اللغات أولاً -->
+  <!-- ملفات السكربت الخارجية -->
   <script src="js/languages-data.js"></script>
-
-  <!-- 🟢 2. الجسر السحري: هذا الكود الصغير يحل مشكلة (تعريف اللغات) نهائياً -->
-  <script>
-    if (typeof LANGUAGES !== 'undefined' && typeof window.LANGUAGES === 'undefined') {
-      window.LANGUAGES = LANGUAGES;
-    }
-  </script>
-
-  <!-- 3. باقي السكربتات -->
   <script src="js/tts-quick.js"></script>
   <script src="js/tts.js"></script>
 
-  <!-- 🛡️ كود مستقل ومحصن لضمان عمل الشريط الجانبي دائماً -->
+  <!-- 🛡️ السكربت النهائي والمستقل: يتحكم بالشريط الجانبي ويجلب النقاط (للشريط والزاوية) -->
   <script>
-    window.toggleSidebar = function() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        if (sidebar && overlay) {
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-            document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
-        }
-    };
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // 1. دالة الفتح والإغلاق المحصنة
+        window.toggleSidebar = function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+                document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+            } else {
+                console.error("عناصر الشريط غير موجودة!");
+            }
+        };
 
-    window.closeSidebar = function() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        if (sidebar && overlay) {
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
+        window.closeSidebar = function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (sidebar && overlay) {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        };
+
+        // 2. دالة جلب وعرض النقاط (في الشريط الجانبي وفي الزاوية العلوية)
+        window.updateSidebarAuth = async function() {
+            const authSection = document.getElementById('authSection');
+            const topBadge = document.getElementById('topAccountBadge');
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+            if (!token) {
+                if (authSection) {
+                    authSection.innerHTML = `
+                        <div class="user-info-card">
+                            <p style="margin-bottom:12px; font-size:0.9rem; color:#5b6471;">أهلاً بك</p>
+                            <a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a>
+                        </div>`;
+                }
+                if (topBadge) {
+                    topBadge.innerHTML = '<a href="login.html" style="color:inherit; text-decoration:none;"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</a>';
+                    topBadge.style.background = '#fef2f2';
+                    topBadge.style.color = '#ef4444';
+                    topBadge.style.border = '1px solid #fecaca';
+                }
+                return;
+            }
+
+            try {
+                const res = await fetch('https://web-production-14a1.up.railway.app/api/user', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success || data.user) {
+                    const user = data.user || {};
+                    const points = user.credits ?? 0;
+                    
+                    // تحديث الشريط الجانبي
+                    if (authSection) {
+                        authSection.innerHTML = `
+                            <div class="user-info-card">
+                                <div class="user-name"><i class="fas fa-user-circle"></i> ${user.name || 'مستخدم'}</div>
+                                <div class="user-points" style="color:#10b981; font-weight:bold; margin-top:8px;">
+                                    <i class="fas fa-coins"></i> رصيدك: ${points} نقطة
+                                </div>
+                                <button onclick="logout()" style="margin-top:15px; background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">
+                                    <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                                </button>
+                            </div>`;
+                    }
+                    
+                    // تحديث الزاوية العلوية
+                    if (topBadge) {
+                        topBadge.innerHTML = `<i class="fas fa-coins" style="color:#f59e0b;"></i> ${points} نقطة`;
+                        topBadge.style.background = '#ecfdf5';
+                        topBadge.style.color = '#10b981';
+                        topBadge.style.border = '1px solid #a7f3d0';
+                    }
+                }
+            } catch (e) {
+                console.error('خطأ:', e);
+                if (topBadge) topBadge.innerHTML = 'خطأ اتصال';
+            }
+        };
+
+        // التأكد من استدعاء الدوال وتثبيتها بقوة
+        window.updateSidebarAuth();
+        
+        // إعادة كتابة الجسر السحري لضمان اللغات
+        if (typeof LANGUAGES !== 'undefined' && typeof window.LANGUAGES === 'undefined') {
+            window.LANGUAGES = LANGUAGES;
         }
-    };
+
+        // حماية الدوال من الحذف بواسطة tts.js
+        setTimeout(() => {
+            window.toggleSidebar = window.toggleSidebar;
+            window.closeSidebar = window.closeSidebar;
+            window.updateSidebarAuth = window.updateSidebarAuth;
+        }, 1000);
+    });
   </script>
 </body>
 </html>
