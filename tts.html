@@ -259,6 +259,28 @@
   <!-- 3. باقي السكربتات -->
   <script src="js/tts-quick.js"></script>
   <script src="js/tts.js"></script>
-  
+
+  <!-- 🛡️ كود مستقل ومحصن لضمان عمل الشريط الجانبي دائماً -->
+  <script>
+    window.toggleSidebar = function() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        if (sidebar && overlay) {
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+            document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+        }
+    };
+
+    window.closeSidebar = function() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        if (sidebar && overlay) {
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    };
+  </script>
 </body>
 </html>
