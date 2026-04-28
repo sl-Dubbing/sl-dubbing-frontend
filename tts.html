@@ -9,102 +9,88 @@
   <link rel="stylesheet" href="css/style.css" />
 
   <style>
-    /* ===== Mode Switcher ===== */
     .mode-switcher {
       display: flex; gap: 10px;
-      background: var(--bg-secondary);
-      padding: 6px; border-radius: var(--radius-md);
-      border: 1px solid var(--border-default);
+      background: var(--bg-secondary, #f7f8fa);
+      padding: 6px; border-radius: 10px;
+      border: 1px solid var(--border-default, #e5e7eb);
       margin-bottom: 16px;
     }
     .mode-option {
       flex: 1; padding: 12px 14px;
-      background: transparent;
-      border: 2px solid transparent;
-      border-radius: var(--radius-sm);
-      cursor: pointer; transition: var(--transition);
-      color: var(--text-secondary); text-align: right;
+      background: transparent; border: 2px solid transparent;
+      border-radius: 6px; cursor: pointer;
+      transition: 0.25s;
+      color: var(--text-secondary, #5b6471);
+      text-align: right;
     }
     .mode-option:hover {
-      background: var(--bg-primary);
-      color: var(--text-primary);
+      background: var(--bg-primary, white);
+      color: var(--text-primary, #1a1d23);
     }
     .mode-option.active {
-      background: var(--bg-primary);
-      border-color: var(--accent);
-      box-shadow: var(--shadow-sm);
-      color: var(--text-primary);
+      background: white;
+      border-color: var(--accent, #2563eb);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      color: var(--text-primary, #1a1d23);
     }
     .mode-option .mode-title {
       display: flex; align-items: center; gap: 8px;
       font-weight: 700; font-size: 0.95rem; margin-bottom: 4px;
     }
-    .mode-option .mode-desc {
-      font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;
-    }
-    .mode-option.active .mode-desc { color: var(--text-secondary); }
+    .mode-option .mode-desc { font-size: 0.75rem; color: #6b7280; line-height: 1.4; }
     .mode-badge {
       display: inline-block; padding: 2px 8px; border-radius: 8px;
       font-size: 0.68rem; font-weight: 700; margin-right: 4px;
     }
-    .badge-fast { background: var(--warning-light); color: var(--warning); }
-    .badge-quality { background: var(--accent-soft); color: var(--accent); }
+    .badge-fast { background: #fef3c7; color: #f59e0b; }
+    .badge-quality { background: #eff6ff; color: #2563eb; }
 
     .quality-only { display: none; }
     body[data-mode="quality"] .quality-only { display: block; }
 
-    /* خيارات متقدمة */
     .advanced-toggle {
-      background: none; border: none; color: var(--accent);
+      background: none; border: none; color: var(--accent, #2563eb);
       cursor: pointer; font-size: 0.88rem; padding: 8px 0;
       text-align: right; width: 100%; font-weight: 600;
     }
-    .advanced-toggle:hover { color: var(--accent-hover); }
     .advanced-options {
       display: none; gap: 10px; flex-wrap: wrap;
       margin-top: 10px; padding-top: 10px;
-      border-top: 1px solid var(--border-subtle);
+      border-top: 1px solid #f0f1f4;
     }
     .advanced-options.show { display: flex; }
     .control-group { flex: 1; min-width: 120px; }
     .control-group label {
-      font-size: 0.82rem; color: var(--text-secondary);
+      font-size: 0.82rem; color: #5b6471;
       display: block; margin-bottom: 5px; font-weight: 500;
     }
 
-    /* زر التشغيل الفوري */
     .btn-instant {
-      background: var(--warning);
-      color: white; border: none;
-      padding: 13px 20px; border-radius: var(--radius-md);
+      background: #f59e0b; color: white; border: none;
+      padding: 13px 20px; border-radius: 10px;
       font-weight: 700; font-size: 0.98rem; cursor: pointer;
       width: 100%; margin-top: 10px;
-      transition: var(--transition);
+      transition: 0.25s;
       display: flex; align-items: center; justify-content: center; gap: 8px;
-      box-shadow: var(--shadow-sm);
     }
     .btn-instant:hover:not(:disabled) {
       background: #d97706;
       transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
     }
     .btn-instant:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* عداد الأحرف */
     .char-counter {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-top: 6px;
-      text-align: left;
+      font-size: 0.78rem; color: #9aa1ac;
+      margin-top: 6px; text-align: left;
     }
   </style>
 </head>
 <body data-mode="fast">
 
-  <!-- شريط علوي -->
   <header class="top-bar">
     <div style="display:flex; align-items:center; gap:12px;">
-      <button class="menu-btn" onclick="toggleSidebar()" type="button">
+      <button class="menu-btn" id="menuBtn" type="button">
         <i class="fas fa-bars"></i>
         <span>القائمة</span>
       </button>
@@ -115,12 +101,11 @@
     </div>
   </header>
 
-  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+  <div class="overlay" id="overlay"></div>
 
-  <!-- الشريط الجانبي -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-user-section" id="authSection">
-      <div style="color:var(--text-muted); font-size:0.9rem; text-align:center;">جاري التحقق...</div>
+      <div style="color:#9aa1ac; font-size:0.9rem; text-align:center;">جاري التحقق...</div>
     </div>
 
     <nav class="sidebar-nav">
@@ -137,56 +122,49 @@
     <div class="container">
       <header class="main-header">
         <h1>تحويل النص إلى صوت (TTS)</h1>
-        <p>أكثر من 100 لغة مدعومة — يمكنك توليد عدة لغات بالتوازي</p>
+        <p>أكثر من 100 لغة — يمكنك توليد عدة لغات بالتوازي</p>
       </header>
 
       <div class="workspace-grid">
         <div class="tools-container">
 
-          <!-- Mode Switcher -->
           <section class="card">
             <h3><i class="fas fa-bolt"></i> اختر الوضع</h3>
             <div class="mode-switcher">
-              <button class="mode-option active" data-mode="fast" onclick="switchMode('fast')" type="button">
+              <button class="mode-option active" data-mode="fast" type="button">
                 <div class="mode-title">
                   <i class="fas fa-bolt"></i>
                   <span>سريع</span>
                   <span class="mode-badge badge-fast">⚡ 0.5s</span>
                 </div>
-                <div class="mode-desc">صوت Microsoft الافتراضي للغة المختارة</div>
+                <div class="mode-desc">صوت Microsoft الافتراضي</div>
               </button>
-              <button class="mode-option" data-mode="quality" onclick="switchMode('quality')" type="button">
+              <button class="mode-option" data-mode="quality" type="button">
                 <div class="mode-title">
                   <i class="fas fa-gem"></i>
                   <span>عالي الجودة</span>
                   <span class="mode-badge badge-quality">🎨 1.5s</span>
                 </div>
-                <div class="mode-desc">استنساخ بصمتك الصوتية الخاصة</div>
+                <div class="mode-desc">استنساخ بصمتك الصوتية</div>
               </button>
             </div>
           </section>
 
-          <!-- 1. النص -->
           <section class="card">
-            <h3><i class="fas fa-edit"></i> 1. اكتب النص هنا</h3>
-            <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص الذي تريد تحويله إلى صوت..."></textarea>
-            <div class="char-counter">
-              <span id="charCount">0</span> حرف
-            </div>
+            <h3><i class="fas fa-edit"></i> 1. اكتب النص</h3>
+            <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص..."></textarea>
+            <div class="char-counter"><span id="charCount">0</span> حرف</div>
           </section>
 
-          <!-- 2. اختيار اللغات (متعدد) -->
           <section class="card">
             <h3><i class="fas fa-globe"></i> 2. اختر اللغات (متعدد)</h3>
 
             <div class="selected-langs-display" id="selectedLangsDisplay">
-              <div class="selected-langs-empty">لم يتم اختيار لغة بعد</div>
+              <div class="selected-langs-empty">جاري التحميل...</div>
             </div>
 
             <div class="lang-search-wrapper">
-              <input type="text" id="langSearch" class="lang-search"
-                     placeholder="ابحث عن لغة..."
-                     oninput="filterLanguages(this.value)">
+              <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة...">
               <i class="fas fa-search lang-search-icon"></i>
             </div>
 
@@ -195,9 +173,11 @@
               <span class="star-hint">★ = الأكثر استخداماً</span>
             </div>
 
-            <div class="lang-list" id="langList"></div>
+            <div class="lang-list" id="langList">
+              <div style="text-align:center; padding:20px; color:#9aa1ac;">جاري التحميل...</div>
+            </div>
 
-            <button type="button" class="advanced-toggle" onclick="toggleAdvanced()">
+            <button type="button" class="advanced-toggle" id="advancedToggleBtn">
               <i class="fas fa-sliders-h"></i> خيارات متقدمة
             </button>
             <div class="advanced-options" id="advancedOptions">
@@ -213,37 +193,34 @@
               <div class="control-group">
                 <label>طبقة الصوت</label>
                 <select id="pitchSelect" class="styled-select">
-                  <option value="-10Hz">🎵 منخفضة</option>
+                  <option value="-10Hz">منخفضة</option>
                   <option value="+0Hz" selected>عادية</option>
-                  <option value="+10Hz">🎶 عالية</option>
+                  <option value="+10Hz">عالية</option>
                 </select>
               </div>
             </div>
           </section>
 
-          <!-- 3. البصمة الصوتية (Quality only) -->
           <section class="card quality-only">
             <h3><i class="fas fa-microphone-alt"></i> 3. البصمة الصوتية</h3>
-            <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:12px;">
-              اختر عينة جاهزة أو ارفع تسجيلك الخاص (5-15 ثانية)
+            <p style="color:#5b6471; font-size:0.85rem; margin-bottom:12px;">
+              اختر عينة جاهزة أو ارفع تسجيلك (5-15 ثانية)
             </p>
-
             <select id="voiceSelect" class="styled-select" style="margin-bottom:12px;">
               <option value="">🎤 اختر عينة جاهزة</option>
             </select>
-
-            <input type="file" id="customVoice" accept="audio/*" style="display:none;" onchange="handleCustomVoice(this)">
-            <button type="button" class="btn-secondary" onclick="document.getElementById('customVoice').click()">
-              <i class="fas fa-upload"></i> أو ارفع تسجيلك الخاص
+            <input type="file" id="customVoice" accept="audio/*" style="display:none;">
+            <button type="button" class="btn-secondary" id="uploadVoiceBtn">
+              <i class="fas fa-upload"></i> أو ارفع تسجيلك
             </button>
             <div id="customVoiceTxt" class="file-info"></div>
           </section>
 
-          <button id="ttsBtn" class="btn-primary-action" onclick="startTTS()" type="button">
+          <button id="ttsBtn" class="btn-primary-action" type="button">
             <i class="fas fa-volume-up"></i> توليد الصوت لكل اللغات
           </button>
 
-          <button id="ttsInstantBtn" class="btn-instant" onclick="instantPlay()" type="button">
+          <button id="ttsInstantBtn" class="btn-instant" type="button">
             <i class="fas fa-play-circle"></i> ⚡ تشغيل فوري (أول لغة)
           </button>
         </div>
@@ -252,13 +229,10 @@
           <section class="card" id="progressArea" style="display:none;">
             <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
             <p id="statusTxt">في الانتظار</p>
-            <div class="progress-bar">
-              <div id="progFill" class="prog-fill"></div>
-            </div>
+            <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
             <div class="perf-stats" id="perfStats"></div>
           </section>
 
-          <!-- النتائج المتعددة -->
           <section class="card" id="resultsCard" style="display:none;">
             <h3><i class="fas fa-check-circle"></i> النتائج</h3>
             <div class="results-multilang" id="resultsList"></div>
@@ -270,8 +244,28 @@
 
   <div id="toasts"></div>
 
+  <!-- ⚠️ مهم: نحمّل اللغات أولاً ثم بقية السكربتات -->
   <script src="js/languages-data.js"></script>
   <script src="js/tts-quick.js"></script>
   <script src="js/tts.js"></script>
+
+  <!-- 🔍 سكربت تشخيصي يتأكد أن كل شيء حُمِّل صحيح -->
+  <script>
+    window.addEventListener('load', () => {
+      console.log('=== TTS Page Diagnostics ===');
+      console.log('LANGUAGES loaded:', typeof window.LANGUAGES !== 'undefined' ? `✅ ${window.LANGUAGES.length} languages` : '❌ NOT LOADED');
+      console.log('toggleSidebar:', typeof window.toggleSidebar === 'function' ? '✅' : '❌');
+      console.log('toggleLanguage:', typeof window.toggleLanguage === 'function' ? '✅' : '❌');
+      console.log('startTTS:', typeof window.startTTS === 'function' ? '✅' : '❌');
+      console.log('renderLanguages exists:', typeof window.renderLanguages === 'function' ? '✅' : '❌');
+
+      // تحقق إن renderLanguages لم يُستدعَ، نستدعيها يدوياً
+      if (typeof window.renderLanguages === 'function' && document.getElementById('langList').textContent.includes('جاري التحميل')) {
+        console.log('Manually triggering renderLanguages...');
+        window.renderLanguages();
+        if (typeof window.renderSelectedLangs === 'function') window.renderSelectedLangs();
+      }
+    });
+  </script>
 </body>
 </html>
