@@ -2,7 +2,7 @@
 // 🎨 tts.js — multi-lang + parallel + sidebar
 // uses addEventListener (more reliable)
 // ==========================================
-const API_BASE = 'https://web-production-14a1.up.railway.app';
+
 const SAMPLES_BASE = 'samples';
 
 // ==========================================
