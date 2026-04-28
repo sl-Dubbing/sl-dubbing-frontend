@@ -1,11 +1,145 @@
 // ==========================================
-// 🎨 tts.js — multi-lang + parallel + sidebar fix
+// 🎨 tts.js — multi-lang + parallel + sidebar
+// uses addEventListener (more reliable)
 // ==========================================
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 const SAMPLES_BASE = 'samples';
 
 // ==========================================
-// 🟢 Sidebar (الإصلاح الكامل)
+// 🌍 إدارة اللغات (متعدد)
+// ==========================================
+let selectedLangs = new Set(JSON.parse(localStorage.getItem('tts_langs') || '["ar"]'));
+
+function renderLanguages(filter) {
+    filter = filter || '';
+    const container = document.getElementById('langList');
+    const langCount = document.getElementById('langCount');
+    if (!container) {
+        console.error('❌ langList element not found');
+        return;
+    }
+    if (!window.LANGUAGES) {
+        console.error('❌ LANGUAGES array not available');
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">خطأ: لم يتم تحميل قائمة اللغات. تأكد من رفع js/languages-data.js</div>';
+        return;
+    }
+
+    const filterLower = filter.toLowerCase().trim();
+    const filtered = window.LANGUAGES.filter(l => {
+        if (!filterLower) return true;
+        return (
+            l.name_ar.toLowerCase().includes(filterLower) ||
+            l.name_en.toLowerCase().includes(filterLower) ||
+            l.code.toLowerCase().includes(filterLower)
+        );
+    });
+
+    filtered.sort((a, b) => {
+        const aSel = selectedLangs.has(a.code);
+        const bSel = selectedLangs.has(b.code);
+        if (aSel && !bSel) return -1;
+        if (!aSel && bSel) return 1;
+        if (a.popular && !b.popular) return -1;
+        if (!a.popular && b.popular) return 1;
+        return 0;
+    });
+
+    if (langCount) {
+        langCount.textContent = `${filtered.length} لغة` + (filter ? ' (تصفية)' : '');
+    }
+
+    container.innerHTML = filtered.map(l => `
+        <div class="lang-item ${l.popular ? 'popular' : ''} ${selectedLangs.has(l.code) ? 'selected' : ''}"
+             data-code="${l.code}">
+            <div class="checkbox"></div>
+            <div class="flag">${l.flag}</div>
+            <div class="lang-info">
+                <div class="lang-ar">${l.name_ar}</div>
+                <div class="lang-en">${l.name_en}</div>
+            </div>
+        </div>
+    `).join('') || '<div style="text-align:center;padding:30px;color:#9aa1ac;">لم يُعثر على نتائج</div>';
+
+    // ربط click event على كل lang-item (delegation أكثر أماناً من inline onclick)
+    container.querySelectorAll('.lang-item').forEach(el => {
+        el.addEventListener('click', () => {
+            const code = el.dataset.code;
+            if (code) toggleLanguage(code);
+        });
+    });
+}
+
+function toggleLanguage(code) {
+    console.log(`Toggle language: ${code}`);
+    if (selectedLangs.has(code)) {
+        if (selectedLangs.size > 1) {
+            selectedLangs.delete(code);
+        } else {
+            showToast('يجب اختيار لغة واحدة على الأقل', 'warning');
+            return;
+        }
+    } else {
+        if (selectedLangs.size >= 10) {
+            showToast('الحد الأقصى 10 لغات', 'error');
+            return;
+        }
+        selectedLangs.add(code);
+    }
+    localStorage.setItem('tts_langs', JSON.stringify([...selectedLangs]));
+    renderSelectedLangs();
+    const search = document.getElementById('langSearch');
+    renderLanguages(search ? search.value : '');
+}
+
+function removeLanguage(code) {
+    if (selectedLangs.size <= 1) {
+        showToast('يجب الإبقاء على لغة واحدة على الأقل', 'warning');
+        return;
+    }
+    selectedLangs.delete(code);
+    localStorage.setItem('tts_langs', JSON.stringify([...selectedLangs]));
+    renderSelectedLangs();
+    const search = document.getElementById('langSearch');
+    renderLanguages(search ? search.value : '');
+}
+
+function renderSelectedLangs() {
+    const display = document.getElementById('selectedLangsDisplay');
+    if (!display) return;
+
+    if (selectedLangs.size === 0) {
+        display.innerHTML = '<div class="selected-langs-empty">لم يتم اختيار لغة بعد</div>';
+        return;
+    }
+
+    if (!window.LANGUAGES) {
+        display.innerHTML = '<div class="selected-langs-empty">خطأ في تحميل البيانات</div>';
+        return;
+    }
+
+    const pills = [...selectedLangs].map(code => {
+        const lang = window.LANGUAGES.find(l => l.code === code);
+        if (!lang) return '';
+        return `<div class="lang-pill" data-code="${code}" title="إزالة">
+                    <span>${lang.flag}</span>
+                    <span>${lang.name_ar}</span>
+                    <span class="remove-icon">✕</span>
+                </div>`;
+    }).join('');
+
+    display.innerHTML = `<div class="selected-langs-pills">${pills}</div>`;
+
+    // ربط click على كل pill
+    display.querySelectorAll('.lang-pill').forEach(el => {
+        el.addEventListener('click', () => {
+            const code = el.dataset.code;
+            if (code) removeLanguage(code);
+        });
+    });
+}
+
+// ==========================================
+// 🟢 Sidebar
 // ==========================================
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -29,136 +163,24 @@ function closeSidebar() {
     document.body.style.overflow = '';
 }
 
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeSidebar();
-});
-
 // ==========================================
-// 🟢 Toasts (مُحسّنة للثيم الأبيض)
+// 🟢 Toasts
 // ==========================================
-function showToast(msg, type = 'info') {
+function showToast(msg, type) {
     const t = document.getElementById('toasts');
     if (!t) return;
     const box = document.createElement('div');
     box.className = 'toast';
     box.innerText = msg;
-    if (type === 'error') box.style.background = 'var(--error)';
-    else if (type === 'success') box.style.background = 'var(--success)';
-    else if (type === 'warning') box.style.background = 'var(--warning)';
+    if (type === 'error') box.style.background = '#ef4444';
+    else if (type === 'success') box.style.background = '#10b981';
+    else if (type === 'warning') box.style.background = '#f59e0b';
     t.appendChild(box);
     setTimeout(() => box.remove(), 4000);
 }
 
 // ==========================================
-// 🌍 إدارة اللغات (متعدد)
-// ==========================================
-let selectedLangs = new Set(JSON.parse(localStorage.getItem('tts_langs') || '["ar"]'));
-
-function renderLanguages(filter = '') {
-    const container = document.getElementById('langList');
-    const langCount = document.getElementById('langCount');
-    if (!container || !window.LANGUAGES) return;
-
-    const filterLower = (filter || '').toLowerCase().trim();
-    const filtered = LANGUAGES.filter(l => {
-        if (!filterLower) return true;
-        return (
-            l.name_ar.toLowerCase().includes(filterLower) ||
-            l.name_en.toLowerCase().includes(filterLower) ||
-            l.code.toLowerCase().includes(filterLower)
-        );
-    });
-
-    // ترتيب: المختارة → الشائعة → الباقي
-    filtered.sort((a, b) => {
-        const aSel = selectedLangs.has(a.code);
-        const bSel = selectedLangs.has(b.code);
-        if (aSel && !bSel) return -1;
-        if (!aSel && bSel) return 1;
-        if (a.popular && !b.popular) return -1;
-        if (!a.popular && b.popular) return 1;
-        return 0;
-    });
-
-    if (langCount) {
-        langCount.textContent = `${filtered.length} لغة` + (filter ? ' (تصفية)' : '');
-    }
-
-    container.innerHTML = filtered.map(l => `
-        <div class="lang-item ${l.popular ? 'popular' : ''} ${selectedLangs.has(l.code) ? 'selected' : ''}"
-             data-code="${l.code}"
-             onclick="toggleLanguage('${l.code}')">
-            <div class="checkbox"></div>
-            <div class="flag">${l.flag}</div>
-            <div class="lang-info">
-                <div class="lang-ar">${l.name_ar}</div>
-                <div class="lang-en">${l.name_en}</div>
-            </div>
-        </div>
-    `).join('') || '<div style="text-align:center;padding:30px;color:var(--text-muted);">لم يُعثر على نتائج</div>';
-}
-
-function filterLanguages(query) {
-    renderLanguages(query);
-}
-
-function toggleLanguage(code) {
-    if (selectedLangs.has(code)) {
-        if (selectedLangs.size > 1) {
-            selectedLangs.delete(code);
-        } else {
-            showToast('يجب اختيار لغة واحدة على الأقل', 'warning');
-            return;
-        }
-    } else {
-        if (selectedLangs.size >= 10) {
-            showToast('الحد الأقصى 10 لغات في عملية واحدة', 'error');
-            return;
-        }
-        selectedLangs.add(code);
-    }
-    localStorage.setItem('tts_langs', JSON.stringify([...selectedLangs]));
-    renderSelectedLangs();
-    renderLanguages(document.getElementById('langSearch')?.value || '');
-}
-
-function removeLanguage(code) {
-    if (selectedLangs.size <= 1) {
-        showToast('يجب الإبقاء على لغة واحدة على الأقل', 'warning');
-        return;
-    }
-    selectedLangs.delete(code);
-    localStorage.setItem('tts_langs', JSON.stringify([...selectedLangs]));
-    renderSelectedLangs();
-    renderLanguages(document.getElementById('langSearch')?.value || '');
-}
-
-function renderSelectedLangs() {
-    const display = document.getElementById('selectedLangsDisplay');
-    if (!display) return;
-
-    if (selectedLangs.size === 0) {
-        display.innerHTML = '<div class="selected-langs-empty">لم يتم اختيار لغة بعد</div>';
-        return;
-    }
-
-    const pills = [...selectedLangs].map(code => {
-        const lang = LANGUAGES.find(l => l.code === code);
-        if (!lang) return '';
-        return `
-            <div class="lang-pill" onclick="removeLanguage('${code}')" title="إزالة">
-                <span>${lang.flag}</span>
-                <span>${lang.name_ar}</span>
-                <span class="remove-icon">✕</span>
-            </div>
-        `;
-    }).join('');
-
-    display.innerHTML = `<div class="selected-langs-pills">${pills}</div>`;
-}
-
-// ==========================================
-// 🔧 المصادقة + Sidebar
+// 🔧 المصادقة
 // ==========================================
 async function updateSidebarAuth() {
     const authSection = document.getElementById('authSection');
@@ -168,7 +190,7 @@ async function updateSidebarAuth() {
     if (!token) {
         authSection.innerHTML = `
             <div class="user-info-card">
-                <p style="margin-bottom:12px; font-size:0.9rem; color:var(--text-secondary);">أهلاً بك في sl-Dubbing</p>
+                <p style="margin-bottom:12px; font-size:0.9rem; color:#5b6471;">أهلاً بك في sl-Dubbing</p>
                 <a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a>
             </div>`;
         return;
@@ -185,8 +207,9 @@ async function updateSidebarAuth() {
                 <div class="user-info-card">
                     <div class="user-name">${user.name || 'مستخدم'}</div>
                     <div class="user-points">رصيدك: ${user.credits ?? 0} نقطة</div>
-                    <button onclick="logout()" style="margin-top:10px; background:none; border:none; color:var(--error); cursor:pointer; font-size:0.82rem; font-weight:600;">تسجيل الخروج</button>
+                    <button id="logoutBtn" style="margin-top:10px; background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.82rem; font-weight:600;">تسجيل الخروج</button>
                 </div>`;
+            document.getElementById('logoutBtn')?.addEventListener('click', logout);
         }
     } catch (e) {
         localStorage.removeItem('token');
@@ -200,7 +223,7 @@ function logout() {
 }
 
 // ==========================================
-// 🎙️ جلب العينات
+// 🎙️ العينات
 // ==========================================
 async function renderSampleVoices() {
     const select = document.getElementById('voiceSelect');
@@ -221,7 +244,7 @@ async function renderSampleVoices() {
             select.appendChild(opt);
         });
     } catch (e) {
-        console.warn('فشل قراءة manifest.json:', e);
+        console.warn('manifest.json failed:', e);
     }
 }
 
@@ -231,7 +254,7 @@ function handleCustomVoice(input) {
     if (input.files && input.files[0]) {
         if (txt) {
             txt.innerText = '✓ تم اختيار: ' + input.files[0].name;
-            txt.style.color = 'var(--success)';
+            txt.style.color = '#10b981';
         }
         if (voiceSelect) voiceSelect.value = '';
     }
@@ -240,7 +263,7 @@ function handleCustomVoice(input) {
 async function fetchSampleAsBase64(fileName) {
     const url = `${SAMPLES_BASE}/${fileName}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`فشل جلب العينة`);
+    if (!res.ok) throw new Error('فشل جلب العينة');
     const blob = await res.blob();
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -260,7 +283,7 @@ async function fileToBase64(file) {
 }
 
 // ==========================================
-// ⚡ التشغيل الفوري (أول لغة فقط)
+// ⚡ التشغيل الفوري
 // ==========================================
 async function instantPlay() {
     const text = document.getElementById('ttsInput')?.value.trim();
@@ -276,16 +299,17 @@ async function instantPlay() {
     const resultsCard = document.getElementById('resultsCard');
     const statusTxt = document.getElementById('statusTxt');
     const progFill = document.getElementById('progFill');
-    const perfStats = document.getElementById('perfStats');
 
     btn.disabled = true;
     progArea.style.display = 'block';
     resultsCard.style.display = 'none';
     statusTxt.innerText = '⚡ التواصل مع الخادم...';
     progFill.style.width = '20%';
-    perfStats.innerHTML = '';
 
     try {
+        if (typeof quickTTS !== 'function') {
+            throw new Error('quickTTS غير محمّل. تأكد من رفع js/tts-quick.js');
+        }
         const result = await quickTTS(text, { lang, rate, pitch });
 
         statusTxt.innerText = '✓ جاري التشغيل';
@@ -295,27 +319,8 @@ async function instantPlay() {
             showToast('اضغط ▶️ في المشغّل', 'warning');
         });
 
-        // عرض النتيجة
-        const langData = LANGUAGES.find(l => l.code === lang);
+        const langData = window.LANGUAGES?.find(l => l.code === lang);
         showSingleResult(lang, langData, result.url);
-
-        perfStats.innerHTML = `
-            <div class="perf-stat">
-                <i class="fas fa-rocket"></i>
-                <span>TTFB:</span>
-                <span class="stat-value">${result.ttfb.toFixed(0)}ms</span>
-            </div>
-            <div class="perf-stat">
-                <i class="fas fa-clock"></i>
-                <span>المجموع:</span>
-                <span class="stat-value">${result.totalTime.toFixed(0)}ms</span>
-            </div>
-            <div class="perf-stat">
-                <i class="fas fa-coins"></i>
-                <span>الرصيد:</span>
-                <span class="stat-value">${result.remainingCredits}</span>
-            </div>
-        `;
 
         showToast(`⚡ ${result.totalTime.toFixed(0)}ms`, 'success');
         updateSidebarAuth();
@@ -323,7 +328,7 @@ async function instantPlay() {
         console.error('Instant TTS error:', e);
         showToast(e.message || 'فشل التوليد', 'error');
         statusTxt.innerText = `✗ ${e.message}`;
-        progFill.style.background = 'var(--error)';
+        progFill.style.background = '#ef4444';
     } finally {
         btn.disabled = false;
     }
@@ -351,7 +356,7 @@ function showSingleResult(code, lang, url) {
 }
 
 // ==========================================
-// 🚀 الزر الرئيسي — معالجة متوازية لكل اللغات
+// 🚀 Multi-lang TTS (parallel)
 // ==========================================
 async function startTTS() {
     const text = document.getElementById('ttsInput')?.value.trim();
@@ -359,17 +364,15 @@ async function startTTS() {
     const pitch = document.getElementById('pitchSelect')?.value || '+0Hz';
     const token = localStorage.getItem('token');
 
-    if (!token) return showToast('يرجى تسجيل الدخول أولاً', 'warning');
+    if (!token) return showToast('يرجى تسجيل الدخول', 'warning');
     if (!text) return showToast('يرجى كتابة النص!', 'error');
     if (selectedLangs.size === 0) return showToast('يرجى اختيار لغة', 'error');
 
     const currentMode = document.body.dataset.mode || 'fast';
     const langs = [...selectedLangs];
 
-    // تحضير body مشترك
     const baseBody = { text, rate, pitch, translate: true };
 
-    // إذا quality mode، أضف voice cloning data
     if (currentMode === 'quality') {
         const voiceSelectEl = document.getElementById('voiceSelect');
         const customVoiceInput = document.getElementById('customVoice');
@@ -377,8 +380,8 @@ async function startTTS() {
         if (customVoiceInput?.files?.length > 0) {
             baseBody.sample_b64 = await fileToBase64(customVoiceInput.files[0]);
         } else if (voiceSelectEl?.value) {
-            const selectedOpt = voiceSelectEl.options[voiceSelectEl.selectedIndex];
-            const fileName = selectedOpt?.dataset?.file || `${voiceSelectEl.value}.mp3`;
+            const opt = voiceSelectEl.options[voiceSelectEl.selectedIndex];
+            const fileName = opt?.dataset?.file || `${voiceSelectEl.value}.mp3`;
             try {
                 baseBody.sample_b64 = await fetchSampleAsBase64(fileName);
                 baseBody.voice_id = voiceSelectEl.value;
@@ -388,12 +391,11 @@ async function startTTS() {
         }
 
         if (!baseBody.sample_b64 && !baseBody.voice_id) {
-            showToast('في الوضع عالي الجودة: اختر عينة أو ارفع تسجيل', 'warning');
+            showToast('اختر عينة أو ارفع تسجيل', 'warning');
             return;
         }
     }
 
-    // تجهيز الواجهة
     const btn = document.getElementById('ttsBtn');
     const progressArea = document.getElementById('progressArea');
     const resultsCard = document.getElementById('resultsCard');
@@ -411,9 +413,8 @@ async function startTTS() {
     progFill.style.background = '';
     statusTxt.innerText = `بدء معالجة ${langs.length} لغة بالتوازي...`;
 
-    // إنشاء بطاقة لكل لغة
     langs.forEach(code => {
-        const lang = LANGUAGES.find(l => l.code === code);
+        const lang = window.LANGUAGES?.find(l => l.code === code);
         if (!lang) return;
         const card = document.createElement('div');
         card.className = 'result-item';
@@ -424,7 +425,7 @@ async function startTTS() {
                 <span class="result-item-name">${lang.name_ar}</span>
                 <span class="result-item-status" id="status-${code}">في الانتظار</span>
             </div>
-            <div id="body-${code}" style="font-size:0.85rem; color:var(--text-muted); padding:6px;">⏳ جاري الإرسال...</div>
+            <div id="body-${code}" style="font-size:0.85rem; color:#9aa1ac; padding:6px;">⏳ جاري الإرسال...</div>
         `;
         resultsList.appendChild(card);
     });
@@ -433,18 +434,15 @@ async function startTTS() {
     let completed = 0;
     const total = langs.length;
 
-    // 🚀 معالجة كل اللغات بالتوازي (parallel)
-    // كل promise يرسل request مستقل لـ Railway → كل request يفتح Celery task
-    // → Celery task يستدعي Modal → Modal يفتح حاوية للمعالجة (autoscaling)
+    // 🚀 Parallel processing
     const promises = langs.map(async (langCode) => {
-        const lang = LANGUAGES.find(l => l.code === langCode);
+        const lang = window.LANGUAGES?.find(l => l.code === langCode);
         const statusEl = document.getElementById(`status-${langCode}`);
         const bodyEl = document.getElementById(`body-${langCode}`);
 
         try {
             statusEl.textContent = 'جاري الإرسال...';
-
-            const body = { ...baseBody, lang: langCode };
+            const body = Object.assign({}, baseBody, { lang: langCode });
 
             const res = await fetch(`${API_BASE}/api/tts`, {
                 method: 'POST',
@@ -460,9 +458,8 @@ async function startTTS() {
             if (!data.success || !data.job_id) throw new Error(data.error || 'لم يبدأ التوليد');
 
             statusEl.textContent = 'جاري التوليد...';
-            bodyEl.innerHTML = '<div style="font-size:0.85rem; color:var(--accent); padding:6px;">🎤 يعالج...</div>';
+            bodyEl.innerHTML = '<div style="font-size:0.85rem; color:#2563eb; padding:6px;">🎤 يعالج...</div>';
 
-            // متابعة عبر polling
             const finalData = await waitForTTSJob(data.job_id, token, statusEl);
 
             statusEl.textContent = '✓ مكتمل';
@@ -471,14 +468,14 @@ async function startTTS() {
                 <audio controls src="${finalData.audio_url}"></audio>
                 <a href="${finalData.audio_url}" download="tts_${langCode}_${Date.now()}.mp3"
                    class="btn-download">
-                    <i class="fas fa-download"></i> تحميل ${lang.name_ar}
+                    <i class="fas fa-download"></i> تحميل ${lang?.name_ar || langCode}
                 </a>
             `;
         } catch (e) {
             console.error(`TTS ${langCode} failed:`, e);
             statusEl.textContent = '✗ فشل';
             statusEl.classList.add('error');
-            bodyEl.innerHTML = `<div style="color:var(--error); font-size:0.85rem; padding:6px;">${e.message}</div>`;
+            bodyEl.innerHTML = `<div style="color:#ef4444; font-size:0.85rem; padding:6px;">${e.message}</div>`;
         } finally {
             completed++;
             const pct = Math.round((completed / total) * 95) + 5;
@@ -491,37 +488,22 @@ async function startTTS() {
 
     const totalMs = (performance.now() - t0).toFixed(0);
     progFill.style.width = '100%';
-    statusTxt.innerText = `✓ اكتملت جميع اللغات في ${(totalMs/1000).toFixed(1)}s`;
+    statusTxt.innerText = `✓ اكتملت في ${(totalMs/1000).toFixed(1)}s`;
 
     perfStats.innerHTML = `
-        <div class="perf-stat">
-            <i class="fas fa-clock"></i>
-            <span>الوقت الكلي:</span>
-            <span class="stat-value">${(totalMs/1000).toFixed(1)}s</span>
-        </div>
-        <div class="perf-stat">
-            <i class="fas fa-bolt"></i>
-            <span>اللغات:</span>
-            <span class="stat-value">${total}</span>
-        </div>
-        <div class="perf-stat">
-            <i class="fas fa-tachometer-alt"></i>
-            <span>متوسط/لغة:</span>
-            <span class="stat-value">${(totalMs/total/1000).toFixed(1)}s</span>
-        </div>
+        <div class="perf-stat"><i class="fas fa-clock"></i><span>الوقت:</span><span class="stat-value">${(totalMs/1000).toFixed(1)}s</span></div>
+        <div class="perf-stat"><i class="fas fa-bolt"></i><span>اللغات:</span><span class="stat-value">${total}</span></div>
+        <div class="perf-stat"><i class="fas fa-tachometer-alt"></i><span>متوسط/لغة:</span><span class="stat-value">${(totalMs/total/1000).toFixed(1)}s</span></div>
     `;
 
-    showToast(`تم توليد ${total} لغة في ${(totalMs/1000).toFixed(1)}s`, 'success');
+    showToast(`تم ${total} لغة في ${(totalMs/1000).toFixed(1)}s`, 'success');
     btn.disabled = false;
     updateSidebarAuth();
 }
 
-// ==========================================
-// 🔄 متابعة مهمة TTS واحدة
-// ==========================================
 async function waitForTTSJob(jobId, token, statusEl) {
     const start = Date.now();
-    const TIMEOUT = 10 * 60 * 1000; // 10 دقائق
+    const TIMEOUT = 10 * 60 * 1000;
 
     while (Date.now() - start < TIMEOUT) {
         try {
@@ -530,24 +512,20 @@ async function waitForTTSJob(jobId, token, statusEl) {
             });
             const data = await res.json().catch(() => ({}));
 
-            if (data.status === 'completed') {
-                return data;
-            }
-            if (data.status === 'failed') {
-                throw new Error('فشلت المعالجة في Modal');
-            }
-            // غير ذلك = ما زال يعالج
-            statusEl.textContent = `جاري المعالجة... ${Math.round((Date.now() - start) / 1000)}ث`;
+            if (data.status === 'completed') return data;
+            if (data.status === 'failed') throw new Error('فشلت المعالجة');
+
+            statusEl.textContent = `جاري المعالجة ${Math.round((Date.now() - start) / 1000)}ث`;
         } catch (e) {
-            console.warn(`Poll failed for ${jobId}:`, e);
+            console.warn(`Poll failed:`, e);
         }
         await new Promise(r => setTimeout(r, 2500));
     }
-    throw new Error('انتهت مهلة الانتظار (10 دقائق)');
+    throw new Error('انتهت المهلة');
 }
 
 // ==========================================
-// 🟢 وضع التشغيل
+// Mode + Advanced
 // ==========================================
 function switchMode(mode) {
     document.body.dataset.mode = mode;
@@ -564,11 +542,9 @@ function switchMode(mode) {
 
     const mainBtn = document.getElementById('ttsBtn');
     if (mainBtn) {
-        if (mode === 'fast') {
-            mainBtn.innerHTML = '<i class="fas fa-bolt"></i> توليد سريع لكل اللغات';
-        } else {
-            mainBtn.innerHTML = '<i class="fas fa-gem"></i> توليد بجودة عالية لكل اللغات';
-        }
+        mainBtn.innerHTML = mode === 'fast'
+            ? '<i class="fas fa-bolt"></i> توليد سريع لكل اللغات'
+            : '<i class="fas fa-gem"></i> توليد بجودة عالية';
     }
 }
 
@@ -577,9 +553,12 @@ function toggleAdvanced() {
 }
 
 // ==========================================
-// 🟢 تهيئة
+// 🟢 تهيئة كاملة عند تحميل الصفحة
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
+function initTTS() {
+    console.log('🟢 Initializing TTS page...');
+    console.log('LANGUAGES available:', !!window.LANGUAGES, window.LANGUAGES?.length);
+
     // الوضع
     const savedMode = localStorage.getItem('tts_mode') || 'fast';
     switchMode(savedMode);
@@ -592,7 +571,37 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSidebarAuth();
     renderSampleVoices();
 
-    // عداد الأحرف
+    // ربط Events
+    document.getElementById('menuBtn')?.addEventListener('click', toggleSidebar);
+    document.getElementById('overlay')?.addEventListener('click', closeSidebar);
+
+    // Mode buttons
+    document.querySelectorAll('.mode-option').forEach(btn => {
+        btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+    });
+
+    // Search
+    document.getElementById('langSearch')?.addEventListener('input', (e) => {
+        renderLanguages(e.target.value);
+    });
+
+    // Buttons
+    document.getElementById('ttsBtn')?.addEventListener('click', startTTS);
+    document.getElementById('ttsInstantBtn')?.addEventListener('click', instantPlay);
+    document.getElementById('advancedToggleBtn')?.addEventListener('click', toggleAdvanced);
+    document.getElementById('uploadVoiceBtn')?.addEventListener('click', () => {
+        document.getElementById('customVoice')?.click();
+    });
+    document.getElementById('customVoice')?.addEventListener('change', (e) => {
+        handleCustomVoice(e.target);
+    });
+
+    // Escape closes sidebar
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeSidebar();
+    });
+
+    // Char counter
     const ttsInput = document.getElementById('ttsInput');
     const charCount = document.getElementById('charCount');
     if (ttsInput && charCount) {
@@ -600,19 +609,29 @@ document.addEventListener('DOMContentLoaded', () => {
             charCount.textContent = ttsInput.value.length;
         });
     }
-});
 
-// ==========================================
-// 🌐 Exports (مهم: لتعمل onclick في HTML)
-// ==========================================
+    console.log('✅ TTS page initialized');
+}
+
+// 🌐 Exports
 window.toggleSidebar = toggleSidebar;
 window.closeSidebar = closeSidebar;
+window.openSidebar = openSidebar;
 window.toggleLanguage = toggleLanguage;
 window.removeLanguage = removeLanguage;
-window.filterLanguages = filterLanguages;
+window.renderLanguages = renderLanguages;
+window.renderSelectedLangs = renderSelectedLangs;
 window.startTTS = startTTS;
 window.instantPlay = instantPlay;
 window.handleCustomVoice = handleCustomVoice;
 window.switchMode = switchMode;
 window.toggleAdvanced = toggleAdvanced;
 window.logout = logout;
+
+// تشغيل عند تحميل الـ DOM
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTTS);
+} else {
+    // إذا الـ DOM محمّل بالفعل
+    initTTS();
+}
