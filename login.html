@@ -47,11 +47,15 @@
         .forgot-link { font-size: 0.8rem; color: var(--accent); text-decoration: none; transition: 0.3s; }
         .forgot-link:hover { color: var(--gold); }
         
-        input { 
+        input[type="email"], input[type="password"] { 
             width: 100%; height: 48px; padding: 0 16px; background: rgba(0,0,0,0.3); color: #fff;
             border: 1px solid var(--border-color); border-radius: var(--radius); font-size: 1rem; outline: none; transition: 0.3s;
         }
         input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2); }
+        
+        /* 🟢 تنسيق زر تذكرني الجديد */
+        .remember-row { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; cursor: pointer; }
+        .remember-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
         
         .submit-btn { 
             width: 100%; height: 48px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); 
@@ -92,6 +96,12 @@
             <input type="password" id="password" required>
         </div>
 
+        <!-- 🟢 خيار تذكرني -->
+        <label class="remember-row">
+            <input type="checkbox" id="rememberMe" checked>
+            <span>Remember me</span>
+        </label>
+
         <button type="submit" class="submit-btn">Sign in</button>
     </form>
     <p class="footer-text">Don't have an account? <a href="https://accounts.google.com/signup" target="_blank">Sign up</a></p>
@@ -106,7 +116,7 @@
             client_id: GOOGLE_CLIENT_ID,
             callback: handleGoogleResponse
         });
-        // استخدام الثيم الداكن لزر جوجل ليتوافق مع التصميم الجديد
+        
         google.accounts.id.renderButton(
             document.getElementById("googleBtn"),
             { theme: "filled_black", size: "large", width: 320 }
@@ -124,12 +134,25 @@
             const data = await res.json();
             
             if (data.success) {
-                // 🟢 السطر السحري الذي كان مفقوداً: حفظ التوكن في المتصفح!
-                if (data.token) {
-                    localStorage.setItem('token', data.token);
-                }
-                // توجيه المستخدم لصفحة الدبلجة
-                window.location.href = 'dubbing.html';
+                // 🟢 1. التحقق من خيار "تذكرني"
+                const remember = document.getElementById('rememberMe').checked;
+                const storage = remember ? localStorage : sessionStorage;
+
+                // تنظيف الذاكرة القديمة لمنع التضارب
+                localStorage.removeItem('token');
+                localStorage.removeItem('sl_user');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('sl_user');
+
+                // 🟢 2. حفظ التوكن وبيانات المستخدم المركزية
+                if (data.token) storage.setItem('token', data.token);
+                if (data.user) storage.setItem('sl_user', JSON.stringify(data.user));
+
+                // 🟢 3. التوجيه الذكي (إلى الصفحة التي طلبها المستخدم، أو الدبلجة كافتراضي)
+                const targetPage = sessionStorage.getItem('returnUrl') || 'dubbing.html';
+                sessionStorage.removeItem('returnUrl'); // مسح الرابط من الذاكرة بعد استخدامه
+                
+                window.location.href = targetPage;
             } else {
                 alert("Login failed: " + data.error);
             }
@@ -138,7 +161,6 @@
         }
     }
 
-    // منع إعادة تحميل الصفحة عند الضغط على زر Sign in العادي (إذا أردتِ برمجته لاحقاً)
     document.getElementById('loginForm').addEventListener('submit', (e) => {
         e.preventDefault();
         alert("يرجى استخدام تسجيل الدخول بحساب جوجل حالياً.");
