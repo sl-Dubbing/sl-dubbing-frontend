@@ -90,7 +90,8 @@
 
   <header class="top-bar">
     <div style="display:flex; align-items:center; gap:12px;">
-      <button class="menu-btn" id="menuBtn" type="button">
+      <!-- 🟢 الإصلاح: إضافة onclick هنا ليعمل تماماً مثل صفحة الدبلجة -->
+      <button class="menu-btn" id="menuBtn" type="button" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i>
         <span>القائمة</span>
       </button>
@@ -101,7 +102,8 @@
     </div>
   </header>
 
-  <div class="overlay" id="overlay"></div>
+  <!-- 🟢 الإصلاح: إضافة onclick للإغلاق عند الضغط على الخلفية المعتمة -->
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-user-section" id="authSection">
@@ -196,7 +198,7 @@
                   <option value="-10Hz">منخفضة</option>
                   <option value="+0Hz" selected>عادية</option>
                   <option value="+10Hz">عالية</option>
-                </select>
+               </select>
               </div>
             </div>
           </section>
@@ -244,28 +246,19 @@
 
   <div id="toasts"></div>
 
-  <!-- ⚠️ مهم: نحمّل اللغات أولاً ثم بقية السكربتات -->
+  <!-- 1. تحميل ملف بيانات اللغات أولاً -->
   <script src="js/languages-data.js"></script>
+
+  <!-- 🟢 2. الجسر السحري: هذا الكود الصغير يحل مشكلة (تعريف اللغات) نهائياً -->
+  <script>
+    if (typeof LANGUAGES !== 'undefined' && typeof window.LANGUAGES === 'undefined') {
+      window.LANGUAGES = LANGUAGES;
+    }
+  </script>
+
+  <!-- 3. باقي السكربتات -->
   <script src="js/tts-quick.js"></script>
   <script src="js/tts.js"></script>
-
-  <!-- 🔍 سكربت تشخيصي يتأكد أن كل شيء حُمِّل صحيح -->
-  <script>
-    window.addEventListener('load', () => {
-      console.log('=== TTS Page Diagnostics ===');
-      console.log('LANGUAGES loaded:', typeof window.LANGUAGES !== 'undefined' ? `✅ ${window.LANGUAGES.length} languages` : '❌ NOT LOADED');
-      console.log('toggleSidebar:', typeof window.toggleSidebar === 'function' ? '✅' : '❌');
-      console.log('toggleLanguage:', typeof window.toggleLanguage === 'function' ? '✅' : '❌');
-      console.log('startTTS:', typeof window.startTTS === 'function' ? '✅' : '❌');
-      console.log('renderLanguages exists:', typeof window.renderLanguages === 'function' ? '✅' : '❌');
-
-      // تحقق إن renderLanguages لم يُستدعَ، نستدعيها يدوياً
-      if (typeof window.renderLanguages === 'function' && document.getElementById('langList').textContent.includes('جاري التحميل')) {
-        console.log('Manually triggering renderLanguages...');
-        window.renderLanguages();
-        if (typeof window.renderSelectedLangs === 'function') window.renderSelectedLangs();
-      }
-    });
-  </script>
+  
 </body>
 </html>
