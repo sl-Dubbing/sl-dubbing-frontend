@@ -1,170 +1,238 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign in | sl-Dubbing</title>
+    <title>تسجيل الدخول | sl-Dubbing</title>
+
+    <!-- أيقونات (اختياري) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
+
+    <!-- مكتبة Google Identity: نستخدم onload لتهيئة آمنة -->
+    <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogle()"></script>
+
     <style>
         :root {
-            --bg-dark: #0b1020;
-            --card-bg: rgba(255,255,255,0.04);
-            --border-color: rgba(167,139,250,0.15);
-            --border-focus: #7c3aed;
-            --accent: #7c3aed;
-            --accent-hover: #2563eb;
-            --text-main: #e6e7ff;
-            --text-muted: #9ca3af;
-            --gold: #ffb800;
+            /* نظام ألوان أبيض / أسود */
+            --bg-dark: #000000;            /* خلفية الصفحة */
+            --card-bg: rgba(255,255,255,0.03); /* خلفية البطاقة (شفافة) */
+            --border-color: rgba(255,255,255,0.06);
+            --border-focus: #ffffff;
+            --accent: #ffffff;
+            --accent-hover: #e6e6e6;
+            --text-main: #ffffff;
+            --text-muted: #bdbdbd;
             --radius: 12px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        
-        .login-container { 
-            width: 100%; max-width: 400px; padding: 40px; display: flex; flex-direction: column; 
-            background: var(--card-bg); border: 1px solid var(--border-color); 
-            border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+        html, body { height: 100%; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+
+        .login-container {
+            width: 100%; max-width: 420px; padding: 36px; display: flex; flex-direction: column;
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            border: 1px solid var(--border-color);
+            border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.7); backdrop-filter: blur(6px);
         }
 
-        .logo { text-align: center; font-size: 1.5rem; font-weight: 800; margin-bottom: 20px; color: var(--gold); text-decoration: none; }
-        .logo span { font-weight: 900; margin-right: 5px; color: var(--text-main); }
-        .title { text-align: center; font-size: 1.5rem; font-weight: 700; margin-bottom: 30px; color: #fff; }
+        .logo { text-align: center; font-size: 1.25rem; font-weight: 800; margin-bottom: 12px; color: var(--text-main); text-decoration: none; }
+        .logo span { font-weight: 900; margin-left: 6px; color: var(--text-muted); }
 
-        .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
-        .divider { height: 1px; background-color: var(--border-color); margin-bottom: 25px; position: relative; }
-        .divider::after {
-            content: "OR"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: var(--bg-dark); padding: 0 10px; color: var(--text-muted); font-size: 0.8rem;
-        }
+        .title { text-align: center; font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; color: var(--text-main); }
 
-        .form-group { margin-bottom: 20px; }
-        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
-        .forgot-link { font-size: 0.8rem; color: var(--accent); text-decoration: none; transition: 0.3s; }
-        .forgot-link:hover { color: var(--gold); }
-        
-        input[type="email"], input[type="password"] { 
-            width: 100%; height: 48px; padding: 0 16px; background: rgba(0,0,0,0.3); color: #fff;
-            border: 1px solid var(--border-color); border-radius: var(--radius); font-size: 1rem; outline: none; transition: 0.3s;
-        }
-        input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2); }
-        
-        /* 🟢 تنسيق زر تذكرني الجديد */
-        .remember-row { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; cursor: pointer; }
-        .remember-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
-        
-        .submit-btn { 
-            width: 100%; height: 48px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); 
-            color: #fff; border: none; border-radius: var(--radius); font-size: 1rem; font-weight: bold; 
-            cursor: pointer; margin-top: 10px; transition: 0.3s; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
-        }
-        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5); }
-
-        .footer-text { text-align: center; margin-top: 24px; font-size: 0.9rem; color: var(--text-muted); }
-        .footer-text a { font-weight: 600; text-decoration: none; color: var(--accent); transition: 0.3s; }
-        .footer-text a:hover { color: var(--gold); }
+        .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; align-items: center; }
         .google-btn-wrapper { width: 100%; display: flex; justify-content: center; }
+
+        .divider { height: 1px; background-color: var(--border-color); margin: 20px 0; position: relative; }
+        .divider::after {
+            content: "أو"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--bg-dark); padding: 0 10px; color: var(--text-muted); font-size: 0.85rem;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        label { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
+
+        .forgot-link { font-size: 0.85rem; color: var(--accent); text-decoration: none; transition: 0.2s; }
+        .forgot-link:hover { color: var(--accent-hover); }
+
+        input[type="email"], input[type="password"] {
+            width: 100%; height: 46px; padding: 0 14px; background: rgba(255,255,255,0.02); color: var(--text-main);
+            border: 1px solid var(--border-color); border-radius: 10px; font-size: 1rem; outline: none; transition: 0.18s;
+        }
+        input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 4px rgba(255,255,255,0.06); }
+
+        /* تذكرني */
+        .remember-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; cursor: pointer; user-select: none; }
+        .remember-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+
+        .submit-btn {
+            width: 100%; height: 46px; background: linear-gradient(180deg, #ffffff, #e6e6e6);
+            color: #000; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700;
+            cursor: pointer; margin-top: 6px; transition: 0.18s; box-shadow: 0 6px 18px rgba(255,255,255,0.06);
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(255,255,255,0.08); }
+
+        .footer-text { text-align: center; margin-top: 18px; font-size: 0.9rem; color: var(--text-muted); }
+        .footer-text a { font-weight: 600; text-decoration: none; color: var(--accent); transition: 0.18s; }
+        .footer-text a:hover { color: var(--accent-hover); }
+
+        /* استجابة للشاشات الصغيرة */
+        @media (max-width: 420px) {
+            .login-container { padding: 20px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="login-container">
-    <a href="index.html" class="logo"><span>||</span>sl-Dubbing</a>
-    <h1 class="title">Welcome back</h1>
+<div class="login-container" role="main" aria-labelledby="pageTitle">
+    <a href="index.html" class="logo" aria-label="الصفحة الرئيسية">sl-Dubbing <span>||</span></a>
+    <h1 id="pageTitle" class="title">مرحباً بعودتك</h1>
 
-    <div class="oauth-group">
-        <div class="google-btn-wrapper" id="googleBtn"></div>
+    <div class="oauth-group" aria-hidden="false">
+        <div id="googleBtn" class="google-btn-wrapper" role="button" aria-label="تسجيل الدخول بواسطة جوجل"></div>
     </div>
 
-    <div class="divider"></div>
+    <div class="divider" aria-hidden="true"></div>
 
-    <form id="loginForm">
+    <form id="loginForm" novalidate>
         <div class="form-group">
-            <div class="label-row"><label for="email">Email</label></div>
-            <input type="email" id="email" placeholder="name@company.com" required>
+            <div class="label-row">
+                <label for="email">البريد الإلكتروني</label>
+            </div>
+            <input type="email" id="email" name="email" placeholder="name@company.com" required aria-required="true" autocomplete="email">
         </div>
 
         <div class="form-group">
             <div class="label-row">
-                <label for="password">Password</label>
-                <a href="#" class="forgot-link">Forgot password?</a>
+                <label for="password">كلمة المرور</label>
+                <a href="#" class="forgot-link" id="forgotLink">نسيت كلمة المرور؟</a>
             </div>
-            <input type="password" id="password" required>
+            <input type="password" id="password" name="password" required aria-required="true" autocomplete="current-password">
         </div>
 
-        <!-- 🟢 خيار تذكرني -->
-        <label class="remember-row">
-            <input type="checkbox" id="rememberMe" checked>
-            <span>Remember me</span>
+        <label class="remember-row" for="rememberMe">
+            <input type="checkbox" id="rememberMe" name="rememberMe" checked aria-checked="true">
+            <span>تذكرني</span>
         </label>
 
-        <button type="submit" class="submit-btn">Sign in</button>
+        <button type="submit" class="submit-btn" aria-label="تسجيل الدخول">تسجيل الدخول</button>
     </form>
-    <p class="footer-text">Don't have an account? <a href="https://accounts.google.com/signup" target="_blank">Sign up</a></p>
+
+    <p class="footer-text">لا تملك حساباً؟ <a href="https://accounts.google.com/signup" target="_blank" rel="noopener">إنشاء حساب</a></p>
 </div>
 
 <script>
-    const GOOGLE_CLIENT_ID = "497619073475-6vjelufub8gci231ettdhmk5pv0cdde3.apps.googleusercontent.com";
+    // === إعدادات قابلة للتعديل ===
+    const GOOGLE_CLIENT_ID = "497619073475-6vjelufub8gci231ettdhmk5pv0cdde3.apps.googleusercontent.com"; // تأكد أنه Web OAuth 2.0 Client ID
     const API_BASE = "https://web-production-14a1.up.railway.app";
 
-    window.onload = function () {
-        google.accounts.id.initialize({
-            client_id: GOOGLE_CLIENT_ID,
-            callback: handleGoogleResponse
-        });
-        
-        google.accounts.id.renderButton(
-            document.getElementById("googleBtn"),
-            { theme: "filled_black", size: "large", width: 320 }
-        );
-    };
+    // تهيئة Google بعد تحميل السكربت (onload يستدعي initGoogle)
+    function initGoogle() {
+        // تحقق من وجود الكائنات المطلوبة
+        if (!window.google || !google.accounts || !google.accounts.id) {
+            console.warn("مكتبة Google Identity لم تُحمّل بعد. إعادة المحاولة خلال 100ms...");
+            return setTimeout(initGoogle, 100);
+        }
 
+        try {
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleGoogleResponse,
+                ux_mode: 'popup' // أو 'redirect' حسب تفضيلك وخادمك
+            });
+
+            // renderButton يقبل خيارات محدودة؛ نستخدم theme مناسب للأبيض/أسود
+            google.accounts.id.renderButton(
+                document.getElementById("googleBtn"),
+                { theme: "outline", size: "large" }
+            );
+
+            // اختياري: عرض prompt تلقائي (يمكن تعطيله)
+            // google.accounts.id.prompt();
+        } catch (err) {
+            console.error("خطأ أثناء تهيئة Google Identity:", err);
+        }
+    }
+
+    // معالجة استجابة Google
     async function handleGoogleResponse(response) {
+        if (!response || !response.credential) {
+            alert("لم يتم استلام بيانات المصادقة من جوجل.");
+            return;
+        }
+
         try {
             const res = await fetch(`${API_BASE}/api/auth/google`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
+                credentials: 'include', // يتطلب إعدادات CORS على الخادم
                 body: JSON.stringify({ credential: response.credential })
             });
+
+            // تحقق من حالة الاستجابة قبل قراءة JSON
+            if (!res.ok) {
+                // حاول قراءة رسالة خطأ من الخادم إن وُجدت
+                let errText = `خطأ في الاتصال بالخادم: ${res.status} ${res.statusText}`;
+                try {
+                    const errJson = await res.json();
+                    if (errJson && errJson.error) errText += ` - ${errJson.error}`;
+                } catch (e) { /* لا تفعل شيئاً */ }
+                alert(errText);
+                return;
+            }
+
             const data = await res.json();
-            
-            if (data.success) {
-                // 🟢 1. التحقق من خيار "تذكرني"
-                const remember = document.getElementById('rememberMe').checked;
+
+            if (data && data.success) {
+                // اختيار التخزين بناءً على تذكرني
+                const remember = document.getElementById('rememberMe')?.checked === true;
                 const storage = remember ? localStorage : sessionStorage;
 
-                // تنظيف الذاكرة القديمة لمنع التضارب
-                localStorage.removeItem('token');
-                localStorage.removeItem('sl_user');
-                sessionStorage.removeItem('token');
-                sessionStorage.removeItem('sl_user');
+                // لا نحذف بيانات التخزين الآخر إلا إذا أردنا استبدالها صراحة
+                // حفظ التوكن وبيانات المستخدم (إن وُجدت)
+                if (data.token) {
+                    try {
+                        storage.setItem('token', data.token);
+                    } catch (e) {
+                        console.warn("فشل حفظ التوكن في التخزين:", e);
+                    }
+                }
+                if (data.user) {
+                    try {
+                        storage.setItem('sl_user', JSON.stringify(data.user));
+                    } catch (e) {
+                        console.warn("فشل حفظ بيانات المستخدم في التخزين:", e);
+                    }
+                }
 
-                // 🟢 2. حفظ التوكن وبيانات المستخدم المركزية
-                if (data.token) storage.setItem('token', data.token);
-                if (data.user) storage.setItem('sl_user', JSON.stringify(data.user));
-
-                // 🟢 3. التوجيه الذكي (إلى الصفحة التي طلبها المستخدم، أو الدبلجة كافتراضي)
+                // توجيه ذكي: إلى returnUrl إن وُجد، وإلا إلى dubbing.html
                 const targetPage = sessionStorage.getItem('returnUrl') || 'dubbing.html';
-                sessionStorage.removeItem('returnUrl'); // مسح الرابط من الذاكرة بعد استخدامه
-                
+                sessionStorage.removeItem('returnUrl');
                 window.location.href = targetPage;
             } else {
-                alert("Login failed: " + data.error);
+                const msg = (data && (data.error || data.message)) ? (data.error || data.message) : "فشل تسجيل الدخول.";
+                alert("Login failed: " + msg);
             }
         } catch (err) {
-            alert("Connection error. Make sure the server is running.");
+            console.error("خطأ أثناء إرسال بيانات المصادقة:", err);
+            alert("خطأ في الاتصال. تأكد من تشغيل الخادم وإعداد CORS بشكل صحيح.");
         }
     }
 
+    // معالجة إرسال النموذج التقليدي (نُبقيه بسيطاً ويُشير لاستخدام Google)
     document.getElementById('loginForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        alert("يرجى استخدام تسجيل الدخول بحساب جوجل حالياً.");
+        // يمكنك هنا تنفيذ تسجيل دخول تقليدي عبر البريد/كلمة المرور إذا أردت
+        alert("حالياً يرجى استخدام تسجيل الدخول عبر جوجل.");
     });
+
+    // نصيحة للمطور: عند استخدام credentials: 'include' في fetch
+    // يجب أن يرد الخادم برؤوس CORS التالية:
+    // Access-Control-Allow-Credentials: true
+    // Access-Control-Allow-Origin: https://your-frontend-origin.example
+    // ولا تستخدم Access-Control-Allow-Origin: * مع credentials.
 </script>
 </body>
 </html>
