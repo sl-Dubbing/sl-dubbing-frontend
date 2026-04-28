@@ -1,8 +1,10 @@
 // ==========================================
-// 🎨 tts.js — multi-lang + parallel + sidebar
-// uses addEventListener (more reliable)
+// 🎨 tts.js — multi-lang + parallel + sidebar + Top Badge
+// تم الدمج والإصلاح الشامل
 // ==========================================
 
+// تغيير اسم المتغير هنا لتجنب أي تعارض مع ملف tts-quick.js
+const SERVER_BASE = 'https://web-production-14a1.up.railway.app';
 const SAMPLES_BASE = 'samples';
 
 // ==========================================
@@ -14,13 +16,11 @@ function renderLanguages(filter) {
     filter = filter || '';
     const container = document.getElementById('langList');
     const langCount = document.getElementById('langCount');
-    if (!container) {
-        console.error('❌ langList element not found');
-        return;
-    }
+    if (!container) return;
+
     if (!window.LANGUAGES) {
         console.error('❌ LANGUAGES array not available');
-        container.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">خطأ: لم يتم تحميل قائمة اللغات. تأكد من رفع js/languages-data.js</div>';
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">خطأ: لم يتم تحميل قائمة اللغات.</div>';
         return;
     }
 
@@ -60,7 +60,6 @@ function renderLanguages(filter) {
         </div>
     `).join('') || '<div style="text-align:center;padding:30px;color:#9aa1ac;">لم يُعثر على نتائج</div>';
 
-    // ربط click event على كل lang-item (delegation أكثر أماناً من inline onclick)
     container.querySelectorAll('.lang-item').forEach(el => {
         el.addEventListener('click', () => {
             const code = el.dataset.code;
@@ -70,7 +69,6 @@ function renderLanguages(filter) {
 }
 
 function toggleLanguage(code) {
-    console.log(`Toggle language: ${code}`);
     if (selectedLangs.has(code)) {
         if (selectedLangs.size > 1) {
             selectedLangs.delete(code);
@@ -129,7 +127,6 @@ function renderSelectedLangs() {
 
     display.innerHTML = `<div class="selected-langs-pills">${pills}</div>`;
 
-    // ربط click على كل pill
     display.querySelectorAll('.lang-pill').forEach(el => {
         el.addEventListener('click', () => {
             const code = el.dataset.code;
@@ -139,16 +136,17 @@ function renderSelectedLangs() {
 }
 
 // ==========================================
-// 🟢 Sidebar
+// 🟢 Sidebar (تم الإصلاح والتحصين)
 // ==========================================
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
     if (!sidebar) return;
-    if (sidebar.classList.contains('active')) {
-        closeSidebar();
-    } else {
-        openSidebar();
-    }
+    
+    sidebar.classList.toggle('active');
+    if (overlay) overlay.classList.toggle('active');
+    
+    document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
 }
 
 function openSidebar() {
@@ -180,40 +178,67 @@ function showToast(msg, type) {
 }
 
 // ==========================================
-// 🔧 المصادقة
+// 🔧 المصادقة وجلب النقاط (للشريط الجانبي والزاوية العلوية)
 // ==========================================
 async function updateSidebarAuth() {
     const authSection = document.getElementById('authSection');
-    if (!authSection) return;
+    const topBadge = document.getElementById('topAccountBadge'); // الزاوية العلوية
     const token = localStorage.getItem('token');
 
     if (!token) {
-        authSection.innerHTML = `
-            <div class="user-info-card">
-                <p style="margin-bottom:12px; font-size:0.9rem; color:#5b6471;">أهلاً بك في sl-Dubbing</p>
-                <a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a>
-            </div>`;
+        if (authSection) {
+            authSection.innerHTML = `
+                <div class="user-info-card">
+                    <p style="margin-bottom:12px; font-size:0.9rem; color:#5b6471;">أهلاً بك في sl-Dubbing</p>
+                    <a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a>
+                </div>`;
+        }
+        if (topBadge) {
+            topBadge.innerHTML = '<a href="login.html" style="color:inherit; text-decoration:none;"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</a>';
+            topBadge.style.background = '#fef2f2';
+            topBadge.style.color = '#ef4444';
+            topBadge.style.border = '1px solid #fecaca';
+        }
         return;
     }
 
     try {
-        const res = await fetch(`${API_BASE}/api/user`, {
+        const res = await fetch(`${SERVER_BASE}/api/user`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
+        
         if (data.success || data.user) {
             const user = data.user || {};
-            authSection.innerHTML = `
-                <div class="user-info-card">
-                    <div class="user-name">${user.name || 'مستخدم'}</div>
-                    <div class="user-points">رصيدك: ${user.credits ?? 0} نقطة</div>
-                    <button id="logoutBtn" style="margin-top:10px; background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.82rem; font-weight:600;">تسجيل الخروج</button>
-                </div>`;
-            document.getElementById('logoutBtn')?.addEventListener('click', logout);
+            const points = user.credits ?? 0;
+            
+            // 1. تحديث الشريط الجانبي
+            if (authSection) {
+                authSection.innerHTML = `
+                    <div class="user-info-card">
+                        <div class="user-name"><i class="fas fa-user-circle"></i> ${user.name || 'مستخدم'}</div>
+                        <div class="user-points" style="color:#10b981; font-weight:bold; margin-top:8px;">
+                            <i class="fas fa-coins"></i> رصيدك: ${points} نقطة
+                        </div>
+                        <button id="logoutBtn" style="margin-top:15px; background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.85rem; font-weight:bold;">
+                            <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                        </button>
+                    </div>`;
+                document.getElementById('logoutBtn')?.addEventListener('click', logout);
+            }
+
+            // 2. تحديث الزاوية العلوية اليسرى
+            if (topBadge) {
+                topBadge.innerHTML = `<i class="fas fa-coins" style="color:#f59e0b;"></i> ${points} نقطة`;
+                topBadge.style.background = '#ecfdf5';
+                topBadge.style.color = '#10b981';
+                topBadge.style.border = '1px solid #a7f3d0';
+            }
         }
     } catch (e) {
         localStorage.removeItem('token');
-        authSection.innerHTML = `<a href="login.html" class="btn-login-sidebar">تسجيل الدخول مجدداً</a>`;
+        if (authSection) authSection.innerHTML = `<a href="login.html" class="btn-login-sidebar">تسجيل الدخول مجدداً</a>`;
+        if (topBadge) topBadge.innerHTML = 'خطأ اتصال';
     }
 }
 
@@ -434,7 +459,6 @@ async function startTTS() {
     let completed = 0;
     const total = langs.length;
 
-    // 🚀 Parallel processing
     const promises = langs.map(async (langCode) => {
         const lang = window.LANGUAGES?.find(l => l.code === langCode);
         const statusEl = document.getElementById(`status-${langCode}`);
@@ -444,7 +468,7 @@ async function startTTS() {
             statusEl.textContent = 'جاري الإرسال...';
             const body = Object.assign({}, baseBody, { lang: langCode });
 
-            const res = await fetch(`${API_BASE}/api/tts`, {
+            const res = await fetch(`${SERVER_BASE}/api/tts`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -507,7 +531,7 @@ async function waitForTTSJob(jobId, token, statusEl) {
 
     while (Date.now() - start < TIMEOUT) {
         try {
-            const res = await fetch(`${API_BASE}/api/job/${jobId}`, {
+            const res = await fetch(`${SERVER_BASE}/api/job/${jobId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json().catch(() => ({}));
@@ -557,7 +581,6 @@ function toggleAdvanced() {
 // ==========================================
 function initTTS() {
     console.log('🟢 Initializing TTS page...');
-    console.log('LANGUAGES available:', !!window.LANGUAGES, window.LANGUAGES?.length);
 
     // الوضع
     const savedMode = localStorage.getItem('tts_mode') || 'fast';
@@ -567,12 +590,17 @@ function initTTS() {
     renderLanguages();
     renderSelectedLangs();
 
-    // المصادقة والعينات
+    // المصادقة (وتحديث الزاوية العلوية) والعينات
     updateSidebarAuth();
     renderSampleVoices();
 
-    // ربط Events
-    document.getElementById('menuBtn')?.addEventListener('click', toggleSidebar);
+    // 🟢 ربط Events الشريط الجانبي برمجياً
+    const menuBtn = document.getElementById('menuBtn');
+    if (menuBtn) {
+        // إزالة أي حدث سابق لتجنب النقرة المزدوجة
+        menuBtn.onclick = null; 
+        menuBtn.addEventListener('click', toggleSidebar);
+    }
     document.getElementById('overlay')?.addEventListener('click', closeSidebar);
 
     // Mode buttons
@@ -609,7 +637,7 @@ function initTTS() {
             charCount.textContent = ttsInput.value.length;
         });
     }
-
+    
     console.log('✅ TTS page initialized');
 }
 
@@ -627,11 +655,11 @@ window.handleCustomVoice = handleCustomVoice;
 window.switchMode = switchMode;
 window.toggleAdvanced = toggleAdvanced;
 window.logout = logout;
+window.updateSidebarAuth = updateSidebarAuth; // تصدير الدالة المحدثة
 
 // تشغيل عند تحميل الـ DOM
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initTTS);
 } else {
-    // إذا الـ DOM محمّل بالفعل
     initTTS();
 }
