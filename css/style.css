@@ -126,6 +126,7 @@ body {
 }
 .menu-btn:active { transform: translateY(0); }
 
+/* 🟢 تحسين شكل شارة النقاط في الأعلى */
 .account-badge {
     color: var(--text-secondary);
     font-size: 0.88rem;
@@ -134,10 +135,14 @@ body {
     border: 1px solid var(--border-default);
     border-radius: 20px;
     font-weight: 500;
+    transition: all 0.3s ease; /* انتقال ناعم عند تحديث النقاط */
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* ============================================
-   الشريط الجانبي
+   الشريط الجانبي (مُحسّن)
    ============================================ */
 .overlay {
     position: fixed; inset: 0;
@@ -145,34 +150,40 @@ body {
     z-index: 200;
     opacity: 0;
     visibility: hidden;
-    transition: var(--transition);
+    transition: all 0.3s ease-in-out;
     backdrop-filter: blur(2px);
 }
+/* 🟢 إجبار الظهور (Failsafe) */
 .overlay.active {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 .sidebar {
     position: fixed;
     top: 0;
-    right: -320px;
+    right: -320px; /* مخفي خارج الشاشة */
     width: var(--sidebar-w);
     height: 100vh;
     background: var(--sidebar-bg);
     border-left: 1px solid var(--sidebar-border);
     padding: 20px;
     z-index: 300;
-    transition: right var(--transition);
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 18px;
     box-shadow: var(--shadow-xl);
 }
+/* 🟢 إجبار الظهور (Failsafe) */
 .sidebar.active {
-    right: 0;
+    right: 0 !important;
 }
+
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
 
 .sidebar-user-section {
     background: white;
