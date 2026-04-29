@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>sl-Dubbing | Smart AI Platform</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- استدعاء مكتبة Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ── ElevenLabs Light Theme ── */
 :root {
@@ -32,11 +34,11 @@ body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; o
 .btn-login { padding: 10px 20px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-weight: 600; text-decoration: none; font-size: .9rem; transition: all .2s; }
 .btn-login:hover { background: var(--bg-page); border-color: #d1d5db; }
 .btn-logout { padding: 8px 16px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; color: #ef4444; cursor: pointer; font-weight: 600; transition: all .2s; }
-.avatar { width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-main); }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-main); overflow: hidden; }
 .username { color: var(--text-muted); font-size: .9rem; }
 
 /* ── Server Badge ── */
-.srv-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 20px; font-size: .75rem; color: #ef4444; font-weight: 600; margin-bottom: 40px; }
+.srv-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 20px; font-size: .75rem; color: #ef4444; font-weight: 600; margin-bottom: 40px; cursor: pointer; }
 .srv-badge.on { background: #d1fae5; border-color: #6ee7b7; color: #10b981; }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: blink 2s infinite; }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
@@ -196,19 +198,69 @@ footer a:hover { text-decoration: underline; }
   </footer>
 
 </div>
+
 <script>
-const BE='https://web-production-14a1.up.railway.app';
-(function(){
-  try{const u=JSON.parse(localStorage.getItem('sl_user'));
-  if(u)document.getElementById('hdr').innerHTML=`<div class="avatar">${u.avatar||'U'}</div><span class="username">${u.name||u.email}</span><button class="btn-logout" onclick="localStorage.removeItem('sl_user');location.reload()">Log Out</button>`;}catch(e){}
-})();
-function goTool(p){ try{if(JSON.parse(localStorage.getItem('sl_user'))){location.href=p;return;}}catch(e){} sessionStorage.setItem('returnUrl',p); location.href='login.html'; }
-async function checkServer(){
-  try{const r=await fetch(BE+'/api/health',{signal:AbortSignal.timeout(6000)});
-  document.getElementById('srv').className='srv-badge'+(r.ok?' on':'');
-  document.getElementById('srvTxt').textContent=r.ok?'System Online':'System Offline';}
-  catch{document.getElementById('srvTxt').textContent='System Offline';}
+// 1. إعدادات الروابط 
+const BE = 'https://web-production-14a1.up.railway.app';
+const supabaseUrl = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
+// ⚠️ هام: ضع المفتاح الخاص بك هنا
+const supabaseKey = 'ضع_هنا_مفتاح_anon_public_الطويل_الذي_نسخته_من_موقع_supabase';
+
+// إنشاء نقطة الاتصال مع Supabase
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// 2. دالة فحص الجلسة (ترسم صورة المستخدم واسمه إذا كان مسجلاً)
+async function checkSession() {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (session) {
+        const user = session.user;
+        const name = user.user_metadata?.full_name || user.email.split('@')[0];
+        const avatarUrl = user.user_metadata?.avatar_url || '';
+
+        let avatarHtml = avatarUrl 
+            ? `<img src="${avatarUrl}" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">`
+            : `${name.charAt(0).toUpperCase()}`;
+
+        document.getElementById('hdr').innerHTML = `
+            <div class="avatar">${avatarHtml}</div>
+            <span class="username">${name}</span>
+            <button class="btn-logout" onclick="logout()">Log Out</button>
+        `;
+    }
 }
+
+// 3. دالة تسجيل الخروج
+async function logout() {
+    await supabase.auth.signOut();
+    location.reload();
+}
+
+// 4. توجيه المستخدم (لصفحة الدخول أو صفحة الأداة)
+function goTool(p) {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+            location.href = p;
+        } else {
+            sessionStorage.setItem('returnUrl', p);
+            location.href = 'login.html';
+        }
+    });
+}
+
+// 5. فحص حالة سيرفر Railway
+async function checkServer() {
+    try {
+        const r = await fetch(BE + '/api/health', { signal: AbortSignal.timeout(6000) });
+        document.getElementById('srv').className = 'srv-badge' + (r.ok ? ' on' : '');
+        document.getElementById('srvTxt').textContent = r.ok ? 'System Online' : 'System Offline';
+    } catch {
+        document.getElementById('srvTxt').textContent = 'System Offline';
+    }
+}
+
+// تشغيل الفحوصات
+checkSession();
 checkServer();
 </script>
 </body>
