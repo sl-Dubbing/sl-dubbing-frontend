@@ -57,7 +57,7 @@
     </div>
   </header>
 
-  <div class="overlay" id="overlay" onclick="closeSidebar()" aria-hidden="true"></div>
+  <div class="overlay" id="overlay" aria-hidden="true"></div>
 
   <aside class="sidebar" id="sidebar" role="navigation" aria-label="الشريط الجانبي">
     <div class="sidebar-user-section" id="authSection">
@@ -202,127 +202,11 @@
 
   <div id="toasts" aria-live="polite"></div>
 
-  <!-- ترتيب السكربتات: shared.js أولاً ثم بيانات اللغات ثم tts-quick ثم tts ثم أي سكربت محلي -->
+  <!-- الترتيب الصحيح للسكربتات -->
   <script src="js/shared.js"></script>
   <script src="js/languages-data.js"></script>
   <script src="js/tts-quick.js"></script>
   <script src="js/tts.js"></script>
 
-  <script>
-    // ربط الأحداث والتهيئة المحلية الآمنة
-    (function () {
-      // عناصر مساعدة
-      const menuBtn = document.getElementById('menuBtn');
-      const overlay = document.getElementById('overlay');
-      const advancedToggleBtn = document.getElementById('advancedToggleBtn');
-      const advancedOptions = document.getElementById('advancedOptions');
-      const modeButtons = document.querySelectorAll('.mode-option');
-      const ttsInput = document.getElementById('ttsInput');
-      const charCount = document.getElementById('charCount');
-      const uploadVoiceBtn = document.getElementById('uploadVoiceBtn');
-      const customVoice = document.getElementById('customVoice');
-      const ttsBtn = document.getElementById('ttsBtn');
-      const ttsInstantBtn = document.getElementById('ttsInstantBtn');
-      const langSearch = document.getElementById('langSearch');
-
-      // 1) Sidebar toggle: استخدم الدالة من shared.js إن وُجدت، وإلا عرف بديل محلي
-      function safeToggleSidebar() {
-        if (typeof toggleSidebar === 'function') return toggleSidebar();
-        const sidebar = document.getElementById('sidebar');
-        const ov = document.getElementById('overlay');
-        if (!sidebar || !ov) return;
-        sidebar.classList.toggle('active');
-        ov.classList.toggle('active');
-        document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
-      }
-      function safeCloseSidebar() {
-        if (typeof closeSidebar === 'function') return closeSidebar();
-        const sidebar = document.getElementById('sidebar');
-        const ov = document.getElementById('overlay');
-        if (!sidebar || !ov) return;
-        sidebar.classList.remove('active');
-        ov.classList.remove('active');
-        document.body.style.overflow = '';
-      }
-
-      menuBtn?.addEventListener('click', (e) => { e.preventDefault(); safeToggleSidebar(); });
-      overlay?.addEventListener('click', safeCloseSidebar);
-
-      // 2) Advanced options toggle
-      if (advancedToggleBtn && advancedOptions) {
-        advancedToggleBtn.addEventListener('click', () => {
-          const show = advancedOptions.classList.toggle('show');
-          advancedToggleBtn.setAttribute('aria-expanded', String(show));
-          advancedOptions.setAttribute('aria-hidden', String(!show));
-        });
-      }
-
-      // 3) Mode switcher
-      modeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          modeButtons.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
-          btn.classList.add('active');
-          btn.setAttribute('aria-pressed', 'true');
-          const mode = btn.dataset.mode || 'fast';
-          document.body.dataset.mode = mode;
-          localStorage.setItem('tts_mode', mode);
-          // تحديث العرض: quality-only تظهر فقط في وضع الجودة
-        });
-      });
-
-      // 4) Char counter
-      if (ttsInput && charCount) {
-        ttsInput.addEventListener('input', () => {
-          charCount.textContent = ttsInput.value.length;
-        });
-      }
-
-      // 5) Upload voice button
-      uploadVoiceBtn?.addEventListener('click', () => customVoice?.click());
-      customVoice?.addEventListener('change', function () {
-        const txt = document.getElementById('customVoiceTxt');
-        if (this.files && this.files.length > 0) {
-          txt.textContent = this.files[0].name;
-        } else {
-          txt.textContent = '';
-        }
-        if (typeof handleCustomVoice === 'function') handleCustomVoice(this);
-      });
-
-      // 6) Instant play and main TTS buttons: حماية من عدم تحميل الدوال
-      ttsInstantBtn?.addEventListener('click', async () => {
-        if (typeof instantPlay === 'function') {
-          try { await instantPlay(); } catch (e) { console.error('instantPlay error', e); showToast(e.message || 'فشل التشغيل الفوري', '#ef4444'); }
-        } else {
-          showToast('ميزة التشغيل الفوري غير متاحة حالياً.', '#f97316');
-        }
-      });
-
-      ttsBtn?.addEventListener('click', async () => {
-        if (typeof startTTS === 'function') {
-          try { await startTTS(); } catch (e) { console.error('startTTS error', e); showToast(e.message || 'فشل التوليد', '#ef4444'); }
-        } else {
-          showToast('ميزة التوليد غير متاحة حالياً.', '#f97316');
-        }
-      });
-
-      // 7) Search input: استخدم renderLanguages إن وُجدت
-      langSearch?.addEventListener('input', (e) => {
-        if (typeof renderLanguages === 'function') renderLanguages(e.target.value);
-      });
-
-      // 8) عند تحميل الصفحة: تهيئة القيم الافتراضية
-      document.addEventListener('DOMContentLoaded', () => {
-        // تهيئة وضع الحفظ
-        const savedMode = localStorage.getItem('tts_mode') || 'fast';
-        document.body.dataset.mode = savedMode;
-        // تهيئة واجهة اللغات إن كانت الدوال متاحة
-        if (typeof renderLanguages === 'function') renderLanguages();
-        if (typeof renderSelectedLangs === 'function') renderSelectedLangs();
-        // تحديث الشريط الجانبي (auth) إن كانت الدالة متاحة في shared.js
-        if (typeof updateSidebarAuth === 'function') updateSidebarAuth();
-      });
-    })();
-  </script>
 </body>
 </html>
