@@ -20,7 +20,7 @@ function showToast(msg, color = '#ef4444') {
         transition: opacity 0.3s ease, transform 0.3s ease;
         opacity: 1;
     `;
-    box.innerHTML = msg;
+    box.innerHTML = escapeHtml(String(msg));
     t.appendChild(box);
     // اختفاء تدريجي
     setTimeout(() => {
@@ -31,85 +31,6 @@ function showToast(msg, color = '#ef4444') {
         }, 300);
     }, 4000);
 }
-
-// -----------------------------
-// 🟢 التحقق من تسجيل الدخول وجلب الرصيد (Token Based)
-// -----------------------------
-async function checkAuth() {
-    const authSection = document.getElementById('authSection');
-    const token = localStorage.getItem('token');
-
-    if (!authSection) return;
-
-    if (!token) {
-        authSection.innerHTML = `<a href="login.html" style="color:#ffd700; text-decoration:none; font-weight:bold;">Login</a>`;
-        return;
-    }
-
-    try {
-        const r = await fetch(`${API_BASE}/api/user`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
-            }
-        });
-
-        if (!r.ok) {
-            // توكن منتهي أو غير صالح
-            if (r.status === 401 || r.status === 403) {
-                localStorage.removeItem('token');
-                authSection.innerHTML = `<a href="login.html" style="color:#ffd700; text-decoration:none; font-weight:bold;">Login</a>`;
-                showToast('انتهت صلاحية الجلسة. الرجاء تسجيل الدخول مجدداً.', '#f59e0b');
-                return;
-            }
-            // أخطاء أخرى
-            authSection.innerHTML = `<a href="login.html" style="color:#ffd700; text-decoration:none; font-weight:bold;">Login</a>`;
-            console.warn('Auth check returned non-ok status', r.status);
-            return;
-        }
-
-        const d = await r.json().catch(() => null);
-        if (!d) {
-            authSection.innerHTML = `<a href="login.html" style="color:#ffd700; text-decoration:none; font-weight:bold;">Login</a>`;
-            console.warn('Auth check: invalid JSON response');
-            return;
-        }
-
-        if (d.success) {
-            const name = escapeHtml(d.user?.name || 'User');
-            const credits = Number(d.user?.credits || 0);
-            authSection.innerHTML = `
-                <div style="display:flex; gap:12px; align-items:center; justify-content:flex-start;">
-                    <div style="text-align:right">
-                        <div style="font-weight:700; color:#fff">${name}</div>
-                        <div style="background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:8px; font-size:0.8rem; color:#ffd700">
-                            Balance: ${credits} 💰
-                        </div>
-                    </div>
-                    <button id="logoutBtn" style="background:#7c3aed; color:#fff; border:none; padding:8px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">Logout</button>
-                </div>`;
-            const lb = document.getElementById('logoutBtn');
-            if (lb) lb.addEventListener('click', logout);
-        } else {
-            localStorage.removeItem('token');
-            authSection.innerHTML = `<a href="login.html" style="color:#ffd700; text-decoration:none; font-weight:bold;">Login</a>`;
-        }
-    } catch (e) {
-        console.error("Auth check failed", e);
-        // لا تكشف تفاصيل الخطأ للمستخدم، فقط نعرض رسالة عامة
-        showToast('فشل الاتصال بخدمة المصادقة. تحقق من الخادم.', '#ef4444');
-    }
-}
-
-// -----------------------------
-// 🟢 تسجيل الخروج (ببساطة حذف التوكن)
-// -----------------------------
-function logout() {
-    localStorage.removeItem('token');
-    location.reload();
-}
-window.logout = logout;
 
 // -----------------------------
 // 🟢 دالة مساعدة: تأمين النص قبل العرض
@@ -124,7 +45,170 @@ function escapeHtml(unsafe) {
 }
 
 // -----------------------------
-// 🟢 إدارة الشريط الجانبي (hamburger + overlay)
+// 🟢 إعداد fetch يدعم token أو HttpOnly cookie
+// -----------------------------
+function makeFetchOptions(method = 'GET', token = null, body = null, isJson = true) {
+    const opts = { method };
+    if (token) {
+        opts.headers = { 'Authorization': `Bearer ${token}` };
+        if (isJson) opts.headers['Accept'] = 'application/json';
+        if (isJson && body) opts.headers['Content-Type'] = 'application/json';
+    } else {
+        // الاعتماد على HttpOnly cookie
+        opts.credentials = 'include';
+        if (isJson) opts.headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
+    }
+    if (body !== null) opts.body = body;
+    return opts;
+}
+
+// -----------------------------
+// 🟢 التحقق من تسجيل الدخول وجلب الرصيد (Token or Cookie Based)
+// -----------------------------
+async function checkAuth() {
+    const authSection = document.getElementById('authSection');
+    const token = localStorage.getItem('token');
+
+    if (!authSection) return;
+
+    // Helper: render unauthenticated UI
+    const renderUnauth = () => {
+        authSection.innerHTML = `<a href="login.html" style="color:#ffd700; text-decoration:none; font-weight:bold;">Login</a>`;
+    };
+
+    // إذا لا توكن محلي، حاول الاعتماد على الكوكي
+    if (!token) {
+        try {
+            const res = await fetch(`${API_BASE}/api/user`, { method: 'GET', credentials: 'include' });
+            if (!res.ok) {
+                renderUnauth();
+                return;
+            }
+            const d = await res.json().catch(() => null);
+            if (d && d.success && d.user) {
+                renderAuthUI(d.user, d.can_send_email);
+                return;
+            } else {
+                renderUnauth();
+                return;
+            }
+        } catch (e) {
+            console.warn('Cookie auth check failed:', e);
+            renderUnauth();
+            return;
+        }
+    }
+
+    // إذا وُجد توكن محلي
+    try {
+        const opts = makeFetchOptions('GET', token, null, false);
+        const r = await fetch(`${API_BASE}/api/user`, opts);
+        if (!r.ok) {
+            if (r.status === 401 || r.status === 403) {
+                localStorage.removeItem('token');
+                showToast('انتهت صلاحية الجلسة. الرجاء تسجيل الدخول مجدداً.', '#f59e0b');
+                renderUnauth();
+                return;
+            }
+            console.warn('Auth check returned non-ok status', r.status);
+            renderUnauth();
+            return;
+        }
+
+        const d = await r.json().catch(() => null);
+        if (!d) {
+            console.warn('Auth check: invalid JSON response');
+            renderUnauth();
+            return;
+        }
+
+        if (d.success && d.user) {
+            renderAuthUI(d.user, d.can_send_email);
+        } else {
+            localStorage.removeItem('token');
+            renderUnauth();
+        }
+    } catch (e) {
+        console.error("Auth check failed", e);
+        showToast('فشل الاتصال بخدمة المصادقة. تحقق من الخادم.', '#ef4444');
+        renderUnauth();
+    }
+}
+
+// -----------------------------
+// 🟢 عرض واجهة المستخدم للمستخدم المسجل
+// -----------------------------
+function renderAuthUI(userObj, canSendEmail = false) {
+    const authSection = document.getElementById('authSection');
+    if (!authSection) return;
+    const name = escapeHtml(userObj?.name || 'User');
+    const credits = Number(userObj?.credits || 0);
+    authSection.innerHTML = `
+        <div style="display:flex; gap:12px; align-items:center; justify-content:flex-start;">
+            <div style="text-align:right">
+                <div style="font-weight:700; color:#fff">${name}</div>
+                <div style="background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:8px; font-size:0.8rem; color:#ffd700">
+                    Balance: ${credits} 💰
+                </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                ${canSendEmail ? '<button id="sendAvatarEmailBtn" style="background:#06b6d4; color:#fff; border:none; padding:6px 10px; border-radius:8px; cursor:pointer;">Send Avatar</button>' : ''}
+                <button id="logoutBtn" style="background:#7c3aed; color:#fff; border:none; padding:8px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">Logout</button>
+            </div>
+        </div>`;
+    const lb = document.getElementById('logoutBtn');
+    if (lb) {
+        lb.removeEventListener('click', logout); // حماية من ربط مزدوج
+        lb.addEventListener('click', logout);
+    }
+    const sb = document.getElementById('sendAvatarEmailBtn');
+    if (sb) {
+        sb.removeEventListener('click', sendAvatarEmailHandler);
+        sb.addEventListener('click', sendAvatarEmailHandler);
+    }
+}
+
+// -----------------------------
+// 🟢 تسجيل الخروج (محسّن: يخطر الخادم ويدعم cookie/header)
+// -----------------------------
+async function logout() {
+    try {
+        const token = localStorage.getItem('token');
+        const opts = token ? makeFetchOptions('POST', token, null, false) : { method: 'POST', credentials: 'include' };
+        // حاول إخطار الخادم؛ لا نمنع المستخدم من الخروج إن فشل الطلب
+        await fetch(`${API_BASE}/api/logout`, opts).catch(() => {});
+    } catch (e) {
+        console.warn('Logout request failed:', e);
+    } finally {
+        localStorage.removeItem('token');
+        // إعادة تحميل الواجهة لإظهار حالة غير مسجل
+        try { location.reload(); } catch (e) {}
+    }
+}
+window.logout = logout;
+
+// -----------------------------
+// 🟢 إرسال الصورة عبر الإيميل (زر في الواجهة)
+// -----------------------------
+async function sendAvatarEmailHandler() {
+    try {
+        const token = localStorage.getItem('token');
+        const opts = token ? makeFetchOptions('POST', token, null, false) : { method: 'POST', credentials: 'include' };
+        const res = await fetch(`${API_BASE}/api/user/send-avatar-email`, opts);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            showToast(data.error || 'فشل إرسال الإيميل', '#ef4444');
+            return;
+        }
+        showToast('تم إرسال الإيميل بنجاح', '#10b981');
+    } catch (e) {
+        console.error('sendAvatarEmailHandler error:', e);
+        showToast('حدث خطأ أثناء إرسال الإيميل', '#ef4444');
+    }
+}
+
+// -----------------------------
+// 🟢 إدارة الشريط الجانبي (overlay + open/close)
 // -----------------------------
 function createOverlay() {
     let ov = document.getElementById(OVERLAY_ID);
@@ -135,6 +219,7 @@ function createOverlay() {
         ov.style.inset = '0';
         ov.style.background = 'rgba(0,0,0,0.45)';
         ov.style.zIndex = '1050';
+        ov.style.display = 'block';
         document.body.appendChild(ov);
         ov.addEventListener('click', () => {
             closeSidebarMobile();
@@ -146,7 +231,10 @@ function createOverlay() {
 
 function removeOverlay() {
     const ov = document.getElementById(OVERLAY_ID);
-    if (ov) ov.remove();
+    if (ov) {
+        // أخفِ العنصر بدلاً من حذفه لتقليل عمليات DOM المكلفة
+        ov.style.display = 'none';
+    }
 }
 
 function openSidebarMobile() {
@@ -198,8 +286,6 @@ function toggleSidebar() {
         updateMenuAria();
     }
 }
-
-// ربط الدالة على النافذة لتسهيل الاستخدام من HTML inline onclick
 window.toggleSidebar = toggleSidebar;
 
 // -----------------------------
