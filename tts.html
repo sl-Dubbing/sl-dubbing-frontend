@@ -9,124 +9,72 @@
   <link rel="stylesheet" href="css/style.css" />
 
   <style>
-    /* 🟢 كود CSS إجباري لضمان عمل الشريط الجانبي حتى لو كان مفقوداً من ملف style.css */
+    /* ضمان عمل الشريط الجانبي حتى لو كان مفقوداً من style.css */
     .sidebar.active { right: 0 !important; visibility: visible !important; opacity: 1 !important; transform: translateX(0) !important; }
     .overlay.active { display: block !important; opacity: 1 !important; visibility: visible !important; }
-    
-    .mode-switcher {
-      display: flex; gap: 10px;
-      background: var(--bg-secondary, #f7f8fa);
-      padding: 6px; border-radius: 10px;
-      border: 1px solid var(--border-default, #e5e7eb);
-      margin-bottom: 16px;
-    }
-    .mode-option {
-      flex: 1; padding: 12px 14px;
-      background: transparent; border: 2px solid transparent;
-      border-radius: 6px; cursor: pointer;
-      transition: 0.25s;
-      color: var(--text-secondary, #5b6471);
-      text-align: right;
-    }
-    .mode-option:hover {
-      background: var(--bg-primary, white);
-      color: var(--text-primary, #1a1d23);
-    }
-    .mode-option.active {
-      background: white;
-      border-color: var(--accent, #2563eb);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      color: var(--text-primary, #1a1d23);
-    }
-    .mode-option .mode-title {
-      display: flex; align-items: center; gap: 8px;
-      font-weight: 700; font-size: 0.95rem; margin-bottom: 4px;
-    }
+
+    .mode-switcher { display: flex; gap: 10px; background: var(--bg-secondary, #f7f8fa); padding: 6px; border-radius: 10px; border: 1px solid var(--border-default, #e5e7eb); margin-bottom: 16px; }
+    .mode-option { flex: 1; padding: 12px 14px; background: transparent; border: 2px solid transparent; border-radius: 6px; cursor: pointer; transition: 0.25s; color: var(--text-secondary, #5b6471); text-align: right; }
+    .mode-option:hover { background: var(--bg-primary, white); color: var(--text-primary, #1a1d23); }
+    .mode-option.active { background: white; border-color: var(--accent, #2563eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05); color: var(--text-primary, #1a1d23); }
+    .mode-option .mode-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
     .mode-option .mode-desc { font-size: 0.75rem; color: #6b7280; line-height: 1.4; }
-    .mode-badge {
-      display: inline-block; padding: 2px 8px; border-radius: 8px;
-      font-size: 0.68rem; font-weight: 700; margin-right: 4px;
-    }
+    .mode-badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 0.68rem; font-weight: 700; margin-right: 4px; }
     .badge-fast { background: #fef3c7; color: #f59e0b; }
     .badge-quality { background: #eff6ff; color: #2563eb; }
 
     .quality-only { display: none; }
     body[data-mode="quality"] .quality-only { display: block; }
 
-    .advanced-toggle {
-      background: none; border: none; color: var(--accent, #2563eb);
-      cursor: pointer; font-size: 0.88rem; padding: 8px 0;
-      text-align: right; width: 100%; font-weight: 600;
-    }
-    .advanced-options {
-      display: none; gap: 10px; flex-wrap: wrap;
-      margin-top: 10px; padding-top: 10px;
-      border-top: 1px solid #f0f1f4;
-    }
+    .advanced-toggle { background: none; border: none; color: var(--accent, #2563eb); cursor: pointer; font-size: 0.88rem; padding: 8px 0; text-align: right; width: 100%; font-weight: 600; }
+    .advanced-options { display: none; gap: 10px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f1f4; }
     .advanced-options.show { display: flex; }
     .control-group { flex: 1; min-width: 120px; }
-    .control-group label {
-      font-size: 0.82rem; color: #5b6471;
-      display: block; margin-bottom: 5px; font-weight: 500;
-    }
+    .control-group label { font-size: 0.82rem; color: #5b6471; display: block; margin-bottom: 5px; font-weight: 500; }
 
-    .btn-instant {
-      background: #f59e0b; color: white; border: none;
-      padding: 13px 20px; border-radius: 10px;
-      font-weight: 700; font-size: 0.98rem; cursor: pointer;
-      width: 100%; margin-top: 10px;
-      transition: 0.25s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .btn-instant:hover:not(:disabled) {
-      background: #d97706;
-      transform: translateY(-1px);
-    }
+    .btn-instant { background: #f59e0b; color: white; border: none; padding: 13px 20px; border-radius: 10px; font-weight: 700; font-size: 0.98rem; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.25s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-instant:hover:not(:disabled) { background: #d97706; transform: translateY(-1px); }
     .btn-instant:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .char-counter {
-      font-size: 0.78rem; color: #9aa1ac;
-      margin-top: 6px; text-align: left;
-    }
+    .char-counter { font-size: 0.78rem; color: #9aa1ac; margin-top: 6px; text-align: left; }
   </style>
 </head>
 <body data-mode="fast">
 
   <header class="top-bar">
     <div style="display:flex; align-items:center; gap:12px;">
-      <button class="menu-btn" id="menuBtn" type="button" onclick="toggleSidebar()">
-        <i class="fas fa-bars"></i>
+      <button class="menu-btn" id="menuBtn" type="button" aria-label="قائمة">
+        <i class="fas fa-bars" aria-hidden="true"></i>
         <span>القائمة</span>
       </button>
       <div class="top-logo"><h2>sl-Dubbing</h2></div>
     </div>
-    
-    <!-- 🟢 الزاوية العلوية: سيظهر فيها النقاط هنا -->
+
     <div class="top-actions">
       <span class="account-badge" id="topAccountBadge" style="transition: 0.3s; padding: 5px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;">
-        <i class="fas fa-spinner fa-spin"></i> جاري التحقق...
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i> جاري التحقق...
       </span>
     </div>
   </header>
 
-  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+  <div class="overlay" id="overlay" onclick="closeSidebar()" aria-hidden="true"></div>
 
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar" id="sidebar" role="navigation" aria-label="الشريط الجانبي">
     <div class="sidebar-user-section" id="authSection">
       <div style="color:#9aa1ac; font-size:0.9rem; text-align:center;">جاري التحقق...</div>
     </div>
 
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav" aria-label="قائمة التنقل">
       <div class="nav-label">القائمة الرئيسية</div>
       <ul>
-        <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
-        <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
-        <li><a href="tts.html" class="active"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
+        <li><a href="index.html"><i class="fas fa-home" aria-hidden="true"></i> الرئيسية</a></li>
+        <li><a href="dubbing.html"><i class="fas fa-film" aria-hidden="true"></i> استوديو الدبلجة</a></li>
+        <li><a href="tts.html" class="active"><i class="fas fa-microphone" aria-hidden="true"></i> تحويل النص لصوت</a></li>
       </ul>
     </nav>
   </aside>
 
-  <main class="main-content" id="mainContent">
+  <main class="main-content" id="mainContent" role="main">
     <div class="container">
       <header class="main-header">
         <h1>تحويل النص إلى صوت (TTS)</h1>
@@ -137,19 +85,19 @@
         <div class="tools-container">
 
           <section class="card">
-            <h3><i class="fas fa-bolt"></i> اختر الوضع</h3>
-            <div class="mode-switcher">
-              <button class="mode-option active" data-mode="fast" type="button">
+            <h3><i class="fas fa-bolt" aria-hidden="true"></i> اختر الوضع</h3>
+            <div class="mode-switcher" role="tablist" aria-label="اختيار الوضع">
+              <button class="mode-option active" data-mode="fast" type="button" aria-pressed="true">
                 <div class="mode-title">
-                  <i class="fas fa-bolt"></i>
+                  <i class="fas fa-bolt" aria-hidden="true"></i>
                   <span>سريع</span>
                   <span class="mode-badge badge-fast">⚡ 0.5s</span>
                 </div>
                 <div class="mode-desc">صوت Microsoft الافتراضي</div>
               </button>
-              <button class="mode-option" data-mode="quality" type="button">
+              <button class="mode-option" data-mode="quality" type="button" aria-pressed="false">
                 <div class="mode-title">
-                  <i class="fas fa-gem"></i>
+                  <i class="fas fa-gem" aria-hidden="true"></i>
                   <span>عالي الجودة</span>
                   <span class="mode-badge badge-quality">🎨 1.5s</span>
                 </div>
@@ -159,39 +107,39 @@
           </section>
 
           <section class="card">
-            <h3><i class="fas fa-edit"></i> 1. اكتب النص</h3>
-            <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص..."></textarea>
+            <h3><i class="fas fa-edit" aria-hidden="true"></i> 1. اكتب النص</h3>
+            <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص..." aria-label="نص التحويل"></textarea>
             <div class="char-counter"><span id="charCount">0</span> حرف</div>
           </section>
 
           <section class="card">
-            <h3><i class="fas fa-globe"></i> 2. اختر اللغات (متعدد)</h3>
+            <h3><i class="fas fa-globe" aria-hidden="true"></i> 2. اختر اللغات (متعدد)</h3>
 
-            <div class="selected-langs-display" id="selectedLangsDisplay">
+            <div class="selected-langs-display" id="selectedLangsDisplay" aria-live="polite">
               <div class="selected-langs-empty">جاري التحميل...</div>
             </div>
 
-            <div class="lang-search-wrapper">
-              <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة...">
-              <i class="fas fa-search lang-search-icon"></i>
+            <div class="lang-search-wrapper" style="position:relative;">
+              <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة..." aria-label="بحث عن لغة">
+              <i class="fas fa-search lang-search-icon" aria-hidden="true"></i>
             </div>
 
-            <div class="lang-counter">
+            <div class="lang-counter" style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
               <span id="langCount">جاري التحميل...</span>
-              <span class="star-hint">★ = الأكثر استخداماً</span>
+              <span class="star-hint" style="color:var(--text-muted); font-size:0.75rem;">★ = الأكثر استخداماً</span>
             </div>
 
-            <div class="lang-list" id="langList">
+            <div class="lang-list" id="langList" role="listbox" aria-multiselectable="true">
               <div style="text-align:center; padding:20px; color:#9aa1ac;">جاري التحميل...</div>
             </div>
 
-            <button type="button" class="advanced-toggle" id="advancedToggleBtn">
-              <i class="fas fa-sliders-h"></i> خيارات متقدمة
+            <button type="button" class="advanced-toggle" id="advancedToggleBtn" aria-expanded="false">
+              <i class="fas fa-sliders-h" aria-hidden="true"></i> خيارات متقدمة
             </button>
-            <div class="advanced-options" id="advancedOptions">
+            <div class="advanced-options" id="advancedOptions" aria-hidden="true">
               <div class="control-group">
-                <label>السرعة</label>
-                <select id="rateSelect" class="styled-select">
+                <label for="rateSelect">السرعة</label>
+                <select id="rateSelect" class="styled-select" aria-label="اختيار السرعة">
                   <option value="-25%">🐢 بطيء</option>
                   <option value="+0%" selected>عادي</option>
                   <option value="+15%">🏃 سريع قليلاً</option>
@@ -199,8 +147,8 @@
                 </select>
               </div>
               <div class="control-group">
-                <label>طبقة الصوت</label>
-                <select id="pitchSelect" class="styled-select">
+                <label for="pitchSelect">طبقة الصوت</label>
+                <select id="pitchSelect" class="styled-select" aria-label="اختيار طبقة الصوت">
                   <option value="-10Hz">منخفضة</option>
                   <option value="+0Hz" selected>عادية</option>
                   <option value="+10Hz">عالية</option>
@@ -210,156 +158,171 @@
           </section>
 
           <section class="card quality-only">
-            <h3><i class="fas fa-microphone-alt"></i> 3. البصمة الصوتية</h3>
+            <h3><i class="fas fa-microphone-alt" aria-hidden="true"></i> 3. البصمة الصوتية</h3>
             <p style="color:#5b6471; font-size:0.85rem; margin-bottom:12px;">
               اختر عينة جاهزة أو ارفع تسجيلك (5-15 ثانية)
             </p>
-            <select id="voiceSelect" class="styled-select" style="margin-bottom:12px;">
+            <select id="voiceSelect" class="styled-select" style="margin-bottom:12px;" aria-label="اختيار عينة صوتية">
               <option value="">🎤 اختر عينة جاهزة</option>
             </select>
-            <input type="file" id="customVoice" accept="audio/*" style="display:none;">
-            <button type="button" class="btn-secondary" id="uploadVoiceBtn">
-              <i class="fas fa-upload"></i> أو ارفع تسجيلك
+            <input type="file" id="customVoice" accept="audio/*" style="display:none;" />
+            <button type="button" class="btn-secondary" id="uploadVoiceBtn" aria-label="رفع تسجيل">
+              <i class="fas fa-upload" aria-hidden="true"></i> أو ارفع تسجيلك
             </button>
-            <div id="customVoiceTxt" class="file-info"></div>
+            <div id="customVoiceTxt" class="file-info" aria-live="polite"></div>
           </section>
 
-          <button id="ttsBtn" class="btn-primary-action" type="button">
-            <i class="fas fa-volume-up"></i> توليد الصوت لكل اللغات
+          <button id="ttsBtn" class="btn-primary-action" type="button" aria-label="توليد الصوت لكل اللغات">
+            <i class="fas fa-volume-up" aria-hidden="true"></i> توليد الصوت لكل اللغات
           </button>
 
-          <button id="ttsInstantBtn" class="btn-instant" type="button">
-            <i class="fas fa-play-circle"></i> ⚡ تشغيل فوري (أول لغة)
+          <button id="ttsInstantBtn" class="btn-instant" type="button" aria-label="تشغيل فوري (أول لغة)">
+            <i class="fas fa-play-circle" aria-hidden="true"></i> ⚡ تشغيل فوري (أول لغة)
           </button>
         </div>
 
         <div class="results-container">
-          <section class="card" id="progressArea" style="display:none;">
-            <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
+          <section class="card" id="progressArea" style="display:none;" aria-live="polite">
+            <h3><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> جاري المعالجة...</h3>
             <p id="statusTxt">في الانتظار</p>
-            <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
+            <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+              <div id="progFill" class="prog-fill" style="width:0%"></div>
+            </div>
             <div class="perf-stats" id="perfStats"></div>
           </section>
 
           <section class="card" id="resultsCard" style="display:none;">
-            <h3><i class="fas fa-check-circle"></i> النتائج</h3>
-            <div class="results-multilang" id="resultsList"></div>
+            <h3><i class="fas fa-check-circle" aria-hidden="true"></i> النتائج</h3>
+            <div class="results-multilang" id="resultsList" aria-live="polite"></div>
           </section>
         </div>
       </div>
     </div>
   </main>
 
-  <div id="toasts"></div>
+  <div id="toasts" aria-live="polite"></div>
 
-  <!-- ملفات السكربت الخارجية -->
+  <!-- ترتيب السكربتات: shared.js أولاً ثم بيانات اللغات ثم tts-quick ثم tts ثم أي سكربت محلي -->
+  <script src="js/shared.js"></script>
   <script src="js/languages-data.js"></script>
   <script src="js/tts-quick.js"></script>
   <script src="js/tts.js"></script>
 
-  <!-- 🛡️ السكربت النهائي والمستقل: يتحكم بالشريط الجانبي ويجلب النقاط (للشريط والزاوية) -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        
-        // 1. دالة الفتح والإغلاق المحصنة
-        window.toggleSidebar = function() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            if (sidebar && overlay) {
-                sidebar.classList.toggle('active');
-                overlay.classList.toggle('active');
-                document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
-            } else {
-                console.error("عناصر الشريط غير موجودة!");
-            }
-        };
+    // ربط الأحداث والتهيئة المحلية الآمنة
+    (function () {
+      // عناصر مساعدة
+      const menuBtn = document.getElementById('menuBtn');
+      const overlay = document.getElementById('overlay');
+      const advancedToggleBtn = document.getElementById('advancedToggleBtn');
+      const advancedOptions = document.getElementById('advancedOptions');
+      const modeButtons = document.querySelectorAll('.mode-option');
+      const ttsInput = document.getElementById('ttsInput');
+      const charCount = document.getElementById('charCount');
+      const uploadVoiceBtn = document.getElementById('uploadVoiceBtn');
+      const customVoice = document.getElementById('customVoice');
+      const ttsBtn = document.getElementById('ttsBtn');
+      const ttsInstantBtn = document.getElementById('ttsInstantBtn');
+      const langSearch = document.getElementById('langSearch');
 
-        window.closeSidebar = function() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            if (sidebar && overlay) {
-                sidebar.classList.remove('active');
-                overlay.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        };
+      // 1) Sidebar toggle: استخدم الدالة من shared.js إن وُجدت، وإلا عرف بديل محلي
+      function safeToggleSidebar() {
+        if (typeof toggleSidebar === 'function') return toggleSidebar();
+        const sidebar = document.getElementById('sidebar');
+        const ov = document.getElementById('overlay');
+        if (!sidebar || !ov) return;
+        sidebar.classList.toggle('active');
+        ov.classList.toggle('active');
+        document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+      }
+      function safeCloseSidebar() {
+        if (typeof closeSidebar === 'function') return closeSidebar();
+        const sidebar = document.getElementById('sidebar');
+        const ov = document.getElementById('overlay');
+        if (!sidebar || !ov) return;
+        sidebar.classList.remove('active');
+        ov.classList.remove('active');
+        document.body.style.overflow = '';
+      }
 
-        // 2. دالة جلب وعرض النقاط (في الشريط الجانبي وفي الزاوية العلوية)
-        window.updateSidebarAuth = async function() {
-            const authSection = document.getElementById('authSection');
-            const topBadge = document.getElementById('topAccountBadge');
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      menuBtn?.addEventListener('click', (e) => { e.preventDefault(); safeToggleSidebar(); });
+      overlay?.addEventListener('click', safeCloseSidebar);
 
-            if (!token) {
-                if (authSection) {
-                    authSection.innerHTML = `
-                        <div class="user-info-card">
-                            <p style="margin-bottom:12px; font-size:0.9rem; color:#5b6471;">أهلاً بك</p>
-                            <a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a>
-                        </div>`;
-                }
-                if (topBadge) {
-                    topBadge.innerHTML = '<a href="login.html" style="color:inherit; text-decoration:none;"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</a>';
-                    topBadge.style.background = '#fef2f2';
-                    topBadge.style.color = '#ef4444';
-                    topBadge.style.border = '1px solid #fecaca';
-                }
-                return;
-            }
+      // 2) Advanced options toggle
+      if (advancedToggleBtn && advancedOptions) {
+        advancedToggleBtn.addEventListener('click', () => {
+          const show = advancedOptions.classList.toggle('show');
+          advancedToggleBtn.setAttribute('aria-expanded', String(show));
+          advancedOptions.setAttribute('aria-hidden', String(!show));
+        });
+      }
 
-            try {
-                const res = await fetch('https://web-production-14a1.up.railway.app/api/user', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await res.json();
-                
-                if (data.success || data.user) {
-                    const user = data.user || {};
-                    const points = user.credits ?? 0;
-                    
-                    // تحديث الشريط الجانبي
-                    if (authSection) {
-                        authSection.innerHTML = `
-                            <div class="user-info-card">
-                                <div class="user-name"><i class="fas fa-user-circle"></i> ${user.name || 'مستخدم'}</div>
-                                <div class="user-points" style="color:#10b981; font-weight:bold; margin-top:8px;">
-                                    <i class="fas fa-coins"></i> رصيدك: ${points} نقطة
-                                </div>
-                                <button onclick="logout()" style="margin-top:15px; background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">
-                                    <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
-                                </button>
-                            </div>`;
-                    }
-                    
-                    // تحديث الزاوية العلوية
-                    if (topBadge) {
-                        topBadge.innerHTML = `<i class="fas fa-coins" style="color:#f59e0b;"></i> ${points} نقطة`;
-                        topBadge.style.background = '#ecfdf5';
-                        topBadge.style.color = '#10b981';
-                        topBadge.style.border = '1px solid #a7f3d0';
-                    }
-                }
-            } catch (e) {
-                console.error('خطأ:', e);
-                if (topBadge) topBadge.innerHTML = 'خطأ اتصال';
-            }
-        };
+      // 3) Mode switcher
+      modeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          modeButtons.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+          btn.classList.add('active');
+          btn.setAttribute('aria-pressed', 'true');
+          const mode = btn.dataset.mode || 'fast';
+          document.body.dataset.mode = mode;
+          localStorage.setItem('tts_mode', mode);
+          // تحديث العرض: quality-only تظهر فقط في وضع الجودة
+        });
+      });
 
-        // التأكد من استدعاء الدوال وتثبيتها بقوة
-        window.updateSidebarAuth();
-        
-        // إعادة كتابة الجسر السحري لضمان اللغات
-        if (typeof LANGUAGES !== 'undefined' && typeof window.LANGUAGES === 'undefined') {
-            window.LANGUAGES = LANGUAGES;
+      // 4) Char counter
+      if (ttsInput && charCount) {
+        ttsInput.addEventListener('input', () => {
+          charCount.textContent = ttsInput.value.length;
+        });
+      }
+
+      // 5) Upload voice button
+      uploadVoiceBtn?.addEventListener('click', () => customVoice?.click());
+      customVoice?.addEventListener('change', function () {
+        const txt = document.getElementById('customVoiceTxt');
+        if (this.files && this.files.length > 0) {
+          txt.textContent = this.files[0].name;
+        } else {
+          txt.textContent = '';
         }
+        if (typeof handleCustomVoice === 'function') handleCustomVoice(this);
+      });
 
-        // حماية الدوال من الحذف بواسطة tts.js
-        setTimeout(() => {
-            window.toggleSidebar = window.toggleSidebar;
-            window.closeSidebar = window.closeSidebar;
-            window.updateSidebarAuth = window.updateSidebarAuth;
-        }, 1000);
-    });
+      // 6) Instant play and main TTS buttons: حماية من عدم تحميل الدوال
+      ttsInstantBtn?.addEventListener('click', async () => {
+        if (typeof instantPlay === 'function') {
+          try { await instantPlay(); } catch (e) { console.error('instantPlay error', e); showToast(e.message || 'فشل التشغيل الفوري', '#ef4444'); }
+        } else {
+          showToast('ميزة التشغيل الفوري غير متاحة حالياً.', '#f97316');
+        }
+      });
+
+      ttsBtn?.addEventListener('click', async () => {
+        if (typeof startTTS === 'function') {
+          try { await startTTS(); } catch (e) { console.error('startTTS error', e); showToast(e.message || 'فشل التوليد', '#ef4444'); }
+        } else {
+          showToast('ميزة التوليد غير متاحة حالياً.', '#f97316');
+        }
+      });
+
+      // 7) Search input: استخدم renderLanguages إن وُجدت
+      langSearch?.addEventListener('input', (e) => {
+        if (typeof renderLanguages === 'function') renderLanguages(e.target.value);
+      });
+
+      // 8) عند تحميل الصفحة: تهيئة القيم الافتراضية
+      document.addEventListener('DOMContentLoaded', () => {
+        // تهيئة وضع الحفظ
+        const savedMode = localStorage.getItem('tts_mode') || 'fast';
+        document.body.dataset.mode = savedMode;
+        // تهيئة واجهة اللغات إن كانت الدوال متاحة
+        if (typeof renderLanguages === 'function') renderLanguages();
+        if (typeof renderSelectedLangs === 'function') renderSelectedLangs();
+        // تحديث الشريط الجانبي (auth) إن كانت الدالة متاحة في shared.js
+        if (typeof updateSidebarAuth === 'function') updateSidebarAuth();
+      });
+    })();
   </script>
 </body>
 </html>
