@@ -206,12 +206,12 @@ const supabaseUrl = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
 // ⚠️ هام: ضع المفتاح الخاص بك هنا
 const supabaseKey = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
 
-// إنشاء نقطة الاتصال مع Supabase
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+// 🔴 تم الإصلاح هنا: تغيير اسم المتغير إلى supabaseClient لتجنب التعارض
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // 2. دالة فحص الجلسة (ترسم صورة المستخدم واسمه إذا كان مسجلاً)
 async function checkSession() {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
     
     if (session) {
         const user = session.user;
@@ -232,13 +232,13 @@ async function checkSession() {
 
 // 3. دالة تسجيل الخروج
 async function logout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     location.reload();
 }
 
 // 4. توجيه المستخدم (لصفحة الدخول أو صفحة الأداة)
 function goTool(p) {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
         if (session) {
             location.href = p;
         } else {
