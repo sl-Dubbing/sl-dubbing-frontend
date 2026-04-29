@@ -7,42 +7,43 @@
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <link rel="stylesheet" href="css/style.css" />
+  <meta name="referrer" content="no-referrer" />
 </head>
 <body>
 
   <!-- شريط علوي -->
   <header class="top-bar">
     <div style="display:flex; align-items:center; gap:12px;">
-      <button class="menu-btn" onclick="toggleSidebar()" type="button">
-        <i class="fas fa-bars"></i>
+      <button class="menu-btn" id="menuToggle" type="button" aria-label="قائمة" onclick="toggleSidebar()">
+        <i class="fas fa-bars" aria-hidden="true"></i>
         <span>القائمة</span>
       </button>
       <div class="top-logo"><h2>sl-Dubbing</h2></div>
     </div>
     <div class="top-actions">
-      <span class="account-badge">حساب تجريبي</span>
+      <span class="account-badge" id="topAccountBadge">حساب تجريبي</span>
     </div>
   </header>
 
-  <!-- خلفية معتمة عند فتح Sidebar -->
-  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+  <!-- خلفية معتمة عند فتح Sidebar (عنصر افتراضي يمكن استخدامه) -->
+  <div class="overlay" id="overlay" onclick="closeSidebar()" aria-hidden="true"></div>
 
   <!-- الشريط الجانبي -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-user-section" id="authSection">
+  <aside class="sidebar" id="sidebar" role="navigation" aria-label="الشريط الجانبي">
+    <div class="sidebar-user-section" id="authSection" aria-live="polite">
       <div style="color:var(--text-muted); font-size:0.9rem; text-align:center;">جاري التحقق من بياناتك...</div>
     </div>
 
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav" aria-label="قائمة التنقل">
       <div class="nav-label">القائمة الرئيسية</div>
       <ul>
-        <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
-        <li><a href="dubbing.html" class="active"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
-        <li><a href="tts.html"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
+        <li><a href="index.html"><i class="fas fa-home" aria-hidden="true"></i> الرئيسية</a></li>
+        <li><a href="dubbing.html" class="active"><i class="fas fa-film" aria-hidden="true"></i> استوديو الدبلجة</a></li>
+        <li><a href="tts.html"><i class="fas fa-microphone" aria-hidden="true"></i> تحويل النص لصوت</a></li>
       </ul>
     </nav>
 
-    <div class="panel summary">
+    <div class="panel summary" aria-hidden="false">
       <h4>ملخص المشروع</h4>
       <div class="meta"><strong>الحالة:</strong> <span id="miniStatus">في الانتظار</span></div>
       <div class="meta"><strong>المعمارية:</strong> Edge-TTS + OpenVoice v2</div>
@@ -52,7 +53,7 @@
   </aside>
 
   <!-- المحتوى الرئيسي -->
-  <main class="main-content" id="mainContent">
+  <main class="main-content" id="mainContent" role="main">
     <div class="container">
       <header class="main-header">
         <h1>استوديو الدبلجة الاحترافي</h1>
@@ -63,92 +64,143 @@
         <div class="tools-container">
 
           <!-- 1. رفع الوسائط -->
-          <section class="card">
-            <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
+          <section class="card" aria-labelledby="uploadTitle">
+            <h3 id="uploadTitle"><i class="fas fa-upload" aria-hidden="true"></i> 1. رفع الوسائط</h3>
             <div class="upload-wrapper">
-              <input type="file" id="mediaFile" hidden onchange="updateFileName()" accept="video/*,audio/*" />
-              <button onclick="document.getElementById('mediaFile').click()" class="btn-secondary" type="button">
-                <i class="fas fa-file-video"></i> اختر فيديو أو صوت
+              <input type="file" id="mediaFile" hidden accept="video/*,audio/*" />
+              <button class="btn-secondary" type="button" onclick="document.getElementById('mediaFile').click()" aria-label="اختر فيديو أو صوت">
+                <i class="fas fa-file-video" aria-hidden="true"></i> اختر فيديو أو صوت
               </button>
-              <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
+              <p id="fileTxt" class="file-info" aria-live="polite">لم يتم اختيار ملف بعد</p>
             </div>
           </section>
 
           <!-- 2. اختيار اللغات (متعدد) -->
-          <section class="card">
-            <h3><i class="fas fa-globe"></i> 2. اختر اللغات (يمكن اختيار عدة لغات)</h3>
+          <section class="card" aria-labelledby="langsTitle">
+            <h3 id="langsTitle"><i class="fas fa-globe" aria-hidden="true"></i> 2. اختر اللغات (يمكن اختيار عدة لغات)</h3>
 
             <!-- اللغات المختارة (pills) -->
-            <div class="selected-langs-display" id="selectedLangsDisplay">
+            <div class="selected-langs-display" id="selectedLangsDisplay" aria-live="polite">
               <div class="selected-langs-empty">لم يتم اختيار لغة بعد. ابحث واضغط لاختيار لغة أو أكثر.</div>
             </div>
 
             <!-- البحث -->
-            <div class="lang-search-wrapper">
+            <div class="lang-search-wrapper" style="position:relative;">
               <input type="text" id="langSearch" class="lang-search"
                      placeholder="ابحث عن لغة... (مثال: عربي، فرنسي، japan)"
-                     oninput="filterLanguages(this.value)">
-              <i class="fas fa-search lang-search-icon"></i>
+                     oninput="renderLanguages(this.value)"
+                     aria-label="بحث عن لغة">
+              <i class="fas fa-search lang-search-icon" aria-hidden="true"></i>
             </div>
 
-            <div class="lang-counter">
+            <div class="lang-counter" style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
               <span id="langCount">جاري التحميل...</span>
               <span style="color:var(--text-muted); font-size:0.75rem;">★ = الأكثر استخداماً</span>
             </div>
 
-            <div class="lang-list" id="langList"></div>
+            <div class="lang-list" id="langList" role="listbox" aria-multiselectable="true"></div>
           </section>
 
           <!-- 3. اختيار الصوت -->
-          <section class="card">
-            <h3><i class="fas fa-microphone-alt"></i> 3. اختيار الصوت</h3>
+          <section class="card" aria-labelledby="voiceTitle">
+            <h3 id="voiceTitle"><i class="fas fa-microphone-alt" aria-hidden="true"></i> 3. اختيار الصوت</h3>
 
             <div style="margin-bottom:14px;">
               <label class="muted">الخيار الأول: استخدم صوتاً جاهزاً أو الأصلي</label>
-              <select id="voiceSelect" class="styled-select">
+              <select id="voiceSelect" class="styled-select" aria-label="اختيار صوت">
                 <option value="original" selected>المحافظة على الصوت الأصلي</option>
               </select>
             </div>
 
             <div class="voice-clone-box">
               <label class="muted">الخيار الثاني: ارفع عينة صوتية مخصصة</label>
-              <input type="file" id="customVoice" hidden onchange="handleCustomVoice(this)" accept="audio/*" />
-              <button onclick="document.getElementById('customVoice').click()" class="btn-secondary" type="button">
-                <i class="fas fa-plus"></i> رفع عينة من جهازك
+              <input type="file" id="customVoice" hidden accept="audio/*" />
+              <button class="btn-secondary" type="button" onclick="document.getElementById('customVoice').click()" aria-label="رفع عينة صوتية">
+                <i class="fas fa-plus" aria-hidden="true"></i> رفع عينة من جهازك
               </button>
-              <p id="customVoiceTxt" class="file-info"></p>
+              <p id="customVoiceTxt" class="file-info" aria-live="polite"></p>
             </div>
           </section>
 
-          <button id="dubBtn" class="btn-primary-action" onclick="startDubbing()" type="button">
-            <i class="fas fa-wand-magic-sparkles"></i> بدء الدبلجة الآن
+          <button id="dubBtn" class="btn-primary-action" type="button" aria-label="بدء الدبلجة الآن">
+            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> بدء الدبلجة الآن
           </button>
         </div>
 
         <!-- النتائج -->
         <div class="results-container">
-          <section class="card" id="progressArea" style="display:none;">
-            <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
+          <section class="card" id="progressArea" style="display:none;" aria-live="polite">
+            <h3><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> جاري المعالجة...</h3>
             <p id="statusTxt">الحالة: في الانتظار</p>
-            <div class="progress-bar">
-              <div id="progFill" class="prog-fill"></div>
+            <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+              <div id="progFill" class="prog-fill" style="width:0%"></div>
             </div>
-            <div class="perf-stats" id="perfStats"></div>
+            <div class="perf-stats" id="perfStats" aria-hidden="true"></div>
           </section>
 
           <!-- النتائج المتعددة (لكل لغة) -->
           <section class="card" id="resultsCard" style="display:none;">
-            <h3><i class="fas fa-check-circle"></i> النتائج</h3>
-            <div class="results-multilang" id="resultsList"></div>
+            <h3><i class="fas fa-check-circle" aria-hidden="true"></i> النتائج</h3>
+            <div class="results-multilang" id="resultsList" aria-live="polite"></div>
           </section>
         </div>
       </div>
     </div>
   </main>
 
-  <div id="toasts"></div>
+  <div id="toasts" aria-live="polite"></div>
 
+  <!-- بيانات اللغات والسكربتات الأساسية -->
+  <!-- ترتيب السكربتات مهم: shared.js يجب أن يُحمّل أولاً -->
+  <script src="js/shared.js"></script>
   <script src="js/languages-data.js"></script>
+  <script src="js/tts-quick.js"></script>
+  <script src="js/tts.js"></script>
   <script src="js/dubbing.js"></script>
+
+  <script>
+    // تهيئة سريعة لعناصر الصفحة التي تعتمد على أحداث مباشرة
+    // 1) تحديث اسم الملف عند اختيار وسائط (وظيفة بسيطة وآمنة)
+    function updateFileName() {
+      const mediaFile = document.getElementById('mediaFile');
+      const fileTxt = document.getElementById('fileTxt');
+      if (mediaFile && mediaFile.files && mediaFile.files.length > 0) {
+        fileTxt.textContent = mediaFile.files[0].name;
+      } else if (fileTxt) {
+        fileTxt.textContent = 'لم يتم اختيار ملف بعد';
+      }
+    }
+    // ربط حدث التغيير إن لم يكن مرتبطاً في shared.js
+    document.getElementById('mediaFile')?.addEventListener('change', updateFileName);
+
+    // 2) ربط حدث تغيير العينة الصوتية لعرض اسم الملف
+    document.getElementById('customVoice')?.addEventListener('change', function () {
+      const txt = document.getElementById('customVoiceTxt');
+      if (this.files && this.files.length > 0) {
+        txt.textContent = this.files[0].name;
+      } else {
+        txt.textContent = '';
+      }
+      // إعلام دالة المعالجة إن كانت معرفة
+      if (typeof handleCustomVoice === 'function') handleCustomVoice(this);
+    });
+
+    // 3) ربط زر الدبلجة ليعمل بعد تحميل السكربتات (حماية إضافية)
+    document.getElementById('dubBtn')?.addEventListener('click', () => {
+      if (typeof startDubbing === 'function') {
+        startDubbing();
+      } else {
+        showToast('وظيفة الدبلجة غير متاحة حالياً.', '#f97316');
+      }
+    });
+
+    // 4) عند تحميل الصفحة، تأكد من تهيئة واجهة اللغات إن كانت الدالة متاحة
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof renderLanguages === 'function') renderLanguages();
+      if (typeof renderSelectedLangs === 'function') renderSelectedLangs();
+      // تحديث الشريط الجانبي (auth) إن كانت الدالة متاحة
+      if (typeof updateSidebarAuth === 'function') updateSidebarAuth();
+    });
+  </script>
 </body>
 </html>
