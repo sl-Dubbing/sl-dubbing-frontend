@@ -96,21 +96,22 @@
 </div>
 
 <script>
-    // إعداد Supabase client
+    // 1. إعداد Supabase client بالمفتاح الصحيح وتغيير الاسم لتجنب التعارض
     const supabaseUrl = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-    // ضع هنا مفتاح Anon فقط. لا تضع service_role أو مفاتيح حساسة في الواجهة.
-    const supabaseKey = '<SUPABASE_ANON_KEY>';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseKey = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // التحقق من الجلسة الحالية بطريقة آمنة
+    // 2. التحقق من الجلسة الحالية بطريقة آمنة
     (async function checkSession() {
         try {
-            const { data, error } = await supabase.auth.getSession();
+            const { data, error } = await supabaseClient.auth.getSession();
             if (error) {
                 console.warn('getSession error', error);
                 return;
             }
             if (data?.session) {
+                // حفظ التوكن لكي يستخدمه Railway لاحقاً
+                localStorage.setItem('token', data.session.access_token);
                 // المستخدم مسجل، أعد التوجيه
                 window.location.href = 'index.html';
             }
@@ -119,11 +120,11 @@
         }
     })();
 
-    // تسجيل الدخول عبر Google (OAuth)
+    // 3. تسجيل الدخول عبر Google (OAuth)
     document.getElementById('googleBtn').addEventListener('click', async () => {
         try {
             const redirectTo = window.location.origin + '/index.html';
-            const { data, error } = await supabase.auth.signInWithOAuth({
+            const { data, error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo }
             });
@@ -131,18 +132,17 @@
                 alert("حدث خطأ أثناء الاتصال بجوجل: " + error.message);
                 return;
             }
-            // بعض إصدارات SDK تعيد data.url للانتقال يدوياً
+            // التوجيه إلى صفحة تسجيل الدخول بحساب جوجل
             if (data?.url) {
                 window.location.href = data.url;
             }
-            // وإلا Supabase سيقوم بإعادة التوجيه تلقائياً
         } catch (e) {
             console.error('Google sign-in failed', e);
             alert('فشل بدء تسجيل الدخول عبر جوجل.');
         }
     });
 
-    // تسجيل الدخول عبر البريد وكلمة المرور
+    // 4. تسجيل الدخول عبر البريد وكلمة المرور
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('email').value.trim();
@@ -158,18 +158,24 @@
         btn.disabled = true;
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            
             if (error) {
-                // رسالة عامة للمستخدم
                 alert("فشل تسجيل الدخول: البريد الإلكتروني أو كلمة المرور غير صحيحة.");
                 btn.textContent = "تسجيل الدخول";
                 btn.disabled = false;
                 return;
             }
-            // نجاح تسجيل الدخول
+            
+            // ✅ نجاح تسجيل الدخول - الأهم: حفظ التوكن!
+            if (data?.session) {
+                localStorage.setItem('token', data.session.access_token);
+            }
+
             const targetPage = sessionStorage.getItem('returnUrl') || 'index.html';
             sessionStorage.removeItem('returnUrl');
             window.location.href = targetPage;
+            
         } catch (err) {
             console.error('Sign-in error', err);
             alert('حدث خطأ أثناء محاولة تسجيل الدخول.');
@@ -180,3 +186,4 @@
 </script>
 </body>
 </html>
+```</SUPABASE_ANON_KEY>
