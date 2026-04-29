@@ -156,10 +156,30 @@
   <script src="js/tts.js"></script>
   <script src="js/dubbing.js"></script>
 
+  <!-- سكربت إضافي لضمان عمل القوائم والمصادقة بشكل آمن -->
   <script>
-    // ======= حماية وتهيئة DOM وEvents =======
     (function () {
-      // عناصر
+      // Fallback showToast إن لم تُعرّف في shared.js
+      if (typeof showToast !== 'function') {
+        window.showToast = function (msg, color = '#ef4444') {
+          try {
+            const t = document.getElementById('toasts');
+            if (!t) return alert(msg);
+            const box = document.createElement('div');
+            box.className = 'toast';
+            box.style.background = color;
+            box.style.color = '#fff';
+            box.style.padding = '8px 12px';
+            box.style.borderRadius = '8px';
+            box.style.marginTop = '8px';
+            box.textContent = msg;
+            t.appendChild(box);
+            setTimeout(() => box.remove(), 4000);
+          } catch (e) { console.warn('showToast fallback failed', e); }
+        };
+      }
+
+      // عناصر رئيسية
       const menuToggle = document.getElementById('menuToggle');
       const overlay = document.getElementById('overlay');
       const chooseMediaBtn = document.getElementById('chooseMediaBtn');
@@ -171,9 +191,9 @@
       const dubBtn = document.getElementById('dubBtn');
       const langSearch = document.getElementById('langSearch');
 
-      // Sidebar toggle: استخدم الدالة من shared.js إن وُجدت، وإلا عرف بديل محلي
+      // دوال آمنة لفتح/إغلاق الشريط الجانبي (تستخدم shared.js إن وُجدت)
       function safeToggleSidebar() {
-        if (typeof toggleSidebar === 'function') return toggleSidebar();
+        if (typeof window.toggleSidebar === 'function') return window.toggleSidebar();
         const sidebar = document.getElementById('sidebar');
         const ov = document.getElementById('overlay');
         if (!sidebar || !ov) return;
@@ -182,7 +202,7 @@
         document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
       }
       function safeCloseSidebar() {
-        if (typeof closeSidebar === 'function') return closeSidebar();
+        if (typeof window.closeSidebar === 'function') return window.closeSidebar();
         const sidebar = document.getElementById('sidebar');
         const ov = document.getElementById('overlay');
         if (!sidebar || !ov) return;
@@ -191,58 +211,150 @@
         document.body.style.overflow = '';
       }
 
-      // ربط أزرار الشريط الجانبي
-      menuToggle?.addEventListener('click', (e) => { e.preventDefault(); safeToggleSidebar(); });
-      overlay?.addEventListener('click', safeCloseSidebar);
+      // ربط أزرار القوائم بأمان
+      if (menuToggle) {
+        menuToggle.removeEventListener('click', safeToggleSidebar);
+        menuToggle.addEventListener('click', function (e) {
+          e.preventDefault();
+          safeToggleSidebar();
+        });
+      }
+      if (overlay) {
+        overlay.removeEventListener('click', safeCloseSidebar);
+        overlay.addEventListener('click', safeCloseSidebar);
+      }
 
-      // اختيار ملف الوسائط
-      chooseMediaBtn?.addEventListener('click', () => mediaFile?.click());
-      mediaFile?.addEventListener('change', () => {
-        if (mediaFile.files && mediaFile.files.length > 0) {
-          fileTxt.textContent = mediaFile.files[0].name;
-        } else {
-          fileTxt.textContent = 'لم يتم اختيار ملف بعد';
-        }
-      });
+      // ربط اختيار الملف
+      if (chooseMediaBtn && mediaFile) {
+        chooseMediaBtn.addEventListener('click', () => mediaFile.click());
+        mediaFile.addEventListener('change', () => {
+          if (mediaFile.files && mediaFile.files.length > 0) {
+            fileTxt.textContent = mediaFile.files[0].name;
+          } else {
+            fileTxt.textContent = 'لم يتم اختيار ملف بعد';
+          }
+        });
+      }
 
-      // اختيار عينة صوتية مخصصة
-      chooseCustomVoiceBtn?.addEventListener('click', () => customVoice?.click());
-      customVoice?.addEventListener('change', function () {
-        if (this.files && this.files.length > 0) {
-          customVoiceTxt.textContent = this.files[0].name;
-        } else {
-          customVoiceTxt.textContent = '';
-        }
-        if (typeof handleCustomVoice === 'function') handleCustomVoice(this);
-      });
+      // ربط رفع العينة الصوتية
+      if (chooseCustomVoiceBtn && customVoice) {
+        chooseCustomVoiceBtn.addEventListener('click', () => customVoice.click());
+        customVoice.addEventListener('change', function () {
+          if (this.files && this.files.length > 0) {
+            customVoiceTxt.textContent = this.files[0].name;
+          } else {
+            customVoiceTxt.textContent = '';
+          }
+          if (typeof handleCustomVoice === 'function') {
+            try { handleCustomVoice(this); } catch (e) { console.warn('handleCustomVoice error', e); }
+          }
+        });
+      }
 
-      // زر بدء الدبلجة: حماية من عدم تحميل الدالة
-      dubBtn?.addEventListener('click', () => {
-        if (typeof startDubbing === 'function') {
-          try { startDubbing(); } catch (err) { console.error('startDubbing error', err); showToast('فشل بدء الدبلجة', '#ef4444'); }
-        } else {
-          showToast('وظيفة الدبلجة غير متاحة حالياً.', '#f97316');
-        }
-      });
+      // ربط زر الدبلجة
+      if (dubBtn) {
+        dubBtn.addEventListener('click', () => {
+          if (typeof startDubbing === 'function') {
+            try { startDubbing(); } catch (e) { console.error('startDubbing error', e); showToast('فشل بدء الدبلجة', '#ef4444'); }
+          } else {
+            showToast('وظيفة الدبلجة غير متاحة حالياً.', '#f97316');
+          }
+        });
+      }
 
-      // بحث اللغات: استخدم renderLanguages إن وُجدت
-      langSearch?.addEventListener('input', (e) => {
-        if (typeof renderLanguages === 'function') renderLanguages(e.target.value);
-      });
+      // ربط بحث اللغات
+      if (langSearch) {
+        langSearch.addEventListener('input', (e) => {
+          if (typeof renderLanguages === 'function') {
+            try { renderLanguages(e.target.value); } catch (err) { console.warn('renderLanguages error', err); }
+          }
+        });
+      }
 
-      // عند تحميل الصفحة: تهيئة واجهة اللغات والمصادقة إن كانت الدوال متاحة
+      // تهيئة عند التحميل: تحديث الشريط الجانبي وواجهات اللغات
       document.addEventListener('DOMContentLoaded', () => {
-        if (typeof renderLanguages === 'function') renderLanguages();
-        if (typeof renderSelectedLangs === 'function') renderSelectedLangs();
-        if (typeof updateSidebarAuth === 'function') updateSidebarAuth();
-      });
+        // تهيئة وضع TTS إن وُجد
+        try {
+          if (typeof renderLanguages === 'function') renderLanguages();
+          if (typeof renderSelectedLangs === 'function') renderSelectedLangs();
+        } catch (e) { console.warn('language init error', e); }
 
-      // حماية عامة: منع أخطاء عند غياب دوال خارجية
-      window.addEventListener('error', (ev) => {
-        // لا نعرض للمستخدم تفاصيل تقنية، لكن نطبع في الكونسول للمطور
-        console.warn('Client error captured:', ev.message);
+        // تحديث الشريط الجانبي: استخدم updateSidebarAuth إن وُجد، وإلا حاول فحص /api/user مع credentials
+        if (typeof updateSidebarAuth === 'function') {
+          try { updateSidebarAuth(); } catch (e) { console.warn('updateSidebarAuth failed', e); }
+        } else {
+          // Fallback: محاولة جلب /api/user باستخدام الكوكي (HttpOnly) أو token محلي
+          (async function fallbackAuth() {
+            const API_BASE = window.API_BASE || 'https://web-production-14a1.up.railway.app';
+            const authSection = document.getElementById('authSection');
+            const topBadge = document.getElementById('topAccountBadge');
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token') || null;
+            try {
+              const opts = token ? { headers: { 'Authorization': `Bearer ${token}` } } : { credentials: 'include' };
+              const res = await fetch(`${API_BASE}/api/user`, opts);
+              if (!res.ok) {
+                // غير مسجل
+                if (authSection) authSection.innerHTML = `<div style="text-align:center;"><a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a></div>`;
+                if (topBadge) topBadge.innerHTML = `<a href="login.html" style="color:inherit; text-decoration:none;"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</a>`;
+                return;
+              }
+              const data = await res.json().catch(() => null);
+              if (data && (data.success || data.user)) {
+                const user = data.user || {};
+                const points = user.credits ?? 0;
+                if (authSection) {
+                  authSection.innerHTML = `
+                    <div class="user-info-card">
+                      <div class="user-name"><i class="fas fa-user-circle"></i> ${escapeHtml(user.name || 'مستخدم')}</div>
+                      <div class="user-points" style="color:#10b981; font-weight:bold; margin-top:8px;">
+                        <i class="fas fa-coins"></i> رصيدك: ${points} نقطة
+                      </div>
+                      <button id="logoutBtnLocal" style="margin-top:12px; background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">
+                        <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                      </button>
+                    </div>`;
+                  const lb = document.getElementById('logoutBtnLocal');
+                  if (lb) lb.addEventListener('click', async () => {
+                    try {
+                      // حاول إخطار الخادم ثم احذف التوكن محلياً
+                      if (token) {
+                        await fetch(`${API_BASE}/api/logout`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }).catch(()=>{});
+                      } else {
+                        await fetch(`${API_BASE}/api/logout`, { method: 'POST', credentials: 'include' }).catch(()=>{});
+                      }
+                    } catch (e) { console.warn('logout request failed', e); }
+                    localStorage.removeItem('token');
+                    sessionStorage.removeItem('token');
+                    location.reload();
+                  });
+                }
+                if (topBadge) {
+                  topBadge.innerHTML = `<i class="fas fa-coins" style="color:#f59e0b;"></i> ${points} نقطة`;
+                  topBadge.style.background = '#ecfdf5';
+                  topBadge.style.color = '#10b981';
+                  topBadge.style.border = '1px solid #a7f3d0';
+                }
+              } else {
+                if (authSection) authSection.innerHTML = `<div style="text-align:center;"><a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a></div>`;
+              }
+            } catch (e) {
+              console.warn('fallbackAuth error', e);
+              if (authSection) authSection.innerHTML = `<div style="text-align:center;"><a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a></div>`;
+            }
+          })();
+        }
       });
     })();
+
+    // مساعدة: تأمين النص قبل العرض (escape) — تستخدم في بعض الأماكن
+    function escapeHtml(unsafe) {
+      return String(unsafe || '')
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
   </script>
 </body>
 </html>
