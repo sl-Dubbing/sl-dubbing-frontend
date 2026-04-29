@@ -6,16 +6,15 @@
     <title>تسجيل الدخول | sl-Dubbing</title>
 
     <!-- أيقونات -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="" crossorigin="anonymous">
 
-    <!-- استدعاء مكتبة Supabase -->
+    <!-- استدعاء مكتبة Supabase (v2) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
-            /* نظام ألوان أبيض / أسود */
-            --bg-dark: #000000;            /* خلفية الصفحة */
-            --card-bg: rgba(255,255,255,0.03); /* خلفية البطاقة (شفافة) */
+            --bg-dark: #000000;
+            --card-bg: rgba(255,255,255,0.03);
             --border-color: rgba(255,255,255,0.06);
             --border-focus: #ffffff;
             --accent: #ffffff;
@@ -24,102 +23,65 @@
             --text-muted: #bdbdbd;
             --radius: 12px;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         html, body { height: 100%; }
         body { background-color: var(--bg-dark); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-
-        .login-container {
-            width: 100%; max-width: 420px; padding: 36px; display: flex; flex-direction: column;
-            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-            border: 1px solid var(--border-color);
-            border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.7); backdrop-filter: blur(6px);
-        }
-
+        .login-container { width: 100%; max-width: 420px; padding: 36px; display: flex; flex-direction: column; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.7); backdrop-filter: blur(6px); }
         .logo { text-align: center; font-size: 1.25rem; font-weight: 800; margin-bottom: 12px; color: var(--text-main); text-decoration: none; }
         .logo span { font-weight: 900; margin-left: 6px; color: var(--text-muted); }
-
         .title { text-align: center; font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; color: var(--text-main); }
-
         .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; align-items: center; }
-        
-        /* زر جوجل الجديد */
-        .btn-google {
-            width: 100%; height: 46px; border-radius: 10px; border: 1px solid var(--border-color);
-            background: #ffffff; color: #000000; font-weight: 700; font-size: 1rem;
-            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s;
-        }
+        .btn-google { width: 100%; height: 46px; border-radius: 10px; border: 1px solid var(--border-color); background: #ffffff; color: #000000; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; }
         .btn-google:hover { background: #e6e6e6; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
         .btn-google img { width: 20px; }
-
         .divider { height: 1px; background-color: var(--border-color); margin: 20px 0; position: relative; }
-        .divider::after {
-            content: "أو"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: var(--bg-dark); padding: 0 10px; color: var(--text-muted); font-size: 0.85rem;
-        }
-
+        .divider::after { content: "أو"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-dark); padding: 0 10px; color: var(--text-muted); font-size: 0.85rem; }
         .form-group { margin-bottom: 16px; }
         .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         label { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
-
         .forgot-link { font-size: 0.85rem; color: var(--accent); text-decoration: none; transition: 0.2s; }
         .forgot-link:hover { color: var(--accent-hover); }
-
-        input[type="email"], input[type="password"] {
-            width: 100%; height: 46px; padding: 0 14px; background: rgba(255,255,255,0.02); color: var(--text-main);
-            border: 1px solid var(--border-color); border-radius: 10px; font-size: 1rem; outline: none; transition: 0.18s;
-        }
+        input[type="email"], input[type="password"] { width: 100%; height: 46px; padding: 0 14px; background: rgba(255,255,255,0.02); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 10px; font-size: 1rem; outline: none; transition: 0.18s; }
         input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 4px rgba(255,255,255,0.06); }
-
-        /* تذكرني */
         .remember-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; cursor: pointer; user-select: none; }
         .remember-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
-
-        .submit-btn {
-            width: 100%; height: 46px; background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
-            color: #ffffff; border: 1px solid var(--border-color); border-radius: 10px; font-size: 1rem; font-weight: 700;
-            cursor: pointer; margin-top: 6px; transition: 0.18s;
-        }
+        .submit-btn { width: 100%; height: 46px; background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); color: #ffffff; border: 1px solid var(--border-color); border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 6px; transition: 0.18s; }
         .submit-btn:hover { background: rgba(255,255,255,0.15); border-color: #ffffff; }
-
         .footer-text { text-align: center; margin-top: 18px; font-size: 0.9rem; color: var(--text-muted); }
         .footer-text a { font-weight: 600; text-decoration: none; color: var(--accent); transition: 0.18s; }
         .footer-text a:hover { color: var(--accent-hover); }
-
-        @media (max-width: 420px) {
-            .login-container { padding: 20px; }
-        }
+        @media (max-width: 420px) { .login-container { padding: 20px; } }
     </style>
 </head>
 <body>
 
-<div class="login-container" role="main">
-    <a href="index.html" class="logo">sl-Dubbing <span>||</span></a>
-    <h1 class="title">مرحباً بعودتك</h1>
+<div class="login-container" role="main" aria-labelledby="pageTitle">
+    <a href="index.html" class="logo" aria-label="sl-Dubbing home">sl-Dubbing <span>||</span></a>
+    <h1 id="pageTitle" class="title">مرحباً بعودتك</h1>
 
     <div class="oauth-group">
-        <button class="btn-google" onclick="loginWithGoogle()">
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google Logo">
+        <button type="button" class="btn-google" id="googleBtn" aria-label="تسجيل الدخول عبر جوجل">
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google Logo" />
             المتابعة باستخدام جوجل
         </button>
     </div>
 
-    <div class="divider"></div>
+    <div class="divider" aria-hidden="true"></div>
 
     <form id="loginForm" novalidate>
         <div class="form-group">
             <div class="label-row">
                 <label for="email">البريد الإلكتروني</label>
             </div>
-            <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email">
+            <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email" aria-required="true">
         </div>
 
         <div class="form-group">
             <div class="label-row">
                 <label for="password">كلمة المرور</label>
-                <a href="#" class="forgot-link" id="forgotLink">نسيت كلمة المرور؟</a>
+                <a href="forgot.html" class="forgot-link" id="forgotLink" rel="noopener noreferrer">نسيت كلمة المرور؟</a>
             </div>
-            <input type="password" id="password" name="password" required autocomplete="current-password">
+            <input type="password" id="password" name="password" required autocomplete="current-password" aria-required="true">
         </div>
 
         <label class="remember-row" for="rememberMe">
@@ -127,65 +89,92 @@
             <span>تذكرني</span>
         </label>
 
-        <button type="submit" class="submit-btn" id="submitBtn">تسجيل الدخول</button>
+        <button type="submit" class="submit-btn" id="submitBtn" aria-label="تسجيل الدخول">تسجيل الدخول</button>
     </form>
 
-    <p class="footer-text">لا تملك حساباً؟ <a href="#">إنشاء حساب</a></p>
+    <p class="footer-text">لا تملك حساباً؟ <a href="register.html" rel="noopener noreferrer">إنشاء حساب</a></p>
 </div>
 
 <script>
-    // 1. إعداد الاتصال بـ Supabase
+    // إعداد Supabase client
     const supabaseUrl = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-    // ⚠️ هام: ضع المفتاح الخاص بك هنا بدلاً من هذا النص
-    const supabaseKey = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
+    // ضع هنا مفتاح Anon فقط. لا تضع service_role أو مفاتيح حساسة في الواجهة.
+    const supabaseKey = '<SUPABASE_ANON_KEY>';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 2. التحقق مما إذا كان المستخدم مسجلاً بالفعل
-    supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-            window.location.href = 'index.html'; // توجيه مباشر للرئيسية
+    // التحقق من الجلسة الحالية بطريقة آمنة
+    (async function checkSession() {
+        try {
+            const { data, error } = await supabase.auth.getSession();
+            if (error) {
+                console.warn('getSession error', error);
+                return;
+            }
+            if (data?.session) {
+                // المستخدم مسجل، أعد التوجيه
+                window.location.href = 'index.html';
+            }
+        } catch (e) {
+            console.error('Session check failed', e);
+        }
+    })();
+
+    // تسجيل الدخول عبر Google (OAuth)
+    document.getElementById('googleBtn').addEventListener('click', async () => {
+        try {
+            const redirectTo = window.location.origin + '/index.html';
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo }
+            });
+            if (error) {
+                alert("حدث خطأ أثناء الاتصال بجوجل: " + error.message);
+                return;
+            }
+            // بعض إصدارات SDK تعيد data.url للانتقال يدوياً
+            if (data?.url) {
+                window.location.href = data.url;
+            }
+            // وإلا Supabase سيقوم بإعادة التوجيه تلقائياً
+        } catch (e) {
+            console.error('Google sign-in failed', e);
+            alert('فشل بدء تسجيل الدخول عبر جوجل.');
         }
     });
 
-    // 3. دالة تسجيل الدخول باستخدام جوجل
-    async function loginWithGoogle() {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: window.location.origin + '/index.html' // أين يذهب بعد التسجيل الناجح
-            }
-        });
-
-        if (error) {
-            alert("حدث خطأ أثناء الاتصال بجوجل: " + error.message);
-        }
-    }
-
-    // 4. دالة تسجيل الدخول التقليدية (عبر الإيميل والباسورد) - مدعومة من Supabase
+    // تسجيل الدخول عبر البريد وكلمة المرور
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        const email = document.getElementById('email').value;
+        const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
         const btn = document.getElementById('submitBtn');
-        
+
+        if (!email || !password) {
+            alert('الرجاء إدخال البريد الإلكتروني وكلمة المرور.');
+            return;
+        }
+
         btn.textContent = "جاري التحقق...";
         btn.disabled = true;
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-
-        if (error) {
-            alert("فشل تسجيل الدخول: البريد الإلكتروني أو كلمة المرور غير صحيحة.");
-            btn.textContent = "تسجيل الدخول";
-            btn.disabled = false;
-        } else {
-            // تسجيل الدخول ناجح! توجيهه للصفحة المطلوبة
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) {
+                // رسالة عامة للمستخدم
+                alert("فشل تسجيل الدخول: البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+                btn.textContent = "تسجيل الدخول";
+                btn.disabled = false;
+                return;
+            }
+            // نجاح تسجيل الدخول
             const targetPage = sessionStorage.getItem('returnUrl') || 'index.html';
             sessionStorage.removeItem('returnUrl');
             window.location.href = targetPage;
+        } catch (err) {
+            console.error('Sign-in error', err);
+            alert('حدث خطأ أثناء محاولة تسجيل الدخول.');
+            btn.textContent = "تسجيل الدخول";
+            btn.disabled = false;
         }
     });
 </script>
