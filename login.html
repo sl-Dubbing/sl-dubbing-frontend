@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل الدخول | sl-Dubbing</title>
 
-    <!-- أيقونات (اختياري) -->
+    <!-- أيقونات -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- مكتبة Google Identity: نستخدم onload لتهيئة آمنة -->
-    <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogle()"></script>
+    <!-- استدعاء مكتبة Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
@@ -42,7 +42,15 @@
         .title { text-align: center; font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; color: var(--text-main); }
 
         .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; align-items: center; }
-        .google-btn-wrapper { width: 100%; display: flex; justify-content: center; }
+        
+        /* زر جوجل الجديد */
+        .btn-google {
+            width: 100%; height: 46px; border-radius: 10px; border: 1px solid var(--border-color);
+            background: #ffffff; color: #000000; font-weight: 700; font-size: 1rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s;
+        }
+        .btn-google:hover { background: #e6e6e6; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
+        .btn-google img { width: 20px; }
 
         .divider { height: 1px; background-color: var(--border-color); margin: 20px 0; position: relative; }
         .divider::after {
@@ -68,17 +76,16 @@
         .remember-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
 
         .submit-btn {
-            width: 100%; height: 46px; background: linear-gradient(180deg, #ffffff, #e6e6e6);
-            color: #000; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700;
-            cursor: pointer; margin-top: 6px; transition: 0.18s; box-shadow: 0 6px 18px rgba(255,255,255,0.06);
+            width: 100%; height: 46px; background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            color: #ffffff; border: 1px solid var(--border-color); border-radius: 10px; font-size: 1rem; font-weight: 700;
+            cursor: pointer; margin-top: 6px; transition: 0.18s;
         }
-        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(255,255,255,0.08); }
+        .submit-btn:hover { background: rgba(255,255,255,0.15); border-color: #ffffff; }
 
         .footer-text { text-align: center; margin-top: 18px; font-size: 0.9rem; color: var(--text-muted); }
         .footer-text a { font-weight: 600; text-decoration: none; color: var(--accent); transition: 0.18s; }
         .footer-text a:hover { color: var(--accent-hover); }
 
-        /* استجابة للشاشات الصغيرة */
         @media (max-width: 420px) {
             .login-container { padding: 20px; }
         }
@@ -86,22 +93,25 @@
 </head>
 <body>
 
-<div class="login-container" role="main" aria-labelledby="pageTitle">
-    <a href="index.html" class="logo" aria-label="الصفحة الرئيسية">sl-Dubbing <span>||</span></a>
-    <h1 id="pageTitle" class="title">مرحباً بعودتك</h1>
+<div class="login-container" role="main">
+    <a href="index.html" class="logo">sl-Dubbing <span>||</span></a>
+    <h1 class="title">مرحباً بعودتك</h1>
 
-    <div class="oauth-group" aria-hidden="false">
-        <div id="googleBtn" class="google-btn-wrapper" role="button" aria-label="تسجيل الدخول بواسطة جوجل"></div>
+    <div class="oauth-group">
+        <button class="btn-google" onclick="loginWithGoogle()">
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google Logo">
+            المتابعة باستخدام جوجل
+        </button>
     </div>
 
-    <div class="divider" aria-hidden="true"></div>
+    <div class="divider"></div>
 
     <form id="loginForm" novalidate>
         <div class="form-group">
             <div class="label-row">
                 <label for="email">البريد الإلكتروني</label>
             </div>
-            <input type="email" id="email" name="email" placeholder="name@company.com" required aria-required="true" autocomplete="email">
+            <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email">
         </div>
 
         <div class="form-group">
@@ -109,130 +119,75 @@
                 <label for="password">كلمة المرور</label>
                 <a href="#" class="forgot-link" id="forgotLink">نسيت كلمة المرور؟</a>
             </div>
-            <input type="password" id="password" name="password" required aria-required="true" autocomplete="current-password">
+            <input type="password" id="password" name="password" required autocomplete="current-password">
         </div>
 
         <label class="remember-row" for="rememberMe">
-            <input type="checkbox" id="rememberMe" name="rememberMe" checked aria-checked="true">
+            <input type="checkbox" id="rememberMe" name="rememberMe" checked>
             <span>تذكرني</span>
         </label>
 
-        <button type="submit" class="submit-btn" aria-label="تسجيل الدخول">تسجيل الدخول</button>
+        <button type="submit" class="submit-btn" id="submitBtn">تسجيل الدخول</button>
     </form>
 
-    <p class="footer-text">لا تملك حساباً؟ <a href="https://accounts.google.com/signup" target="_blank" rel="noopener">إنشاء حساب</a></p>
+    <p class="footer-text">لا تملك حساباً؟ <a href="#">إنشاء حساب</a></p>
 </div>
 
 <script>
-    // === إعدادات قابلة للتعديل ===
-    const GOOGLE_CLIENT_ID = "497619073475-6vjelufub8gci231ettdhmk5pv0cdde3.apps.googleusercontent.com"; // تأكد أنه Web OAuth 2.0 Client ID
-    const API_BASE = "https://web-production-14a1.up.railway.app";
+    // 1. إعداد الاتصال بـ Supabase
+    const supabaseUrl = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
+    // ⚠️ هام: ضع المفتاح الخاص بك هنا بدلاً من هذا النص
+    const supabaseKey = 'ضع_هنا_مفتاح_anon_public_الطويل_الذي_نسخته_من_موقع_supabase';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // تهيئة Google بعد تحميل السكربت (onload يستدعي initGoogle)
-    function initGoogle() {
-        // تحقق من وجود الكائنات المطلوبة
-        if (!window.google || !google.accounts || !google.accounts.id) {
-            console.warn("مكتبة Google Identity لم تُحمّل بعد. إعادة المحاولة خلال 100ms...");
-            return setTimeout(initGoogle, 100);
+    // 2. التحقق مما إذا كان المستخدم مسجلاً بالفعل
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+            window.location.href = 'index.html'; // توجيه مباشر للرئيسية
         }
-
-        try {
-            google.accounts.id.initialize({
-                client_id: GOOGLE_CLIENT_ID,
-                callback: handleGoogleResponse,
-                ux_mode: 'popup' // أو 'redirect' حسب تفضيلك وخادمك
-            });
-
-            // renderButton يقبل خيارات محدودة؛ نستخدم theme مناسب للأبيض/أسود
-            google.accounts.id.renderButton(
-                document.getElementById("googleBtn"),
-                { theme: "outline", size: "large" }
-            );
-
-            // اختياري: عرض prompt تلقائي (يمكن تعطيله)
-            // google.accounts.id.prompt();
-        } catch (err) {
-            console.error("خطأ أثناء تهيئة Google Identity:", err);
-        }
-    }
-
-    // معالجة استجابة Google
-    async function handleGoogleResponse(response) {
-        if (!response || !response.credential) {
-            alert("لم يتم استلام بيانات المصادقة من جوجل.");
-            return;
-        }
-
-        try {
-            const res = await fetch(`${API_BASE}/api/auth/google`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // يتطلب إعدادات CORS على الخادم
-                body: JSON.stringify({ credential: response.credential })
-            });
-
-            // تحقق من حالة الاستجابة قبل قراءة JSON
-            if (!res.ok) {
-                // حاول قراءة رسالة خطأ من الخادم إن وُجدت
-                let errText = `خطأ في الاتصال بالخادم: ${res.status} ${res.statusText}`;
-                try {
-                    const errJson = await res.json();
-                    if (errJson && errJson.error) errText += ` - ${errJson.error}`;
-                } catch (e) { /* لا تفعل شيئاً */ }
-                alert(errText);
-                return;
-            }
-
-            const data = await res.json();
-
-            if (data && data.success) {
-                // اختيار التخزين بناءً على تذكرني
-                const remember = document.getElementById('rememberMe')?.checked === true;
-                const storage = remember ? localStorage : sessionStorage;
-
-                // لا نحذف بيانات التخزين الآخر إلا إذا أردنا استبدالها صراحة
-                // حفظ التوكن وبيانات المستخدم (إن وُجدت)
-                if (data.token) {
-                    try {
-                        storage.setItem('token', data.token);
-                    } catch (e) {
-                        console.warn("فشل حفظ التوكن في التخزين:", e);
-                    }
-                }
-                if (data.user) {
-                    try {
-                        storage.setItem('sl_user', JSON.stringify(data.user));
-                    } catch (e) {
-                        console.warn("فشل حفظ بيانات المستخدم في التخزين:", e);
-                    }
-                }
-
-                // توجيه ذكي: إلى returnUrl إن وُجد، وإلا إلى dubbing.html
-                const targetPage = sessionStorage.getItem('returnUrl') || 'dubbing.html';
-                sessionStorage.removeItem('returnUrl');
-                window.location.href = targetPage;
-            } else {
-                const msg = (data && (data.error || data.message)) ? (data.error || data.message) : "فشل تسجيل الدخول.";
-                alert("Login failed: " + msg);
-            }
-        } catch (err) {
-            console.error("خطأ أثناء إرسال بيانات المصادقة:", err);
-            alert("خطأ في الاتصال. تأكد من تشغيل الخادم وإعداد CORS بشكل صحيح.");
-        }
-    }
-
-    // معالجة إرسال النموذج التقليدي (نُبقيه بسيطاً ويُشير لاستخدام Google)
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        // يمكنك هنا تنفيذ تسجيل دخول تقليدي عبر البريد/كلمة المرور إذا أردت
-        alert("حالياً يرجى استخدام تسجيل الدخول عبر جوجل.");
     });
 
-    // نصيحة للمطور: عند استخدام credentials: 'include' في fetch
-    // يجب أن يرد الخادم برؤوس CORS التالية:
-    // Access-Control-Allow-Credentials: true
-    // Access-Control-Allow-Origin: https://your-frontend-origin.example
-    // ولا تستخدم Access-Control-Allow-Origin: * مع credentials.
+    // 3. دالة تسجيل الدخول باستخدام جوجل
+    async function loginWithGoogle() {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin + '/index.html' // أين يذهب بعد التسجيل الناجح
+            }
+        });
+
+        if (error) {
+            alert("حدث خطأ أثناء الاتصال بجوجل: " + error.message);
+        }
+    }
+
+    // 4. دالة تسجيل الدخول التقليدية (عبر الإيميل والباسورد) - مدعومة من Supabase
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const btn = document.getElementById('submitBtn');
+        
+        btn.textContent = "جاري التحقق...";
+        btn.disabled = true;
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        if (error) {
+            alert("فشل تسجيل الدخول: البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+            btn.textContent = "تسجيل الدخول";
+            btn.disabled = false;
+        } else {
+            // تسجيل الدخول ناجح! توجيهه للصفحة المطلوبة
+            const targetPage = sessionStorage.getItem('returnUrl') || 'index.html';
+            sessionStorage.removeItem('returnUrl');
+            window.location.href = targetPage;
+        }
+    });
 </script>
 </body>
 </html>
