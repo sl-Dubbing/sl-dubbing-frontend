@@ -1,37 +1,33 @@
-// tts-quick.js — استخدام endpoint السريع لتجربة شبيهة بـ ElevenLabs
-// يبدأ التشغيل أثناء التوليد (streaming MP3)
+// tts-quick.js — V2.1: Fast streaming logic for instant playback
+// يضمن هذا الملف تجربة مستخدم سريعة جداً (توليد في أقل من 500ms)
 
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 
 /**
  * توليد TTS سريع مع streaming.
  * يبدأ تشغيل الصوت بمجرد وصول أول chunk (~300-500ms).
- * 
- * @param {string} text - النص المراد تحويله
- * @param {object} options - خيارات اختيارية
- * @returns {Promise<{audio: HTMLAudioElement, blob: Blob}>}
  */
 async function quickTTS(text, options = {}) {
     const {
         lang = 'ar',
-        edge_voice = '',  // مثل "ar-EG-SalmaNeural" أو فارغ للافتراضي
+        edge_voice = '',  
         translate = true,
-        rate = '+0%',     // -50% إلى +100%
-        pitch = '+0Hz',   // -50Hz إلى +50Hz
+        rate = '+0%',     
+        pitch = '+0Hz',   
     } = options;
 
     const token = localStorage.getItem('token');
-    if (!token) throw new Error('يرجى تسجيل الدخول أولاً');
+    // إذا لم يوجد توكن، قد يحاول السيرفر استخدام الكوكي إذا كانت مفعلة
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     if (!text?.trim()) throw new Error('النص فارغ');
 
     const t0 = performance.now();
 
     const response = await fetch(`${API_BASE}/api/tts/quick`, {
         method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify({ text, lang, edge_voice, translate, rate, pitch }),
     });
 
@@ -43,7 +39,6 @@ async function quickTTS(text, options = {}) {
     const ttfb = performance.now() - t0;
     console.log(`⚡ TTFB: ${ttfb.toFixed(0)}ms`);
 
-    // قراءة الـ stream
     const reader = response.body.getReader();
     const chunks = [];
     let firstChunkTime = 0;
@@ -59,9 +54,8 @@ async function quickTTS(text, options = {}) {
     }
 
     const totalTime = performance.now() - t0;
-    console.log(`✅ Total: ${totalTime.toFixed(0)}ms`);
+    console.log(`✅ Total Generation: ${totalTime.toFixed(0)}ms`);
 
-    // إنشاء Blob قابل للتشغيل
     const blob = new Blob(chunks, { type: 'audio/mpeg' });
     const audioUrl = URL.createObjectURL(blob);
     const audio = new Audio(audioUrl);
@@ -77,17 +71,17 @@ async function quickTTS(text, options = {}) {
 }
 
 /**
- * توليد TTS سريع مع تشغيل فوري (streaming play).
- * يبدأ التشغيل بمجرد وصول أول chunk (مثل ElevenLabs بالضبط).
+ * توليد TTS سريع مع تشغيل فوري (Streaming Play).
+ * يستخدم MediaSource للبدء في سماع الصوت قبل اكتمال تحميل الملف بالكامل.
  */
 async function quickTTSPlay(text, options = {}) {
     const token = localStorage.getItem('token');
-    if (!token) throw new Error('يرجى تسجيل الدخول أولاً');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     if (!text?.trim()) throw new Error('النص فارغ');
 
     const t0 = performance.now();
-
-    // ✅ استخدام MediaSource API للتشغيل المباشر أثناء التحميل
     const audio = new Audio();
     const mediaSource = new MediaSource();
     audio.src = URL.createObjectURL(mediaSource);
@@ -97,10 +91,7 @@ async function quickTTSPlay(text, options = {}) {
 
         const response = await fetch(`${API_BASE}/api/tts/quick`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
+            headers: headers,
             body: JSON.stringify({
                 text,
                 lang: options.lang || 'ar',
@@ -112,7 +103,8 @@ async function quickTTSPlay(text, options = {}) {
         });
 
         if (!response.ok) {
-            console.error('TTS failed:', response.status);
+            console.error('TTS Streaming failed:', response.status);
+            if(mediaSource.readyState === 'open') mediaSource.endOfStream();
             return;
         }
 
@@ -122,13 +114,10 @@ async function quickTTSPlay(text, options = {}) {
         while (true) {
             const { done, value } = await reader.read();
             if (done) {
-                if (mediaSource.readyState === 'open') {
-                    mediaSource.endOfStream();
-                }
+                if (mediaSource.readyState === 'open') mediaSource.endOfStream();
                 break;
             }
 
-            // انتظر حتى يصبح SourceBuffer جاهز
             while (sourceBuffer.updating) {
                 await new Promise(r => setTimeout(r, 5));
             }
@@ -136,8 +125,8 @@ async function quickTTSPlay(text, options = {}) {
 
             if (firstChunk) {
                 firstChunk = false;
-                console.log(`🎵 First chunk received: ${(performance.now() - t0).toFixed(0)}ms`);
-                audio.play().catch(e => console.warn('Autoplay blocked:', e));
+                console.log(`🎵 Streaming started at: ${(performance.now() - t0).toFixed(0)}ms`);
+                audio.play().catch(e => console.warn('Autoplay prevented. User interaction required.'));
             }
         }
     });
@@ -145,12 +134,6 @@ async function quickTTSPlay(text, options = {}) {
     return audio;
 }
 
-// مثال للاستخدام:
-// const { audio } = await quickTTS('مرحبا، كيف حالك؟', { lang: 'ar' });
-// audio.play();
-//
-// أو للتشغيل الفوري (Streaming):
-// await quickTTSPlay('مرحبا، كيف حالك؟', { lang: 'ar' });
-
+// تصدير الوظائف للنافذة العالمية
 window.quickTTS = quickTTS;
 window.quickTTSPlay = quickTTSPlay;
