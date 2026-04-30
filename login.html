@@ -6,7 +6,7 @@
     <title>تسجيل الدخول | sl-Dubbing</title>
 
     <!-- أيقونات -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- استدعاء مكتبة Supabase (v2) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -96,23 +96,18 @@
 </div>
 
 <script>
-    // 1. إعداد Supabase client بالمفتاح الصحيح وتغيير الاسم لتجنب التعارض
+    // 1. إعداد Supabase client
     const supabaseUrl = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
     const supabaseKey = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
     const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 2. التحقق من الجلسة الحالية بطريقة آمنة
+    // 2. التحقق من الجلسة الحالية
     (async function checkSession() {
         try {
             const { data, error } = await supabaseClient.auth.getSession();
-            if (error) {
-                console.warn('getSession error', error);
-                return;
-            }
             if (data?.session) {
-                // حفظ التوكن لكي يستخدمه Railway لاحقاً
+                // حفظ التوكن للتعامل مع Railway لاحقاً
                 localStorage.setItem('token', data.session.access_token);
-                // المستخدم مسجل، أعد التوجيه
                 window.location.href = 'index.html';
             }
         } catch (e) {
@@ -120,25 +115,20 @@
         }
     })();
 
-    // 3. تسجيل الدخول عبر Google (OAuth)
+    // 3. تسجيل الدخول عبر Google
     document.getElementById('googleBtn').addEventListener('click', async () => {
         try {
-            const redirectTo = window.location.origin + '/index.html';
+            // استخدام الرابط الحالي لضمان عملها على GitHub Pages أو أي رابط
+            const redirectTo = window.location.origin + window.location.pathname.replace('login.html', 'index.html');
             const { data, error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo }
             });
-            if (error) {
-                alert("حدث خطأ أثناء الاتصال بجوجل: " + error.message);
-                return;
-            }
-            // التوجيه إلى صفحة تسجيل الدخول بحساب جوجل
-            if (data?.url) {
-                window.location.href = data.url;
-            }
+            if (error) throw error;
+            if (data?.url) window.location.href = data.url;
         } catch (e) {
             console.error('Google sign-in failed', e);
-            alert('فشل بدء تسجيل الدخول عبر جوجل.');
+            alert('فشل بدء تسجيل الدخول عبر جوجل: ' + e.message);
         }
     });
 
@@ -167,14 +157,13 @@
                 return;
             }
             
-            // ✅ نجاح تسجيل الدخول - الأهم: حفظ التوكن!
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
+                // التوجيه للصفحة التي كان يحاول زيارتها أو للرئيسية
+                const targetPage = sessionStorage.getItem('returnUrl') || 'index.html';
+                sessionStorage.removeItem('returnUrl');
+                window.location.href = targetPage;
             }
-
-            const targetPage = sessionStorage.getItem('returnUrl') || 'index.html';
-            sessionStorage.removeItem('returnUrl');
-            window.location.href = targetPage;
             
         } catch (err) {
             console.error('Sign-in error', err);
@@ -186,4 +175,3 @@
 </script>
 </body>
 </html>
-```</SUPABASE_ANON_KEY>
