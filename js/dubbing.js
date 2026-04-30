@@ -1,208 +1,159 @@
-// js/dubbing.js — المحرك الاحترافي للدبلجة الصوتية واستنساخ الأصوات
-// V4.2 - يدعم التوليد المتوازي والمراقبة الذكية لـ Railway
-
+// dubbing.js — معالجة متوازية حقيقية لكل اللغات
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 
-// -----------------------------
-// 🟢 مساعدة: إعداد خيارات Fetch
-// -----------------------------
-function makeFetchOptions(method = 'GET', token = null, body = null) {
-    const opts = { method };
-    const headers = {};
-
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    } else {
-        opts.credentials = 'include';
-    }
-
-    // ملاحظة: عند استخدام FormData، المتصفح يضع Content-Type تلقائياً مع الـ boundary
-    if (body && !(body instanceof FormData)) {
-        headers['Content-Type'] = 'application/json';
-    }
-
-    opts.headers = headers;
-    if (body !== null) opts.body = body;
-    return opts;
-}
-
-// -----------------------------
-// 🟢 بدء عملية الدبلجة
-// -----------------------------
 async function startDubbing() {
-    const fileInput = document.getElementById('mediaFile');
-    const file = fileInput?.files?.[0];
+    const file = document.getElementById('mediaFile')?.files?.[0];
     const voiceSelect = document.getElementById('voiceSelect');
-    const customVoiceInput = document.getElementById('customVoice');
-    
-    // جلب اللغات المختارة (نعتمد على Set عالمي اسمه selectedLangs)
-    if (typeof window.selectedLangs === 'undefined' || window.selectedLangs.size === 0) {
-        showToast('يرجى اختيار لغة واحدة على الأقل للدبلجة', '#f59e0b');
-        return;
-    }
+    const customVoice = document.getElementById('customVoice');
+    const token = localStorage.getItem('token');
 
-    if (!file) {
-        showToast('يرجى رفع ملف الفيديو أو الصوت أولاً', '#ef4444');
-        return;
-    }
+    if (!token) return showToast('يرجى تسجيل الدخول', '#f59e0b');
+    if (!file) return showToast('ارفع ملفاً أولاً', '#ef4444');
+    if (!window.selectedLangs || window.selectedLangs.size === 0) return showToast('اختر لغة', '#ef4444');
 
-    // عناصر الواجهة
     const dubBtn = document.getElementById('dubBtn');
     const progressArea = document.getElementById('progressArea');
+    const resultsCard = document.getElementById('resultsCard');
+    const resultsList = document.getElementById('resultsList');
     const statusTxt = document.getElementById('statusTxt');
     const progFill = document.getElementById('progFill');
-    const resultsList = document.getElementById('resultsList');
-    const resultsCard = document.getElementById('resultsCard');
+    const miniStatus = document.getElementById('miniStatus');
 
-    // تفعيل وضع "جاري العمل"
     dubBtn.disabled = true;
     progressArea.style.display = 'block';
     resultsCard.style.display = 'block';
-    resultsList.innerHTML = ''; // تنظيف النتائج السابقة
-    progFill.style.width = '10%';
-    statusTxt.innerText = '⏳ جاري رفع الملف وتجهيز الطلبات...';
+    resultsList.innerHTML = '';
+    progFill.style.width = '5%';
 
-    const token = localStorage.getItem('token');
-    const langs = Array.from(window.selectedLangs);
-    const totalTasks = langs.length;
-    let completedTasks = 0;
+    const langs = [...window.selectedLangs];
+    const total = langs.length;
+    let completed = 0;
 
-    // تشغيل المهام بشكل متوازي لكل لغة
-    const dubbingPromises = langs.map(async (langCode) => {
-        // إنشاء بطاقة نتيجة أولية لكل لغة
-        const langData = window.LANGUAGES?.find(l => l.code === langCode);
-        const cardId = `res-${langCode}`;
-        renderInitialResult(cardId, langData, langCode);
+    statusTxt.innerText = `بدء معالجة ${total} لغة بالتوازي...`;
+    if (miniStatus) miniStatus.textContent = `يعالج ${total} لغة`;
+
+    // إنشاء بطاقة لكل لغة
+    langs.forEach(code => {
+        const lang = window.LANGUAGES?.find(l => l.code === code);
+        if (!lang) return;
+        const card = document.createElement('div');
+        card.className = 'result-item';
+        card.id = `result-${code}`;
+        card.innerHTML = `
+            <div class="result-item-header">
+                <span class="result-item-flag">${lang.flag}</span>
+                <span class="result-item-name">${lang.name_ar}</span>
+                <span class="result-item-status" id="status-${code}">في الانتظار</span>
+            </div>
+            <div id="body-${code}" style="font-size:0.85rem;color:#9aa1ac;padding:6px;">⏳ جاري الإرسال...</div>
+        `;
+        resultsList.appendChild(card);
+    });
+
+    // 🚀 معالجة متوازية — كل لغة ترسل request مستقل في نفس الوقت
+    const promises = langs.map(async (langCode) => {
+        const lang = window.LANGUAGES?.find(l => l.code === langCode);
+        const statusEl = document.getElementById(`status-${langCode}`);
+        const bodyEl = document.getElementById(`body-${langCode}`);
 
         try {
+            statusEl.textContent = 'جاري الرفع...';
+
             const formData = new FormData();
             formData.append('media_file', file);
             formData.append('lang', langCode);
 
-            // تحديد الصوت (مخصص أم جاهز أم أصلي)
-            if (customVoiceInput?.files?.[0]) {
-                formData.append('voice_sample', customVoiceInput.files[0]);
+            if (customVoice?.files?.[0]) {
+                formData.append('voice_sample', customVoice.files[0]);
                 formData.append('voice_id', 'custom');
             } else if (voiceSelect?.value && voiceSelect.value !== 'original') {
                 formData.append('voice_id', voiceSelect.value);
             } else {
-                formData.append('voice_id', 'original');
+                formData.append('voice_id', 'source');
             }
 
-            // 1. إرسال الطلب للسيرفر
-            const res = await fetch(`${API_BASE}/api/dubbing`, makeFetchOptions('POST', token, formData));
-            
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({ error: 'Server Error' }));
-                throw new Error(err.error || `Error ${res.status}`);
-            }
+            const res = await fetch(`${API_BASE}/api/dub`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
 
-            const data = await res.json();
-            const jobId = data.job_id;
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
 
-            // 2. المراقبة (Polling) لحين الانتهاء
-            updateResultStatus(cardId, '⏳ جاري الدبلجة...');
-            const finalData = await waitForJob(jobId, token, cardId);
+            statusEl.textContent = 'جاري المعالجة...';
+            bodyEl.innerHTML = '<div style="font-size:0.85rem;color:#2563eb;padding:6px;">🎬 Modal تعالج المقاطع...</div>';
 
-            if (finalData) {
-                renderFinalSuccess(cardId, langCode, langData, finalData.audio_url || finalData.result_url);
-            }
+            const finalData = await waitForJob(data.job_id, token, statusEl);
 
-        } catch (err) {
-            console.error(`Dubbing failed for ${langCode}:`, err);
-            renderFinalError(cardId, langCode, err.message);
+            statusEl.textContent = '✓ مكتمل';
+            statusEl.classList.add('success');
+            bodyEl.innerHTML = `
+                <audio controls src="${finalData.audio_url}"></audio>
+                <a href="${finalData.audio_url}" download="dub_${langCode}_${Date.now()}.wav" class="btn-download" style="margin-top:8px;">
+                    <i class="fas fa-download"></i> تحميل ${lang.name_ar}
+                </a>
+            `;
+        } catch (e) {
+            console.error(`Lang ${langCode} failed:`, e);
+            statusEl.textContent = '✗ فشل';
+            statusEl.classList.add('error');
+            bodyEl.innerHTML = `<div style="color:#ef4444;font-size:0.85rem;padding:6px;">${e.message}</div>`;
         } finally {
-            completedTasks++;
-            const progress = 10 + ((completedTasks / totalTasks) * 90);
-            progFill.style.width = `${progress}%`;
-            statusTxt.innerText = `تمت معالجة ${completedTasks} من أصل ${totalTasks} لغة`;
+            completed++;
+            const pct = Math.round((completed / total) * 95) + 5;
+            progFill.style.width = pct + '%';
+            statusTxt.innerText = `${completed}/${total} لغة مكتملة`;
         }
     });
 
-    await Promise.all(dubbingPromises);
-    statusTxt.innerText = '✅ اكتملت جميع مهام الدبلجة';
+    await Promise.all(promises);
+
+    progFill.style.width = '100%';
+    statusTxt.innerText = `✓ اكتملت ${total} لغة`;
+    if (miniStatus) miniStatus.textContent = 'مكتمل';
+    showToast(`تمت دبلجة ${total} لغة`, '#10b981');
     dubBtn.disabled = false;
-    
-    // تحديث رصيد المستخدم
     if (typeof checkAuth === 'function') checkAuth();
 }
 
-// -----------------------------
-// 🔄 نظام المراقبة (Polling)
-// -----------------------------
-async function waitForJob(jobId, token, cardId) {
-    let attempts = 0;
-    const maxAttempts = 100; // حوالي 5 دقائق
+async function waitForJob(jobId, token, statusEl) {
+    const start = Date.now();
+    const TIMEOUT = 30 * 60 * 1000;
 
-    while (attempts < maxAttempts) {
-        await new Promise(r => setTimeout(r, 3000)); // فحص كل 3 ثواني
-        attempts++;
-
+    while (Date.now() - start < TIMEOUT) {
         try {
-            const res = await fetch(`${API_BASE}/api/job/${jobId}`, makeFetchOptions('GET', token));
-            if (!res.ok) continue;
-
+            const res = await fetch(`${API_BASE}/api/job/${jobId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const data = await res.json();
             if (data.status === 'completed') return data;
-            if (data.status === 'failed') throw new Error(data.error || 'فشلت المهمة في السيرفر');
-
-            // تحديث وقت الانتظار في البطاقة
-            updateResultStatus(cardId, `⏳ جاري المعالجة (${attempts * 3}s)`);
-
-        } catch (e) {
-            console.warn("Polling error:", e);
-        }
+            if (data.status === 'failed') throw new Error('فشلت المعالجة في Modal');
+            if (statusEl) statusEl.textContent = `جاري المعالجة... ${Math.round((Date.now() - start)/1000)}ث`;
+        } catch (e) { console.warn('Poll error:', e); }
+        await new Promise(r => setTimeout(r, 3000));
     }
-    throw new Error('انتهى وقت الانتظار (Timeout)');
+    throw new Error('انتهت المهلة');
 }
 
-// -----------------------------
-// 🎨 وظائف رسم النتائج في الواجهة
-// -----------------------------
-function renderInitialResult(cardId, lang, code) {
-    const list = document.getElementById('resultsList');
-    const div = document.createElement('div');
-    div.id = cardId;
-    div.className = 'result-item card';
-    div.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="font-weight:bold;">${lang?.flag || '🌍'} ${lang?.name || code}</div>
-            <div class="status-label" style="font-size:0.8rem; color:#aaa;">⏳ جاري الرفع...</div>
-        </div>
-    `;
-    list.appendChild(div);
-}
-
-function updateResultStatus(cardId, text) {
-    const card = document.getElementById(cardId);
-    if (card) {
-        const label = card.querySelector('.status-label');
-        if (label) label.innerText = text;
+function handleCustomVoice(input) {
+    const txt = document.getElementById('customVoiceTxt');
+    if (input.files && input.files[0]) {
+        if (txt) { txt.textContent = '✓ ' + input.files[0].name; txt.style.color = '#10b981'; }
     }
 }
 
-function renderFinalSuccess(cardId, code, lang, url) {
-    const card = document.getElementById(cardId);
-    if (!card) return;
-    card.style.borderColor = '#10b981';
-    card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div style="font-weight:bold; color:#10b981;">${lang?.flag || '🌍'} ${lang?.name || code} ✅</div>
-            <a href="${url}" download="dubbed_${code}.mp3" class="btn-mini" style="background:#10b981; color:white; padding:4px 8px; border-radius:6px; font-size:0.7rem; text-decoration:none;">تحميل</a>
-        </div>
-        <audio controls src="${url}" style="width:100%; height:35px;"></audio>
-    `;
-}
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('chooseMediaBtn')?.addEventListener('click', () => document.getElementById('mediaFile')?.click());
+    document.getElementById('mediaFile')?.addEventListener('change', () => {
+        const f = document.getElementById('mediaFile').files?.[0];
+        const txt = document.getElementById('fileTxt');
+        if (f && txt) { txt.textContent = '✓ ' + f.name; txt.style.color = '#10b981'; }
+    });
+    document.getElementById('chooseCustomVoiceBtn')?.addEventListener('click', () => document.getElementById('customVoice')?.click());
+    document.getElementById('customVoice')?.addEventListener('change', (e) => handleCustomVoice(e.target));
+    document.getElementById('dubBtn')?.addEventListener('click', startDubbing);
+});
 
-function renderFinalError(cardId, code, error) {
-    const card = document.getElementById(cardId);
-    if (!card) return;
-    card.style.borderColor = '#ef4444';
-    card.innerHTML = `
-        <div style="font-weight:bold; color:#ef4444; margin-bottom:5px;">${code} ❌</div>
-        <div style="font-size:0.75rem; color:#ef4444; background:rgba(239,68,68,0.1); padding:5px; border-radius:5px;">${error}</div>
-    `;
-}
-
-// تصدير للنافذة العالمية
 window.startDubbing = startDubbing;
+window.handleCustomVoice = handleCustomVoice;
