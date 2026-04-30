@@ -1,360 +1,121 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AI Dubbing Studio | sl-Dubbing</title>
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-  <link rel="stylesheet" href="css/style.css" />
-  <meta name="referrer" content="no-referrer" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AI Dubbing | sl-Dubbing</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script>window.LANG_STORAGE_KEY = 'dub_langs';</script>
 </head>
 <body>
 
-  <!-- شريط علوي -->
-  <header class="top-bar">
-    <div style="display:flex; align-items:center; gap:12px;">
-      <button class="menu-btn" id="menuToggle" type="button" aria-label="قائمة">
-        <i class="fas fa-bars" aria-hidden="true"></i>
-        <span>القائمة</span>
-      </button>
-      <div class="top-logo"><h2>sl-Dubbing</h2></div>
-    </div>
-    <div class="top-actions">
-      <span class="account-badge" id="topAccountBadge" aria-live="polite">حساب تجريبي</span>
-    </div>
-  </header>
+<header class="top-bar">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i><span>القائمة</span></button>
+    <div class="top-logo"><h2>sl-Dubbing</h2></div>
+  </div>
+  <span class="account-badge" id="topAccountBadge">حساب تجريبي</span>
+</header>
 
-  <!-- خلفية معتمة عند فتح Sidebar -->
-  <div class="overlay" id="overlay" aria-hidden="true"></div>
+<div class="overlay" id="overlay"></div>
 
-  <!-- الشريط الجانبي -->
-  <aside class="sidebar" id="sidebar" role="navigation" aria-label="الشريط الجانبي">
-    <div class="sidebar-user-section" id="authSection" aria-live="polite">
-      <div style="color:var(--text-muted); font-size:0.9rem; text-align:center;">جاري التحقق من بياناتك...</div>
-    </div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-user-section" id="authSection">
+    <div style="color:#9aa1ac;font-size:0.9rem;text-align:center;">جاري التحقق...</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">القائمة الرئيسية</div>
+    <ul>
+      <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
+      <li><a href="dubbing.html" class="active"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
+      <li><a href="tts.html"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
+    </ul>
+  </nav>
+  <div class="panel summary">
+    <h4>ملخص المشروع</h4>
+    <div class="meta"><strong>الحالة:</strong> <span id="miniStatus">في الانتظار</span></div>
+    <div class="meta"><strong>المعمارية:</strong> Edge-TTS + OpenVoice</div>
+    <div class="meta"><strong>اللغات:</strong> <span id="miniLangs">لم تُختر بعد</span></div>
+  </div>
+</aside>
 
-    <nav class="sidebar-nav" aria-label="قائمة التنقل">
-      <div class="nav-label">القائمة الرئيسية</div>
-      <ul>
-        <li><a href="index.html"><i class="fas fa-home" aria-hidden="true"></i> الرئيسية</a></li>
-        <li><a href="dubbing.html" class="active"><i class="fas fa-film" aria-hidden="true"></i> استوديو الدبلجة</a></li>
-        <li><a href="tts.html"><i class="fas fa-microphone" aria-hidden="true"></i> تحويل النص لصوت</a></li>
-      </ul>
-    </nav>
+<main class="main-content">
+  <div class="container">
+    <header class="main-header">
+      <h1>استوديو الدبلجة الاحترافي</h1>
+      <p class="lead">ارفع ملفك ودبلجه إلى لغات متعددة بالتوازي</p>
+    </header>
 
-    <div class="panel summary" aria-hidden="false">
-      <h4>ملخص المشروع</h4>
-      <div class="meta"><strong>الحالة:</strong> <span id="miniStatus">في الانتظار</span></div>
-      <div class="meta"><strong>المعمارية:</strong> Edge-TTS + OpenVoice v2</div>
-      <div class="meta"><strong>اللغات:</strong> <span id="miniLangs">لم تُختر بعد</span></div>
-      <div class="meta"><strong>الصوت:</strong> <span id="miniVoice">الصوت الأصلي</span></div>
-    </div>
-  </aside>
+    <div class="workspace-grid">
+      <div class="tools-container">
 
-  <!-- المحتوى الرئيسي -->
-  <main class="main-content" id="mainContent" role="main">
-    <div class="container">
-      <header class="main-header">
-        <h1>استوديو الدبلجة الاحترافي</h1>
-        <p class="lead">ارفع ملفك الآن ودبلجه إلى لغات متعددة في خطوة واحدة</p>
-      </header>
+        <section class="card">
+          <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
+          <div class="upload-wrapper">
+            <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;">
+            <button class="btn-secondary" id="chooseMediaBtn" type="button"><i class="fas fa-file-video"></i> اختر فيديو أو صوت</button>
+            <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
+          </div>
+        </section>
 
-      <div class="workspace-grid">
-        <div class="tools-container">
+        <section class="card">
+          <h3><i class="fas fa-globe"></i> 2. اختر اللغات (متعدد)</h3>
+          <div class="selected-langs-display" id="selectedLangsDisplay">
+            <div class="selected-langs-empty">جاري التحميل...</div>
+          </div>
+          <div class="lang-search-wrapper">
+            <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة...">
+            <i class="fas fa-search lang-search-icon"></i>
+          </div>
+          <div class="lang-counter">
+            <span id="langCount">جاري التحميل...</span>
+            <span style="color:#9aa1ac;font-size:0.75rem;">★ = الأكثر استخداماً</span>
+          </div>
+          <div class="lang-list" id="langList"></div>
+        </section>
 
-          <!-- 1. رفع الوسائط -->
-          <section class="card" aria-labelledby="uploadTitle">
-            <h3 id="uploadTitle"><i class="fas fa-upload" aria-hidden="true"></i> 1. رفع الوسائط</h3>
-            <div class="upload-wrapper">
-              <input type="file" id="mediaFile" accept="video/*,audio/*" />
-              <button class="btn-secondary" type="button" id="chooseMediaBtn" aria-label="اختر فيديو أو صوت">
-                <i class="fas fa-file-video" aria-hidden="true"></i> اختر فيديو أو صوت
-              </button>
-              <p id="fileTxt" class="file-info" aria-live="polite">لم يتم اختيار ملف بعد</p>
-            </div>
-          </section>
+        <section class="card">
+          <h3><i class="fas fa-microphone-alt"></i> 3. اختيار الصوت</h3>
+          <div style="margin-bottom:14px;">
+            <label class="muted">صوت جاهز أو الأصلي</label>
+            <select id="voiceSelect" class="styled-select">
+              <option value="original" selected>المحافظة على الصوت الأصلي</option>
+            </select>
+          </div>
+          <div class="voice-clone-box">
+            <label class="muted">أو ارفع عينة صوتية مخصصة</label>
+            <input type="file" id="customVoice" accept="audio/*" style="display:none;">
+            <button class="btn-secondary" id="chooseCustomVoiceBtn" type="button"><i class="fas fa-plus"></i> رفع عينة من جهازك</button>
+            <p id="customVoiceTxt" class="file-info"></p>
+          </div>
+        </section>
 
-          <!-- 2. اختيار اللغات (متعدد) -->
-          <section class="card" aria-labelledby="langsTitle">
-            <h3 id="langsTitle"><i class="fas fa-globe" aria-hidden="true"></i> 2. اختر اللغات (يمكن اختيار عدة لغات)</h3>
+        <button id="dubBtn" class="btn-primary-action" type="button">
+          <i class="fas fa-wand-magic-sparkles"></i> بدء الدبلجة الآن
+        </button>
+      </div>
 
-            <!-- اللغات المختارة (pills) -->
-            <div class="selected-langs-display" id="selectedLangsDisplay" aria-live="polite">
-              <div class="selected-langs-empty">لم يتم اختيار لغة بعد. ابحث واضغط لاختيار لغة أو أكثر.</div>
-            </div>
-
-            <!-- البحث -->
-            <div class="lang-search-wrapper" style="position:relative;">
-              <input type="text" id="langSearch" class="lang-search"
-                     placeholder="ابحث عن لغة... (مثال: عربي، فرنسي، japan)"
-                     aria-label="بحث عن لغة">
-              <i class="fas fa-search lang-search-icon" aria-hidden="true"></i>
-            </div>
-
-            <div class="lang-counter" style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-              <span id="langCount">جاري التحميل...</span>
-              <span style="color:var(--text-muted); font-size:0.75rem;">★ = الأكثر استخداماً</span>
-            </div>
-
-            <div class="lang-list" id="langList" role="listbox" aria-multiselectable="true"></div>
-          </section>
-
-          <!-- 3. اختيار الصوت -->
-          <section class="card" aria-labelledby="voiceTitle">
-            <h3 id="voiceTitle"><i class="fas fa-microphone-alt" aria-hidden="true"></i> 3. اختيار الصوت</h3>
-
-            <div style="margin-bottom:14px;">
-              <label class="muted">الخيار الأول: استخدم صوتاً جاهزاً أو الأصلي</label>
-              <select id="voiceSelect" class="styled-select" aria-label="اختيار صوت">
-                <option value="original" selected>المحافظة على الصوت الأصلي</option>
-              </select>
-            </div>
-
-            <div class="voice-clone-box">
-              <label class="muted">الخيار الثاني: ارفع عينة صوتية مخصصة</label>
-              <input type="file" id="customVoice" accept="audio/*" />
-              <button class="btn-secondary" type="button" id="chooseCustomVoiceBtn" aria-label="رفع عينة صوتية">
-                <i class="fas fa-plus" aria-hidden="true"></i> رفع عينة من جهازك
-              </button>
-              <p id="customVoiceTxt" class="file-info" aria-live="polite"></p>
-            </div>
-          </section>
-
-          <button id="dubBtn" class="btn-primary-action" type="button" aria-label="بدء الدبلجة الآن">
-            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> بدء الدبلجة الآن
-          </button>
-        </div>
-
-        <!-- النتائج -->
-        <div class="results-container">
-          <section class="card" id="progressArea" style="display:none;" aria-live="polite">
-            <h3><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> جاري المعالجة...</h3>
-            <p id="statusTxt">الحالة: في الانتظار</p>
-            <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-              <div id="progFill" class="prog-fill" style="width:0%"></div>
-            </div>
-            <div class="perf-stats" id="perfStats" aria-hidden="true"></div>
-          </section>
-
-          <!-- النتائج المتعددة (لكل لغة) -->
-          <section class="card" id="resultsCard" style="display:none;">
-            <h3><i class="fas fa-check-circle" aria-hidden="true"></i> النتائج</h3>
-            <div class="results-multilang" id="resultsList" aria-live="polite"></div>
-          </section>
-        </div>
+      <div class="results-container">
+        <section class="card" id="progressArea" style="display:none;">
+          <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
+          <p id="statusTxt">في الانتظار</p>
+          <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
+        </section>
+        <section class="card" id="resultsCard" style="display:none;">
+          <h3><i class="fas fa-check-circle"></i> النتائج</h3>
+          <div class="results-multilang" id="resultsList"></div>
+        </section>
       </div>
     </div>
-  </main>
+  </div>
+</main>
 
-  <div id="toasts" aria-live="polite"></div>
+<div id="toasts"></div>
 
-  <!-- ملفات السكربت الأساسية (الترتيب مهم) -->
-  <script src="js/shared.js"></script>
-  <script src="js/languages-data.js"></script>
-  <script src="js/tts-quick.js"></script>
-  <script src="js/tts.js"></script>
-  <script src="js/dubbing.js"></script>
-
-  <!-- سكربت إضافي لضمان عمل القوائم والمصادقة بشكل آمن -->
-  <script>
-    (function () {
-      // Fallback showToast إن لم تُعرّف في shared.js
-      if (typeof showToast !== 'function') {
-        window.showToast = function (msg, color = '#ef4444') {
-          try {
-            const t = document.getElementById('toasts');
-            if (!t) return alert(msg);
-            const box = document.createElement('div');
-            box.className = 'toast';
-            box.style.background = color;
-            box.style.color = '#fff';
-            box.style.padding = '8px 12px';
-            box.style.borderRadius = '8px';
-            box.style.marginTop = '8px';
-            box.textContent = msg;
-            t.appendChild(box);
-            setTimeout(() => box.remove(), 4000);
-          } catch (e) { console.warn('showToast fallback failed', e); }
-        };
-      }
-
-      // عناصر رئيسية
-      const menuToggle = document.getElementById('menuToggle');
-      const overlay = document.getElementById('overlay');
-      const chooseMediaBtn = document.getElementById('chooseMediaBtn');
-      const mediaFile = document.getElementById('mediaFile');
-      const fileTxt = document.getElementById('fileTxt');
-      const chooseCustomVoiceBtn = document.getElementById('chooseCustomVoiceBtn');
-      const customVoice = document.getElementById('customVoice');
-      const customVoiceTxt = document.getElementById('customVoiceTxt');
-      const dubBtn = document.getElementById('dubBtn');
-      const langSearch = document.getElementById('langSearch');
-
-      // دوال آمنة لفتح/إغلاق الشريط الجانبي (تستخدم shared.js إن وُجدت)
-      function safeToggleSidebar() {
-        if (typeof window.toggleSidebar === 'function') return window.toggleSidebar();
-        const sidebar = document.getElementById('sidebar');
-        const ov = document.getElementById('overlay');
-        if (!sidebar || !ov) return;
-        sidebar.classList.toggle('active');
-        ov.classList.toggle('active');
-        document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
-      }
-      function safeCloseSidebar() {
-        if (typeof window.closeSidebar === 'function') return window.closeSidebar();
-        const sidebar = document.getElementById('sidebar');
-        const ov = document.getElementById('overlay');
-        if (!sidebar || !ov) return;
-        sidebar.classList.remove('active');
-        ov.classList.remove('active');
-        document.body.style.overflow = '';
-      }
-
-      // ربط أزرار القوائم بأمان
-      if (menuToggle) {
-        menuToggle.removeEventListener('click', safeToggleSidebar);
-        menuToggle.addEventListener('click', function (e) {
-          e.preventDefault();
-          safeToggleSidebar();
-        });
-      }
-      if (overlay) {
-        overlay.removeEventListener('click', safeCloseSidebar);
-        overlay.addEventListener('click', safeCloseSidebar);
-      }
-
-      // ربط اختيار الملف
-      if (chooseMediaBtn && mediaFile) {
-        chooseMediaBtn.addEventListener('click', () => mediaFile.click());
-        mediaFile.addEventListener('change', () => {
-          if (mediaFile.files && mediaFile.files.length > 0) {
-            fileTxt.textContent = mediaFile.files[0].name;
-          } else {
-            fileTxt.textContent = 'لم يتم اختيار ملف بعد';
-          }
-        });
-      }
-
-      // ربط رفع العينة الصوتية
-      if (chooseCustomVoiceBtn && customVoice) {
-        chooseCustomVoiceBtn.addEventListener('click', () => customVoice.click());
-        customVoice.addEventListener('change', function () {
-          if (this.files && this.files.length > 0) {
-            customVoiceTxt.textContent = this.files[0].name;
-          } else {
-            customVoiceTxt.textContent = '';
-          }
-          if (typeof handleCustomVoice === 'function') {
-            try { handleCustomVoice(this); } catch (e) { console.warn('handleCustomVoice error', e); }
-          }
-        });
-      }
-
-      // ربط زر الدبلجة
-      if (dubBtn) {
-        dubBtn.addEventListener('click', () => {
-          if (typeof startDubbing === 'function') {
-            try { startDubbing(); } catch (e) { console.error('startDubbing error', e); showToast('فشل بدء الدبلجة', '#ef4444'); }
-          } else {
-            showToast('وظيفة الدبلجة غير متاحة حالياً.', '#f97316');
-          }
-        });
-      }
-
-      // ربط بحث اللغات
-      if (langSearch) {
-        langSearch.addEventListener('input', (e) => {
-          if (typeof renderLanguages === 'function') {
-            try { renderLanguages(e.target.value); } catch (err) { console.warn('renderLanguages error', err); }
-          }
-        });
-      }
-
-      // تهيئة عند التحميل: تحديث الشريط الجانبي وواجهات اللغات
-      document.addEventListener('DOMContentLoaded', () => {
-        // تهيئة وضع TTS إن وُجد
-        try {
-          if (typeof renderLanguages === 'function') renderLanguages();
-          if (typeof renderSelectedLangs === 'function') renderSelectedLangs();
-        } catch (e) { console.warn('language init error', e); }
-
-        // تحديث الشريط الجانبي: استخدم updateSidebarAuth إن وُجد، وإلا حاول فحص /api/user مع credentials
-        if (typeof updateSidebarAuth === 'function') {
-          try { updateSidebarAuth(); } catch (e) { console.warn('updateSidebarAuth failed', e); }
-        } else {
-          // Fallback: محاولة جلب /api/user باستخدام الكوكي (HttpOnly) أو token محلي
-          (async function fallbackAuth() {
-            const API_BASE = window.API_BASE || 'https://web-production-14a1.up.railway.app';
-            const authSection = document.getElementById('authSection');
-            const topBadge = document.getElementById('topAccountBadge');
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token') || null;
-            try {
-              const opts = token ? { headers: { 'Authorization': `Bearer ${token}` } } : { credentials: 'include' };
-              const res = await fetch(`${API_BASE}/api/user`, opts);
-              if (!res.ok) {
-                // غير مسجل
-                if (authSection) authSection.innerHTML = `<div style="text-align:center;"><a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a></div>`;
-                if (topBadge) topBadge.innerHTML = `<a href="login.html" style="color:inherit; text-decoration:none;"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</a>`;
-                return;
-              }
-              const data = await res.json().catch(() => null);
-              if (data && (data.success || data.user)) {
-                const user = data.user || {};
-                const points = user.credits ?? 0;
-                if (authSection) {
-                  authSection.innerHTML = `
-                    <div class="user-info-card">
-                      <div class="user-name"><i class="fas fa-user-circle"></i> ${escapeHtml(user.name || 'مستخدم')}</div>
-                      <div class="user-points" style="color:#10b981; font-weight:bold; margin-top:8px;">
-                        <i class="fas fa-coins"></i> رصيدك: ${points} نقطة
-                      </div>
-                      <button id="logoutBtnLocal" style="margin-top:12px; background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">
-                        <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
-                      </button>
-                    </div>`;
-                  const lb = document.getElementById('logoutBtnLocal');
-                  if (lb) lb.addEventListener('click', async () => {
-                    try {
-                      // حاول إخطار الخادم ثم احذف التوكن محلياً
-                      if (token) {
-                        await fetch(`${API_BASE}/api/logout`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }).catch(()=>{});
-                      } else {
-                        await fetch(`${API_BASE}/api/logout`, { method: 'POST', credentials: 'include' }).catch(()=>{});
-                      }
-                    } catch (e) { console.warn('logout request failed', e); }
-                    localStorage.removeItem('token');
-                    sessionStorage.removeItem('token');
-                    location.reload();
-                  });
-                }
-                if (topBadge) {
-                  topBadge.innerHTML = `<i class="fas fa-coins" style="color:#f59e0b;"></i> ${points} نقطة`;
-                  topBadge.style.background = '#ecfdf5';
-                  topBadge.style.color = '#10b981';
-                  topBadge.style.border = '1px solid #a7f3d0';
-                }
-              } else {
-                if (authSection) authSection.innerHTML = `<div style="text-align:center;"><a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a></div>`;
-              }
-            } catch (e) {
-              console.warn('fallbackAuth error', e);
-              if (authSection) authSection.innerHTML = `<div style="text-align:center;"><a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a></div>`;
-            }
-          })();
-        }
-      });
-    })();
-
-    // مساعدة: تأمين النص قبل العرض (escape) — تستخدم في بعض الأماكن
-    function escapeHtml(unsafe) {
-      return String(unsafe || '')
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-  </script>
+<script src="js/shared.js"></script>
+<script src="js/languages-data.js"></script>
+<script src="js/lang-picker.js"></script>
+<script src="js/dubbing.js"></script>
 </body>
 </html>
