@@ -1,18 +1,37 @@
-// ProfileMenu.jsx
 import React, { useState, useEffect, useRef } from 'react';
 
 export default function ProfileMenu({ apiBase }) {
   const [user, setUser] = useState(null);
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileRef = useRef();
 
+  // ممانعة تكرار الكود: دالة موحدة لجلب خيارات الـ Fetch
+  const getFetchOptions = (method = 'GET', body = null) => {
+    const token = localStorage.getItem('token');
+    const options = {
+      method,
+      credentials: 'include',
+      headers: {}
+    };
+    if (token) options.headers['Authorization'] = `Bearer ${token}`;
+    if (body && !(body instanceof FormData)) {
+      options.headers['Content-Type'] = 'application/json';
+    }
+    if (body) options.body = body;
+    return options;
+  };
+
   useEffect(() => {
-    // جلب بيانات المستخدم المحمية (يرسل الكوكي HttpOnly)
-    fetch(`${apiBase}/api/user`, { credentials: 'include' })
+    // جلب بيانات المستخدم عند التحميل
+    fetch(`${apiBase}/api/user`, getFetchOptions())
       .then(r => r.json())
-      .then(d => { if (d.success) setUser(d.user); })
-      .catch(console.error);
+      .then(d => { 
+        if (d.success) setUser(d.user); 
+        else if (d.error === "Unauthorized") setUser(null);
+      })
+      .catch(err => console.error("Auth check failed:", err));
   }, [apiBase]);
 
   function handleFileChange(e) {
@@ -23,95 +42,111 @@ export default function ProfileMenu({ apiBase }) {
   }
 
   async function uploadAvatar() {
-    if (!preview?.file) return alert('اختر صورة أولاً');
+    if (!preview?.file) return alert('الرجاء اختيار صورة أولاً');
+    
+    setIsUploading(true);
     const fd = new FormData();
     fd.append('avatar', preview.file);
-    const res = await fetch(`${apiBase}/api/user/avatar`, {
-      method: 'POST',
-      credentials: 'include',
-      body: fd
-    });
-    const data = await res.json();
-    if (data.success) {
-      setUser(data.user);
-      setPreview(null);
-      fileRef.current.value = '';
-      alert('تم تحديث الصورة');
-    } else {
-      alert('فشل التحديث: ' + (data.error || 'خطأ'));
+
+    try {
+      const res = await fetch(`${apiBase}/api/user/avatar`, getFetchOptions('POST', fd));
+      const data = await res.json();
+      
+      if (data.success) {
+        setUser(data.user);
+        setPreview(null);
+        if (fileRef.current) fileRef.current.value = '';
+        alert('✅ تم تحديث الصورة الشخصية بنجاح');
+      } else {
+        alert('❌ فشل التحديث: ' + (data.error || 'خطأ غير معروف'));
+      }
+    } catch (err) {
+      alert('❌ حدث خطأ في الاتصال بالسيرفر');
+    } finally {
+      setIsUploading(false);
     }
   }
 
   async function sendEmailWithAvatar() {
-    const res = await fetch(`${apiBase}/api/user/send-avatar-email`, {
-      method: 'POST',
-      credentials: 'include'
-    });
-    const data = await res.json();
-    if (data.success) alert('تم إرسال الإيميل');
-    else alert('فشل الإرسال: ' + (data.error || 'خطأ'));
+    try {
+      const res = await fetch(`${apiBase}/api/user/send-avatar-email`, getFetchOptions('POST'));
+      const data = await res.json();
+      if (data.success) alert('📧 تم إرسال الصورة إلى بريدك الإلكتروني');
+      else alert('❌ فشل الإرسال: ' + (data.error || 'خطأ'));
+    } catch (err) {
+      alert('❌ خطأ في الاتصال');
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      await fetch(`${apiBase}/api/logout`, getFetchOptions('POST'));
+    } catch (e) {}
+    localStorage.removeItem('token');
+    window.location.reload();
   }
 
   return (
     <div className="profile-menu">
       <button onClick={() => setOpen(!open)} className="profile-btn">
-        <img src={user?.avatar || '/default-avatar.png'} alt="avatar" className="avatar-sm" />
-        <span>{user?.name || 'حساب'}</span>
+        <img 
+          src={user?.avatar || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+          alt="avatar" 
+          className="avatar-sm" 
+        />
+        <span className="user-name-label">{user?.name || 'My Account'}</span>
       </button>
 
       {open && (
-        <div className="menu-panel">
+        <div className="menu-panel animated-fade-in">
           <div className="balance-row">
-            <div><strong>Balance</strong></div>
+            <div className="balance-label"><strong>Balance</strong></div>
             <div><button className="upgrade-btn">Upgrade</button></div>
           </div>
-          <div className="credits">
-            <div>Total {user?.total_credits ?? 0} credits</div>
-            <div>Remaining {user?.credits ?? 0}</div>
+          <div className="credits-info">
+            <div className="credit-item">Total <span>{user?.total_credits ?? 0}</span></div>
+            <div className="credit-item highlight">Remaining <span>{user?.credits ?? 0}</span></div>
           </div>
 
-          <hr />
+          <hr className="menu-divider" />
 
           <ul className="menu-list">
-            <li><button onClick={() => window.location.href = '/settings'}>Settings</button></li>
-            <li><button onClick={() => window.location.href = '/workspace'}>Workspace settings</button></li>
-            <li><button onClick={() => window.location.href = '/subscription'}>Subscription</button></li>
-            <li><button onClick={() => window.location.href = '/pronunciation'}>Pronunciation dictionaries</button></li>
-            <li><button onClick={() => window.location.href = '/theme'}>Theme</button></li>
-            <li><button onClick={() => window.location.href = '/payouts'}>Payouts</button></li>
-            <li><button onClick={() => window.location.href = '/affiliate'}>Become an affiliate</button></li>
-            <li><button onClick={() => window.location.href = '/impact'}>Apply for Impact Program</button></li>
-            <li><button onClick={() => window.location.href = '/usage'}>Usage analytics</button></li>
-            <li><button onClick={() => window.location.href = '/studio'}>Voiceover Studio</button></li>
-            <li><button onClick={() => window.location.href = '/classifier'}>AI Speech Classifier</button></li>
-            <li><button onClick={() => window.open('/docs', '_blank')}>Docs and resources</button></li>
-            <li><button onClick={() => window.open('/terms', '_blank')}>Terms and privacy</button></li>
+            <li><button onClick={() => window.location.href = '/settings'}><i className="fas fa-cog"></i> Settings</button></li>
+            <li><button onClick={() => window.location.href = '/subscription'}><i className="fas fa-credit-card"></i> Subscription</button></li>
+            <li><button onClick={() => window.location.href = '/usage'}><i className="fas fa-chart-line"></i> Usage analytics</button></li>
+            <li><button onClick={() => window.open('/docs', '_blank')}><i className="fas fa-book"></i> Docs</button></li>
           </ul>
 
-          <hr />
+          <hr className="menu-divider" />
 
-          <div className="avatar-section">
-            <div className="avatar-preview">
-              <img src={preview?.url || user?.avatar || '/default-avatar.png'} alt="preview" className="avatar-lg" />
+          <div className="avatar-upload-section">
+            <div className="avatar-preview-container">
+              <img src={preview?.url || user?.avatar || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} alt="preview" className="avatar-lg" />
             </div>
-            <div className="avatar-actions">
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} />
-              <div className="btn-row">
-                <button onClick={uploadAvatar} className="btn-primary">Upload</button>
-                <button onClick={() => { setPreview(null); fileRef.current.value = ''; }} className="btn-muted">Cancel</button>
-              </div>
-              <div className="email-row">
-                <button onClick={sendEmailWithAvatar} className="btn-secondary">Send image in email</button>
-              </div>
+            <div className="avatar-controls">
+              <input ref={fileRef} type="file" id="avatarInput" accept="image/*" onChange={handleFileChange} hidden />
+              <label htmlFor="avatarInput" className="btn-outline">Change Photo</label>
+              
+              {preview && (
+                <div className="action-btns">
+                  <button onClick={uploadAvatar} className="btn-primary" disabled={isUploading}>
+                    {isUploading ? 'Uploading...' : 'Save'}
+                  </button>
+                  <button onClick={() => { setPreview(null); fileRef.current.value = ''; }} className="btn-muted">Cancel</button>
+                </div>
+              )}
+              
+              <button onClick={sendEmailWithAvatar} className="btn-email-link">
+                <i className="fas fa-envelope"></i> Send to email
+              </button>
             </div>
           </div>
 
-          <hr />
+          <hr className="menu-divider" />
           <div className="signout-row">
-            <button onClick={async () => {
-              await fetch(`${apiBase}/api/logout`, { method: 'POST', credentials: 'include' });
-              window.location.reload();
-            }}>Sign out</button>
+            <button onClick={handleSignOut} className="signout-btn">
+              <i className="fas fa-sign-out-alt"></i> Sign out
+            </button>
           </div>
         </div>
       )}
