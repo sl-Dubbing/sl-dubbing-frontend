@@ -1,318 +1,208 @@
-// dubbing.js — مُدقّق ومُحسّن
-// ==========================================
-// 🎬 إعدادات أساسية
-// ==========================================
-const API_BASE = 'https://web-production-14a1.up.railway.app';
-const SAMPLES_BASE = 'samples';
+// js/dubbing.js — المحرك الاحترافي للدبلجة الصوتية واستنساخ الأصوات
+// V4.2 - يدعم التوليد المتوازي والمراقبة الذكية لـ Railway
 
-// ==========================================
-// 🛠️ مساعدة: إعداد خيارات fetch مع دعم token أو cookie
-// ==========================================
-function makeFetchOptions(method = 'GET', token = null, body = null, isJson = true) {
+const API_BASE = 'https://web-production-14a1.up.railway.app';
+
+// -----------------------------
+// 🟢 مساعدة: إعداد خيارات Fetch
+// -----------------------------
+function makeFetchOptions(method = 'GET', token = null, body = null) {
     const opts = { method };
+    const headers = {};
+
     if (token) {
-        opts.headers = { 'Authorization': `Bearer ${token}` };
-        if (isJson) opts.headers['Accept'] = 'application/json';
-        if (isJson && body) opts.headers['Content-Type'] = 'application/json';
+        headers['Authorization'] = `Bearer ${token}`;
     } else {
-        // الاعتماد على HttpOnly cookie
         opts.credentials = 'include';
-        if (isJson) opts.headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
     }
+
+    // ملاحظة: عند استخدام FormData، المتصفح يضع Content-Type تلقائياً مع الـ boundary
+    if (body && !(body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    opts.headers = headers;
     if (body !== null) opts.body = body;
     return opts;
 }
 
-// ==========================================
-// 🎬 بدء الدبلجة بنظام الموجه الذكي (Async Dispatch)
-// ==========================================
+// -----------------------------
+// 🟢 بدء عملية الدبلجة
+// -----------------------------
 async function startDubbing() {
-    // عناصر DOM الأساسية
     const fileInput = document.getElementById('mediaFile');
-    const file = fileInput?.files?.[0] || null;
+    const file = fileInput?.files?.[0];
     const voiceSelect = document.getElementById('voiceSelect');
     const customVoiceInput = document.getElementById('customVoice');
+    
+    // جلب اللغات المختارة (نعتمد على Set عالمي اسمه selectedLangs)
+    if (typeof window.selectedLangs === 'undefined' || window.selectedLangs.size === 0) {
+        showToast('يرجى اختيار لغة واحدة على الأقل للدبلجة', '#f59e0b');
+        return;
+    }
 
-    // token محلي (إن وُجد)
-    let token = localStorage.getItem('token') || sessionStorage.getItem('token') || null;
+    if (!file) {
+        showToast('يرجى رفع ملف الفيديو أو الصوت أولاً', '#ef4444');
+        return;
+    }
 
-    // عناصر واجهة المستخدم
+    // عناصر الواجهة
     const dubBtn = document.getElementById('dubBtn');
     const progressArea = document.getElementById('progressArea');
-    const resultsCard = document.getElementById('resultsCard');
-    const resultsList = document.getElementById('resultsList');
     const statusTxt = document.getElementById('statusTxt');
     const progFill = document.getElementById('progFill');
-    const miniStatus = document.getElementById('miniStatus');
+    const resultsList = document.getElementById('resultsList');
+    const resultsCard = document.getElementById('resultsCard');
 
-    // حماية DOM
-    if (!dubBtn || !progressArea || !resultsList || !statusTxt || !progFill) {
-        console.error('Missing required DOM elements for dubbing UI.');
-        return;
-    }
-
-    // تحقق أساسي من الجلسة: إذا لا توكن محلي، حاول التحقق عبر الكوكي
-    if (!token) {
-        try {
-            const check = await fetch(`${API_BASE}/api/user`, { method: 'GET', credentials: 'include' });
-            if (check.ok) {
-                const d = await check.json().catch(() => null);
-                if (d && (d.success || d.user)) {
-                    // لا حاجة لتغيير token؛ سنعتمد على الكوكي في الطلبات التالية
-                    token = null;
-                } else {
-                    showToast('يرجى تسجيل الدخول أولاً', 'error');
-                    return;
-                }
-            } else {
-                showToast('يرجى تسجيل الدخول أولاً', 'error');
-                return;
-            }
-        } catch (e) {
-            console.warn('Auth cookie check failed:', e);
-            showToast('فشل التحقق من الجلسة. يرجى تسجيل الدخول.', 'error');
-            return;
-        }
-    }
-
-    // تحقق من الملف واللغات
-    if (!file) {
-        showToast('يرجى اختيار ملف فيديو/صوت', 'error');
-        return;
-    }
-
-    if (typeof selectedLangs === 'undefined' || !(selectedLangs instanceof Set) || selectedLangs.size === 0) {
-        showToast('يرجى اختيار لغة هدف واحدة على الأقل', 'error');
-        return;
-    }
-
-    // تهيئة الواجهة
+    // تفعيل وضع "جاري العمل"
     dubBtn.disabled = true;
     progressArea.style.display = 'block';
     resultsCard.style.display = 'block';
-    resultsList.innerHTML = '';
-    progFill.style.width = '5%';
-    progFill.style.background = '';
-    statusTxt.innerText = 'جاري توجيه الطلبات للمحرك...';
-    if (miniStatus) miniStatus.innerText = 'قيد الإرسال';
+    resultsList.innerHTML = ''; // تنظيف النتائج السابقة
+    progFill.style.width = '10%';
+    statusTxt.innerText = '⏳ جاري رفع الملف وتجهيز الطلبات...';
 
-    const langs = [...selectedLangs];
-    const total = langs.length;
-    let completed = 0;
+    const token = localStorage.getItem('token');
+    const langs = Array.from(window.selectedLangs);
+    const totalTasks = langs.length;
+    let completedTasks = 0;
 
-    // إنشاء بطاقات النتائج فوراً
-    langs.forEach(code => {
-        const lang = (typeof LANGUAGES !== 'undefined') ? LANGUAGES.find(l => l.code === code) : null;
-        const card = document.createElement('div');
-        card.className = 'result-item';
-        card.id = `result-${code}`;
-        card.innerHTML = `
-            <div class="result-item-header">
-                <span class="result-item-flag">${lang?.flag || '🌍'}</span>
-                <span class="result-item-name">${lang?.name_ar || code}</span>
-                <span class="result-item-status" id="status-${code}">إرسال للـ Gateway...</span>
-            </div>
-            <div class="result-item-body" id="body-${code}">
-                <div class="loading-spinner-small" aria-hidden="true"></div>
-            </div>
-        `;
-        resultsList.appendChild(card);
-    });
-
-    // دالة مساعدة لتحديث التقدّم العام
-    function updateGlobalProgress() {
-        completed++;
-        const pct = Math.round((completed / total) * 95) + 5;
-        progFill.style.width = pct + '%';
-        statusTxt.innerText = `${completed}/${total} لغة مكتملة`;
-        if (miniStatus) miniStatus.innerText = `${completed}/${total}`;
-    }
-
-    // إرسال طلب لكل لغة (متوازي)
-    const tasks = langs.map(async (langCode) => {
-        const statusEl = document.getElementById(`status-${langCode}`);
-        const bodyEl = document.getElementById(`body-${langCode}`);
+    // تشغيل المهام بشكل متوازي لكل لغة
+    const dubbingPromises = langs.map(async (langCode) => {
+        // إنشاء بطاقة نتيجة أولية لكل لغة
+        const langData = window.LANGUAGES?.find(l => l.code === langCode);
+        const cardId = `res-${langCode}`;
+        renderInitialResult(cardId, langData, langCode);
 
         try {
-            // بناء FormData
             const formData = new FormData();
             formData.append('media_file', file);
             formData.append('lang', langCode);
 
-            // بصمة صوتية: ملف مرفوع أم اختيار من القائمة
+            // تحديد الصوت (مخصص أم جاهز أم أصلي)
             if (customVoiceInput?.files?.[0]) {
                 formData.append('voice_sample', customVoiceInput.files[0]);
                 formData.append('voice_id', 'custom');
-            } else if (voiceSelect?.value) {
+            } else if (voiceSelect?.value && voiceSelect.value !== 'original') {
                 formData.append('voice_id', voiceSelect.value);
             } else {
-                formData.append('voice_id', 'source');
+                formData.append('voice_id', 'original');
             }
 
-            // ملاحظة: عند إرسال FormData لا نحدد Content-Type يدوياً
-            const opts = token
-                ? { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData }
-                : { method: 'POST', credentials: 'include', body: formData };
-
-            const res = await fetch(`${API_BASE}/api/tts`, opts);
-            let data = null;
-            try { data = await res.json().catch(() => null); } catch (e) { data = null; }
-
+            // 1. إرسال الطلب للسيرفر
+            const res = await fetch(`${API_BASE}/api/dubbing`, makeFetchOptions('POST', token, formData));
+            
             if (!res.ok) {
-                const msg = (data && (data.error || data.message)) ? (data.error || data.message) : `HTTP ${res.status}`;
-                throw new Error(msg);
+                const err = await res.json().catch(() => ({ error: 'Server Error' }));
+                throw new Error(err.error || `Error ${res.status}`);
             }
 
-            if (!data || !data.job_id) {
-                throw new Error(data?.error || 'لم يتم استلام معرف المهمة من الخادم');
+            const data = await res.json();
+            const jobId = data.job_id;
+
+            // 2. المراقبة (Polling) لحين الانتهاء
+            updateResultStatus(cardId, '⏳ جاري الدبلجة...');
+            const finalData = await waitForJob(jobId, token, cardId);
+
+            if (finalData) {
+                renderFinalSuccess(cardId, langCode, langData, finalData.audio_url || finalData.result_url);
             }
 
-            // تم استلام job_id — نبدأ المراقبة
-            if (statusEl) statusEl.textContent = 'في الطابور...';
-            const final = await waitForJob(data.job_id, token, statusEl, bodyEl, langCode);
-
-            if (final) {
-                // تم التوليد بنجاح
-                if (statusEl) {
-                    statusEl.textContent = '✓ مكتمل';
-                    statusEl.classList.add('success');
-                }
-            } else {
-                // فشل أو مهلة
-                if (statusEl) {
-                    statusEl.textContent = '✗ فشل';
-                    statusEl.classList.add('error');
-                }
-            }
         } catch (err) {
-            console.error(`Dubbing ${langCode} error:`, err);
-            if (statusEl) {
-                statusEl.textContent = '✗ فشل التوجيه';
-                statusEl.classList.add('error');
-            }
-            if (bodyEl) {
-                bodyEl.innerHTML = `<div class="error-msg" style="color:#ef4444; padding:6px;">${escapeHtml(err.message || 'خطأ غير معروف')}</div>`;
-            }
+            console.error(`Dubbing failed for ${langCode}:`, err);
+            renderFinalError(cardId, langCode, err.message);
         } finally {
-            updateGlobalProgress();
+            completedTasks++;
+            const progress = 10 + ((completedTasks / totalTasks) * 90);
+            progFill.style.width = `${progress}%`;
+            statusTxt.innerText = `تمت معالجة ${completedTasks} من أصل ${totalTasks} لغة`;
         }
     });
 
-    // انتظر اكتمال كل المهام
-    await Promise.all(tasks);
-
-    // إنهاء الواجهة
-    progFill.style.width = '100%';
-    statusTxt.innerText = '✓ اكتملت جميع العمليات';
+    await Promise.all(dubbingPromises);
+    statusTxt.innerText = '✅ اكتملت جميع مهام الدبلجة';
     dubBtn.disabled = false;
-
-    // تحديث الرصيد/الواجهة
-    if (typeof updateSidebarAuth === 'function') {
-        try { updateSidebarAuth(); } catch (e) { console.warn('updateSidebarAuth failed', e); }
-    }
+    
+    // تحديث رصيد المستخدم
+    if (typeof checkAuth === 'function') checkAuth();
 }
 
-// ==========================================
-// 🔄 نظام المراقبة الذكي (Polling with timeout)
-// ==========================================
-async function waitForJob(jobId, token, statusEl, bodyEl, langCode) {
-    const lang = (typeof LANGUAGES !== 'undefined') ? LANGUAGES.find(l => l.code === langCode) : { name_ar: langCode };
-    const start = Date.now();
-    const TIMEOUT_MS = 10 * 60 * 1000; // 10 دقائق
-    const POLL_INTERVAL = 3000; // 3 ثواني
+// -----------------------------
+// 🔄 نظام المراقبة (Polling)
+// -----------------------------
+async function waitForJob(jobId, token, cardId) {
+    let attempts = 0;
+    const maxAttempts = 100; // حوالي 5 دقائق
 
-    // Helper: safe fetch with token or cookie
-    async function pollOnce() {
-        const opts = token
-            ? { method: 'GET', headers: { 'Authorization': `Bearer ${token}` } }
-            : { method: 'GET', credentials: 'include' };
-        const res = await fetch(`${API_BASE}/api/job/${jobId}`, opts);
-        const data = await res.json().catch(() => null);
-        return { ok: res.ok, status: res.status, data };
-    }
+    while (attempts < maxAttempts) {
+        await new Promise(r => setTimeout(r, 3000)); // فحص كل 3 ثواني
+        attempts++;
 
-    // Loop polling
-    while (Date.now() - start < TIMEOUT_MS) {
         try {
-            const { ok, status, data } = await pollOnce();
+            const res = await fetch(`${API_BASE}/api/job/${jobId}`, makeFetchOptions('GET', token));
+            if (!res.ok) continue;
 
-            if (!ok) {
-                // إذا كانت استجابة غير OK، سجل وحاول مرة أخرى
-                console.warn(`Job poll HTTP ${status}`, data);
-            }
+            const data = await res.json();
+            if (data.status === 'completed') return data;
+            if (data.status === 'failed') throw new Error(data.error || 'فشلت المهمة في السيرفر');
 
-            if (data && data.status === 'completed') {
-                // عرض النتيجة
-                if (statusEl) {
-                    statusEl.textContent = '✓ جاهز';
-                    statusEl.classList.add('success');
-                }
-                if (bodyEl) {
-                    const audioUrl = data.audio_url || data.result_url || '';
-                    bodyEl.innerHTML = `
-                        <audio controls src="${escapeHtml(audioUrl)}"></audio>
-                        <a href="${escapeHtml(audioUrl)}" download="tts_${langCode}_${Date.now()}.mp3" class="btn-download" style="display:inline-block;margin-top:8px;">
-                            <i class="fas fa-download"></i> تحميل ${escapeHtml(lang.name_ar || langCode)}
-                        </a>
-                    `;
-                }
-                return data;
-            }
+            // تحديث وقت الانتظار في البطاقة
+            updateResultStatus(cardId, `⏳ جاري المعالجة (${attempts * 3}s)`);
 
-            if (data && data.status === 'failed') {
-                if (statusEl) {
-                    statusEl.textContent = '✗ فشل في المعالجة';
-                    statusEl.classList.add('error');
-                }
-                if (bodyEl) bodyEl.innerHTML = `<div class="error-msg" style="color:#ef4444; padding:6px;">فشلت المعالجة</div>`;
-                return null;
-            }
-
-            // تحديث حالة مرحلية للمستخدم
-            if (statusEl) {
-                const elapsed = Math.round((Date.now() - start) / 1000);
-                statusEl.textContent = `جاري المعالجة... (${elapsed}s)`;
-            }
         } catch (e) {
-            console.warn('Polling error:', e);
-            // لا نكسر الحلقة؛ ننتظر ثم نكرر
+            console.warn("Polling error:", e);
         }
-
-        // انتظر قبل المحاولة التالية
-        await new Promise(r => setTimeout(r, POLL_INTERVAL));
     }
-
-    // انتهت المهلة
-    if (statusEl) {
-        statusEl.textContent = '✗ انتهت المهلة';
-        statusEl.classList.add('error');
-    }
-    if (bodyEl) bodyEl.innerHTML = `<div class="error-msg" style="color:#ef4444; padding:6px;">انتهت مهلة المعالجة</div>`;
-    return null;
+    throw new Error('انتهى وقت الانتظار (Timeout)');
 }
 
-// ==========================================
-// 🧩 مساعدة: تأمين النص قبل العرض (escape)
-// ==========================================
-function escapeHtml(unsafe) {
-    return String(unsafe || '')
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+// -----------------------------
+// 🎨 وظائف رسم النتائج في الواجهة
+// -----------------------------
+function renderInitialResult(cardId, lang, code) {
+    const list = document.getElementById('resultsList');
+    const div = document.createElement('div');
+    div.id = cardId;
+    div.className = 'result-item card';
+    div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:bold;">${lang?.flag || '🌍'} ${lang?.name || code}</div>
+            <div class="status-label" style="font-size:0.8rem; color:#aaa;">⏳ جاري الرفع...</div>
+        </div>
+    `;
+    list.appendChild(div);
 }
 
-// ==========================================
-// 🔌 تصدير الدوال للنافذة (للتوافق مع HTML inline أو ملفات أخرى)
-// ==========================================
+function updateResultStatus(cardId, text) {
+    const card = document.getElementById(cardId);
+    if (card) {
+        const label = card.querySelector('.status-label');
+        if (label) label.innerText = text;
+    }
+}
+
+function renderFinalSuccess(cardId, code, lang, url) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    card.style.borderColor = '#10b981';
+    card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="font-weight:bold; color:#10b981;">${lang?.flag || '🌍'} ${lang?.name || code} ✅</div>
+            <a href="${url}" download="dubbed_${code}.mp3" class="btn-mini" style="background:#10b981; color:white; padding:4px 8px; border-radius:6px; font-size:0.7rem; text-decoration:none;">تحميل</a>
+        </div>
+        <audio controls src="${url}" style="width:100%; height:35px;"></audio>
+    `;
+}
+
+function renderFinalError(cardId, code, error) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    card.style.borderColor = '#ef4444';
+    card.innerHTML = `
+        <div style="font-weight:bold; color:#ef4444; margin-bottom:5px;">${code} ❌</div>
+        <div style="font-size:0.75rem; color:#ef4444; background:rgba(239,68,68,0.1); padding:5px; border-radius:5px;">${error}</div>
+    `;
+}
+
+// تصدير للنافذة العالمية
 window.startDubbing = startDubbing;
-window.waitForJob = waitForJob;
-
-// ==========================================
-// 📌 ملاحظات للمطور
-// - تأكد أن المتغيرات التالية معرفة في بيئة الصفحة: selectedLangs (Set) و LANGUAGES (Array).
-// - تأكد من أن shared.js يحتوي على showToast و updateSidebarAuth و دوال الـ Sidebar.
-// - الخادم يجب أن يدعم استقبال FormData في مسار POST /api/tts وإرجاع { job_id }.
-// - مسار /api/job/{jobId} يجب أن يعيد JSON يحتوي على status: 'pending'|'completed'|'failed' و audio_url عند الاكتمال.
-// ==========================================
