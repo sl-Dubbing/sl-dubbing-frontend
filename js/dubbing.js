@@ -143,15 +143,29 @@ function handleCustomVoice(input) {
     }
 }
 
+// 🎯 This is the critical part that connects buttons to file inputs
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('chooseMediaBtn')?.addEventListener('click', () => document.getElementById('mediaFile')?.click());
+    // 1. Link Media Button
+    document.getElementById('chooseMediaBtn')?.addEventListener('click', () => {
+        document.getElementById('mediaFile')?.click();
+    });
+
+    // Update Media Text on change
     document.getElementById('mediaFile')?.addEventListener('change', () => {
         const f = document.getElementById('mediaFile').files?.[0];
         const txt = document.getElementById('fileTxt');
         if (f && txt) { txt.textContent = '✓ ' + f.name; txt.style.color = '#10b981'; }
     });
-    document.getElementById('chooseCustomVoiceBtn')?.addEventListener('click', () => document.getElementById('customVoice')?.click());
+
+    // 2. Link Custom Voice Button
+    document.getElementById('chooseCustomVoiceBtn')?.addEventListener('click', () => {
+        document.getElementById('customVoice')?.click();
+    });
+
+    // Update Voice Text on change
     document.getElementById('customVoice')?.addEventListener('change', (e) => handleCustomVoice(e.target));
+    
+    // Bind Dub Button
     document.getElementById('dubBtn')?.addEventListener('click', startDubbing);
 });
 
