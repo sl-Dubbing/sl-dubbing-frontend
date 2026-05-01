@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>sl-Dubbing | Smart AI Platform</title>
+<title>sl-Dubbing | منصة الذكاء الاصطناعي</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- استدعاء مكتبة Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <style>
 /* ── ElevenLabs Light Theme ── */
 :root {
@@ -17,10 +17,18 @@
   --text-muted: #6b7280;
   --primary: #0f0f10;
   --primary-hover: #27272a;
+  --accent-blue: #007aff;
+  --accent-blue-soft: rgba(0,122,255,0.1);
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
   --radius-md: 12px;
   --radius-lg: 24px;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 20px 48px rgba(0,0,0,0.12);
+  --sidebar-w: 280px;
+  --transition: 0.32s cubic-bezier(0.32, 0.72, 0, 1);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
 body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; overflow-x: hidden; line-height: 1.5; }
@@ -36,6 +44,36 @@ body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; o
 .btn-logout { padding: 8px 16px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; color: #ef4444; cursor: pointer; font-weight: 600; transition: all .2s; }
 .avatar { width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-main); overflow: hidden; }
 .username { color: var(--text-muted); font-size: .9rem; }
+
+/* ── Sidebar Toggle ── */
+.menu-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 7px; font-weight: 600; transition: all .2s; font-size: .9rem; }
+.menu-btn:hover { background: #f3f4f6; }
+
+/* ── Sidebar ── */
+.sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 200; opacity: 0; visibility: hidden; transition: var(--transition); backdrop-filter: blur(8px); }
+.sidebar-overlay.active { opacity: 1; visibility: visible; }
+.sidebar { position: fixed; top: 0; right: -320px; width: var(--sidebar-w); height: 100vh; background: var(--bg-card); border-left: 1px solid var(--border-color); padding: 20px; z-index: 300; transition: right var(--transition); overflow-y: auto; display: flex; flex-direction: column; gap: 20px; box-shadow: -10px 0 40px rgba(0,0,0,0.08); }
+.sidebar.active { right: 0; }
+.sidebar-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); }
+.sidebar-header h3 { font-size: 1.1rem; font-weight: 700; }
+.sidebar-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted); padding: 4px; }
+.sidebar-close:hover { color: var(--text-main); }
+
+.sidebar-section h4 { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+.sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-md); cursor: pointer; transition: all .2s; margin-bottom: 4px; font-size: 0.9rem; font-weight: 500; color: var(--text-main); text-decoration: none; }
+.sidebar-item:hover { background: #f3f4f6; }
+.sidebar-item i { width: 24px; text-align: center; color: var(--text-muted); }
+.sidebar-item.active { background: var(--accent-blue-soft); color: var(--accent-blue); }
+.sidebar-item.active i { color: var(--accent-blue); }
+
+.sidebar-divider { height: 1px; background: var(--border-color); margin: 8px 0; }
+
+/* User profile in sidebar */
+.sidebar-user { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f9fafb; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
+.sidebar-user .avatar { width: 44px; height: 44px; font-size: 1.1rem; }
+.sidebar-user-info { flex: 1; }
+.sidebar-user-name { font-weight: 600; font-size: 0.92rem; }
+.sidebar-user-email { font-size: 0.78rem; color: var(--text-muted); }
 
 /* ── Server Badge ── */
 .srv-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 20px; font-size: .75rem; color: #ef4444; font-weight: 600; margin-bottom: 40px; cursor: pointer; }
@@ -82,11 +120,35 @@ footer { text-align: center; padding: 30px 0; border-top: 1px solid var(--border
 footer a { color: var(--text-main); text-decoration: none; margin: 0 10px; font-weight: 500; }
 footer a:hover { text-decoration: underline; }
 
+/* ── Modals ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 400; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: all 0.3s; backdrop-filter: blur(8px); }
+.modal-overlay.active { opacity: 1; visibility: visible; }
+.modal { background: var(--bg-card); border-radius: var(--radius-lg); padding: 28px; width: 90%; max-width: 420px; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: transform 0.3s; }
+.modal-overlay.active .modal { transform: scale(1); }
+.modal h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; }
+.modal .form-group { margin-bottom: 16px; }
+.modal label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+.modal input { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; outline: none; transition: all 0.2s; }
+.modal input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px var(--accent-blue-soft); }
+.modal .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.modal .btn-primary { flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.modal .btn-secondary { flex: 1; padding: 10px; background: var(--bg-page); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-weight: 600; cursor: pointer; }
+.modal .btn-primary:hover { background: var(--primary-hover); }
+.modal .btn-secondary:hover { background: #f3f4f6; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(28,28,30,0.92); backdrop-filter: blur(20px); color: white; padding: 11px 22px; border-radius: 12px; z-index: 9999; font-weight: 500; font-size: 0.88rem; box-shadow: var(--shadow-lg); animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1); }
+.toast.error { background: rgba(239,68,68,0.92); }
+.toast.success { background: rgba(16,185,129,0.92); }
+@keyframes slideUp { from { opacity: 0; transform: translate(-50%,20px); } to { opacity: 1; transform: translate(-50%,0); } }
+
 @media(max-width: 768px) {
   .tools-row, .plans-row { grid-template-columns: 1fr; }
   .top-bar { flex-direction: column; align-items: flex-start; }
+  .sidebar { width: 280px; right: -300px; }
 }
 </style>
+<base target="_blank">
 </head>
 <body>
 <div class="page">
@@ -96,205 +158,492 @@ footer a:hover { text-decoration: underline; }
       <i class="fas fa-cube"></i> sl-Dubbing
     </a>
     <div class="user-zone" id="hdr">
-      <a href="login.html" class="btn-login">Log In</a>
+      <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i> القائمة</button>
     </div>
   </div>
 
-  <div class="srv-badge" id="srv" onclick="checkServer()">
-    <span class="dot"></span><span id="srvTxt">Checking system...</span>
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h3><i class="fas fa-cog"></i> الإعدادات</h3>
+      <button class="sidebar-close" id="sidebarClose"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- User Profile Section -->
+    <div class="sidebar-section" id="sidebarUserSection">
+      <div class="sidebar-user" id="sidebarUser">
+        <div class="avatar" id="sidebarAvatar"><i class="fas fa-user"></i></div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebarUserName">جاري التحميل...</div>
+          <div class="sidebar-user-email" id="sidebarUserEmail"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Navigation -->
+    <div class="sidebar-section">
+      <h4>الأدوات</h4>
+      <a href="index.html" class="sidebar-item active"><i class="fas fa-home"></i> الرئيسية</a>
+      <a href="tts.html" class="sidebar-item"><i class="fas fa-microphone"></i> تحويل النص لصوت</a>
+      <a href="dubbing.html" class="sidebar-item"><i class="fas fa-film"></i> استوديو الدبلجة</a>
+      <a href="stt.html" class="sidebar-item"><i class="fas fa-headphones"></i> تحويل الصوت لنص</a>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Account Settings -->
+    <div class="sidebar-section">
+      <h4>الحساب</h4>
+      <div class="sidebar-item" id="btnChangeName"><i class="fas fa-user-edit"></i> تغيير الاسم</div>
+      <div class="sidebar-item" id="btnChangeAvatar"><i class="fas fa-image"></i> تغيير الصورة</div>
+      <div class="sidebar-item" id="btnChangePassword"><i class="fas fa-lock"></i> تغيير كلمة السر</div>
+      <div class="sidebar-item" id="btnLogout" style="color: var(--error);"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Credits -->
+    <div class="sidebar-section">
+      <h4>الرصيد</h4>
+      <div class="sidebar-item" style="cursor: default;">
+        <i class="fas fa-coins"></i>
+        <span id="sidebarCredits">جاري التحميل...</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="srv-badge" id="srv">
+    <span class="dot"></span><span id="srvTxt">جاري فحص النظام...</span>
   </div>
 
   <div class="hero">
-    <h1>Create Professional<br>AI Audio & Dubbing</h1>
-    <p>The most advanced AI technology for Text to Speech, Video Dubbing, and precise SRT Subtitle Translation.</p>
+    <h1>أنشئ محتوى صوتي<br>احترافي بالذكاء الاصطناعي</h1>
+    <p>أحدث تقنيات الذكاء الاصطناعي لتحويل النص لصوت، دبلجة الفيديو، وتحويل الصوت لنص بدقة عالية.</p>
   </div>
 
   <div class="tools-row">
-    <div class="tool-card" onclick="goTool('tts.html')">
+    <div class="tool-card" data-tool="tts">
       <span class="ico"><i class="fas fa-microphone-lines"></i></span>
-      <h3>Text to Speech</h3>
-      <p>Convert any text into lifelike speech in 13 languages. Control pacing, pitch, and tone perfectly.</p>
-      <span class="go">Try TTS <i class="fas fa-arrow-right"></i></span>
+      <h3>تحويل النص لصوت</h3>
+      <p>حوّل أي نص إلى كلام طبيعي بـ 25 لغة. تحكم بالسرعة والنبرة واللهجة بشكل دقيق.</p>
+      <span class="go">جرب الآن <i class="fas fa-arrow-left"></i></span>
     </div>
-    <div class="tool-card" onclick="goTool('dubbing.html')">
+    <div class="tool-card" data-tool="dubbing">
       <span class="ico"><i class="fas fa-video"></i></span>
-      <h3>AI Dubbing</h3>
-      <p>Dub your videos automatically. Clone original voices or use our premium AI voices with perfect SRT sync.</p>
-      <span class="go">Try Dubbing <i class="fas fa-arrow-right"></i></span>
+      <h3>دبلجة بالذكاء الاصطناعي</h3>
+      <p>دبلج فيديوهاتك تلقائياً. استنساخ الصوت الأصلي أو أصوات AI ممتازة مع مزامنة SRT دقيقة.</p>
+      <span class="go">جرب الآن <i class="fas fa-arrow-left"></i></span>
     </div>
-    <div class="tool-card" onclick="goTool('tts.html')">
-      <span class="ico"><i class="fas fa-language"></i></span>
-      <h3>SRT Translator</h3>
-      <p>Translate subtitle files seamlessly. We keep your exact timestamps intact across 13 different languages.</p>
-      <span class="go">Try Translator <i class="fas fa-arrow-right"></i></span>
+    <div class="tool-card" data-tool="stt">
+      <span class="ico"><i class="fas fa-headphones"></i></span>
+      <h3>تحويل الصوت لنص</h3>
+      <p>حوّل أي ملف صوتي أو فيديو إلى نص مكتوب بدقة عالية. يدعم 25 لغة مع التعرف على المتحدثين.</p>
+      <span class="go">جرب الآن <i class="fas fa-arrow-left"></i></span>
     </div>
   </div>
 
   <div class="section-title">
-    <h2>Get Lifetime Access</h2>
-    <p>One-time payment. Unlimited generation. No monthly subscriptions.</p>
+    <h2>وصول مدى الحياة</h2>
+    <p>دفعة واحدة. توليد غير محدود. بدون اشتراكات شهرية.</p>
   </div>
 
   <div class="plans-row">
     <div class="plan">
-      <div class="tag">Text to Speech</div>
-      <h3>Speech Synthesis</h3>
-      <div class="desc">Lifelike AI voice generation for creators and publishers.</div>
+      <div class="tag">تحويل النص لصوت</div>
+      <h3>توليف الكلام</h3>
+      <div class="desc">توليد صوت AI طبيعي للمبدعين والناشرين.</div>
       <ul>
-        <li>Unlimited TTS generation</li>
-        <li>13 premium languages</li>
-        <li>Advanced speed & pitch controls</li>
-        <li>Instant MP3 export</li>
+        <li>توليد TTS غير محدود</li>
+        <li>25 لغة متميزة</li>
+        <li>تحكم بالسرعة والنبرة</li>
+        <li>تصدير MP3 فوري</li>
       </ul>
       <div class="price-box">
         <div class="price-num" id="price-tts">$10</div>
-        <div class="price-note">One-time payment</div>
+        <div class="price-note">دفعة واحدة</div>
       </div>
-      <a href="https://payhip.com/b/jQdFJ" class="buy-btn buy-tts" target="_blank">Purchase Lifetime</a>
+      <a href="https://payhip.com/b/jQdFJ" class="buy-btn buy-tts" target="_blank" rel="noopener">شراء مدى الحياة</a>
     </div>
 
     <div class="plan" style="border: 2px solid var(--primary); box-shadow: var(--shadow-md);">
-      <div class="tag" style="background: var(--primary); color: white; border: none;">Video Dubbing</div>
-      <h3>Pro AI Dubbing</h3>
-      <div class="desc">The complete suite for video localization and voice cloning.</div>
+      <div class="tag" style="background: var(--primary); color: white; border: none;">دبلجة الفيديو</div>
+      <h3>دبلجة AI احترافية</h3>
+      <div class="desc">الحزمة الكاملة لتوطين الفيديو واستنساخ الأصوات.</div>
       <ul>
-        <li>Unlimited video dubbing</li>
-        <li>XTTS v2 Voice Cloning</li>
-        <li>Precise SRT timeline sync</li>
-        <li>High-fidelity WAV export</li>
+        <li>دبلجة فيديو غير محدودة</li>
+        <li>استنساخ صوت XTTS v2</li>
+        <li>مزامنة SRT دقيقة</li>
+        <li>تصدير WAV عالي الجودة</li>
       </ul>
       <div class="price-box">
         <div class="price-num" id="price-dubbing">$50</div>
-        <div class="price-note">One-time payment</div>
+        <div class="price-note">دفعة واحدة</div>
       </div>
-      <a href="https://payhip.com/b/5XbaQ" class="buy-btn buy-dubbing" target="_blank">Purchase Lifetime</a>
+      <a href="https://payhip.com/b/5XbaQ" class="buy-btn buy-dubbing" target="_blank" rel="noopener">شراء مدى الحياة</a>
     </div>
 
     <div class="plan">
-      <div class="tag">Subtitle Translation</div>
-      <h3>SRT Localization</h3>
-      <div class="desc">Automated translation that respects your video timelines.</div>
+      <div class="tag">تحويل الصوت لنص</div>
+      <h3>تحويل الكلام</h3>
+      <div class="desc">تحويل الصوت والفيديو إلى نص مكتوب بدقة عالية.</div>
       <ul>
-        <li>Unlimited SRT translation</li>
-        <li>Context-aware AI engine</li>
-        <li>Preserves strict timings</li>
-        <li>Instant SRT download</li>
+        <li>تحويل صوتي غير محدود</li>
+        <li>تعرف على 25 لغة</li>
+        <li>تعرف على المتحدثين</li>
+        <li>تصدير SRT ونص</li>
       </ul>
       <div class="price-box">
-        <div class="price-num" id="price-srt">$10</div>
-        <div class="price-note">One-time payment</div>
+        <div class="price-num" id="price-stt">$10</div>
+        <div class="price-note">دفعة واحدة</div>
       </div>
-      <a href="https://payhip.com/b/2E6sT" class="buy-btn buy-srt" target="_blank">Purchase Lifetime</a>
+      <a href="https://payhip.com/b/2E6sT" class="buy-btn buy-srt" target="_blank" rel="noopener">شراء مدى الحياة</a>
     </div>
   </div>
 
   <footer>
-    <p>sl-Dubbing © 2026. All rights reserved.</p>
+    <p>sl-Dubbing © 2026. جميع الحقوق محفوظة.</p>
     <p style="margin-top: 8px;">
-      <a href="privacy.html">Privacy Policy</a>
-      <a href="https://www.youtube.com/@alhashmimh" target="_blank">YouTube</a>
-      <a href="https://github.com/alhlilma-jpg" target="_blank">GitHub</a>
+      <a href="privacy.html">سياسة الخصوصية</a>
+      <a href="https://www.youtube.com/@alhashmimh" target="_blank" rel="noopener">يوتيوب</a>
+      <a href="https://github.com/alhlilma-jpg" target="_blank" rel="noopener">جيتهاب</a>
     </p>
   </footer>
 
 </div>
 
+<!-- Modals -->
+<div class="modal-overlay" id="modalChangeName">
+  <div class="modal">
+    <h3><i class="fas fa-user-edit"></i> تغيير الاسم</h3>
+    <div class="form-group">
+      <label>الاسم الجديد</label>
+      <input type="text" id="newNameInput" placeholder="أدخل اسمك الجديد">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('modalChangeName')">إلغاء</button>
+      <button class="btn-primary" onclick="saveName()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalChangeAvatar">
+  <div class="modal">
+    <h3><i class="fas fa-image"></i> تغيير الصورة</h3>
+    <div class="form-group">
+      <label>رابط الصورة (URL)</label>
+      <input type="url" id="newAvatarInput" placeholder="https://example.com/avatar.jpg">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('modalChangeAvatar')">إلغاء</button>
+      <button class="btn-primary" onclick="saveAvatar()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalChangePassword">
+  <div class="modal">
+    <h3><i class="fas fa-lock"></i> تغيير كلمة السر</h3>
+    <div class="form-group">
+      <label>كلمة السر الحالية</label>
+      <input type="password" id="currentPassword" placeholder="••••••••">
+    </div>
+    <div class="form-group">
+      <label>كلمة السر الجديدة</label>
+      <input type="password" id="newPassword" placeholder="8 أحرف على الأقل">
+    </div>
+    <div class="form-group">
+      <label>تأكيد كلمة السر الجديدة</label>
+      <input type="password" id="confirmPassword" placeholder="أعد كتابة كلمة السر">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('modalChangePassword')">إلغاء</button>
+      <button class="btn-primary" onclick="savePassword()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
 <script>
-// 1. إعدادات الروابط 
-const BE = 'https://web-production-14a1.up.railway.app';
-const supabaseUrl = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-// ⚠️ هام: ضع المفتاح الخاص بك هنا
-const supabaseKey = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
+// ⚠️ ضع مفتاح Supabase هنا قبل التحميل
+// window.__SUPABASE_KEY__ = 'YOUR_SUPABASE_KEY_HERE';
 
-// 🔴 تم الإصلاح هنا: تغيير اسم المتغير إلى supabaseClient لتجنب التعارض
-const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+(function() {
+    'use strict';
 
-// 2. دالة فحص الجلسة (ترسم صورة المستخدم واسمه ورصيده إذا كان مسجلاً)
-async function checkSession() {
-    const { data: { session }, error } = await supabaseClient.auth.getSession();
-    
-    if (session) {
-        const user = session.user;
-        const name = user.user_metadata?.full_name || user.email.split('@')[0];
-        const avatarUrl = user.user_metadata?.avatar_url || '';
+    const BE = 'https://web-production-14a1.up.railway.app';
+    const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
+    const SUPABASE_KEY = window.__SUPABASE_KEY__ || '';
 
-        let avatarHtml = avatarUrl 
-            ? `<img src="${avatarUrl}" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">`
-            : `${name.charAt(0).toUpperCase()}`;
+    let supabaseClient = null;
+    let currentUser = null;
 
-        // حفظ التوكن لكي تستخدمه أدوات التوليد في الصفحات الأخرى
-        localStorage.setItem('token', session.access_token);
+    function getSupabase() {
+        if (supabaseClient) return supabaseClient;
+        if (!SUPABASE_KEY) {
+            showToast('مفتاح Supabase غير مُعد', 'error');
+            throw new Error('Supabase key not configured');
+        }
+        if (!window.supabase) {
+            showToast('فشل تحميل مكتبة Supabase', 'error');
+            throw new Error('Supabase SDK not loaded');
+        }
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        return supabaseClient;
+    }
 
-        // 🚀 جلب الرصيد الحقيقي من سيرفر Railway
-        let creditsBadge = `<span style="background: #f1f5f9; color: #64748b; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 700;">جاري جلب الرصيد...</span>`;
-        
-        // نعرض الواجهة المبدئية ريثما يصل الرصيد
-        document.getElementById('hdr').innerHTML = `
-            ${creditsBadge}
-            <div class="avatar">${avatarHtml}</div>
-            <span class="username">${name}</span>
-            <button class="btn-logout" onclick="logout()">Log Out</button>
-        `;
+    function showToast(msg, type) {
+        const container = document.getElementById('toasts');
+        const box = document.createElement('div');
+        box.className = 'toast ' + (type || '');
+        box.textContent = msg;
+        container.appendChild(box);
+        setTimeout(() => box.remove(), 4000);
+    }
 
+    // ── Sidebar ──
+    function openSidebar() {
+        document.getElementById('sidebar').classList.add('active');
+        document.getElementById('sidebarOverlay').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // ── Modals ──
+    function openModal(id) {
+        document.getElementById(id).classList.add('active');
+    }
+    window.closeModal = function(id) {
+        document.getElementById(id).classList.remove('active');
+    };
+
+    // ── Auth & User ──
+    async function checkSession() {
         try {
-            const res = await fetch(BE + '/api/user', {
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
-            });
-            const data = await res.json();
-            
-            if (data.success && data.user) {
-                // تحديث الشارة بالرصيد الحقيقي باللون الأزرق الجميل
-                creditsBadge = `<span style="background: #e0f2fe; color: #0284c7; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: 800;"><i class="fas fa-coins"></i> ${data.user.credits} نقطة</span>`;
-                
-                // إعادة رسم الواجهة بالرصيد الصحيح
+            const supa = getSupabase();
+            const { data: { session }, error } = await supa.auth.getSession();
+
+            if (error) throw error;
+
+            if (session?.user) {
+                currentUser = session.user;
+                const name = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+                const avatarUrl = currentUser.user_metadata?.avatar_url || '';
+
+                localStorage.setItem('token', session.access_token);
+
+                // Update header
+                let avatarHtml = avatarUrl
+                    ? `<img src="${avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">`
+                    : `${name.charAt(0).toUpperCase()}`;
+
                 document.getElementById('hdr').innerHTML = `
-                    ${creditsBadge}
                     <div class="avatar">${avatarHtml}</div>
                     <span class="username">${name}</span>
-                    <button class="btn-logout" onclick="logout()">Log Out</button>
+                    <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i> القائمة</button>
                 `;
+
+                // Update sidebar user
+                document.getElementById('sidebarAvatar').innerHTML = avatarUrl
+                    ? `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+                    : `<i class="fas fa-user"></i>`;
+                document.getElementById('sidebarUserName').textContent = name;
+                document.getElementById('sidebarUserEmail').textContent = currentUser.email;
+
+                // Fetch credits
+                try {
+                    const res = await fetch(BE + '/api/user', {
+                        headers: { 'Authorization': `Bearer ${session.access_token}` }
+                    });
+                    const data = await res.json();
+                    if (data.success && data.user) {
+                        const credits = data.user.credits || 0;
+                        document.getElementById('sidebarCredits').innerHTML =
+                            `<strong style="color: var(--accent-blue);">${credits}</strong> نقطة`;
+                    } else {
+                        document.getElementById('sidebarCredits').textContent = '0 نقطة';
+                    }
+                } catch (e) {
+                    document.getElementById('sidebarCredits').textContent = 'غير متاح';
+                }
+
+                // Re-attach menu button listener
+                document.getElementById('menuBtn')?.addEventListener('click', openSidebar);
+
+            } else {
+                localStorage.removeItem('token');
+                document.getElementById('hdr').innerHTML = `
+                    <a href="login.html" class="btn-login">تسجيل الدخول</a>
+                    <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i> القائمة</button>
+                `;
+                document.getElementById('sidebarUserName').textContent = 'زائر';
+                document.getElementById('sidebarUserEmail').textContent = 'سجل الدخول للوصول للميزات';
+                document.getElementById('sidebarCredits').textContent = '--';
+                document.getElementById('sidebarAvatar').innerHTML = '<i class="fas fa-user"></i>';
+                document.getElementById('menuBtn')?.addEventListener('click', openSidebar);
             }
         } catch (e) {
-            console.error('فشل جلب الرصيد:', e);
+            console.error('Session check failed:', e);
+            document.getElementById('hdr').innerHTML = `
+                <a href="login.html" class="btn-login">تسجيل الدخول</a>
+                <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i> القائمة</button>
+            `;
+            document.getElementById('menuBtn')?.addEventListener('click', openSidebar);
         }
-    } else {
-        // تنظيف المتصفح في حال لم يكن مسجلاً
-        localStorage.removeItem('token');
     }
-}
 
-// 3. دالة تسجيل الخروج
-async function logout() {
-    await supabaseClient.auth.signOut();
-    location.reload();
-}
+    async function logout() {
+        try {
+            const supa = getSupabase();
+            await supa.auth.signOut();
+        } catch (e) { console.warn('signOut failed:', e); }
+        localStorage.removeItem('token');
+        closeSidebar();
+        location.reload();
+    }
 
-// 4. توجيه المستخدم (لصفحة الدخول أو صفحة الأداة)
-function goTool(p) {
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-            location.href = p;
-        } else {
+    // ── Settings Actions ──
+    async function saveName() {
+        const newName = document.getElementById('newNameInput').value.trim();
+        if (!newName) { showToast('الرجاء إدخال اسم', 'error'); return; }
+        if (!currentUser) { showToast('يرجى تسجيل الدخول أولاً', 'error'); return; }
+
+        try {
+            const supa = getSupabase();
+            const { error } = await supa.auth.updateUser({
+                data: { full_name: newName }
+            });
+            if (error) throw error;
+            showToast('تم تحديث الاسم بنجاح!', 'success');
+            closeModal('modalChangeName');
+            await checkSession();
+        } catch (e) {
+            showToast('فشل تحديث الاسم: ' + e.message, 'error');
+        }
+    }
+
+    async function saveAvatar() {
+        const newAvatar = document.getElementById('newAvatarInput').value.trim();
+        if (!newAvatar) { showToast('الرجاء إدخال رابط الصورة', 'error'); return; }
+        if (!currentUser) { showToast('يرجى تسجيل الدخول أولاً', 'error'); return; }
+
+        try {
+            const supa = getSupabase();
+            const { error } = await supa.auth.updateUser({
+                data: { avatar_url: newAvatar }
+            });
+            if (error) throw error;
+            showToast('تم تحديث الصورة بنجاح!', 'success');
+            closeModal('modalChangeAvatar');
+            await checkSession();
+        } catch (e) {
+            showToast('فشل تحديث الصورة: ' + e.message, 'error');
+        }
+    }
+
+    async function savePassword() {
+        const current = document.getElementById('currentPassword').value;
+        const newPass = document.getElementById('newPassword').value;
+        const confirm = document.getElementById('confirmPassword').value;
+
+        if (!current || !newPass || !confirm) {
+            showToast('الرجاء ملء جميع الحقول', 'error'); return;
+        }
+        if (newPass.length < 8) {
+            showToast('كلمة السر يجب أن تكون 8 أحرف على الأقل', 'error'); return;
+        }
+        if (newPass !== confirm) {
+            showToast('كلمتا السر غير متطابقتين', 'error'); return;
+        }
+        if (!currentUser) { showToast('يرجى تسجيل الدخول أولاً', 'error'); return; }
+
+        try {
+            const supa = getSupabase();
+            const { error } = await supa.auth.updateUser({ password: newPass });
+            if (error) throw error;
+            showToast('تم تغيير كلمة السر بنجاح!', 'success');
+            closeModal('modalChangePassword');
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        } catch (e) {
+            showToast('فشل تغيير كلمة السر: ' + e.message, 'error');
+        }
+    }
+
+    window.saveName = saveName;
+    window.saveAvatar = saveAvatar;
+    window.savePassword = savePassword;
+
+    // ── Tool Navigation ──
+    function goTool(p) {
+        if (!supabaseClient) {
             sessionStorage.setItem('returnUrl', p);
             location.href = 'login.html';
+            return;
         }
-    });
-}
-
-// 5. فحص حالة سيرفر Railway
-async function checkServer() {
-    try {
-        const r = await fetch(BE + '/api/health', { signal: AbortSignal.timeout(6000) });
-        document.getElementById('srv').className = 'srv-badge' + (r.ok ? ' on' : '');
-        document.getElementById('srvTxt').textContent = r.ok ? 'System Online' : 'System Offline';
-    } catch {
-        document.getElementById('srvTxt').textContent = 'System Offline';
+        supabaseClient.auth.getSession().then(({ data: { session } }) => {
+            if (session) { location.href = p; }
+            else {
+                sessionStorage.setItem('returnUrl', p);
+                location.href = 'login.html';
+            }
+        });
     }
-}
 
-// تشغيل الفحوصات
-checkSession();
-checkServer();
+    // ── Server Health ──
+    async function checkServer() {
+        try {
+            const r = await fetch(BE + '/api/health', { signal: AbortSignal.timeout(6000) });
+            document.getElementById('srv').className = 'srv-badge' + (r.ok ? ' on' : '');
+            document.getElementById('srvTxt').textContent = r.ok ? 'النظام متصل' : 'النظام غير متصل';
+        } catch {
+            document.getElementById('srvTxt').textContent = 'النظام غير متصل';
+        }
+    }
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', () => {
+        checkSession();
+        checkServer();
+
+        // Sidebar events
+        document.getElementById('sidebarClose')?.addEventListener('click', closeSidebar);
+        document.getElementById('sidebarOverlay')?.addEventListener('click', closeSidebar);
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+
+        // Settings buttons
+        document.getElementById('btnChangeName')?.addEventListener('click', () => openModal('modalChangeName'));
+        document.getElementById('btnChangeAvatar')?.addEventListener('click', () => openModal('modalChangeAvatar'));
+        document.getElementById('btnChangePassword')?.addEventListener('click', () => openModal('modalChangePassword'));
+        document.getElementById('btnLogout')?.addEventListener('click', logout);
+
+        // Tool cards
+        document.querySelectorAll('.tool-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const tool = card.dataset.tool;
+                const urls = { tts: 'tts.html', dubbing: 'dubbing.html', stt: 'stt.html' };
+                goTool(urls[tool] || 'index.html');
+            });
+        });
+
+        // Close modal on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.classList.remove('active');
+            });
+        });
+    });
+})();
 </script>
 </body>
 </html>
