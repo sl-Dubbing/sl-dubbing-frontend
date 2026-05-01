@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>تحويل الصوت لنص | sl-Dubbing</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script>window.LANG_STORAGE_KEY = 'stt_langs';</script>
+<base target="_blank">
+</head>
+<body>
+
+<header class="top-bar">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i><span>القائمة</span></button>
+    <div class="top-logo"><h2>sl-Dubbing</h2></div>
+  </div>
+  <span class="account-badge" id="topAccountBadge">جاري التحقق...</span>
+</header>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-user-section" id="authSection">
+    <div style="color:#9aa1ac;font-size:0.9rem;text-align:center;">جاري التحقق...</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">القائمة الرئيسية</div>
+    <ul>
+      <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
+      <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
+      <li><a href="tts.html"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
+      <li><a href="stt.html" class="active"><i class="fas fa-headphones"></i> تحويل الصوت لنص</a></li>
+    </ul>
+  </nav>
+  <div class="panel summary">
+    <h4>ملخص المشروع</h4>
+    <div class="meta"><strong>الحالة:</strong> <span id="miniStatus">في الانتظار</span></div>
+    <div class="meta"><strong>المعمارية:</strong> Whisper AI</div>
+    <div class="meta"><strong>اللغة:</strong> <span id="miniLangs">لم تُختر بعد</span></div>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="container">
+    <header class="main-header">
+      <h1>تحويل الصوت إلى نص</h1>
+      <p class="lead">ارفع ملف صوتي أو فيديو واحصل على نص مكتوب بدقة عالية</p>
+    </header>
+
+    <div class="workspace-grid">
+      <div class="tools-container">
+
+        <!-- رفع الملف -->
+        <section class="card">
+          <h3><i class="fas fa-upload"></i> 1. رفع الملف</h3>
+          <div class="upload-wrapper">
+            <input type="file" id="mediaFile" accept="audio/*,video/*" style="display:none;">
+            <button class="btn-secondary" id="chooseMediaBtn" type="button"><i class="fas fa-file-audio"></i> اختر ملف صوتي أو فيديو</button>
+            <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد (الحد الأقصى 500MB)</p>
+            <p style="font-size:0.72rem;color:#86868b;margin-top:4px;">الصيغ المدعومة: MP3, WAV, MP4, M4A, OGG, WEBM</p>
+          </div>
+        </section>
+
+        <!-- اختيار اللغة -->
+        <section class="card">
+          <h3><i class="fas fa-globe"></i> 2. لغة المحتوى</h3>
+          <div class="selected-langs-display" id="selectedLangsDisplay">
+            <div class="selected-langs-empty">جاري التحميل...</div>
+          </div>
+          <div class="lang-search-wrapper">
+            <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة...">
+            <i class="fas fa-search lang-search-icon"></i>
+          </div>
+          <div class="lang-counter">
+            <span id="langCount">جاري التحميل...</span>
+            <span style="color:#9aa1ac;font-size:0.75rem;">★ = الأكثر استخداماً</span>
+          </div>
+          <div class="lang-list" id="langList"></div>
+          <p style="font-size:0.72rem;color:#86868b;margin-top:8px;">ملاحظة: اختر لغة واحدة فقط للحصول على أفضل دقة</p>
+        </section>
+
+        <!-- خيارات إضافية -->
+        <section class="card">
+          <h3><i class="fas fa-sliders-h"></i> 3. الخيارات</h3>
+          <div style="margin-bottom:14px;">
+            <label class="muted" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="speakerDiarization" style="width:16px;height:16px;">
+              <span>التعرف على المتحدثين (Speaker Diarization)</span>
+            </label>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label class="muted" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="autoPunctuation" checked style="width:16px;height:16px;">
+              <span>إضافة علامات الترقيم تلقائياً</span>
+            </label>
+          </div>
+          <div>
+            <label class="muted">تنسيق الإخراج</label>
+            <select id="outputFormat" class="styled-select">
+              <option value="txt" selected>نص عادي (.txt)</option>
+              <option value="srt">ترجمة SRT (.srt)</option>
+              <option value="vtt">ترجمة WebVTT (.vtt)</option>
+              <option value="json">JSON مع التوقيتات</option>
+            </select>
+          </div>
+        </section>
+
+        <button id="sttBtn" class="btn-primary-action" type="button">
+          <i class="fas fa-magic"></i> بدء التحويل
+        </button>
+      </div>
+
+      <div class="results-container">
+        <section class="card" id="progressArea" style="display:none;">
+          <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
+          <p id="statusTxt">في الانتظار</p>
+          <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
+        </section>
+        <section class="card" id="resultsCard" style="display:none;">
+          <h3><i class="fas fa-check-circle"></i> النتيجة</h3>
+          <div id="resultText" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;max-height:300px;overflow-y:auto;font-size:0.9rem;line-height:1.8;color:#1f2937;white-space:pre-wrap;"></div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+            <button class="btn-secondary" id="copyBtn" type="button" style="width:auto;padding:8px 16px;"><i class="fas fa-copy"></i> نسخ</button>
+            <a href="#" class="btn-download" id="downloadBtn" style="display:none;"><i class="fas fa-download"></i> تحميل</a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toasts"></div>
+
+<script src="js/shared.js" defer></script>
+<script src="js/languages-data.js" defer></script>
+<script src="js/lang-picker.js" defer></script>
+<script src="js/stt.js" defer></script>
+</body>
+</html>
