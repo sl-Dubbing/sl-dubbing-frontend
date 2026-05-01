@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- استدعاء مكتبة Supabase (v2) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
     <style>
         :root {
@@ -21,6 +21,8 @@
             --accent-hover: #e6e6e6;
             --text-main: #ffffff;
             --text-muted: #bdbdbd;
+            --error: #ff3b30;
+            --success: #34c759;
             --radius: 12px;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
@@ -43,15 +45,25 @@
         .forgot-link:hover { color: var(--accent-hover); }
         input[type="email"], input[type="password"] { width: 100%; height: 46px; padding: 0 14px; background: rgba(255,255,255,0.02); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 10px; font-size: 1rem; outline: none; transition: 0.18s; }
         input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 4px rgba(255,255,255,0.06); }
+        input.error { border-color: var(--error); box-shadow: 0 0 0 4px rgba(255,59,48,0.15); }
+        .error-msg { color: var(--error); font-size: 0.78rem; margin-top: 4px; display: none; }
+        .error-msg.visible { display: block; }
         .remember-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; cursor: pointer; user-select: none; }
         .remember-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
         .submit-btn { width: 100%; height: 46px; background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); color: #ffffff; border: 1px solid var(--border-color); border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 6px; transition: 0.18s; }
         .submit-btn:hover { background: rgba(255,255,255,0.15); border-color: #ffffff; }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .footer-text { text-align: center; margin-top: 18px; font-size: 0.9rem; color: var(--text-muted); }
         .footer-text a { font-weight: 600; text-decoration: none; color: var(--accent); transition: 0.18s; }
         .footer-text a:hover { color: var(--accent-hover); }
+        /* Toast notification */
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(28,28,30,0.92); backdrop-filter: blur(20px); color: white; padding: 11px 22px; border-radius: 12px; z-index: 9999; font-weight: 500; font-size: 0.88rem; box-shadow: 0 20px 48px rgba(0,0,0,0.12); animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1); }
+        .toast.error { background: rgba(255,59,48,0.92); }
+        .toast.success { background: rgba(48,209,88,0.92); }
+        @keyframes slideUp { from { opacity: 0; transform: translate(-50%,20px); } to { opacity: 1; transform: translate(-50%,0); } }
         @media (max-width: 420px) { .login-container { padding: 20px; } }
     </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -61,7 +73,7 @@
 
     <div class="oauth-group">
         <button type="button" class="btn-google" id="googleBtn" aria-label="تسجيل الدخول عبر جوجل">
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google Logo" />
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google Logo" loading="lazy" />
             المتابعة باستخدام جوجل
         </button>
     </div>
@@ -73,7 +85,8 @@
             <div class="label-row">
                 <label for="email">البريد الإلكتروني</label>
             </div>
-            <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email" aria-required="true">
+            <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email" aria-required="true" aria-describedby="emailError">
+            <div class="error-msg" id="emailError" role="alert" aria-live="polite">يرجى إدخال بريد إلكتروني صحيح</div>
         </div>
 
         <div class="form-group">
@@ -81,13 +94,14 @@
                 <label for="password">كلمة المرور</label>
                 <a href="forgot.html" class="forgot-link" id="forgotLink" rel="noopener noreferrer">نسيت كلمة المرور؟</a>
             </div>
-            <input type="password" id="password" name="password" required autocomplete="current-password" aria-required="true">
+            <input type="password" id="password" name="password" required autocomplete="current-password" aria-required="true" aria-describedby="passwordError" minlength="6">
+            <div class="error-msg" id="passwordError" role="alert" aria-live="polite">كلمة المرور يجب أن تكون 6 أحرف على الأقل</div>
         </div>
 
-        <label class="remember-row" for="rememberMe">
+        <div class="remember-row">
             <input type="checkbox" id="rememberMe" name="rememberMe" checked>
-            <span>تذكرني</span>
-        </label>
+            <label for="rememberMe">تذكرني</label>
+        </div>
 
         <button type="submit" class="submit-btn" id="submitBtn" aria-label="تسجيل الدخول">تسجيل الدخول</button>
     </form>
@@ -95,83 +109,165 @@
     <p class="footer-text">لا تملك حساباً؟ <a href="register.html" rel="noopener noreferrer">إنشاء حساب</a></p>
 </div>
 
+<div id="toasts" aria-live="polite" aria-atomic="true"></div>
+
 <script>
-    // 1. إعداد Supabase client
-    const supabaseUrl = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-    const supabaseKey = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
-    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    // ⚠️ ضع مفتاح Supabase هنا قبل التحميل
+    // window.__SUPABASE_KEY__ = 'YOUR_SUPABASE_KEY_HERE';
 
-    // 2. التحقق من الجلسة الحالية
-    (async function checkSession() {
-        try {
-            const { data, error } = await supabaseClient.auth.getSession();
-            if (data?.session) {
-                // حفظ التوكن للتعامل مع Railway لاحقاً
-                localStorage.setItem('token', data.session.access_token);
-                window.location.href = 'index.html';
+    (function() {
+        'use strict';
+
+        const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
+        const SUPABASE_KEY = window.__SUPABASE_KEY__ || '';
+
+        // Validation helpers
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function showToast(msg, type) {
+            const container = document.getElementById('toasts');
+            const box = document.createElement('div');
+            box.className = 'toast ' + (type || '');
+            box.textContent = msg;
+            container.appendChild(box);
+            setTimeout(() => box.remove(), 4000);
+        }
+
+        function setFieldError(fieldId, show) {
+            const field = document.getElementById(fieldId);
+            const error = document.getElementById(fieldId + 'Error');
+            if (show) {
+                field.classList.add('error');
+                error.classList.add('visible');
+            } else {
+                field.classList.remove('error');
+                error.classList.remove('visible');
             }
-        } catch (e) {
-            console.error('Session check failed', e);
-        }
-    })();
-
-    // 3. تسجيل الدخول عبر Google
-    document.getElementById('googleBtn').addEventListener('click', async () => {
-        try {
-            // استخدام الرابط الحالي لضمان عملها على GitHub Pages أو أي رابط
-            const redirectTo = window.location.origin + window.location.pathname.replace('login.html', 'index.html');
-            const { data, error } = await supabaseClient.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo }
-            });
-            if (error) throw error;
-            if (data?.url) window.location.href = data.url;
-        } catch (e) {
-            console.error('Google sign-in failed', e);
-            alert('فشل بدء تسجيل الدخول عبر جوجل: ' + e.message);
-        }
-    });
-
-    // 4. تسجيل الدخول عبر البريد وكلمة المرور
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value;
-        const btn = document.getElementById('submitBtn');
-
-        if (!email || !password) {
-            alert('الرجاء إدخال البريد الإلكتروني وكلمة المرور.');
-            return;
         }
 
-        btn.textContent = "جاري التحقق...";
-        btn.disabled = true;
+        function clearErrors() {
+            setFieldError('email', false);
+            setFieldError('password', false);
+        }
 
-        try {
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            
-            if (error) {
-                alert("فشل تسجيل الدخول: البريد الإلكتروني أو كلمة المرور غير صحيحة.");
-                btn.textContent = "تسجيل الدخول";
+        // Initialize Supabase
+        let supabaseClient = null;
+        function getSupabase() {
+            if (supabaseClient) return supabaseClient;
+            if (!SUPABASE_KEY) {
+                showToast('مفتاح Supabase غير مُعد. تواصل مع المشرف.', 'error');
+                throw new Error('Supabase key not configured');
+            }
+            if (!window.supabase) {
+                showToast('فشل تحميل مكتبة Supabase. أعد تحميل الصفحة.', 'error');
+                throw new Error('Supabase SDK not loaded');
+            }
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            return supabaseClient;
+        }
+
+        // Check existing session
+        async function checkSession() {
+            try {
+                const supa = getSupabase();
+                const { data, error } = await supa.auth.getSession();
+                if (error) throw error;
+                if (data?.session) {
+                    localStorage.setItem('token', data.session.access_token);
+                    window.location.href = 'index.html';
+                }
+            } catch (e) {
+                console.error('Session check failed:', e);
+            }
+        }
+
+        // Google sign in
+        async function signInWithGoogle() {
+            try {
+                const supa = getSupabase();
+                const redirectTo = window.location.origin + window.location.pathname.replace('login.html', 'index.html');
+                const { data, error } = await supa.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo }
+                });
+                if (error) throw error;
+                if (data?.url) window.location.href = data.url;
+            } catch (e) {
+                console.error('Google sign-in failed:', e);
+                showToast('فشل تسجيل الدخول عبر جوجل: ' + e.message, 'error');
+            }
+        }
+
+        // Email/Password sign in
+        async function signInWithEmail(e) {
+            e.preventDefault();
+            clearErrors();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+            const btn = document.getElementById('submitBtn');
+
+            let hasError = false;
+
+            if (!email || !isValidEmail(email)) {
+                setFieldError('email', true);
+                hasError = true;
+            }
+            if (!password || password.length < 6) {
+                setFieldError('password', true);
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            btn.textContent = 'جاري التحقق...';
+            btn.disabled = true;
+
+            try {
+                const supa = getSupabase();
+                const { data, error } = await supa.auth.signInWithPassword({ 
+                    email, 
+                    password,
+                    options: { remember: rememberMe }
+                });
+
+                if (error) {
+                    if (error.message.includes('Invalid login')) {
+                        showToast('البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error');
+                    } else {
+                        showToast(error.message, 'error');
+                    }
+                    btn.textContent = 'تسجيل الدخول';
+                    btn.disabled = false;
+                    return;
+                }
+
+                if (data?.session) {
+                    localStorage.setItem('token', data.session.access_token);
+                    showToast('تم تسجيل الدخول بنجاح!', 'success');
+                    const targetPage = sessionStorage.getItem('returnUrl') || 'index.html';
+                    sessionStorage.removeItem('returnUrl');
+                    setTimeout(() => { window.location.href = targetPage; }, 500);
+                }
+
+            } catch (err) {
+                console.error('Sign-in error:', err);
+                showToast('حدث خطأ أثناء محاولة تسجيل الدخول', 'error');
+                btn.textContent = 'تسجيل الدخول';
                 btn.disabled = false;
-                return;
             }
-            
-            if (data?.session) {
-                localStorage.setItem('token', data.session.access_token);
-                // التوجيه للصفحة التي كان يحاول زيارتها أو للرئيسية
-                const targetPage = sessionStorage.getItem('returnUrl') || 'index.html';
-                sessionStorage.removeItem('returnUrl');
-                window.location.href = targetPage;
-            }
-            
-        } catch (err) {
-            console.error('Sign-in error', err);
-            alert('حدث خطأ أثناء محاولة تسجيل الدخول.');
-            btn.textContent = "تسجيل الدخول";
-            btn.disabled = false;
         }
-    });
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            checkSession();
+            document.getElementById('googleBtn').addEventListener('click', signInWithGoogle);
+            document.getElementById('loginForm').addEventListener('submit', signInWithEmail);
+        });
+    })();
 </script>
 </body>
 </html>
