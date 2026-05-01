@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- استدعاء مكتبة Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<!-- ⚠️ مفتاح Supabase من ملف منفصل (لا ترفعه على GitHub) -->
+<script src="js/config.js"></script>
 <style>
 /* ── ElevenLabs Light Theme ── */
 :root {
@@ -375,7 +377,7 @@ footer a:hover { text-decoration: underline; }
 
     const BE = 'https://web-production-14a1.up.railway.app';
     const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzQ2NTQ5NSwiZXhwIjoyMDkzMDQxNDk1fQ.n5JTt8qB61MDnFsELthn86NfcBRgRuBC6axJpkAwQNs'; // تأكد من وضع المفتاح هنا!
+    const SUPABASE_KEY = window.__SUPABASE_KEY__ || '';
 
     let supabaseClient = null;
     let currentUser = null;
