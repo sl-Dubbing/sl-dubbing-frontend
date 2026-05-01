@@ -1,7 +1,8 @@
-// shared.js — Supabase Auth + Cache
+// shared.js — Supabase Auth + Cache (مصحح)
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
+// ⚠️ المفتاح يُحمّل من متغير بيئة أو backend — لا تضعه هنا في الإنتاج
+const SUPABASE_KEY = window.__SUPABASE_KEY__ || '';
 const USER_CACHE_KEY = 'sl_user_cache';
 
 window.API_BASE = API_BASE;
@@ -12,12 +13,16 @@ window.API_BASE = API_BASE;
 let supabaseClient = null;
 async function getSupabase() {
     if (supabaseClient) return supabaseClient;
+    if (!SUPABASE_KEY) {
+        console.error('Supabase key missing. Set window.__SUPABASE_KEY__ before loading.');
+        throw new Error('Supabase key not configured');
+    }
     if (!window.supabase) {
         await new Promise((resolve, reject) => {
             const s = document.createElement('script');
             s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
             s.onload = resolve;
-            s.onerror = reject;
+            s.onerror = () => reject(new Error('Failed to load Supabase SDK'));
             document.head.appendChild(s);
         });
     }
@@ -78,7 +83,13 @@ function getUserCache() {
     try {
         const raw = localStorage.getItem(USER_CACHE_KEY);
         if (!raw) return null;
-        return JSON.parse(raw)?.user || null;
+        const parsed = JSON.parse(raw);
+        // صلاحية الكاش 24 ساعة
+        if (Date.now() - (parsed.timestamp || 0) > 24 * 60 * 60 * 1000) {
+            localStorage.removeItem(USER_CACHE_KEY);
+            return null;
+        }
+        return parsed?.user || null;
     } catch (e) { return null; }
 }
 
@@ -111,7 +122,7 @@ function renderAuthUI(user) {
 
     if (authSection) {
         const avatar = user.avatar
-            ? `<img src="${escapeHtml(user.avatar)}" style="width:48px;height:48px;border-radius:50%;margin-bottom:8px;">`
+            ? `<img src="${escapeHtml(user.avatar)}" style="width:48px;height:48px;border-radius:50%;margin-bottom:8px;object-fit:cover;">`
             : `<i class="fas fa-user-circle" style="font-size:2.5rem;color:#86868b;margin-bottom:8px;display:block;"></i>`;
 
         authSection.innerHTML = `
@@ -152,12 +163,27 @@ async function checkAuth() {
         localStorage.setItem('token', session.access_token);
 
         const u = session.user;
+
+        // جلب النقاط من السيرفر
+        let credits = cached?.credits ?? 0;
+        try {
+            const res = await fetch(`${API_BASE}/api/user/credits`, {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                credits = data.credits ?? credits;
+            }
+        } catch (e) {
+            console.warn('Failed to fetch credits:', e);
+        }
+
         const user = {
             id: u.id,
             email: u.email,
             name: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0],
             avatar: u.user_metadata?.avatar_url,
-            credits: cached?.credits ?? 0
+            credits: credits
         };
 
         saveUserCache(user);
