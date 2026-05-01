@@ -1,0 +1,1 @@
+window.__SUPABASE_KEY__ = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzQ2NTQ5NSwiZXhwIjoyMDkzMDQxNDk1fQ.n5JTt8qB61MDnFsELthn86NfcBRgRuBC6axJpkAwQNs';  // مفتاحك هنا
