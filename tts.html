@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
   <script>window.LANG_STORAGE_KEY = 'tts_langs';</script>
+  <!-- ⚠️ مفتاح Supabase من ملف منفصل (لا ترفعه على GitHub) -->
+  <script src="js/config.js"></script>
   <style>
     .mode-switcher{display:flex;gap:10px;background:#f7f8fa;padding:6px;border-radius:10px;border:1px solid #e5e7eb;margin-bottom:16px}
     .mode-option{flex:1;padding:12px 14px;background:transparent;border:2px solid transparent;border-radius:6px;cursor:pointer;transition:0.25s;color:#5b6471;text-align:right}
@@ -24,6 +26,7 @@
     .btn-instant:disabled{opacity:0.5;cursor:not-allowed}
     .char-counter{font-size:0.78rem;color:#9aa1ac;margin-top:6px;text-align:left}
   </style>
+<base target="_blank">
 </head>
 <body data-mode="fast">
 
@@ -32,7 +35,7 @@
     <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i><span>القائمة</span></button>
     <div class="top-logo"><h2>sl-Dubbing</h2></div>
   </div>
-  <span class="account-badge" id="topAccountBadge">حساب تجريبي</span>
+  <span class="account-badge" id="topAccountBadge">جاري التحقق...</span>
 </header>
 
 <div class="overlay" id="overlay"></div>
@@ -47,6 +50,7 @@
       <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
       <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
       <li><a href="tts.html" class="active"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
+      <li><a href="stt.html"><i class="fas fa-headphones"></i> تحويل الصوت لنص</a></li>
     </ul>
   </nav>
 </aside>
@@ -55,7 +59,7 @@
   <div class="container">
     <header class="main-header">
       <h1>تحويل النص إلى صوت</h1>
-      <p>أكثر من 100 لغة — توليد عدة لغات بالتوازي</p>
+      <p>أكثر من 25 لغة — توليد عدة لغات بالتوازي</p>
     </header>
 
     <div class="workspace-grid">
@@ -134,10 +138,10 @@
 
 <div id="toasts"></div>
 
-<script src="js/shared.js"></script>
-<script src="js/languages-data.js"></script>
-<script src="js/lang-picker.js"></script>
-<script src="js/tts-quick.js"></script>
-<script src="js/tts.js"></script>
+<script src="js/shared.js" defer></script>
+<script src="js/languages-data.js" defer></script>
+<script src="js/lang-picker.js" defer></script>
+<script src="js/tts-quick.js" defer></script>
+<script src="js/tts.js" defer></script>
 </body>
 </html>
