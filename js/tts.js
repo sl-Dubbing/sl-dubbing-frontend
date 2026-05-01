@@ -150,7 +150,7 @@ async function startTTS() {
         try {
             statusEl.textContent = 'يرسل...';
             const body = Object.assign({}, baseBody, { lang: code });
-            const res = await fetch(`${TTS_API_BASE}/api/tts`, {
+            const res = await fetch(`${TTS_API_BASE}/api/tts/smart`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
