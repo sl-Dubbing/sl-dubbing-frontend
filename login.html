@@ -10,6 +10,8 @@
 
     <!-- استدعاء مكتبة Supabase (v2) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <!-- ⚠️ مفتاح Supabase من ملف منفصل (لا ترفعه على GitHub) -->
+    <script src="js/config.js"></script>
 
     <style>
         :root {
@@ -57,7 +59,7 @@
         .footer-text a { font-weight: 600; text-decoration: none; color: var(--accent); transition: 0.18s; }
         .footer-text a:hover { color: var(--accent-hover); }
         /* Toast notification */
-        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(28,28,30,0.92); backdrop-filter: blur(20px); color: white; padding: 11px 22px; border-radius: 12px; z-index: 9999; font-weight: 500; font-size: 0.88rem; box-shadow: 0 20px 48px rgba(0,0,0,0.12); animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1); }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(28,28,30,0.92); backdrop-filter: blur(20px); color: white; padding: 11px 22px; border-radius: var(--radius); z-index: 9999; font-weight: 500; font-size: 0.88rem; box-shadow: 0 20px 48px rgba(0,0,0,0.12); animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1); }
         .toast.error { background: rgba(255,59,48,0.92); }
         .toast.success { background: rgba(48,209,88,0.92); }
         @keyframes slideUp { from { opacity: 0; transform: translate(-50%,20px); } to { opacity: 1; transform: translate(-50%,0); } }
@@ -112,159 +114,159 @@
 <div id="toasts" aria-live="polite" aria-atomic="true"></div>
 
 <script>
-    (function() {
-        'use strict';
+(function() {
+    'use strict';
 
-        const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzQ2NTQ5NSwiZXhwIjoyMDkzMDQxNDk1fQ.n5JTt8qB61MDnFsELthn86NfcBRgRuBC6axJpkAwQNs'; // تأكد من وضع المفتاح هنا!
+    const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
+    const SUPABASE_KEY = window.__SUPABASE_KEY__ || '';
 
-        // Validation helpers
-        function isValidEmail(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    // Validation helpers
+    function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function showToast(msg, type) {
+        const container = document.getElementById('toasts');
+        const box = document.createElement('div');
+        box.className = 'toast ' + (type || '');
+        box.textContent = msg;
+        container.appendChild(box);
+        setTimeout(() => box.remove(), 4000);
+    }
+
+    function setFieldError(fieldId, show) {
+        const field = document.getElementById(fieldId);
+        const error = document.getElementById(fieldId + 'Error');
+        if (show) {
+            field.classList.add('error');
+            error.classList.add('visible');
+        } else {
+            field.classList.remove('error');
+            error.classList.remove('visible');
         }
+    }
 
-        function showToast(msg, type) {
-            const container = document.getElementById('toasts');
-            const box = document.createElement('div');
-            box.className = 'toast ' + (type || '');
-            box.textContent = msg;
-            container.appendChild(box);
-            setTimeout(() => box.remove(), 4000);
+    function clearErrors() {
+        setFieldError('email', false);
+        setFieldError('password', false);
+    }
+
+    // Initialize Supabase
+    let supabaseClient = null;
+    function getSupabase() {
+        if (supabaseClient) return supabaseClient;
+        if (!SUPABASE_KEY) {
+            showToast('مفتاح Supabase غير مُعد. تواصل مع المشرف.', 'error');
+            throw new Error('Supabase key not configured');
         }
+        if (!window.supabase) {
+            showToast('فشل تحميل مكتبة Supabase. أعد تحميل الصفحة.', 'error');
+            throw new Error('Supabase SDK not loaded');
+        }
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        return supabaseClient;
+    }
 
-        function setFieldError(fieldId, show) {
-            const field = document.getElementById(fieldId);
-            const error = document.getElementById(fieldId + 'Error');
-            if (show) {
-                field.classList.add('error');
-                error.classList.add('visible');
-            } else {
-                field.classList.remove('error');
-                error.classList.remove('visible');
+    // Check existing session
+    async function checkSession() {
+        try {
+            const supa = getSupabase();
+            const { data, error } = await supa.auth.getSession();
+            if (error) throw error;
+            if (data?.session) {
+                localStorage.setItem('token', data.session.access_token);
+                window.location.href = 'index.html';
             }
+        } catch (e) {
+            console.error('Session check failed:', e);
+        }
+    }
+
+    // Google sign in
+    async function signInWithGoogle() {
+        try {
+            const supa = getSupabase();
+            const redirectTo = window.location.origin + window.location.pathname.replace('login.html', 'index.html');
+            const { data, error } = await supa.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo }
+            });
+            if (error) throw error;
+            if (data?.url) window.location.href = data.url;
+        } catch (e) {
+            console.error('Google sign-in failed:', e);
+            showToast('فشل تسجيل الدخول عبر جوجل: ' + e.message, 'error');
+        }
+    }
+
+    // Email/Password sign in
+    async function signInWithEmail(e) {
+        e.preventDefault();
+        clearErrors();
+
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const rememberMe = document.getElementById('rememberMe').checked;
+        const btn = document.getElementById('submitBtn');
+
+        let hasError = false;
+
+        if (!email || !isValidEmail(email)) {
+            setFieldError('email', true);
+            hasError = true;
+        }
+        if (!password || password.length < 6) {
+            setFieldError('password', true);
+            hasError = true;
         }
 
-        function clearErrors() {
-            setFieldError('email', false);
-            setFieldError('password', false);
-        }
+        if (hasError) return;
 
-        // Initialize Supabase
-        let supabaseClient = null;
-        function getSupabase() {
-            if (supabaseClient) return supabaseClient;
-            if (!SUPABASE_KEY) {
-                showToast('مفتاح Supabase غير مُعد. تواصل مع المشرف.', 'error');
-                throw new Error('Supabase key not configured');
-            }
-            if (!window.supabase) {
-                showToast('فشل تحميل مكتبة Supabase. أعد تحميل الصفحة.', 'error');
-                throw new Error('Supabase SDK not loaded');
-            }
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            return supabaseClient;
-        }
+        btn.textContent = 'جاري التحقق...';
+        btn.disabled = true;
 
-        // Check existing session
-        async function checkSession() {
-            try {
-                const supa = getSupabase();
-                const { data, error } = await supa.auth.getSession();
-                if (error) throw error;
-                if (data?.session) {
-                    localStorage.setItem('token', data.session.access_token);
-                    window.location.href = 'index.html';
+        try {
+            const supa = getSupabase();
+            const { data, error } = await supa.auth.signInWithPassword({ 
+                email, 
+                password,
+                options: { remember: rememberMe }
+            });
+
+            if (error) {
+                if (error.message.includes('Invalid login')) {
+                    showToast('البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error');
+                } else {
+                    showToast(error.message, 'error');
                 }
-            } catch (e) {
-                console.error('Session check failed:', e);
-            }
-        }
-
-        // Google sign in
-        async function signInWithGoogle() {
-            try {
-                const supa = getSupabase();
-                const redirectTo = window.location.origin + window.location.pathname.replace('login.html', 'index.html');
-                const { data, error } = await supa.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: { redirectTo }
-                });
-                if (error) throw error;
-                if (data?.url) window.location.href = data.url;
-            } catch (e) {
-                console.error('Google sign-in failed:', e);
-                showToast('فشل تسجيل الدخول عبر جوجل: ' + e.message, 'error');
-            }
-        }
-
-        // Email/Password sign in
-        async function signInWithEmail(e) {
-            e.preventDefault();
-            clearErrors();
-
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const rememberMe = document.getElementById('rememberMe').checked;
-            const btn = document.getElementById('submitBtn');
-
-            let hasError = false;
-
-            if (!email || !isValidEmail(email)) {
-                setFieldError('email', true);
-                hasError = true;
-            }
-            if (!password || password.length < 6) {
-                setFieldError('password', true);
-                hasError = true;
-            }
-
-            if (hasError) return;
-
-            btn.textContent = 'جاري التحقق...';
-            btn.disabled = true;
-
-            try {
-                const supa = getSupabase();
-                const { data, error } = await supa.auth.signInWithPassword({ 
-                    email, 
-                    password,
-                    options: { remember: rememberMe }
-                });
-
-                if (error) {
-                    if (error.message.includes('Invalid login')) {
-                        showToast('البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error');
-                    } else {
-                        showToast(error.message, 'error');
-                    }
-                    btn.textContent = 'تسجيل الدخول';
-                    btn.disabled = false;
-                    return;
-                }
-
-                if (data?.session) {
-                    localStorage.setItem('token', data.session.access_token);
-                    showToast('تم تسجيل الدخول بنجاح!', 'success');
-                    const targetPage = sessionStorage.getItem('returnUrl') || 'index.html';
-                    sessionStorage.removeItem('returnUrl');
-                    setTimeout(() => { window.location.href = targetPage; }, 500);
-                }
-
-            } catch (err) {
-                console.error('Sign-in error:', err);
-                showToast('حدث خطأ أثناء محاولة تسجيل الدخول', 'error');
                 btn.textContent = 'تسجيل الدخول';
                 btn.disabled = false;
+                return;
             }
-        }
 
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            checkSession();
-            document.getElementById('googleBtn').addEventListener('click', signInWithGoogle);
-            document.getElementById('loginForm').addEventListener('submit', signInWithEmail);
-        });
-    })();
+            if (data?.session) {
+                localStorage.setItem('token', data.session.access_token);
+                showToast('تم تسجيل الدخول بنجاح!', 'success');
+                const targetPage = sessionStorage.getItem('returnUrl') || 'index.html';
+                sessionStorage.removeItem('returnUrl');
+                setTimeout(() => { window.location.href = targetPage; }, 500);
+            }
+
+        } catch (err) {
+            console.error('Sign-in error:', err);
+            showToast('حدث خطأ أثناء محاولة تسجيل الدخول', 'error');
+            btn.textContent = 'تسجيل الدخول';
+            btn.disabled = false;
+        }
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        checkSession();
+        document.getElementById('googleBtn').addEventListener('click', signInWithGoogle);
+        document.getElementById('loginForm').addEventListener('submit', signInWithEmail);
+    });
+})();
 </script>
 </body>
 </html>
