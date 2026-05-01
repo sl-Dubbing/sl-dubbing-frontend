@@ -101,6 +101,17 @@ async function instantPlay() {
                     <span class="result-item-status success">✓</span>
                 </div>
                 <audio controls src="${result.url}"></audio>
+                <a href="${result.url}" id="download-${lang}" download="tts_${lang}_${Date.now()}.mp3" class="btn-download" style="margin-top:8px;"><i class="fas fa-download"></i> تحميل</a>
+            </div>`;
+
+        // 🎯 ربط الملف النهائي بز التحميل بمجرد انتهاء البث المباشر في الخلفية
+        if (result.blobPromise) {
+            result.blobPromise.then(finalUrl => {
+                const dlBtn = document.getElementById(`download-${lang}`);
+                if (dlBtn) dlBtn.href = finalUrl;
+            });
+        }
+                <audio controls src="${result.url}"></audio>
                 <a href="${result.url}" download="tts_${lang}_${Date.now()}.mp3" class="btn-download" style="margin-top:8px;"><i class="fas fa-download"></i> تحميل</a>
             </div>`;
         showToast(`⚡ ${result.totalTime.toFixed(0)}ms`, '#10b981');
