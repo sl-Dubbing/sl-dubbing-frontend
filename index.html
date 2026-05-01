@@ -370,15 +370,12 @@ footer a:hover { text-decoration: underline; }
 <div id="toasts"></div>
 
 <script>
-// ⚠️ ضع مفتاح Supabase هنا قبل التحميل
-// window.__SUPABASE_KEY__ = 'YOUR_SUPABASE_KEY_HERE';
-
 (function() {
     'use strict';
 
     const BE = 'https://web-production-14a1.up.railway.app';
     const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-    const SUPABASE_KEY = window.__SUPABASE_KEY__ || '';
+    const SUPABASE_KEY = 'ضع_مفتاح_anon_هنا_يبدأ_بـ_ey'; // تأكد من وضع المفتاح هنا!
 
     let supabaseClient = null;
     let currentUser = null;
