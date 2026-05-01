@@ -22,14 +22,14 @@ async function quickTTS(text, options = {}) {
     const ttfb = performance.now() - t0;
     const remainingCredits = parseInt(response.headers.get('X-Remaining-Credits') || '0');
 
-    // 🛡️ خطة بديلة: إذا كان المتصفح لا يدعم بث MP3 المباشر (مثل أجهزة iOS/Safari)
+    // إذا كان المتصفح لا يدعم بث MP3 المباشر
     if (typeof MediaSource === 'undefined' || !MediaSource.isTypeSupported('audio/mpeg')) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         return { audio: new Audio(url), url, ttfb, totalTime: performance.now() - t0, remainingCredits };
     }
 
-    // 🚀 تقنية البث المباشر (Real-time Streaming)
+    // تقنية البث المباشر (Real-time Streaming)
     const mediaSource = new MediaSource();
     const audio = new Audio(URL.createObjectURL(mediaSource));
     const chunks = []; 
@@ -40,7 +40,6 @@ async function quickTTS(text, options = {}) {
                 const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
                 const reader = response.body.getReader();
                 
-                // دالة لجلب القطع الصوتية في الخلفية وتغذية المشغل
                 const pushChunks = async () => {
                     while (true) {
                         const { done, value } = await reader.read();
@@ -50,39 +49,30 @@ async function quickTTS(text, options = {}) {
                             }
                             break;
                         }
-                        
-                        chunks.push(value); // نحتفظ بالقطعة لإنشاء ملف التحميل لاحقاً
-                        
-                        // ننتظر حتى ينتهي التحديث الحالي قبل إضافة قطعة جديدة
+                        chunks.push(value); 
                         if (sourceBuffer.updating) {
                             await new Promise(r => sourceBuffer.addEventListener('updateend', r, { once: true }));
                         }
-                        
                         if (mediaSource.readyState === 'open') {
                             sourceBuffer.appendBuffer(value);
                         }
                     }
-                    // عند انتهاء البث، نقوم بتجميع القطع كملف كامل لزر التحميل
                     return URL.createObjectURL(new Blob(chunks, { type: 'audio/mpeg' }));
                 };
 
                 const blobPromise = pushChunks();
 
-                // نرجع النتيجة للواجهة فور بدء البث لتعمل فوراً دون انتظار النهاية
                 resolve({
                     audio: audio,
-                    url: audio.src, // رابط البث المباشر المؤقت
-                    blobPromise: blobPromise, // نرسل الوعد بالملف النهائي لزر التحميل
+                    url: audio.src, 
+                    blobPromise: blobPromise, 
                     ttfb,
                     totalTime: performance.now() - t0,
                     remainingCredits
                 });
 
-            } catch (e) {
-                reject(new Error('خطأ في معالجة البث المباشر'));
-            }
+            } catch (e) { reject(new Error('خطأ في معالجة البث المباشر')); }
         });
-        
         mediaSource.addEventListener('error', () => reject(new Error('خطأ في المشغل')));
     });
 }
