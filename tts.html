@@ -1,147 +1,273 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>تحويل النص إلى صوت | sl-Dubbing</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css">
-  <script>window.LANG_STORAGE_KEY = 'tts_langs';</script>
-  <!-- ⚠️ مفتاح Supabase من ملف منفصل (لا ترفعه على GitHub) -->
-  <script src="js/config.js"></script>
-  <style>
-    .mode-switcher{display:flex;gap:10px;background:#f7f8fa;padding:6px;border-radius:10px;border:1px solid #e5e7eb;margin-bottom:16px}
-    .mode-option{flex:1;padding:12px 14px;background:transparent;border:2px solid transparent;border-radius:6px;cursor:pointer;transition:0.25s;color:#5b6471;text-align:right}
-    .mode-option:hover{background:white;color:#1a1d23}
-    .mode-option.active{background:white;border-color:#2563eb;color:#1a1d23}
-    .mode-option .mode-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:0.95rem;margin-bottom:4px}
-    .mode-option .mode-desc{font-size:0.75rem;color:#6b7280}
-    .mode-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:0.68rem;font-weight:700;margin-right:4px}
-    .badge-fast{background:#fef3c7;color:#f59e0b}
-    .badge-quality{background:#eff6ff;color:#2563eb}
-    .quality-only{display:none}
-    body[data-mode="quality"] .quality-only{display:block}
-    .btn-instant{background:#f59e0b;color:white;border:none;padding:13px 20px;border-radius:10px;font-weight:700;font-size:0.98rem;cursor:pointer;width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px}
-    .btn-instant:hover:not(:disabled){background:#d97706}
-    .btn-instant:disabled{opacity:0.5;cursor:not-allowed}
-    .char-counter{font-size:0.78rem;color:#9aa1ac;margin-top:6px;text-align:left}
-  </style>
-<base target="_blank">
-</head>
-<body data-mode="fast">
+const TTS_API_BASE = 'https://web-production-14a1.up.railway.app';
+const SAMPLES_BASE = 'samples';
 
-<header class="top-bar">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i><span>القائمة</span></button>
-    <div class="top-logo"><h2>sl-Dubbing</h2></div>
-  </div>
-  <span class="account-badge" id="topAccountBadge">جاري التحقق...</span>
-</header>
+// 🔄 دالة لتحديث الرصيد في الواجهة
+function updateCreditsUI(credits) {
+    if (isNaN(credits)) return;
+    const creditsEl = document.getElementById('user-credits');
+    if (creditsEl) {
+        creditsEl.innerText = `${credits} نقطة`;
+    }
+}
 
-<div class="overlay" id="overlay"></div>
+// 🔄 دالة لجلب الرصيد من السيرفر
+async function fetchInitialBalance() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+        const res = await fetch(`${TTS_API_BASE}/api/user`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success && data.user) {
+            updateCreditsUI(data.user.credits);
+        }
+    } catch (e) { console.warn('لم يتم جلب الرصيد الأولي', e); }
+}
 
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-user-section" id="authSection">
-    <div style="color:#9aa1ac;font-size:0.9rem;text-align:center;">جاري التحقق...</div>
-  </div>
-  <nav class="sidebar-nav">
-    <div class="nav-label">القائمة الرئيسية</div>
-    <ul>
-      <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
-      <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
-      <li><a href="tts.html" class="active"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
-      <li><a href="stt.html"><i class="fas fa-headphones"></i> تحويل الصوت لنص</a></li>
-    </ul>
-  </nav>
-</aside>
+async function loadSamples() {
+    const select = document.getElementById('voiceSelect');
+    if (!select) return;
+    try {
+        const res = await fetch(`${SAMPLES_BASE}/manifest.json?t=${Date.now()}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        (data.voices || []).forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.textContent = `${v.icon || '🎤'} ${v.label || v.id}`;
+            opt.dataset.file = v.file || `${v.id}.mp3`;
+            select.appendChild(opt);
+        });
+    } catch (e) { console.warn(e); }
+}
 
-<main class="main-content">
-  <div class="container">
-    <header class="main-header">
-      <h1>تحويل النص إلى صوت</h1>
-      <p>أكثر من 25 لغة — توليد عدة لغات بالتوازي</p>
-    </header>
+function fileToB64(file) {
+    return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onloadend = () => resolve(String(r.result).split(',')[1] || '');
+        r.onerror = reject;
+        r.readAsDataURL(file);
+    });
+}
 
-    <div class="workspace-grid">
-      <div class="tools-container">
+async function fetchSampleB64(filename) {
+    const res = await fetch(`${SAMPLES_BASE}/${filename}`);
+    if (!res.ok) throw new Error('فشل جلب العينة');
+    const blob = await res.blob();
+    return fileToB64(new File([blob], filename));
+}
 
-        <section class="card">
-          <h3><i class="fas fa-bolt"></i> اختر الوضع</h3>
-          <div class="mode-switcher">
-            <button class="mode-option active" data-mode="fast" type="button">
-              <div class="mode-title"><i class="fas fa-bolt"></i><span>سريع</span><span class="mode-badge badge-fast">⚡ 0.5s</span></div>
-              <div class="mode-desc">صوت Microsoft الافتراضي</div>
-            </button>
-            <button class="mode-option" data-mode="quality" type="button">
-              <div class="mode-title"><i class="fas fa-gem"></i><span>عالي الجودة</span><span class="mode-badge badge-quality">🎨 1.5s</span></div>
-              <div class="mode-desc">استنساخ بصمة صوتية</div>
-            </button>
-          </div>
-        </section>
+async function instantPlay() {
+    const text = document.getElementById('ttsInput')?.value?.trim();
+    if (!text) return window.showToast?.('اكتب النص أولاً', 'error') || alert('اكتب النص أولاً');
+    const lang = window.selectedLangs?.size ? [...window.selectedLangs][0] : 'ar';
+    const btn = document.getElementById('ttsInstantBtn');
+    const progArea = document.getElementById('progressArea');
+    const statusTxt = document.getElementById('statusTxt');
+    const progFill = document.getElementById('progFill');
+    const resultsCard = document.getElementById('resultsCard');
+    const resultsList = document.getElementById('resultsList');
 
-        <section class="card">
-          <h3><i class="fas fa-edit"></i> 1. اكتب النص</h3>
-          <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص..."></textarea>
-          <div class="char-counter"><span id="charCount">0</span> حرف</div>
-        </section>
+    btn.disabled = true;
+    progArea.style.display = 'block';
+    resultsCard.style.display = 'none';
+    statusTxt.innerText = '⚡ التواصل مع الخادم...';
+    progFill.style.width = '20%';
 
-        <section class="card">
-          <h3><i class="fas fa-globe"></i> 2. اختر اللغات (متعدد)</h3>
-          <div class="selected-langs-display" id="selectedLangsDisplay">
-            <div class="selected-langs-empty">جاري التحميل...</div>
-          </div>
-          <div class="lang-search-wrapper">
-            <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة...">
-            <i class="fas fa-search lang-search-icon"></i>
-          </div>
-          <div class="lang-counter">
-            <span id="langCount">جاري التحميل...</span>
-            <span style="color:#9aa1ac;font-size:0.75rem;">★ = الأكثر استخداماً</span>
-          </div>
-          <div class="lang-list" id="langList"></div>
-        </section>
+    try {
+        const result = await window.quickTTS(text, { lang });
+        progFill.style.width = '100%';
+        statusTxt.innerText = `✓ ${result.totalTime.toFixed(0)}ms`;
+        result.audio.play().catch(() => window.showToast?.('اضغط ▶️', 'warning'));
 
-        <section class="card quality-only">
-          <h3><i class="fas fa-microphone-alt"></i> 3. البصمة الصوتية</h3>
-          <select id="voiceSelect" class="styled-select" style="margin-bottom:12px;">
-            <option value="">🎤 اختر عينة جاهزة</option>
-          </select>
-          <input type="file" id="customVoice" accept="audio/*" style="display:none;">
-          <button class="btn-secondary" id="uploadVoiceBtn" type="button"><i class="fas fa-upload"></i> أو ارفع تسجيلك</button>
-          <p id="customVoiceTxt" class="file-info"></p>
-        </section>
+        // تحديث الرصيد بعد التوليد الناجح
+        updateCreditsUI(result.remainingCredits);
 
-        <button id="ttsBtn" class="btn-primary-action" type="button">
-          <i class="fas fa-volume-up"></i> توليد الصوت لكل اللغات
-        </button>
+        const ld = window.LANGUAGES?.find(l => l.code === lang);
+        resultsCard.style.display = 'block';
+        resultsList.innerHTML = `
+            <div class="result-item">
+                <div class="result-item-header">
+                    <span class="result-item-flag">${ld?.flag || '🌍'}</span>
+                    <span class="result-item-name">${ld?.name_ar || lang}</span>
+                    <span class="result-item-status success">✓</span>
+                </div>
+                <audio controls src="${result.url}"></audio>
+                <a href="${result.url}" id="download-${lang}" download="tts_${lang}_${Date.now()}.mp3" class="btn-download" style="margin-top:8px;"><i class="fas fa-download"></i> تحميل</a>
+            </div>`;
 
-        <button id="ttsInstantBtn" class="btn-instant" type="button">
-          <i class="fas fa-play-circle"></i> ⚡ تشغيل فوري (أول لغة)
-        </button>
-      </div>
+        // تفعيل زر التحميل بعد اكتمال البث المباشر
+        if (result.blobPromise) {
+            result.blobPromise.then(finalUrl => {
+                const dlBtn = document.getElementById(`download-${lang}`);
+                if (dlBtn) dlBtn.href = finalUrl;
+            });
+        }
 
-      <div class="results-container">
-        <section class="card" id="progressArea" style="display:none;">
-          <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
-          <p id="statusTxt">في الانتظار</p>
-          <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
-          <div class="perf-stats" id="perfStats"></div>
-        </section>
-        <section class="card" id="resultsCard" style="display:none;">
-          <h3><i class="fas fa-check-circle"></i> النتائج</h3>
-          <div class="results-multilang" id="resultsList"></div>
-        </section>
-      </div>
-    </div>
-  </div>
-</main>
+        window.showToast?.(`⚡ ${result.totalTime.toFixed(0)}ms`, 'success');
+    } catch (e) {
+        window.showToast?.(e.message, 'error');
+        statusTxt.innerText = '✗ ' + e.message;
+        progFill.style.background = '#ef4444';
+    } finally {
+        btn.disabled = false;
+    }
+}
 
-<div id="toasts"></div>
+async function startTTS() {
+    const text = document.getElementById('ttsInput')?.value?.trim();
+    const token = localStorage.getItem('token');
+    if (!token) return window.showToast?.('يرجى تسجيل الدخول', 'warning') || alert('يرجى تسجيل الدخول');
+    if (!text) return window.showToast?.('اكتب النص', 'error') || alert('اكتب النص');
+    if (!window.selectedLangs?.size) return window.showToast?.('اختر لغة', 'error') || alert('اختر لغة');
 
-<script src="js/shared.js" defer></script>
-<script src="js/languages-data.js" defer></script>
-<script src="js/lang-picker.js" defer></script>
-<script src="js/tts-quick.js" defer></script>
-<script src="js/tts.js" defer></script>
-</body>
-</html>
+    const mode = document.body.dataset.mode || 'fast';
+    const baseBody = { text, translate: true };
+
+    if (mode === 'quality') {
+        const cv = document.getElementById('customVoice');
+        const vs = document.getElementById('voiceSelect');
+        if (cv?.files?.[0]) {
+            baseBody.sample_b64 = await fileToB64(cv.files[0]);
+        } else if (vs?.value) {
+            const opt = vs.options[vs.selectedIndex];
+            try {
+                baseBody.sample_b64 = await fetchSampleB64(opt?.dataset?.file || `${vs.value}.mp3`);
+                baseBody.voice_id = vs.value;
+            } catch (e) { baseBody.voice_id = vs.value; }
+        }
+        if (!baseBody.sample_b64 && !baseBody.voice_id) {
+            return window.showToast?.('اختر عينة أو ارفع تسجيلاً', 'warning') || alert('اختر عينة أو ارفع تسجيلاً');
+        }
+    }
+
+    const btn = document.getElementById('ttsBtn');
+    const progArea = document.getElementById('progressArea');
+    const resultsCard = document.getElementById('resultsCard');
+    const resultsList = document.getElementById('resultsList');
+    const statusTxt = document.getElementById('statusTxt');
+    const progFill = document.getElementById('progFill');
+
+    btn.disabled = true;
+    progArea.style.display = 'block';
+    resultsCard.style.display = 'block';
+    resultsList.innerHTML = '';
+    progFill.style.width = '5%';
+
+    const langs = [...window.selectedLangs];
+    const total = langs.length;
+    let completed = 0;
+    statusTxt.innerText = `بدء ${total} لغة بالتوازي...`;
+
+    langs.forEach(code => {
+        const lang = window.LANGUAGES?.find(l => l.code === code);
+        if (!lang) return;
+        const card = document.createElement('div');
+        card.className = 'result-item';
+        card.id = `result-${code}`;
+        card.innerHTML = `
+            <div class="result-item-header">
+                <span class="result-item-flag">${lang.flag}</span>
+                <span class="result-item-name">${lang.name_ar}</span>
+                <span class="result-item-status" id="status-${code}">في الانتظار</span>
+            </div>
+            <div id="body-${code}" style="font-size:0.85rem;color:#9aa1ac;padding:6px;">⏳ جاري...</div>
+        `;
+        resultsList.appendChild(card);
+    });
+
+    const t0 = performance.now();
+    const promises = langs.map(async (code) => {
+        const lang = window.LANGUAGES?.find(l => l.code === code);
+        const statusEl = document.getElementById(`status-${code}`);
+        const bodyEl = document.getElementById(`body-${code}`);
+        try {
+            statusEl.textContent = 'يرسل...';
+            const body = Object.assign({}, baseBody, { lang: code });
+            const res = await fetch(`${TTS_API_BASE}/api/tts/smart`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+
+            statusEl.textContent = 'يعالج...';
+            bodyEl.innerHTML = '<div style="font-size:0.85rem;color:#2563eb;padding:6px;">🎤 يعالج...</div>';
+
+            const final = await waitForJob(data.job_id, token, statusEl);
+
+            statusEl.textContent = '✓ مكتمل';
+            statusEl.classList.add('success');
+            bodyEl.innerHTML = `
+                <audio controls src="${final.audio_url}"></audio>
+                <a href="${final.audio_url}" download="tts_${code}_${Date.now()}.mp3" class="btn-download" style="margin-top:8px;"><i class="fas fa-download"></i> تحميل ${lang.name_ar}</a>
+            `;
+        } catch (e) {
+            statusEl.textContent = '✗ فشل';
+            statusEl.classList.add('error');
+            bodyEl.innerHTML = `<div style="color:#ef4444;font-size:0.85rem;padding:6px;">${e.message}</div>`;
+        } finally {
+            completed++;
+            progFill.style.width = (Math.round((completed/total)*95)+5) + '%';
+            statusTxt.innerText = `${completed}/${total} لغة`;
+        }
+    });
+
+    await Promise.all(promises);
+
+    // تحديث الرصيد بعد انتهاء الوضع الذكي
+    fetchInitialBalance();
+
+    const totalMs = (performance.now() - t0).toFixed(0);
+    progFill.style.width = '100%';
+    statusTxt.innerText = `✓ اكتمل في ${(totalMs/1000).toFixed(1)}s`;
+    window.showToast?.(`${total} لغة في ${(totalMs/1000).toFixed(1)}s`, 'success');
+    btn.disabled = false;
+}
+
+async function waitForJob(jobId, token, statusEl) {
+    const start = Date.now();
+    const TIMEOUT = 10 * 60 * 1000;
+    while (Date.now() - start < TIMEOUT) {
+        try {
+            const res = await fetch(`${TTS_API_BASE}/api/job/${jobId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.status === 'completed') return data;
+            if (data.status === 'failed') throw new Error('فشلت المعالجة');
+            if (statusEl) statusEl.textContent = `يعالج ${Math.round((Date.now()-start)/1000)}ث`;
+        } catch (e) { console.warn(e); }
+        await new Promise(r => setTimeout(r, 2500));
+    }
+    throw new Error('انتهت المهلة');
+}
+
+function switchMode(mode) {
+    document.body.dataset.mode = mode;
+    document.querySelectorAll('.mode-option').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    const ib = document.getElementById('ttsInstantBtn');
+    if (ib) ib.style.display = mode === 'fast' ? 'flex' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadSamples();
+    fetchInitialBalance();
+    document.getElementById('ttsBtn')?.addEventListener('click', startTTS);
+    document.getElementById('ttsInstantBtn')?.addEventListener('click', instantPlay);
+    document.getElementById('uploadVoiceBtn')?.addEventListener('click', () => document.getElementById('customVoice')?.click());
+    document.getElementById('customVoice')?.addEventListener('change', (e) => {
+        const f = e.target.files?.[0];
+        const txt = document.getElementById('customVoiceTxt');
+        if (f && txt) { txt.textContent = '✓ ' + f.name; txt.style.color = '#10b981'; }
+    });
+    document.querySelectorAll('.mode-option').forEach(b => b.addEventListener('click', () => switchMode(b.dataset.mode)));
+    const ti = document.getElementById('ttsInput');
+    const cc = document.getElementById('charCount');
+    if (ti && cc) ti.addEventListener('input', () => cc.textContent = ti.value.length);
+});
+
+window.startTTS = startTTS;
+window.instantPlay = instantPlay;
