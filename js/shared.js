@@ -164,7 +164,7 @@ async function checkAuth() {
 
         const u = session.user;
 
-        // جلب النقاط من السيرفر
+       // جلب النقاط من السيرفر
         let credits = cached?.credits ?? 0;
         try {
             const res = await fetch(`${API_BASE}/api/user/credits`, {
@@ -172,7 +172,13 @@ async function checkAuth() {
             });
             if (res.ok) {
                 const data = await res.json();
-                credits = data.credits ?? credits;
+                // 🛠️ الإصلاح هنا: الكود الآن يقرأ من مسار السيرفر الصحيح (data.user.credits)
+                credits = data?.user?.credits ?? data?.credits ?? credits;
+                
+                // تحديث واجهة المستخدم فوراً (بما في ذلك صفحة الدبلجة)
+                document.querySelectorAll('.points-count, #user-credits').forEach(el => {
+                    el.textContent = credits;
+                });
             }
         } catch (e) {
             console.warn('Failed to fetch credits:', e);
