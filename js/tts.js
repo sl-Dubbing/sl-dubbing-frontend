@@ -2,6 +2,39 @@
 const TTS_API_BASE = 'https://web-production-14a1.up.railway.app';
 const SAMPLES_BASE = 'samples';
 
+// === إضافة: دالة التوليد السريع للتواصل مع مسار /api/tts/quick ===
+async function quickTTS(text, options) {
+    const token = localStorage.getItem('token');
+    const t0 = performance.now();
+    
+    const res = await fetch(`${TTS_API_BASE}/api/tts/quick`, {
+        method: 'POST',
+        headers: { 
+            'Authorization': `Bearer ${token}`, 
+            'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({
+            text: text,
+            edge_voice: 'ar-SA-HamedNeural' // سيتم تحديثها لاحقاً لتدعم خيارات لغات أكثر
+        })
+    });
+
+    if (!res.ok) {
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err.error || 'فشل التوليد السريع (تأكد من الرصيد والاتصال)');
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const totalTime = performance.now() - t0;
+    
+    return { 
+        url: url, 
+        audio: new Audio(url), 
+        totalTime: totalTime 
+    };
+}
+
 async function loadSamples() {
     const select = document.getElementById('voiceSelect');
     if (!select) return;
@@ -150,11 +183,14 @@ async function startTTS() {
         try {
             statusEl.textContent = 'يرسل...';
             const body = Object.assign({}, baseBody, { lang: code });
+            
+            // === تعديل: المسار الصحيح للمهمة الذكية هو /api/tts/smart ===
             const res = await fetch(`${TTS_API_BASE}/api/tts/smart`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
+            
             const data = await res.json().catch(() => ({}));
             if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
 
