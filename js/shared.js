@@ -1,9 +1,29 @@
-// shared.js — موحّد + Auth Cache
+// shared.js — Supabase Auth + Cache
 const API_BASE = 'https://web-production-14a1.up.railway.app';
+const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
+const USER_CACHE_KEY = 'sl_user_cache';
+
 window.API_BASE = API_BASE;
 
-const USER_CACHE_KEY = 'sl_user_cache';
-const USER_CACHE_TTL = 5 * 60 * 1000; // 5 دقائق
+// =================================
+// 🔌 Supabase loader
+// =================================
+let supabaseClient = null;
+async function getSupabase() {
+    if (supabaseClient) return supabaseClient;
+    if (!window.supabase) {
+        await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    return supabaseClient;
+}
 
 // =================================
 // Toasts
@@ -34,13 +54,11 @@ function toggleSidebar() {
     if (sidebar.classList.contains('active')) closeSidebar();
     else openSidebar();
 }
-
 function openSidebar() {
     document.getElementById('sidebar')?.classList.add('active');
     document.getElementById('overlay')?.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
-
 function closeSidebar() {
     document.getElementById('sidebar')?.classList.remove('active');
     document.getElementById('overlay')?.classList.remove('active');
@@ -48,35 +66,20 @@ function closeSidebar() {
 }
 
 // =================================
-// 💾 إدارة Cache المستخدم
+// 💾 Cache
 // =================================
 function saveUserCache(user) {
     try {
-        const cache = {
-            user: user,
-            timestamp: Date.now()
-        };
-        localStorage.setItem(USER_CACHE_KEY, JSON.stringify(cache));
-    } catch (e) { console.warn('saveUserCache failed:', e); }
+        localStorage.setItem(USER_CACHE_KEY, JSON.stringify({ user, timestamp: Date.now() }));
+    } catch (e) {}
 }
 
 function getUserCache() {
     try {
         const raw = localStorage.getItem(USER_CACHE_KEY);
         if (!raw) return null;
-        const cache = JSON.parse(raw);
-        // الكاش صالح حتى لو منتهي (نستخدمه فوراً ثم نحدّث في الخلفية)
-        return cache?.user || null;
+        return JSON.parse(raw)?.user || null;
     } catch (e) { return null; }
-}
-
-function isCacheFresh() {
-    try {
-        const raw = localStorage.getItem(USER_CACHE_KEY);
-        if (!raw) return false;
-        const cache = JSON.parse(raw);
-        return cache && (Date.now() - cache.timestamp < USER_CACHE_TTL);
-    } catch (e) { return false; }
 }
 
 function clearUserCache() {
@@ -84,14 +87,13 @@ function clearUserCache() {
 }
 
 // =================================
-// 🎨 رسم واجهة المستخدم
+// 🎨 رسم الواجهة
 // =================================
 function renderAuthUI(user) {
     const authSection = document.getElementById('authSection');
     const topBadge = document.getElementById('topAccountBadge');
 
     if (!user) {
-        // غير مسجّل
         if (authSection) {
             authSection.innerHTML = `
                 <div style="text-align:center;padding:8px;">
@@ -104,80 +106,80 @@ function renderAuthUI(user) {
         return;
     }
 
-    // مسجّل
-    const credits = Number(user.credits || 0);
+    const name = user.name || user.email?.split('@')[0] || 'مستخدم';
+    const credits = Number(user.credits ?? 0);
+
     if (authSection) {
+        const avatar = user.avatar
+            ? `<img src="${escapeHtml(user.avatar)}" style="width:48px;height:48px;border-radius:50%;margin-bottom:8px;">`
+            : `<i class="fas fa-user-circle" style="font-size:2.5rem;color:#86868b;margin-bottom:8px;display:block;"></i>`;
+
         authSection.innerHTML = `
             <div class="user-info-card">
-                <div class="user-name"><i class="fas fa-user-circle"></i> ${escapeHtml(user.name || 'مستخدم')}</div>
+                ${avatar}
+                <div class="user-name">${escapeHtml(name)}</div>
                 <div class="user-points"><i class="fas fa-coins"></i> ${credits} نقطة</div>
                 <button id="logoutBtn" style="margin-top:10px;background:none;border:none;color:#ff3b30;cursor:pointer;font-size:0.82rem;font-weight:600;">تسجيل الخروج</button>
             </div>`;
         document.getElementById('logoutBtn')?.addEventListener('click', logout);
     }
     if (topBadge) {
-        topBadge.innerHTML = `<i class="fas fa-coins" style="color:#ff9500"></i> ${credits} نقطة`;
+        topBadge.innerHTML = `<i class="fas fa-user-circle" style="color:#007aff"></i> ${escapeHtml(name)}`;
     }
 }
 
 // =================================
-// 🚀 المصادقة الذكية (cache-first)
+// 🚀 المصادقة الذكية
 // =================================
 async function checkAuth() {
-    const token = localStorage.getItem('token');
+    // 1️⃣ عرض الـ cache فوراً
+    const cached = getUserCache();
+    if (cached) renderAuthUI(cached);
 
-    // إذا لا يوجد token → غير مسجّل
-    if (!token) {
-        clearUserCache();
-        renderAuthUI(null);
-        return;
-    }
-
-    // 1️⃣ اعرض الـ cache فوراً (لا انتظار)
-    const cachedUser = getUserCache();
-    if (cachedUser) {
-        renderAuthUI(cachedUser);
-    }
-
-    // 2️⃣ إذا الـ cache طازج، لا تتعب الخادم
-    if (isCacheFresh()) {
-        return;
-    }
-
-    // 3️⃣ تحديث في الخلفية
+    // 2️⃣ تحقّق من Supabase
     try {
-        const res = await fetch(`${API_BASE}/api/user`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const supa = await getSupabase();
+        const { data: { session } } = await supa.auth.getSession();
 
-        if (!res.ok) {
-            if (res.status === 401 || res.status === 403) {
-                // التوكن منتهي
-                localStorage.removeItem('token');
-                clearUserCache();
-                renderAuthUI(null);
-            }
+        if (!session?.user) {
+            clearUserCache();
+            localStorage.removeItem('token');
+            renderAuthUI(null);
             return;
         }
 
-        const d = await res.json();
-        if (d && (d.success || d.user)) {
-            const user = d.user || {};
-            saveUserCache(user);
-            renderAuthUI(user);
-        } else {
-            clearUserCache();
-            renderAuthUI(null);
-        }
+        // الجلسة سارية
+        localStorage.setItem('token', session.access_token);
+
+        const u = session.user;
+        const user = {
+            id: u.id,
+            email: u.email,
+            name: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0],
+            avatar: u.user_metadata?.avatar_url,
+            credits: cached?.credits ?? 0
+        };
+
+        saveUserCache(user);
+        renderAuthUI(user);
+
     } catch (e) {
-        console.warn('Auth check failed (offline?):', e);
-        // في حالة فشل الشبكة، نُبقي الـ cache (تجربة مستخدم أفضل)
+        console.warn('Auth check failed:', e);
+        if (!cached) renderAuthUI(null);
     }
 }
 
 const updateSidebarAuth = checkAuth;
 
-function logout() {
+// =================================
+// 🚪 تسجيل الخروج
+// =================================
+async function logout() {
+    try {
+        const supa = await getSupabase();
+        await supa.auth.signOut();
+    } catch (e) { console.warn('signOut failed:', e); }
+
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
     clearUserCache();
@@ -185,14 +187,30 @@ function logout() {
 }
 
 // =================================
-// 🔄 مزامنة بين tabs (نفس المتصفح)
+// 🔄 مزامنة بين tabs
 // =================================
 window.addEventListener('storage', (e) => {
-    // إذا تم تسجيل الدخول/الخروج في tab آخر، حدّث هذا الـ tab
-    if (e.key === 'token' || e.key === USER_CACHE_KEY) {
-        checkAuth();
-    }
+    if (e.key === 'token' || e.key === USER_CACHE_KEY) checkAuth();
 });
+
+// =================================
+// 🔔 الاستماع لتغيّرات Supabase Auth
+// =================================
+(async function listenToAuth() {
+    try {
+        const supa = await getSupabase();
+        supa.auth.onAuthStateChange((event, session) => {
+            console.log('Auth event:', event);
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                checkAuth();
+            } else if (event === 'SIGNED_OUT') {
+                clearUserCache();
+                localStorage.removeItem('token');
+                renderAuthUI(null);
+            }
+        });
+    } catch (e) { console.warn('Auth listener failed:', e); }
+})();
 
 // =================================
 // تهيئة
@@ -219,3 +237,4 @@ window.logout = logout;
 window.saveUserCache = saveUserCache;
 window.getUserCache = getUserCache;
 window.clearUserCache = clearUserCache;
+window.getSupabase = getSupabase;
