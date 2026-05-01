@@ -2,6 +2,8 @@
 // يحفظ اللغات في window.selectedLangs
 
 (function() {
+    'use strict';
+
     const STORAGE_KEY = window.LANG_STORAGE_KEY || 'selected_langs';
     let selected = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '["ar"]'));
     window.selectedLangs = selected;
@@ -15,7 +17,9 @@
         const f = filter.toLowerCase().trim();
         const filtered = window.LANGUAGES.filter(l => {
             if (!f) return true;
-            return l.name_ar.toLowerCase().includes(f) || l.name_en.toLowerCase().includes(f) || l.code.toLowerCase().includes(f);
+            return l.name_ar.toLowerCase().includes(f) || 
+                   l.name_en.toLowerCase().includes(f) || 
+                   l.code.toLowerCase().includes(f);
         });
 
         filtered.sort((a, b) => {
@@ -24,10 +28,12 @@
             if (!aS && bS) return 1;
             if (a.popular && !b.popular) return -1;
             if (!a.popular && b.popular) return 1;
-            return 0;
+            return a.name_ar.localeCompare(b.name_ar, 'ar');
         });
 
-        if (langCount) langCount.textContent = `${filtered.length} لغة` + (filter ? ' (تصفية)' : '');
+        if (langCount) {
+            langCount.textContent = `${filtered.length} لغة` + (filter ? ' (تصفية)' : '');
+        }
 
         container.innerHTML = filtered.map(l => `
             <div class="lang-item ${l.popular ? 'popular' : ''} ${selected.has(l.code) ? 'selected' : ''}" data-code="${l.code}">
@@ -48,9 +54,15 @@
     function toggleLanguage(code) {
         if (selected.has(code)) {
             if (selected.size > 1) selected.delete(code);
-            else { window.showToast?.('يجب اختيار لغة واحدة على الأقل', '#f59e0b'); return; }
+            else { 
+                window.showToast?.('يجب اختيار لغة واحدة على الأقل', '#f59e0b'); 
+                return; 
+            }
         } else {
-            if (selected.size >= 10) { window.showToast?.('الحد الأقصى 10 لغات', '#ef4444'); return; }
+            if (selected.size >= 10) { 
+                window.showToast?.('الحد الأقصى 10 لغات', '#ef4444'); 
+                return; 
+            }
             selected.add(code);
         }
         localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected]));
@@ -60,7 +72,10 @@
     }
 
     function removeLanguage(code) {
-        if (selected.size <= 1) { window.showToast?.('يجب الإبقاء على لغة', '#f59e0b'); return; }
+        if (selected.size <= 1) { 
+            window.showToast?.('يجب الإبقاء على لغة', '#f59e0b'); 
+            return; 
+        }
         selected.delete(code);
         localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected]));
         renderSelectedLangs();
@@ -90,7 +105,10 @@
     function updateMiniSummary() {
         const el = document.getElementById('miniLangs');
         if (!el || !window.LANGUAGES) return;
-        if (selected.size === 0) { el.textContent = 'لم تُختر بعد'; return; }
+        if (selected.size === 0) { 
+            el.textContent = 'لم تُختر بعد'; 
+            return; 
+        }
         const names = [...selected].slice(0, 3).map(c => window.LANGUAGES.find(l => l.code === c)?.name_ar || c);
         let txt = names.join('، ');
         if (selected.size > 3) txt += ` +${selected.size - 3}`;
@@ -98,6 +116,11 @@
     }
 
     function initLangPicker() {
+        // Wait for LANGUAGES to be available
+        if (!window.LANGUAGES) {
+            setTimeout(initLangPicker, 100);
+            return;
+        }
         renderLanguages();
         renderSelectedLangs();
         updateMiniSummary();
@@ -105,7 +128,11 @@
         if (search) search.addEventListener('input', (e) => renderLanguages(e.target.value));
     }
 
-    document.addEventListener('DOMContentLoaded', initLangPicker);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initLangPicker);
+    } else {
+        initLangPicker();
+    }
 
     window.renderLanguages = renderLanguages;
     window.renderSelectedLangs = renderSelectedLangs;
