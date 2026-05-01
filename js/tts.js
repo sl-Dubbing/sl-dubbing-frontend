@@ -1,17 +1,16 @@
 const TTS_API_BASE = 'https://web-production-14a1.up.railway.app';
 const SAMPLES_BASE = 'samples';
 
-// 🔄 دالة جديدة لتحديث الرصيد في الواجهة
+// 🔄 دالة لتحديث الرصيد في الواجهة
 function updateCreditsUI(credits) {
     if (isNaN(credits)) return;
-    // تأكد أن تضع id="user-credits" في ملف HTML للعنصر الذي يعرض الرقم
-    const creditsEl = document.getElementById('user-credits'); 
+    const creditsEl = document.getElementById('user-credits');
     if (creditsEl) {
         creditsEl.innerText = `${credits} نقطة`;
     }
 }
 
-// 🔄 دالة لجلب الرصيد من السيرفر عند فتح الصفحة
+// 🔄 دالة لجلب الرصيد من السيرفر
 async function fetchInitialBalance() {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -61,7 +60,7 @@ async function fetchSampleB64(filename) {
 
 async function instantPlay() {
     const text = document.getElementById('ttsInput')?.value?.trim();
-    if (!text) return showToast('اكتب النص أولاً', '#ef4444');
+    if (!text) return window.showToast?.('اكتب النص أولاً', 'error') || alert('اكتب النص أولاً');
     const lang = window.selectedLangs?.size ? [...window.selectedLangs][0] : 'ar';
     const btn = document.getElementById('ttsInstantBtn');
     const progArea = document.getElementById('progressArea');
@@ -80,9 +79,9 @@ async function instantPlay() {
         const result = await window.quickTTS(text, { lang });
         progFill.style.width = '100%';
         statusTxt.innerText = `✓ ${result.totalTime.toFixed(0)}ms`;
-        result.audio.play().catch(() => showToast('اضغط ▶️', '#f59e0b'));
+        result.audio.play().catch(() => window.showToast?.('اضغط ▶️', 'warning'));
 
-        // 🎯 تحديث الرصيد بعد التوليد الناجح
+        // تحديث الرصيد بعد التوليد الناجح
         updateCreditsUI(result.remainingCredits);
 
         const ld = window.LANGUAGES?.find(l => l.code === lang);
@@ -105,10 +104,10 @@ async function instantPlay() {
                 if (dlBtn) dlBtn.href = finalUrl;
             });
         }
-        
-        showToast(`⚡ ${result.totalTime.toFixed(0)}ms`, '#10b981');
+
+        window.showToast?.(`⚡ ${result.totalTime.toFixed(0)}ms`, 'success');
     } catch (e) {
-        showToast(e.message, '#ef4444');
+        window.showToast?.(e.message, 'error');
         statusTxt.innerText = '✗ ' + e.message;
         progFill.style.background = '#ef4444';
     } finally {
@@ -119,9 +118,9 @@ async function instantPlay() {
 async function startTTS() {
     const text = document.getElementById('ttsInput')?.value?.trim();
     const token = localStorage.getItem('token');
-    if (!token) return showToast('يرجى تسجيل الدخول', '#f59e0b');
-    if (!text) return showToast('اكتب النص', '#ef4444');
-    if (!window.selectedLangs?.size) return showToast('اختر لغة', '#ef4444');
+    if (!token) return window.showToast?.('يرجى تسجيل الدخول', 'warning') || alert('يرجى تسجيل الدخول');
+    if (!text) return window.showToast?.('اكتب النص', 'error') || alert('اكتب النص');
+    if (!window.selectedLangs?.size) return window.showToast?.('اختر لغة', 'error') || alert('اختر لغة');
 
     const mode = document.body.dataset.mode || 'fast';
     const baseBody = { text, translate: true };
@@ -139,7 +138,7 @@ async function startTTS() {
             } catch (e) { baseBody.voice_id = vs.value; }
         }
         if (!baseBody.sample_b64 && !baseBody.voice_id) {
-            return showToast('اختر عينة أو ارفع تسجيلاً', '#f59e0b');
+            return window.showToast?.('اختر عينة أو ارفع تسجيلاً', 'warning') || alert('اختر عينة أو ارفع تسجيلاً');
         }
     }
 
@@ -217,14 +216,14 @@ async function startTTS() {
     });
 
     await Promise.all(promises);
-    
-    // 🎯 تحديث الرصيد بعد انتهاء الوضع الذكي أيضاً
-    fetchInitialBalance(); 
+
+    // تحديث الرصيد بعد انتهاء الوضع الذكي
+    fetchInitialBalance();
 
     const totalMs = (performance.now() - t0).toFixed(0);
     progFill.style.width = '100%';
     statusTxt.innerText = `✓ اكتمل في ${(totalMs/1000).toFixed(1)}s`;
-    showToast(`${total} لغة في ${(totalMs/1000).toFixed(1)}s`, '#10b981');
+    window.showToast?.(`${total} لغة في ${(totalMs/1000).toFixed(1)}s`, 'success');
     btn.disabled = false;
 }
 
@@ -255,7 +254,7 @@ function switchMode(mode) {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadSamples();
-    fetchInitialBalance(); // 🎯 جلب الرصيد بمجرد فتح الصفحة
+    fetchInitialBalance();
     document.getElementById('ttsBtn')?.addEventListener('click', startTTS);
     document.getElementById('ttsInstantBtn')?.addEventListener('click', instantPlay);
     document.getElementById('uploadVoiceBtn')?.addEventListener('click', () => document.getElementById('customVoice')?.click());
