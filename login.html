@@ -112,14 +112,13 @@
 <div id="toasts" aria-live="polite" aria-atomic="true"></div>
 
 <script>
-    // ⚠️ ضع مفتاح Supabase هنا قبل التحميل
-    // window.__SUPABASE_KEY__ = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzQ2NTQ5NSwiZXhwIjoyMDkzMDQxNDk1fQ.n5JTt8qB61MDnFsELthn86NfcBRgRuBC6axJpkAwQNs';
-
     (function() {
         'use strict';
 
         const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-        const SUPABASE_KEY = window.__SUPABASE_KEY__ || '';
+        
+        // ضع مفتاح الـ anon الطويل هنا بين علامات التنصيص بدلاً من النص العربي
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjU0OTUsImV4cCI6MjA5MzA0MTQ5NX0.F-4TbmO6_7plPm8NBr_6djCv6gtEPpWFw9J7m8vTs6M';
 
         // Validation helpers
         function isValidEmail(email) {
