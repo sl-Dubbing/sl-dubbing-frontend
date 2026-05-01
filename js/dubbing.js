@@ -1,5 +1,6 @@
 // dubbing.js — معالجة متوازية حقيقية لكل اللغات
-const API_BASE = 'https://web-production-14a1.up.railway.app';
+// تم تغيير اسم المتغير إلى DUB_API_BASE لتجنب التعارض مع ملف shared.js
+const DUB_API_BASE = 'https://web-production-14a1.up.railway.app';
 
 async function startDubbing() {
     const file = document.getElementById('mediaFile')?.files?.[0];
@@ -72,7 +73,8 @@ async function startDubbing() {
                 formData.append('voice_id', 'source');
             }
 
-            const res = await fetch(`${API_BASE}/api/dub`, {
+            // استخدام المتغير الجديد هنا
+            const res = await fetch(`${DUB_API_BASE}/api/dub`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -123,7 +125,8 @@ async function waitForJob(jobId, token, statusEl) {
 
     while (Date.now() - start < TIMEOUT) {
         try {
-            const res = await fetch(`${API_BASE}/api/job/${jobId}`, {
+            // استخدام المتغير الجديد هنا أيضاً
+            const res = await fetch(`${DUB_API_BASE}/api/job/${jobId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -143,29 +146,23 @@ function handleCustomVoice(input) {
     }
 }
 
-// 🎯 This is the critical part that connects buttons to file inputs
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Link Media Button
     document.getElementById('chooseMediaBtn')?.addEventListener('click', () => {
         document.getElementById('mediaFile')?.click();
     });
 
-    // Update Media Text on change
     document.getElementById('mediaFile')?.addEventListener('change', () => {
         const f = document.getElementById('mediaFile').files?.[0];
         const txt = document.getElementById('fileTxt');
         if (f && txt) { txt.textContent = '✓ ' + f.name; txt.style.color = '#10b981'; }
     });
 
-    // 2. Link Custom Voice Button
     document.getElementById('chooseCustomVoiceBtn')?.addEventListener('click', () => {
         document.getElementById('customVoice')?.click();
     });
 
-    // Update Voice Text on change
     document.getElementById('customVoice')?.addEventListener('change', (e) => handleCustomVoice(e.target));
     
-    // Bind Dub Button
     document.getElementById('dubBtn')?.addEventListener('click', startDubbing);
 });
 
