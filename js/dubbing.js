@@ -34,9 +34,12 @@
             });
             const data = await response.json();
             if (data.success && els.creditDisplay) {
-                els.creditDisplay.textContent = data.user.credits;
+                // ملاحظة: السيرفر يرسل الرصيد داخل كائن user
+                const credits = data.user?.credits ?? data.credits ?? 0;
+                els.creditDisplay.textContent = credits;
+                
                 // تحديث الرصيد في أي مكان آخر بالصفحة يحمل نفس الكلاس
-                document.querySelectorAll('.points-count').forEach(el => el.textContent = data.user.credits);
+                document.querySelectorAll('.points-count').forEach(el => el.textContent = credits);
             }
         } catch (err) {
             console.error('Failed to fetch credits:', err);
@@ -67,7 +70,7 @@
             const formData = new FormData();
             // 🛠️ تم تعديل المسمى إلى media_file ليتوافق مع السيرفر
             formData.append('media_file', mediaFile); 
-            formData.append('lang', langs[0]); // إرسال اللغة المختارة
+            formData.append('lang', langs[0]); 
 
             setProgress(5, 'جاري رفع الملف للسيرفر...');
 
@@ -97,7 +100,7 @@
         }
     }
 
-    // الوظائف المساعدة (setProgress, showProgress, إلخ) تبقى كما هي في كودك الأصلي...
+    // الوظائف المساعدة الأخرى (setProgress، init، إلخ) تبقى كما هي...
 
     function init() {
         els.chooseMediaBtn?.addEventListener('click', () => els.mediaFile?.click());
