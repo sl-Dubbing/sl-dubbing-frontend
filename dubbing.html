@@ -50,15 +50,17 @@
     <div class="workspace-grid">
       <div class="tools-container">
 
+        <!-- القسم الأول: رفع الوسائط -->
         <section class="card">
           <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
           <div class="upload-wrapper">
-            <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;">
-            <button class="btn-secondary" id="chooseMediaBtn" type="button"><i class="fas fa-file-video"></i> اختر فيديو أو صوت</button>
+            <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;" onchange="document.getElementById('fileTxt').innerText = this.files[0] ? this.files[0].name : 'لم يتم اختيار ملف بعد'">
+            <button class="btn-secondary" id="chooseMediaBtn" type="button" onclick="document.getElementById('mediaFile').click()"><i class="fas fa-file-video"></i> اختر فيديو أو صوت</button>
             <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
           </div>
         </section>
 
+        <!-- القسم الثاني: اختيار اللغات -->
         <section class="card">
           <h3><i class="fas fa-globe"></i> 2. اختر اللغات (متعدد)</h3>
           <div class="selected-langs-display" id="selectedLangsDisplay">
@@ -75,6 +77,7 @@
           <div class="lang-list" id="langList"></div>
         </section>
 
+        <!-- القسم الثالث: اختيار الصوت -->
         <section class="card">
           <h3><i class="fas fa-microphone-alt"></i> 3. اختيار الصوت</h3>
           <div style="margin-bottom:14px;">
@@ -85,8 +88,8 @@
           </div>
           <div class="voice-clone-box">
             <label class="muted">أو ارفع عينة صوتية مخصصة</label>
-            <input type="file" id="customVoice" accept="audio/*" style="display:none;">
-            <button class="btn-secondary" id="chooseCustomVoiceBtn" type="button"><i class="fas fa-plus"></i> رفع عينة من جهازك</button>
+            <input type="file" id="customVoice" accept="audio/*" style="display:none;" onchange="document.getElementById('customVoiceTxt').innerText = this.files[0] ? this.files[0].name : ''">
+            <button class="btn-secondary" id="chooseCustomVoiceBtn" type="button" onclick="document.getElementById('customVoice').click()"><i class="fas fa-plus"></i> رفع عينة من جهازك</button>
             <p id="customVoiceTxt" class="file-info"></p>
           </div>
         </section>
