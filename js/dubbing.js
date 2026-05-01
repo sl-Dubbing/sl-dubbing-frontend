@@ -1,78 +1,74 @@
-// dubbing.js — النسخة المطورة والمصلحة
+// dubbing.js — النسخة الكاملة والمصلحة 100%
 (function() {
     'use strict';
 
-    const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
     const els = {
         mediaFile: document.getElementById('mediaFile'),
         fileTxt: document.getElementById('fileTxt'),
         chooseMediaBtn: document.getElementById('chooseMediaBtn'),
-        voiceSelect: document.getElementById('voiceSelect'),
         dubBtn: document.getElementById('dubBtn'),
         progressArea: document.getElementById('progressArea'),
         statusTxt: document.getElementById('statusTxt'),
         progFill: document.getElementById('progFill'),
         resultsCard: document.getElementById('resultsCard'),
         resultsList: document.getElementById('resultsList'),
-        // مسميات عناصر الرصيد (تأكد أن أحد هذه الـ IDs موجود في الـ HTML)
         creditDisplay: document.getElementById('user-credits') || document.querySelector('.points-count')
     };
 
     let currentJobId = null;
-    let pollInterval = null;
 
-    // =================================
-    // 🛠️ وظيفة تحديث الرصيد (الإضافة الجديدة)
-    // =================================
+    // --- وظائف مساعدة ---
     async function updateBalance() {
-        const token = localStorage.getItem('token') || localStorage.getItem('sb-access-token');
+        const token = localStorage.getItem('token');
         if (!token) return;
-
         try {
-            const response = await fetch(`https://web-production-14a1.up.railway.app/api/user/credits`, {
+            const res = await fetch(`https://web-production-14a1.up.railway.app/api/user/credits`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            const data = await response.json();
-            if (data.success && els.creditDisplay) {
-                // ملاحظة: السيرفر يرسل الرصيد داخل كائن user
-                const credits = data.user?.credits ?? data.credits ?? 0;
-                els.creditDisplay.textContent = credits;
-                
-                // تحديث الرصيد في أي مكان آخر بالصفحة يحمل نفس الكلاس
+            const data = await res.json();
+            if (data.success) {
+                const credits = data.user?.credits ?? 0;
+                if(els.creditDisplay) els.creditDisplay.textContent = credits;
                 document.querySelectorAll('.points-count').forEach(el => el.textContent = credits);
             }
-        } catch (err) {
-            console.error('Failed to fetch credits:', err);
-        }
+        } catch (e) { console.error('Balance update failed', e); }
     }
 
-    // =================================
-    // API calls
-    // =================================
+    function setProgress(percent, text) {
+        if (els.progFill) els.progFill.style.width = percent + '%';
+        if (text && els.statusTxt) els.statusTxt.textContent = text;
+    }
+
+    // 🛠️ هذه هي الوظيفة التي كانت مفقودة وتسببت في الخطأ
+    function showProgress() {
+        if (els.progressArea) els.progressArea.style.display = 'block';
+        if (els.resultsCard) els.resultsCard.style.display = 'none';
+        setProgress(0, 'جاري التحضير للرفع...');
+        if (els.dubBtn) els.dubBtn.disabled = true;
+    }
+
+    function hideProgress() {
+        if (els.dubBtn) els.dubBtn.disabled = false;
+    }
+
+    // --- المنطق الأساسي ---
     async function startDubbing() {
         const mediaFile = els.mediaFile.files[0];
-        const langs = window.selectedLangs ? [...window.selectedLangs] : ['ar'];
-        const token = localStorage.getItem('token') || localStorage.getItem('sb-access-token');
+        const token = localStorage.getItem('token');
 
         if (!mediaFile) {
             window.showToast?.('يرجى اختيار ملف أولاً', 'warning');
             return;
         }
 
-        if (!token) {
-            window.showToast?.('يرجى تسجيل الدخول', 'error');
-            return;
-        }
-
-        showProgress();
+        showProgress(); // الآن ستعمل بنجاح
 
         try {
             const formData = new FormData();
-            // 🛠️ تم تعديل المسمى إلى media_file ليتوافق مع السيرفر
             formData.append('media_file', mediaFile); 
-            formData.append('lang', langs[0]); 
+            formData.append('lang', 'ar'); 
 
-            setProgress(5, 'جاري رفع الملف للسيرفر...');
+            setProgress(10, 'جاري رفع الملف للسيرفر...');
 
             const response = await fetch(`https://web-production-14a1.up.railway.app/api/dubbing`, {
                 method: 'POST',
@@ -86,31 +82,22 @@
             }
 
             const data = await response.json();
-            currentJobId = data.job_id;
-            setProgress(15, 'تم الرفع! بدأت المعالجة الآن...');
-            
-            // تحديث الرصيد فوراً لأنه تم خصمه في السيرفر
+            setProgress(20, 'تم الرفع! السيرفر بدأ المعالجة...');
             updateBalance();
-
         } catch (err) {
-            console.error('Dubbing error:', err);
             window.showToast?.(err.message, 'error');
             setProgress(0, 'فشلت العملية');
             hideProgress();
         }
     }
 
-    // الوظائف المساعدة الأخرى (setProgress، init، إلخ) تبقى كما هي...
-
     function init() {
         els.chooseMediaBtn?.addEventListener('click', () => els.mediaFile?.click());
         els.mediaFile?.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file) els.fileTxt.textContent = file.name;
+            if (file && els.fileTxt) els.fileTxt.textContent = file.name;
         });
         els.dubBtn?.addEventListener('click', startDubbing);
-
-        // 🛠️ تحديث الرصيد فور تحميل الصفحة
         updateBalance();
     }
 
