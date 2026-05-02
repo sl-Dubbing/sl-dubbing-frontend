@@ -1,8 +1,9 @@
 // shared.js — Supabase Auth + Cache (مصحح)
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-// ⚠️ المفتاح يُحمّل من متغير بيئة أو backend — لا تضعه هنا في الإنتاج
-const SUPABASE_KEY = window.__SUPABASE_KEY__ || '';
+
+// 🚀 قراءة المفتاح من ملف config.js
+const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || '';
 const USER_CACHE_KEY = 'sl_user_cache';
 
 window.API_BASE = API_BASE;
@@ -14,7 +15,7 @@ let supabaseClient = null;
 async function getSupabase() {
     if (supabaseClient) return supabaseClient;
     if (!SUPABASE_KEY) {
-        console.error('Supabase key missing. Set window.__SUPABASE_KEY__ before loading.');
+        console.error('Supabase key missing. Set window.APP_CONFIG.SUPABASE_KEY before loading.');
         throw new Error('Supabase key not configured');
     }
     if (!window.supabase) {
@@ -165,24 +166,24 @@ async function checkAuth() {
         const u = session.user;
 
        // جلب النقاط من السيرفر
-        let credits = cached?.credits ?? 0;
-        try {
-            const res = await fetch(`${API_BASE}/api/user/credits`, {
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                // 🛠️ الإصلاح هنا: الكود الآن يقرأ من مسار السيرفر الصحيح (data.user.credits)
-                credits = data?.user?.credits ?? data?.credits ?? credits;
-                
-                // تحديث واجهة المستخدم فوراً (بما في ذلك صفحة الدبلجة)
-                document.querySelectorAll('.points-count, #user-credits').forEach(el => {
-                    el.textContent = credits;
-                });
-            }
-        } catch (e) {
-            console.warn('Failed to fetch credits:', e);
-        }
+       let credits = cached?.credits ?? 0;
+       try {
+           const res = await fetch(`${API_BASE}/api/user/credits`, {
+               headers: { 'Authorization': `Bearer ${session.access_token}` }
+           });
+           if (res.ok) {
+               const data = await res.json();
+               // 🛠️ الإصلاح هنا: الكود الآن يقرأ من مسار السيرفر الصحيح (data.user.credits)
+               credits = data?.user?.credits ?? data?.credits ?? credits;
+               
+               // تحديث واجهة المستخدم فوراً (بما في ذلك صفحة الدبلجة)
+               document.querySelectorAll('.points-count, #user-credits').forEach(el => {
+                   el.textContent = credits;
+               });
+           }
+       } catch (e) {
+           console.warn('Failed to fetch credits:', e);
+       }
 
         const user = {
             id: u.id,
