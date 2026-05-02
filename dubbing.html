@@ -56,7 +56,7 @@
           <div class="upload-wrapper">
             <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;">
             <!-- التعديل هنا: إضافة onclick لزر الوسائط -->
-            <button class="btn-secondary" id="chooseMediaBtn" type="button" onclick="document.getElementById('mediaFile').click()"><i class="fas fa-file-video"></i> اختر فيديو أو صوت</button>
+            <button class="btn-secondary" id="chooseMediaBtn" type="button" onclick="document.getElementById('mediaFile').click()"><i class="fas fa-file-video"></i> اختر فيديو أو শক</button>
             <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
           </div>
         </section>
@@ -116,6 +116,8 @@
 
 <div id="toasts"></div>
 
+<!-- إضافة استدعاء ملف config.js هنا لكي يعمل shared.js بشكل صحيح -->
+<script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/languages-data.js"></script>
 <script src="js/lang-picker.js"></script>
