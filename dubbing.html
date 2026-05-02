@@ -55,7 +55,8 @@
           <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
           <div class="upload-wrapper">
             <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;">
-            <button class="btn-secondary" id="chooseMediaBtn" type="button"><i class="fas fa-file-video"></i> اختر فيديو أو صوت</button>
+            <!-- التعديل هنا: إضافة onclick لزر الوسائط -->
+            <button class="btn-secondary" id="chooseMediaBtn" type="button" onclick="document.getElementById('mediaFile').click()"><i class="fas fa-file-video"></i> اختر فيديو أو صوت</button>
             <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
           </div>
         </section>
@@ -87,7 +88,8 @@
           <div class="voice-clone-box">
             <label class="muted">أو ارفع عينة صوتية مخصصة</label>
             <input type="file" id="customVoice" accept="audio/*" style="display:none;">
-            <button class="btn-secondary" id="chooseCustomVoiceBtn" type="button"><i class="fas fa-plus"></i> رفع عينة من جهازك</button>
+            <!-- التعديل هنا: إضافة onclick لزر الصوت المخصص -->
+            <button class="btn-secondary" id="chooseCustomVoiceBtn" type="button" onclick="document.getElementById('customVoice').click()"><i class="fas fa-plus"></i> رفع عينة من جهازك</button>
             <p id="customVoiceTxt" class="file-info"></p>
           </div>
         </section>
