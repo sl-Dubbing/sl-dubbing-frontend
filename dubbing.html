@@ -7,8 +7,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
   <script>window.LANG_STORAGE_KEY = 'dub_langs';</script>
-  <!-- ⚠️ مفتاح Supabase من ملف منفصل (لا ترفعه على GitHub) -->
-  <script src="js/config.js"></script>
 </head>
 <body>
 
@@ -17,7 +15,7 @@
     <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i><span>القائمة</span></button>
     <div class="top-logo"><h2>sl-Dubbing</h2></div>
   </div>
-  <span class="account-badge" id="topAccountBadge">جاري التحقق...</span>
+  <span class="account-badge" id="topAccountBadge">حساب تجريبي</span>
 </header>
 
 <div class="overlay" id="overlay"></div>
@@ -32,7 +30,7 @@
       <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
       <li><a href="dubbing.html" class="active"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
       <li><a href="tts.html"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
-      <li><a href="stt.html"><i class="fas fa-headphones"></i> تحويل الصوت لنص</a></li>
+      <li><a href="stt.html"><i class="fas fa-file-alt"></i> تحويل الصوت لنص</a></li>
     </ul>
   </nav>
   <div class="panel summary">
@@ -53,17 +51,15 @@
     <div class="workspace-grid">
       <div class="tools-container">
 
-        <!-- القسم الأول: رفع الوسائط -->
         <section class="card">
           <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
           <div class="upload-wrapper">
             <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;">
             <button class="btn-secondary" id="chooseMediaBtn" type="button"><i class="fas fa-file-video"></i> اختر فيديو أو صوت</button>
-            <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد (الحد الأقصى 500MB)</p>
+            <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
           </div>
         </section>
 
-        <!-- القسم الثاني: اختيار اللغات -->
         <section class="card">
           <h3><i class="fas fa-globe"></i> 2. اختر اللغات (متعدد)</h3>
           <div class="selected-langs-display" id="selectedLangsDisplay">
@@ -80,7 +76,6 @@
           <div class="lang-list" id="langList"></div>
         </section>
 
-        <!-- القسم الثالث: اختيار الصوت -->
         <section class="card">
           <h3><i class="fas fa-microphone-alt"></i> 3. اختيار الصوت</h3>
           <div style="margin-bottom:14px;">
@@ -94,7 +89,6 @@
             <input type="file" id="customVoice" accept="audio/*" style="display:none;">
             <button class="btn-secondary" id="chooseCustomVoiceBtn" type="button"><i class="fas fa-plus"></i> رفع عينة من جهازك</button>
             <p id="customVoiceTxt" class="file-info"></p>
-            <p style="font-size:0.72rem;color:#86868b;margin-top:4px;">الصيغ المدعومة: WAV, MP3, OGG, FLAC, M4A</p>
           </div>
         </section>
 
@@ -120,9 +114,9 @@
 
 <div id="toasts"></div>
 
-<script src="js/shared.js" defer></script>
-<script src="js/languages-data.js" defer></script>
-<script src="js/lang-picker.js" defer></script>
-<script src="js/dubbing.js" defer></script>
+<script src="js/shared.js"></script>
+<script src="js/languages-data.js"></script>
+<script src="js/lang-picker.js"></script>
+<script src="js/dubbing.js"></script>
 </body>
 </html>
