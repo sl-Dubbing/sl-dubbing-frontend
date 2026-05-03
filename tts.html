@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>تحويل النص إلى صوت | sl-Dubbing</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
@@ -44,8 +44,8 @@
   <nav class="sidebar-nav">
     <div class="nav-label">القائمة الرئيسية</div>
     <ul>
-      <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
       <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
+      <li><a href="history.html"><i class="fas fa-folder-open"></i> ملفاتي (المجلدات)</a></li>
       <li><a href="tts.html" class="active"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
       <li><a href="stt.html"><i class="fas fa-file-alt"></i> تحويل الصوت لنص</a></li>
     </ul>
@@ -78,22 +78,18 @@
 
         <section class="card">
           <h3><i class="fas fa-edit"></i> 1. اكتب النص</h3>
-          <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص..."></textarea>
+          <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص هنا ليتحول إلى صوت..."></textarea>
           <div class="char-counter"><span id="charCount">0</span> حرف</div>
         </section>
 
         <section class="card">
-          <h3><i class="fas fa-globe"></i> 2. اختر اللغات (متعدد)</h3>
+          <h3><i class="fas fa-globe"></i> 2. اختر اللغات</h3>
           <div class="selected-langs-display" id="selectedLangsDisplay">
             <div class="selected-langs-empty">جاري التحميل...</div>
           </div>
           <div class="lang-search-wrapper">
             <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة...">
             <i class="fas fa-search lang-search-icon"></i>
-          </div>
-          <div class="lang-counter">
-            <span id="langCount">جاري التحميل...</span>
-            <span style="color:#9aa1ac;font-size:0.75rem;">★ = الأكثر استخداماً</span>
           </div>
           <div class="lang-list" id="langList"></div>
         </section>
@@ -103,26 +99,25 @@
           <select id="voiceSelect" class="styled-select" style="margin-bottom:12px;">
             <option value="">🎤 اختر عينة جاهزة</option>
           </select>
-          <input type="file" id="customVoice" accept="audio/*" style="display:none;">
-          <button class="btn-secondary" id="uploadVoiceBtn" type="button"><i class="fas fa-upload"></i> أو ارفع تسجيلك</button>
+          <input type="file" id="customVoice" accept="audio/*" style="display:none;" onchange="if(this.files[0]){document.getElementById('customVoiceTxt').innerHTML='✓ '+this.files[0].name; document.getElementById('customVoiceTxt').style.color='#10b981';}">
+          <button class="btn-secondary" id="uploadVoiceBtn" type="button" onclick="document.getElementById('customVoice').click()"><i class="fas fa-upload"></i> أو ارفع تسجيلك الخاص</button>
           <p id="customVoiceTxt" class="file-info"></p>
         </section>
 
         <button id="ttsBtn" class="btn-primary-action" type="button">
-          <i class="fas fa-volume-up"></i> توليد الصوت لكل اللغات
+          <i class="fas fa-volume-up"></i> توليد وحفظ في ملفاتي
         </button>
 
         <button id="ttsInstantBtn" class="btn-instant" type="button">
-          <i class="fas fa-play-circle"></i> ⚡ تشغيل فوري (أول لغة)
+          <i class="fas fa-play-circle"></i> ⚡ تشغيل فوري سريع
         </button>
       </div>
 
       <div class="results-container">
         <section class="card" id="progressArea" style="display:none;">
-          <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
+          <h3><i class="fas fa-spinner fa-spin"></i> جاري التوليد...</h3>
           <p id="statusTxt">في الانتظار</p>
           <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
-          <div class="perf-stats" id="perfStats"></div>
         </section>
         <section class="card" id="resultsCard" style="display:none;">
           <h3><i class="fas fa-check-circle"></i> النتائج</h3>
@@ -135,6 +130,7 @@
 
 <div id="toasts"></div>
 
+<script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/languages-data.js"></script>
 <script src="js/lang-picker.js"></script>
