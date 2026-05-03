@@ -3,27 +3,35 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>استوديو الدبلجة الذكي | sl-Dubbing</title>
+  <title>استوديو الدبلجة الاحترافي | sl-Dubbing</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* تحسينات سريعة للتصميم الجديد */
-    .smart-settings { margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 20px; }
-    .dropdown-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
-    .dropdown-header { padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f9fafb; transition: 0.3s; }
-    .dropdown-header:hover { background: #f3f4f6; }
-    .dropdown-content { padding: 20px; display: none; border-top: 1px solid #e5e7eb; }
-    .dropdown-section.active .dropdown-content { display: block; }
-    .dropdown-section.active .dropdown-header i.fa-chevron-down { transform: rotate(180deg); }
+    /* تحسينات المعاينة والتصميم المنسدل */
+    .preview-container { width: 100%; position: relative; background: #000; border-radius: 15px; overflow: hidden; display: none; margin-bottom: 20px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    #videoPreview { width: 100%; display: block; max-height: 450px; }
     
-    /* ستايل زر التبديل (Switch) لمزامنة الشفاه */
-    .switch-wrapper { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
-    .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+    .upload-placeholder { cursor: pointer; text-align: center; padding: 60px 20px; border: 2px dashed #d1d5db; border-radius: 15px; transition: 0.3s; background: #f9fafb; }
+    .upload-placeholder:hover { border-color: #2563eb; background: #f3f4f6; }
+
+    .smart-settings { margin-top: 25px; }
+    .dropdown-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+    .dropdown-header { padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #fff; font-weight: 600; }
+    .dropdown-content { padding: 20px; display: none; border-top: 1px solid #f3f4f6; background: #fafafa; }
+    .dropdown-section.active .dropdown-content { display: block; }
+    .dropdown-section.active .dropdown-header { background: #f8faff; border-bottom: 1px solid #e5e7eb; }
+    .dropdown-section.active .fa-chevron-down { transform: rotate(180deg); }
+
+    .switch-wrapper { display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #eee; }
+    .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
     input:checked + .slider { background-color: #2563eb; }
-    input:checked + .slider:before { transform: translateX(24px); }
+    input:checked + .slider:before { transform: translateX(22px); }
+    
+    .change-file-btn { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.8); border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: bold; z-index: 10; }
+    .change-file-btn:hover { background: #fff; }
   </style>
 </head>
 <body>
@@ -33,91 +41,97 @@
     <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i><span>القائمة</span></button>
     <div class="top-logo"><h2>sl-Dubbing</h2></div>
   </div>
-  <div style="display:flex; align-items:center; gap:15px;">
-     <span class="account-badge" id="topAccountBadge"><i class="fas fa-coins"></i> جاري التحميل...</span>
-  </div>
+  <span class="account-badge" id="topAccountBadge"><i class="fas fa-coins"></i> جاري التحقق...</span>
 </header>
 
 <div class="overlay" id="overlay"></div>
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-user-section" id="authSection">
-    <div style="color:#9aa1ac;font-size:0.9rem;text-align:center;">جاري التحقق...</div>
+    <div style="color:#9aa1ac;font-size:0.9rem;text-align:center;">جاري التحميل...</div>
   </div>
   <nav class="sidebar-nav">
-    <div class="nav-label">الرئيسية</div>
     <ul>
       <li><a href="dubbing.html" class="active"><i class="fas fa-magic"></i> استوديو الدبلجة</a></li>
-      <li><a href="history.html"><i class="fas fa-folder-open"></i> ملفاتي (المدير)</a></li>
+      <li><a href="history.html"><i class="fas fa-folder-open"></i> ملفاتي</a></li>
       <li><a href="tts.html"><i class="fas fa-microphone"></i> نص إلى صوت</a></li>
     </ul>
   </nav>
 </aside>
 
 <main class="main-content">
-  <div class="container" style="max-width: 800px;">
-    <header class="main-header" style="text-align: center; margin-bottom: 30px;">
-      <h1>استوديو الدبلجة الاحترافي</h1>
-      <p class="lead">ارفع وسائطك، اختر لغاتك، واترك الذكاء الاصطناعي يبهرك</p>
+  <div class="container" style="max-width: 850px;">
+    <header class="main-header" style="text-align: center; margin-bottom: 25px;">
+      <h1>استوديو الدبلجة الذكي</h1>
+      <p class="lead">ارفع الفيديو، تأكد من المعاينة، ثم اختر لغتك المفضلة</p>
     </header>
 
     <div class="workspace">
-      <!-- كرت الرفع الأساسي -->
-      <section class="card upload-card">
-        <div class="upload-area" id="uploadArea">
-          <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;">
-          <div class="upload-icon-box" onclick="document.getElementById('mediaFile').click()" style="cursor:pointer; text-align:center; padding:40px; border:2px dashed #d1d5db; border-radius:15px;">
-            <i class="fas fa-cloud-upload-alt" style="font-size:3rem; color:#2563eb; margin-bottom:15px;"></i>
-            <h3 id="fileTxt">اسحب الملف هنا أو اضغط للاختيار</h3>
-            <p style="color:#6b7280; font-size:0.9rem;">يدعم MP4, MOV, MP3, WAV (بحد أقصى 500MB)</p>
+      <!-- 1. مربع الوسائط الكبير (رفع + معاينة) -->
+      <section class="card">
+        <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;">
+        
+        <!-- حالة الانتظار (قبل الاختيار) -->
+        <div id="uploadPlaceholder" class="upload-placeholder" onclick="document.getElementById('mediaFile').click()">
+          <i class="fas fa-film" style="font-size:3.5rem; color:#2563eb; margin-bottom:15px; display:block;"></i>
+          <h3>اضغط لاختيار فيديو أو صوت من جهازك</h3>
+          <p style="color:#6b7280;">سيعرض الموقع معاينة للملف فور اختياره</p>
+        </div>
+
+        <!-- حالة المعاينة (بعد الاختيار) -->
+        <div id="videoPreviewContainer" class="preview-container">
+          <button class="change-file-btn" onclick="document.getElementById('mediaFile').click()">
+            <i class="fas fa-sync"></i> تغيير الملف
+          </button>
+          <video id="videoPreview" controls></video>
+          <div id="audioLabel" style="display:none; padding:40px; text-align:center; background:#f3f4f6;">
+             <i class="fas fa-volume-up" style="font-size:3rem; color:#2563eb;"></i>
+             <h4 id="audioFileName" style="margin-top:15px;"></h4>
           </div>
         </div>
 
-        <!-- منطقة الإعدادات الذكية - تظهر تحت الرفع مباشرة -->
-        <div class="smart-settings" id="settingsArea">
+        <!-- 2. القوائم المنسدلة (أسفل الوسائط مباشرة) -->
+        <div class="smart-settings" id="settingsArea" style="display:none;">
           
-          <!-- 1. قائمة اختيار اللغات -->
-          <div class="dropdown-section" id="langSection">
+          <!-- القسم الأول: اللغات -->
+          <div class="dropdown-section active" id="langSection">
             <div class="dropdown-header" onclick="toggleSection('langSection')">
-              <span><i class="fas fa-globe" style="color:#2563eb; margin-left:10px;"></i> لغات الدبلجة المستهدفة</span>
+              <span><i class="fas fa-language" style="color:#2563eb; margin-left:10px;"></i> لغات الدبلجة</span>
               <i class="fas fa-chevron-down"></i>
             </div>
             <div class="dropdown-content">
               <div class="selected-langs-display" id="selectedLangsDisplay"></div>
-              <div class="lang-search-wrapper">
-                <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة (مثال: إنجليزية، فرنسية)...">
-              </div>
-              <div class="lang-list" id="langList" style="max-height: 200px; overflow-y: auto;"></div>
+              <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة...">
+              <div class="lang-list" id="langList" style="max-height: 180px; overflow-y: auto; margin-top:10px;"></div>
             </div>
           </div>
 
-          <!-- 2. قائمة اختيار الصوت والمحرك -->
+          <!-- القسم الثاني: الصوت -->
           <div class="dropdown-section" id="voiceSection">
             <div class="dropdown-header" onclick="toggleSection('voiceSection')">
-              <span><i class="fas fa-user-voice" style="color:#10b981; margin-left:10px;"></i> إعدادات الصوت والمحرك</span>
+              <span><i class="fas fa-user-tie" style="color:#10b981; margin-left:10px;"></i> اختيار نبرة الصوت</span>
               <i class="fas fa-chevron-down"></i>
             </div>
             <div class="dropdown-content">
-              <label style="display:block; margin-bottom:8px; font-weight:bold;">اختر نبرة الصوت:</label>
               <select id="voiceSelect" class="styled-select">
-                <option value="source" selected>استنساخ الصوت الأصلي (Clone)</option>
-                <option value="male_pro">صوت ذكر احترافي</option>
-                <option value="female_pro">صوت أنثى احترافي</option>
+                <option value="source" selected>استنساخ صوت الفيديو الأصلي (Clone)</option>
+                <option value="male_1">ذكر - نبرة عميقة</option>
+                <option value="female_1">أنثى - نبرة هادئة</option>
               </select>
             </div>
           </div>
 
-          <!-- 3. خيار مزامنة الشفاه (LipSync) - الزر الجديد -->
+          <!-- القسم الثالث: التقنيات المتقدمة (LipSync) -->
           <div class="dropdown-section" id="lipsyncSection">
             <div class="dropdown-header" onclick="toggleSection('lipsyncSection')">
-              <span><i class="fas fa-lips" style="color:#ef4444; margin-left:10px;"></i> تقنيات الفيديو المتقدمة</span>
+              <span><i class="fas fa-magic" style="color:#ef4444; margin-left:10px;"></i> خيارات المزامنة</span>
               <i class="fas fa-chevron-down"></i>
             </div>
             <div class="dropdown-content">
               <div class="switch-wrapper">
                 <div>
-                  <h4 style="margin:0;">مزامنة الشفاه الذكية (LipSync)</h4>
-                  <p style="margin:0; font-size:0.8rem; color:#6b7280;">مزامنة حركة الفم مع اللغة الجديدة (للفيديو فقط)</p>
+                  <h4 style="margin:0;">مزامنة حركة الشفاه (LipSync)</h4>
+                  <p style="margin:0; font-size:0.8rem; color:#6b7280;">جعل حركة الفم تطابق اللغة الجديدة بدقة</p>
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="lipsyncToggle">
@@ -127,27 +141,18 @@
             </div>
           </div>
 
-          <!-- زر البدء الكبير -->
-          <button id="dubBtn" class="btn-primary-action" style="width:100%; margin-top:20px; padding:18px; font-size:1.1rem; border-radius:12px;">
-            <i class="fas fa-wand-magic-sparkles"></i> ابدأ المعالجة الآن
+          <!-- الزر النهائي -->
+          <button id="dubBtn" class="btn-primary-action" style="width:100%; margin-top:15px; padding:20px; font-size:1.15rem;">
+            بدء الدبلجة والمزامنة
           </button>
         </div>
       </section>
 
-      <!-- منطقة النتائج -->
+      <!-- شاشة الانتظار والنتائج -->
       <section id="progressArea" style="display:none; margin-top:20px;">
-        <div class="card" style="text-align:center; padding:30px;">
-          <h3 id="statusTxt"><i class="fas fa-circle-notch fa-spin"></i> جاري رفع الملف ومعالجته...</h3>
-          <div class="progress-bar" style="height:10px; background:#e5e7eb; border-radius:10px; margin-top:15px; overflow:hidden;">
-            <div id="progFill" style="width:0%; height:100%; background:#2563eb; transition:0.3s;"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="resultsCard" style="display:none; margin-top:20px;">
-        <div class="card">
-          <h3><i class="fas fa-check-circle" style="color:#10b981;"></i> تم الانتهاء! النتائج جاهزة:</h3>
-          <div id="resultsList" class="results-grid"></div>
+        <div class="card" style="text-align:center;">
+           <h3 id="statusTxt">جاري المعالجة...</h3>
+           <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
         </div>
       </section>
     </div>
@@ -155,25 +160,47 @@
 </main>
 
 <script>
-  // دالة بسيطة لفتح وإغلاق القوائم المنسدلة
-  function toggleSection(id) {
-    const el = document.getElementById(id);
-    const isActive = el.classList.contains('active');
-    // إغلاق الكل أولاً (اختياري)
-    document.querySelectorAll('.dropdown-section').forEach(s => s.classList.remove('active'));
-    // فتح المختارة
-    if (!isActive) el.classList.add('active');
-  }
+  // دالة المعاينة والتحكم في الواجهة
+  const mediaFileInput = document.getElementById('mediaFile');
+  const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+  const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+  const videoPreview = document.getElementById('videoPreview');
+  const audioLabel = document.getElementById('audioLabel');
+  const settingsArea = document.getElementById('settingsArea');
 
-  // تحديث النص عند اختيار ملف
-  document.getElementById('mediaFile').onchange = function() {
-    if(this.files[0]) {
-      const size = (this.files[0].size/1024/1024).toFixed(1);
-      document.getElementById('fileTxt').innerHTML = `<span style="color:#10b981">✓ ${this.files[0].name} (${size}MB)</span>`;
-      // فتح قائمة اللغات تلقائياً بعد الرفع لتسهيل الأمر
-      toggleSection('langSection');
+  mediaFileInput.onchange = function() {
+    const file = this.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      
+      // إخفاء الرفع وإظهار المعاينة
+      uploadPlaceholder.style.display = 'none';
+      videoPreviewContainer.style.display = 'block';
+      settingsArea.style.display = 'block';
+
+      if (file.type.startsWith('video/')) {
+        videoPreview.src = url;
+        videoPreview.style.display = 'block';
+        audioLabel.style.display = 'none';
+        // تفعيل قسم الـ LipSync تلقائياً للفيديو
+        document.getElementById('lipsyncSection').style.display = 'block';
+      } else {
+        // إذا كان ملف صوتي فقط
+        videoPreview.style.display = 'none';
+        audioLabel.style.display = 'block';
+        document.getElementById('audioFileName').innerText = file.name;
+        // إخفاء قسم الـ LipSync لأنه لا ينطبق على الصوت
+        document.getElementById('lipsyncSection').style.display = 'none';
+      }
     }
   };
+
+  function toggleSection(id) {
+    document.querySelectorAll('.dropdown-section').forEach(s => {
+      if(s.id === id) s.classList.toggle('active');
+      else s.classList.remove('active');
+    });
+  }
 </script>
 
 <script src="js/config.js"></script>
