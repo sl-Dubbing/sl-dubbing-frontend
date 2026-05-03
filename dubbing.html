@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>AI Dubbing | sl-Dubbing</title>
+  <title>استوديو الدبلجة | sl-Dubbing</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
   <script>window.LANG_STORAGE_KEY = 'dub_langs';</script>
@@ -25,19 +25,19 @@
     <div style="color:#9aa1ac;font-size:0.9rem;text-align:center;">جاري التحقق...</div>
   </div>
   <nav class="sidebar-nav">
-    <div class="nav-label">القائمة الرئيسية</div>
+    <div class="nav-label">لوحة التحكم</div>
     <ul>
-      <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
       <li><a href="dubbing.html" class="active"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
+      <!-- القسم الجديد: ملفاتي -->
+      <li><a href="history.html"><i class="fas fa-folder-open"></i> ملفاتي (مدير الملفات)</a></li>
       <li><a href="tts.html"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
-      <li><a href="stt.html"><i class="fas fa-file-alt"></i> تحويل الصوت لنص</a></li>
     </ul>
   </nav>
   <div class="panel summary">
-    <h4>ملخص المشروع</h4>
-    <div class="meta"><strong>الحالة:</strong> <span id="miniStatus">في الانتظار</span></div>
-    <div class="meta"><strong>المعمارية:</strong> Edge-TTS + OpenVoice</div>
-    <div class="meta"><strong>اللغات:</strong> <span id="miniLangs">لم تُختر بعد</span></div>
+    <h4>تنبيه التخزين</h4>
+    <div class="meta" style="color: #f59e0b; font-size: 0.8rem;">
+      <i class="fas fa-clock"></i> تُحذف الملفات تلقائياً بعد 15 يوماً من تاريخ إنشائها.
+    </div>
   </div>
 </aside>
 
@@ -50,48 +50,30 @@
 
     <div class="workspace-grid">
       <div class="tools-container">
-
         <section class="card">
           <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
           <div class="upload-wrapper">
             <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;" onchange="if(this.files[0]){var s=(this.files[0].size/1024/1024).toFixed(1);document.getElementById('fileTxt').innerHTML='✓ '+this.files[0].name+' ('+s+'MB)';document.getElementById('fileTxt').style.color='#10b981';}">
-            
             <button class="btn-secondary" id="chooseMediaBtn" type="button" onclick="document.getElementById('mediaFile').click()"><i class="fas fa-file-video"></i> اختر فيديو أو صوت</button>
             <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
           </div>
         </section>
 
         <section class="card">
-          <h3><i class="fas fa-globe"></i> 2. اختر اللغات (متعدد)</h3>
-          <div class="selected-langs-display" id="selectedLangsDisplay">
-            <div class="selected-langs-empty">جاري التحميل...</div>
-          </div>
+          <h3><i class="fas fa-globe"></i> 2. اختر اللغات</h3>
+          <div class="selected-langs-display" id="selectedLangsDisplay"><div class="selected-langs-empty">جاري التحميل...</div></div>
           <div class="lang-search-wrapper">
             <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة...">
             <i class="fas fa-search lang-search-icon"></i>
-          </div>
-          <div class="lang-counter">
-            <span id="langCount">جاري التحميل...</span>
-            <span style="color:#9aa1ac;font-size:0.75rem;">★ = الأكثر استخداماً</span>
           </div>
           <div class="lang-list" id="langList"></div>
         </section>
 
         <section class="card">
           <h3><i class="fas fa-microphone-alt"></i> 3. اختيار الصوت</h3>
-          <div style="margin-bottom:14px;">
-            <label class="muted">صوت جاهز أو الأصلي</label>
-            <select id="voiceSelect" class="styled-select">
-              <option value="original" selected>المحافظة على الصوت الأصلي</option>
-            </select>
-          </div>
-          <div class="voice-clone-box">
-            <label class="muted">أو ارفع عينة صوتية مخصصة</label>
-            <input type="file" id="customVoice" accept="audio/*" style="display:none;" onchange="if(this.files[0]){document.getElementById('customVoiceTxt').innerHTML='✓ '+this.files[0].name;document.getElementById('customVoiceTxt').style.color='#10b981';}">
-            
-            <button class="btn-secondary" id="chooseCustomVoiceBtn" type="button" onclick="document.getElementById('customVoice').click()"><i class="fas fa-plus"></i> رفع عينة من جهازك</button>
-            <p id="customVoiceTxt" class="file-info"></p>
-          </div>
+          <select id="voiceSelect" class="styled-select">
+            <option value="original" selected>المحافظة على الصوت الأصلي</option>
+          </select>
         </section>
 
         <button id="dubBtn" class="btn-primary-action" type="button">
@@ -106,8 +88,9 @@
           <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
         </section>
         <section class="card" id="resultsCard" style="display:none;">
-          <h3><i class="fas fa-check-circle"></i> النتائج</h3>
+          <h3><i class="fas fa-check-circle"></i> النتائج الحالية</h3>
           <div class="results-multilang" id="resultsList"></div>
+          <p style="font-size: 0.75rem; color: #9aa1ac; margin-top: 15px;">* سيتم حفظ هذه الملفات تلقائياً في قسم "ملفاتي".</p>
         </section>
       </div>
     </div>
