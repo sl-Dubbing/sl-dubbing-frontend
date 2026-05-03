@@ -54,9 +54,9 @@
         <section class="card">
           <h3><i class="fas fa-upload"></i> 1. رفع الوسائط</h3>
           <div class="upload-wrapper">
-            <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;">
-            <!-- التعديل هنا: إضافة onclick لزر الوسائط -->
-            <button class="btn-secondary" id="chooseMediaBtn" type="button" onclick="document.getElementById('mediaFile').click()"><i class="fas fa-file-video"></i> اختر فيديو أو শক</button>
+            <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;" onchange="if(this.files[0]){var s=(this.files[0].size/1024/1024).toFixed(1);document.getElementById('fileTxt').innerHTML='✓ '+this.files[0].name+' ('+s+'MB)';document.getElementById('fileTxt').style.color='#10b981';}">
+            
+            <button class="btn-secondary" id="chooseMediaBtn" type="button" onclick="document.getElementById('mediaFile').click()"><i class="fas fa-file-video"></i> اختر فيديو أو صوت</button>
             <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
           </div>
         </section>
@@ -87,8 +87,8 @@
           </div>
           <div class="voice-clone-box">
             <label class="muted">أو ارفع عينة صوتية مخصصة</label>
-            <input type="file" id="customVoice" accept="audio/*" style="display:none;">
-            <!-- التعديل هنا: إضافة onclick لزر الصوت المخصص -->
+            <input type="file" id="customVoice" accept="audio/*" style="display:none;" onchange="if(this.files[0]){document.getElementById('customVoiceTxt').innerHTML='✓ '+this.files[0].name;document.getElementById('customVoiceTxt').style.color='#10b981';}">
+            
             <button class="btn-secondary" id="chooseCustomVoiceBtn" type="button" onclick="document.getElementById('customVoice').click()"><i class="fas fa-plus"></i> رفع عينة من جهازك</button>
             <p id="customVoiceTxt" class="file-info"></p>
           </div>
@@ -116,7 +116,6 @@
 
 <div id="toasts"></div>
 
-<!-- إضافة استدعاء ملف config.js هنا لكي يعمل shared.js بشكل صحيح -->
 <script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/languages-data.js"></script>
