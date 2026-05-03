@@ -9,7 +9,7 @@
   <style>
     /* التنسيقات العامة والخلفية */
     body { 
-      background: linear-gradient(135deg, #eef2ff 0%, #fdf4ff 100%); /* خلفية متدرجة هادئة كالصورة */
+      background: linear-gradient(135deg, #eef2ff 0%, #fdf4ff 100%); 
       display: flex; flex-direction: column; min-height: 100vh; font-family: system-ui, -apple-system, sans-serif; 
     }
     .main-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
@@ -20,9 +20,9 @@
     .workspace-header h1 { font-size: 2.4rem; margin-bottom: 10px; color: #111827; font-weight: 800; }
     .workspace-header p { color: #6b7280; font-size: 1.05rem; }
 
-    /* المربع الأبيض الرئيسي (منطقة الرفع) */
+    /* المربع الأبيض الرئيسي */
     .dub-workspace { 
-      background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); 
+      background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); 
       padding: 60px 40px; text-align: center; border: 1px solid #f3f4f6;
     }
     
@@ -33,49 +33,60 @@
     .upload-icon { font-size: 3rem; color: #3b82f6; margin-bottom: 20px; }
     .upload-text-main { font-size: 1.1rem; font-weight: bold; color: #111827; margin-bottom: 25px; }
     
-    /* فواصل خطية */
     .divider-line { width: 80%; height: 1px; background: #f3f4f6; margin: 15px auto; position: relative; }
     .upload-text-sub { font-size: 0.85rem; color: #9ca3af; background: #fff; padding: 0 10px; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
 
-    /* منطقة المعاينة */
+    /* المعاينة */
     #previewContainer { width: 100%; display: none; background: #000; border-radius: 12px; overflow: hidden; }
     #videoPreview { width: 100%; display: block; max-height: 400px; }
     
-    /* ==========================================
-       شريط الأدوات السفلي (مطابق للصورة تماماً)
-       ========================================== */
+    /* شريط الأدوات السفلي */
     .action-bar { 
       display: flex; justify-content: space-between; align-items: center; 
-      margin-top: 20px; width: 100%; 
+      margin-top: 20px; width: 100%; position: relative;
     }
 
-    /* أزرار اليسار (اللغات والصوت) */
     .left-actions { display: flex; gap: 15px; }
 
+    /* الأزرار (اللغة والصوت) */
     .icon-btn { 
-      background: #fff; padding: 12px 18px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
+      background: #fff; padding: 12px 18px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
       cursor: pointer; display: flex; align-items: center; gap: 18px; transition: 0.2s; position: relative; border: 1px solid #f3f4f6;
     }
     .icon-btn:hover { border-color: #cbd5e1; }
     .icon-btn i.main-ico { font-size: 1.3rem; color: #111827; }
-    .icon-btn i.arrow-ico { font-size: 0.8rem; color: #111827; font-weight: 900; }
     
-    /* القوائم المنسدلة للأزرار */
+    /* أنيميشن السهم */
+    .arrow-ico { font-size: 0.8rem; color: #111827; font-weight: 900; transition: transform 0.3s ease; }
+    .icon-btn.active .arrow-ico { transform: rotate(-90deg); } /* يتغير السهم للأسفل عند الفتح */
+    
+    /* القوائم المنسدلة (تفتح للأعلى كما في الصورة) */
     .dropdown-box { 
-      position: absolute; bottom: 65px; left: 0; width: 280px; background: #fff; 
+      position: absolute; bottom: calc(100% + 12px); left: 0; width: 280px; background: #fff; 
       border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; 
       display: none; z-index: 100; padding: 15px; cursor: default; text-align: right;
     }
-    .icon-btn.active .dropdown-box { display: block; }
+    .icon-btn.active .dropdown-box { display: block; animation: popUp 0.2s ease-out forwards; }
 
-    /* صندوق Lip-Sync في اليمين */
+    @keyframes popUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* قسم نبرة الصوت المخصص */
+    .custom-voice-label {
+      display: none; margin-top: 10px; font-size: 0.85rem; color: #10b981; 
+      background: #ecfdf5; padding: 10px; border-radius: 8px; border: 1px dashed #10b981; text-align: right;
+    }
+    .custom-voice-label i.fa-times { float: left; cursor: pointer; color: #ef4444; padding: 2px; }
+
+    /* صندوق Lip-Sync */
     .lipsync-box { 
       display: flex; align-items: center; gap: 12px; background: #fff; 
-      padding: 10px 18px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f3f4f6;
+      padding: 10px 18px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f3f4f6;
     }
     .lipsync-box span { font-family: Arial, sans-serif; font-weight: bold; font-size: 0.9rem; color: #000; }
     
-    /* زر التبديل (Switch) */
     .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e5e7eb; transition: .4s; border-radius: 34px; border: 1px solid #d1d5db; }
@@ -106,9 +117,7 @@
       <p>ارفع وسائطك، اختر لغاتك، واترك الذكاء الاصطناعي يبهرك</p>
     </header>
 
-    <!-- المربع الأبيض المركزي -->
     <div class="dub-workspace">
-      
       <!-- منطقة الرفع -->
       <section class="media-zone" id="dropZone" onclick="document.getElementById('mediaFile').click()">
         <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;">
@@ -116,10 +125,7 @@
         <div id="uploadPlaceholder">
           <i class="fas fa-cloud-upload-alt upload-icon"></i>
           <div class="upload-text-main">اسحب الملف هنا أو اضغط للاختيار</div>
-          
-          <div class="divider-line">
-             <div class="upload-text-sub">يدعم MP4, MOV, MP3, WAV (بحد أقصى 500MB)</div>
-          </div>
+          <div class="divider-line"><div class="upload-text-sub">يدعم MP4, MOV, MP3, WAV (بحد أقصى 500MB)</div></div>
         </div>
 
         <!-- المعاينة -->
@@ -133,7 +139,7 @@
       </section>
     </div>
 
-    <!-- شريط الأدوات السفلي الموزع بالعرض -->
+    <!-- شريط الأدوات -->
     <div class="action-bar" id="actionBar">
       
       <!-- القسم الأيمن: Lip-Sync -->
@@ -147,17 +153,27 @@
 
       <!-- القسم الأيسر: الأيقونات -->
       <div class="left-actions">
+        
         <!-- أيقونة الصوت -->
         <div class="icon-btn" id="voiceTrigger" onclick="toggleDrop('voiceTrigger')">
           <i class="fas fa-head-side-voice main-ico"></i>
           <i class="fas fa-chevron-left arrow-ico"></i>
           <div class="dropdown-box" onclick="event.stopPropagation()">
-            <h4 style="margin-bottom: 12px; color: #111827;">نبرة الصوت</h4>
-            <select id="voiceSelect" class="styled-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+            <h4 style="margin-bottom: 12px; color: #111827; font-size: 1.1rem;">نبرة الصوت</h4>
+            <select id="voiceSelect" class="styled-select" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; cursor: pointer;">
               <option value="source">استنساخ الصوت الأصلي</option>
               <option value="male_pro">صوت ذكر احترافي</option>
               <option value="female_pro">صوت أنثى احترافي</option>
+              <option value="custom" style="font-weight: bold; color: #2563eb;">+ رفع عينة صوتية (Clone)...</option>
             </select>
+            
+            <!-- حقل مخفي لرفع العينة الصوتية -->
+            <input type="file" id="customVoiceInput" accept="audio/*" style="display: none;">
+            <!-- ملصق يظهر عند رفع العينة -->
+            <div id="customVoiceLabel" class="custom-voice-label">
+              <i class="fas fa-times" onclick="removeCustomVoice(event)" title="حذف العينة"></i>
+              <i class="fas fa-check-circle"></i> <span id="customVoiceName">تم اختيار العينة</span>
+            </div>
           </div>
         </div>
 
@@ -166,18 +182,18 @@
           <i class="fas fa-globe main-ico"></i>
           <i class="fas fa-chevron-left arrow-ico"></i>
           <div class="dropdown-box" onclick="event.stopPropagation()">
-            <h4 style="margin-bottom: 12px; color: #111827;">اختر لغات الدبلجة</h4>
+            <h4 style="margin-bottom: 12px; color: #111827; font-size: 1.1rem;">اختر لغات الدبلجة</h4>
             <div id="selectedLangsDisplay" class="selected-langs-display"></div>
-            <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 10px;">
+            <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 10px; outline: none;">
             <div id="langList" class="lang-list" style="max-height: 150px; overflow-y: auto;"></div>
           </div>
         </div>
-      </div>
 
+      </div>
     </div>
 
     <!-- زر البدء المخفي حتى يتم رفع ملف -->
-    <button id="dubBtn" class="start-btn" style="display: none;">بدء المعالجة</button>
+    <button id="dubBtn" class="start-btn" style="display: none;">بدء الدبلجة الآن</button>
 
     <!-- شريط التقدم -->
     <div id="progressArea" style="display:none; margin-top: 20px; background: #fff; padding: 20px; border-radius: 8px; text-align: center;">
@@ -191,6 +207,58 @@
 </main>
 
 <script>
+  // 1. منطق فتح وإغلاق القوائم وتدوير السهم
+  function toggleDrop(id) {
+    const el = document.getElementById(id);
+    const isActive = el.classList.contains('active');
+    
+    // إغلاق كل القوائم النشطة
+    document.querySelectorAll('.icon-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // إذا لم تكن القائمة الحالية نشطة، قم بتفعيلها (يتم تدوير السهم وإظهار القائمة عبر الـ CSS)
+    if (!isActive) el.classList.add('active');
+  }
+
+  // إغلاق القوائم عند النقر خارجها
+  window.onclick = function(event) {
+    if (!event.target.closest('.icon-btn')) {
+      document.querySelectorAll('.icon-btn').forEach(btn => btn.classList.remove('active'));
+    }
+  };
+
+  // 2. منطق رفع عينة الصوت المخصصة
+  const voiceSelect = document.getElementById('voiceSelect');
+  const customVoiceInput = document.getElementById('customVoiceInput');
+  const customVoiceLabel = document.getElementById('customVoiceLabel');
+  const customVoiceName = document.getElementById('customVoiceName');
+
+  voiceSelect.addEventListener('change', function() {
+    if (this.value === 'custom') {
+      customVoiceInput.click(); // فتح نافذة اختيار الملف الصوتي
+    } else {
+      customVoiceLabel.style.display = 'none';
+      customVoiceInput.value = '';
+    }
+  });
+
+  customVoiceInput.addEventListener('change', function() {
+    if (this.files && this.files.length > 0) {
+      customVoiceLabel.style.display = 'block';
+      customVoiceName.innerText = this.files[0].name; // عرض اسم الملف المرفوع
+    } else {
+      voiceSelect.value = 'source'; // العودة للخيار الافتراضي إذا ألغى المستخدم الرفع
+      customVoiceLabel.style.display = 'none';
+    }
+  });
+
+  function removeCustomVoice(e) {
+    e.stopPropagation(); // منع إغلاق القائمة المنسدلة
+    customVoiceInput.value = '';
+    customVoiceLabel.style.display = 'none';
+    voiceSelect.value = 'source'; // إعادة التعيين للصوت الأصلي
+  }
+
+  // 3. منطق رفع الوسائط الأساسية (الفيديو/الصوت)
   const fileInput = document.getElementById('mediaFile');
   const previewContainer = document.getElementById('previewContainer');
   const uploadPlaceholder = document.getElementById('uploadPlaceholder');
@@ -219,30 +287,6 @@
         document.getElementById('lipsyncToggle').disabled = true; 
         document.getElementById('lipsyncToggle').checked = false;
       }
-    }
-  };
-
-  function toggleDrop(id) {
-    const el = document.getElementById(id);
-    const isActive = el.classList.contains('active');
-    
-    document.querySelectorAll('.icon-btn').forEach(d => {
-      d.classList.remove('active');
-      d.querySelector('.arrow-ico').style.transform = 'rotate(0deg)';
-    });
-    
-    if (!isActive) {
-      el.classList.add('active');
-      el.querySelector('.arrow-ico').style.transform = 'rotate(-90deg)';
-    }
-  }
-
-  window.onclick = function(event) {
-    if (!event.target.closest('.icon-btn')) {
-      document.querySelectorAll('.icon-btn').forEach(d => {
-        d.classList.remove('active');
-        d.querySelector('.arrow-ico').style.transform = 'rotate(0deg)';
-      });
     }
   };
 </script>
