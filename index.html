@@ -167,7 +167,7 @@ footer a:hover { text-decoration: underline; }
 <div class="page">
 
   <div class="top-bar">
-    <a class="logo" href="index.html">
+    <a class="logo" href="index.html" target="_self">
       <i class="fas fa-cube"></i> sl-Dubbing
     </a>
     <div class="user-zone" id="hdr">
@@ -200,11 +200,12 @@ footer a:hover { text-decoration: underline; }
 
     <!-- Navigation -->
     <div class="sidebar-section">
-      <h4>الأدوات</h4>
-      <a href="index.html" class="sidebar-item active"><i class="fas fa-home"></i> الرئيسية</a>
-      <a href="tts.html" class="sidebar-item"><i class="fas fa-microphone"></i> تحويل النص لصوت</a>
-      <a href="dubbing.html" class="sidebar-item"><i class="fas fa-film"></i> استوديو الدبلجة</a>
-      <a href="stt.html" class="sidebar-item"><i class="fas fa-headphones"></i> تحويل الصوت لنص</a>
+      <h4>لوحة التحكم</h4>
+      <a href="index.html" class="sidebar-item active" target="_self"><i class="fas fa-home"></i> الرئيسية</a>
+      <a href="dubbing.html" class="sidebar-item" target="_self"><i class="fas fa-film"></i> استوديو الدبلجة</a>
+      <a href="history.html" class="sidebar-item" target="_self"><i class="fas fa-folder-open"></i> ملفاتي (المجلدات)</a>
+      <a href="tts.html" class="sidebar-item" target="_self"><i class="fas fa-microphone"></i> تحويل النص لصوت</a>
+      <a href="stt.html" class="sidebar-item" target="_self"><i class="fas fa-headphones"></i> تحويل الصوت لنص</a>
     </div>
 
     <div class="sidebar-divider"></div>
@@ -321,7 +322,7 @@ footer a:hover { text-decoration: underline; }
   <footer>
     <p>sl-Dubbing © 2026. جميع الحقوق محفوظة.</p>
     <p style="margin-top: 8px;">
-      <a href="privacy.html">سياسة الخصوصية</a>
+      <a href="privacy.html" target="_self">سياسة الخصوصية</a>
       <a href="https://www.youtube.com/@alhashmimh" target="_blank" rel="noopener">يوتيوب</a>
       <a href="https://github.com/alhlilma-jpg" target="_blank" rel="noopener">جيتهاب</a>
     </p>
@@ -396,7 +397,8 @@ footer a:hover { text-decoration: underline; }
 
     const BE = 'https://web-production-14a1.up.railway.app';
     const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-    const SUPABASE_KEY = window.__SUPABASE_KEY__ || '';
+    // ✅ تم التحديث ليتوافق مع جميع الملفات
+    const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || window.__SUPABASE_KEY__ || '';
 
     let supabaseClient = null;
     let currentUser = null;
@@ -514,7 +516,7 @@ footer a:hover { text-decoration: underline; }
 
                 // Fetch credits
                 try {
-                    const res = await fetch(BE + '/api/user', {
+                    const res = await fetch(BE + '/api/user/credits', {
                         headers: { 'Authorization': `Bearer ${session.access_token}` }
                     });
                     const data = await res.json();
@@ -535,7 +537,7 @@ footer a:hover { text-decoration: underline; }
             } else {
                 localStorage.removeItem('token');
                 document.getElementById('hdr').innerHTML = `
-                    <a href="login.html" class="btn-login">تسجيل الدخول</a>
+                    <a href="login.html" class="btn-login" target="_self">تسجيل الدخول</a>
                     <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i> القائمة</button>
                 `;
                 document.getElementById('sidebarUserName').textContent = 'زائر';
@@ -547,7 +549,7 @@ footer a:hover { text-decoration: underline; }
         } catch (e) {
             console.error('Session check failed:', e);
             document.getElementById('hdr').innerHTML = `
-                <a href="login.html" class="btn-login">تسجيل الدخول</a>
+                <a href="login.html" class="btn-login" target="_self">تسجيل الدخول</a>
                 <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i> القائمة</button>
             `;
             document.getElementById('menuBtn')?.addEventListener('click', openSidebar);
