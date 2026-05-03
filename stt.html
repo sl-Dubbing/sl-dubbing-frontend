@@ -51,8 +51,8 @@
   <nav class="sidebar-nav">
     <div class="nav-label">القائمة الرئيسية</div>
     <ul>
-      <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
       <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
+      <li><a href="history.html"><i class="fas fa-folder-open"></i> ملفاتي (المجلدات)</a></li>
       <li><a href="tts.html"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
       <li><a href="stt.html" class="active"><i class="fas fa-file-alt"></i> تحويل الصوت لنص</a></li>
     </ul>
@@ -72,11 +72,11 @@
         <section class="card">
           <h3><i class="fas fa-bolt"></i> اختر الوضع</h3>
           <div class="mode-switcher">
-            <button class="mode-option active" data-mode="fast" type="button">
+            <button class="mode-option active" id="modeFast" data-mode="fast" type="button">
               <div class="mode-title"><i class="fas fa-bolt"></i><span>سريع</span><span class="mode-badge badge-fast">⚡ Whisper Turbo</span></div>
               <div class="mode-desc">10x أسرع من real-time</div>
             </button>
-            <button class="mode-option" data-mode="precise" type="button">
+            <button class="mode-option" id="modePrecise" data-mode="precise" type="button">
               <div class="mode-title"><i class="fas fa-gem"></i><span>دقيق</span><span class="mode-badge badge-precise">🎯 WhisperX</span></div>
               <div class="mode-desc">دقة كلمة + كشف المتحدثين</div>
             </button>
@@ -86,34 +86,21 @@
         <section class="card">
           <h3><i class="fas fa-upload"></i> 1. رفع الملف</h3>
           <div class="upload-wrapper">
-            <input type="file" id="mediaFile" accept="audio/*,video/*" style="display:none;">
-            <button class="btn-secondary" id="chooseMediaBtn" type="button"><i class="fas fa-file-audio"></i> اختر صوت أو فيديو</button>
+            <input type="file" id="mediaFile" accept="audio/*,video/*" style="display:none;" onchange="if(this.files[0]){var s=(this.files[0].size/1024/1024).toFixed(1);document.getElementById('fileTxt').innerHTML='✓ '+this.files[0].name+' ('+s+'MB)';document.getElementById('fileTxt').style.color='#10b981';}">
+            <button class="btn-secondary" id="chooseMediaBtn" type="button" onclick="document.getElementById('mediaFile').click()"><i class="fas fa-file-audio"></i> اختر صوت أو فيديو</button>
             <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
           </div>
         </section>
 
         <section class="card">
-          <h3><i class="fas fa-globe"></i> 2. اللغة</h3>
+          <h3><i class="fas fa-globe"></i> 2. اللغة والإعدادات</h3>
           <select id="langSelect" class="styled-select">
             <option value="auto" selected>🌍 كشف تلقائي</option>
             <option value="ar">🇸🇦 العربية</option>
             <option value="en">🇺🇸 الإنجليزية</option>
             <option value="fr">🇫🇷 الفرنسية</option>
             <option value="es">🇪🇸 الإسبانية</option>
-            <option value="de">🇩🇪 الألمانية</option>
             <option value="tr">🇹🇷 التركية</option>
-            <option value="ru">🇷🇺 الروسية</option>
-            <option value="zh">🇨🇳 الصينية</option>
-            <option value="ja">🇯🇵 اليابانية</option>
-            <option value="ko">🇰🇷 الكورية</option>
-            <option value="hi">🇮🇳 الهندية</option>
-            <option value="it">🇮🇹 الإيطالية</option>
-            <option value="pt">🇧🇷 البرتغالية</option>
-            <option value="nl">🇳🇱 الهولندية</option>
-            <option value="pl">🇵🇱 البولندية</option>
-            <option value="he">🇮🇱 العبرية</option>
-            <option value="fa">🇮🇷 الفارسية</option>
-            <option value="ur">🇵🇰 الأوردو</option>
           </select>
 
           <div class="options-row">
@@ -131,7 +118,7 @@
         </section>
 
         <button id="sttBtn" class="btn-primary-action" type="button">
-          <i class="fas fa-file-alt"></i> ابدأ التفريغ
+          <i class="fas fa-file-alt"></i> ابدأ التفريغ الآن
         </button>
       </div>
 
@@ -155,6 +142,7 @@
 
 <div id="toasts"></div>
 
+<script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/stt.js"></script>
 </body>
