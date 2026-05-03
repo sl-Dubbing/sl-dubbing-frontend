@@ -58,9 +58,9 @@
     
     /* أنيميشن السهم */
     .arrow-ico { font-size: 0.8rem; color: #111827; font-weight: 900; transition: transform 0.3s ease; }
-    .icon-btn.active .arrow-ico { transform: rotate(-90deg); } /* يتغير السهم للأسفل عند الفتح */
+    .icon-btn.active .arrow-ico { transform: rotate(-90deg); } 
     
-    /* القوائم المنسدلة (تفتح للأعلى كما في الصورة) */
+    /* القوائم المنسدلة */
     .dropdown-box { 
       position: absolute; bottom: calc(100% + 12px); left: 0; width: 280px; background: #fff; 
       border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; 
@@ -108,6 +108,22 @@
   </div>
   <div id="topAccountBadge" class="account-badge"><i class="fas fa-coins"></i> جاري التحميل...</div>
 </header>
+
+<!-- تم إعادة الشريط الجانبي والـ Overlay -->
+<div class="overlay" id="overlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-user-section" id="authSection">
+    <div style="color:#9aa1ac;font-size:0.9rem;text-align:center;">جاري التحقق...</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">الرئيسية</div>
+    <ul>
+      <li><a href="dubbing.html" class="active"><i class="fas fa-magic"></i> استوديو الدبلجة</a></li>
+      <li><a href="history.html"><i class="fas fa-folder-open"></i> ملفاتي</a></li>
+      <li><a href="tts.html"><i class="fas fa-microphone"></i> نص إلى صوت</a></li>
+    </ul>
+  </nav>
+</aside>
 
 <main class="main-content">
   <div class="workspace-wrapper">
@@ -167,9 +183,7 @@
               <option value="custom" style="font-weight: bold; color: #2563eb;">+ رفع عينة صوتية (Clone)...</option>
             </select>
             
-            <!-- حقل مخفي لرفع العينة الصوتية -->
             <input type="file" id="customVoiceInput" accept="audio/*" style="display: none;">
-            <!-- ملصق يظهر عند رفع العينة -->
             <div id="customVoiceLabel" class="custom-voice-label">
               <i class="fas fa-times" onclick="removeCustomVoice(event)" title="حذف العينة"></i>
               <i class="fas fa-check-circle"></i> <span id="customVoiceName">تم اختيار العينة</span>
@@ -192,10 +206,8 @@
       </div>
     </div>
 
-    <!-- زر البدء المخفي حتى يتم رفع ملف -->
     <button id="dubBtn" class="start-btn" style="display: none;">بدء الدبلجة الآن</button>
 
-    <!-- شريط التقدم -->
     <div id="progressArea" style="display:none; margin-top: 20px; background: #fff; padding: 20px; border-radius: 8px; text-align: center;">
       <div class="progress-bar" style="height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
         <div id="progFill" style="height: 100%; width: 0%; background: #3b82f6; transition: 0.3s;"></div>
@@ -207,26 +219,39 @@
 </main>
 
 <script>
-  // 1. منطق فتح وإغلاق القوائم وتدوير السهم
+  // كود تشغيل الشريط الجانبي (Sidebar)
+  const menuBtn = document.getElementById('menuBtn');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+
+  if (menuBtn && sidebar && overlay) {
+    menuBtn.onclick = function(e) {
+      e.stopPropagation();
+      sidebar.classList.add('active');
+      overlay.classList.add('active');
+    };
+    overlay.onclick = function() {
+      sidebar.classList.remove('active');
+      overlay.classList.remove('active');
+    };
+  }
+
+  // منطق فتح وإغلاق القوائم وتدوير السهم
   function toggleDrop(id) {
     const el = document.getElementById(id);
     const isActive = el.classList.contains('active');
     
-    // إغلاق كل القوائم النشطة
     document.querySelectorAll('.icon-btn').forEach(btn => btn.classList.remove('active'));
-    
-    // إذا لم تكن القائمة الحالية نشطة، قم بتفعيلها (يتم تدوير السهم وإظهار القائمة عبر الـ CSS)
     if (!isActive) el.classList.add('active');
   }
 
-  // إغلاق القوائم عند النقر خارجها
   window.onclick = function(event) {
     if (!event.target.closest('.icon-btn')) {
       document.querySelectorAll('.icon-btn').forEach(btn => btn.classList.remove('active'));
     }
   };
 
-  // 2. منطق رفع عينة الصوت المخصصة
+  // منطق رفع عينة الصوت
   const voiceSelect = document.getElementById('voiceSelect');
   const customVoiceInput = document.getElementById('customVoiceInput');
   const customVoiceLabel = document.getElementById('customVoiceLabel');
@@ -234,7 +259,7 @@
 
   voiceSelect.addEventListener('change', function() {
     if (this.value === 'custom') {
-      customVoiceInput.click(); // فتح نافذة اختيار الملف الصوتي
+      customVoiceInput.click(); 
     } else {
       customVoiceLabel.style.display = 'none';
       customVoiceInput.value = '';
@@ -244,21 +269,21 @@
   customVoiceInput.addEventListener('change', function() {
     if (this.files && this.files.length > 0) {
       customVoiceLabel.style.display = 'block';
-      customVoiceName.innerText = this.files[0].name; // عرض اسم الملف المرفوع
+      customVoiceName.innerText = this.files[0].name; 
     } else {
-      voiceSelect.value = 'source'; // العودة للخيار الافتراضي إذا ألغى المستخدم الرفع
+      voiceSelect.value = 'source'; 
       customVoiceLabel.style.display = 'none';
     }
   });
 
   function removeCustomVoice(e) {
-    e.stopPropagation(); // منع إغلاق القائمة المنسدلة
+    e.stopPropagation(); 
     customVoiceInput.value = '';
     customVoiceLabel.style.display = 'none';
-    voiceSelect.value = 'source'; // إعادة التعيين للصوت الأصلي
+    voiceSelect.value = 'source'; 
   }
 
-  // 3. منطق رفع الوسائط الأساسية (الفيديو/الصوت)
+  // منطق رفع الوسائط
   const fileInput = document.getElementById('mediaFile');
   const previewContainer = document.getElementById('previewContainer');
   const uploadPlaceholder = document.getElementById('uploadPlaceholder');
