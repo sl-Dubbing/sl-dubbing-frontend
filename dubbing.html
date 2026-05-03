@@ -56,20 +56,20 @@
     .icon-btn:hover { border-color: #cbd5e1; }
     .icon-btn i.main-ico { font-size: 1.3rem; color: #111827; }
     
-    /* أنيميشن السهم */
+    /* أنيميشن السهم (يشير للأسفل افتراضياً) */
     .arrow-ico { font-size: 0.8rem; color: #111827; font-weight: 900; transition: transform 0.3s ease; }
-    .icon-btn.active .arrow-ico { transform: rotate(-90deg); } 
+    .icon-btn.active .arrow-ico { transform: rotate(180deg); } /* ينعكس للأعلى عند الفتح */
     
-    /* القوائم المنسدلة */
+    /* القوائم المنسدلة (تفتح للأسفل الآن) */
     .dropdown-box { 
-      position: absolute; bottom: calc(100% + 12px); left: 0; width: 280px; background: #fff; 
+      position: absolute; top: calc(100% + 12px); bottom: auto; left: 0; width: 280px; background: #fff; 
       border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; 
       display: none; z-index: 100; padding: 15px; cursor: default; text-align: right;
     }
-    .icon-btn.active .dropdown-box { display: block; animation: popUp 0.2s ease-out forwards; }
+    .icon-btn.active .dropdown-box { display: block; animation: popDown 0.2s ease-out forwards; }
 
-    @keyframes popUp {
-      from { opacity: 0; transform: translateY(10px); }
+    @keyframes popDown {
+      from { opacity: 0; transform: translateY(-10px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -101,28 +101,35 @@
 </head>
 <body>
 
+<!-- تمت إعادة الشريط العلوي لشكله الأصلي ليعمل مع shared.js -->
 <header class="top-bar">
   <div style="display:flex;align-items:center;gap:12px;">
-    <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
+    <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i><span>القائمة</span></button>
     <div class="top-logo"><h2>sl-Dubbing</h2></div>
   </div>
-  <div id="topAccountBadge" class="account-badge"><i class="fas fa-coins"></i> جاري التحميل...</div>
+  <span class="account-badge" id="topAccountBadge">حساب تجريبي</span>
 </header>
 
-<!-- تم إعادة الشريط الجانبي والـ Overlay -->
+<!-- تمت إعادة الشريط الجانبي لشكله الأصلي -->
 <div class="overlay" id="overlay"></div>
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-user-section" id="authSection">
     <div style="color:#9aa1ac;font-size:0.9rem;text-align:center;">جاري التحقق...</div>
   </div>
   <nav class="sidebar-nav">
-    <div class="nav-label">الرئيسية</div>
+    <div class="nav-label">لوحة التحكم</div>
     <ul>
-      <li><a href="dubbing.html" class="active"><i class="fas fa-magic"></i> استوديو الدبلجة</a></li>
-      <li><a href="history.html"><i class="fas fa-folder-open"></i> ملفاتي</a></li>
-      <li><a href="tts.html"><i class="fas fa-microphone"></i> نص إلى صوت</a></li>
+      <li><a href="dubbing.html" class="active"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
+      <li><a href="history.html"><i class="fas fa-folder-open"></i> ملفاتي (مدير الملفات)</a></li>
+      <li><a href="tts.html"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
     </ul>
   </nav>
+  <div class="panel summary">
+    <h4>تنبيه التخزين</h4>
+    <div class="meta" style="color: #f59e0b; font-size: 0.8rem;">
+      <i class="fas fa-clock"></i> تُحذف الملفات تلقائياً بعد 15 يوماً من تاريخ إنشائها.
+    </div>
+  </div>
 </aside>
 
 <main class="main-content">
@@ -173,7 +180,7 @@
         <!-- أيقونة الصوت -->
         <div class="icon-btn" id="voiceTrigger" onclick="toggleDrop('voiceTrigger')">
           <i class="fas fa-head-side-voice main-ico"></i>
-          <i class="fas fa-chevron-left arrow-ico"></i>
+          <i class="fas fa-chevron-down arrow-ico"></i> <!-- تم تغيير السهم الافتراضي للأسفل -->
           <div class="dropdown-box" onclick="event.stopPropagation()">
             <h4 style="margin-bottom: 12px; color: #111827; font-size: 1.1rem;">نبرة الصوت</h4>
             <select id="voiceSelect" class="styled-select" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; cursor: pointer;">
@@ -194,7 +201,7 @@
         <!-- أيقونة اللغة -->
         <div class="icon-btn" id="langTrigger" onclick="toggleDrop('langTrigger')">
           <i class="fas fa-globe main-ico"></i>
-          <i class="fas fa-chevron-left arrow-ico"></i>
+          <i class="fas fa-chevron-down arrow-ico"></i> <!-- تم تغيير السهم الافتراضي للأسفل -->
           <div class="dropdown-box" onclick="event.stopPropagation()">
             <h4 style="margin-bottom: 12px; color: #111827; font-size: 1.1rem;">اختر لغات الدبلجة</h4>
             <div id="selectedLangsDisplay" class="selected-langs-display"></div>
@@ -219,22 +226,7 @@
 </main>
 
 <script>
-  // كود تشغيل الشريط الجانبي (Sidebar)
-  const menuBtn = document.getElementById('menuBtn');
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('overlay');
-
-  if (menuBtn && sidebar && overlay) {
-    menuBtn.onclick = function(e) {
-      e.stopPropagation();
-      sidebar.classList.add('active');
-      overlay.classList.add('active');
-    };
-    overlay.onclick = function() {
-      sidebar.classList.remove('active');
-      overlay.classList.remove('active');
-    };
-  }
+  // أزلت كود الشريط الجانبي من هنا لأن ملف shared.js سيتكفل به الآن بشكل طبيعي
 
   // منطق فتح وإغلاق القوائم وتدوير السهم
   function toggleDrop(id) {
