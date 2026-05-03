@@ -1,29 +1,24 @@
-// shared.js — Supabase Auth + Cache (مصحح)
+// shared.js — موحّد + Supabase Auth + Cache
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-
-// 🚀 قراءة المفتاح من ملف config.js
-const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || '';
+const SUPABASE_KEY = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
 const USER_CACHE_KEY = 'sl_user_cache';
+const USER_CACHE_TTL = 5 * 60 * 1000;
 
 window.API_BASE = API_BASE;
 
 // =================================
-// 🔌 Supabase loader
+// 🔌 تحميل Supabase ديناميكياً
 // =================================
 let supabaseClient = null;
 async function getSupabase() {
     if (supabaseClient) return supabaseClient;
-    if (!SUPABASE_KEY) {
-        console.error('Supabase key missing. Set window.APP_CONFIG.SUPABASE_KEY before loading.');
-        throw new Error('Supabase key not configured');
-    }
     if (!window.supabase) {
         await new Promise((resolve, reject) => {
             const s = document.createElement('script');
             s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
             s.onload = resolve;
-            s.onerror = () => reject(new Error('Failed to load Supabase SDK'));
+            s.onerror = reject;
             document.head.appendChild(s);
         });
     }
@@ -84,14 +79,17 @@ function getUserCache() {
     try {
         const raw = localStorage.getItem(USER_CACHE_KEY);
         if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        // صلاحية الكاش 24 ساعة
-        if (Date.now() - (parsed.timestamp || 0) > 24 * 60 * 60 * 1000) {
-            localStorage.removeItem(USER_CACHE_KEY);
-            return null;
-        }
-        return parsed?.user || null;
+        return JSON.parse(raw)?.user || null;
     } catch (e) { return null; }
+}
+
+function isCacheFresh() {
+    try {
+        const raw = localStorage.getItem(USER_CACHE_KEY);
+        if (!raw) return false;
+        const c = JSON.parse(raw);
+        return c && (Date.now() - c.timestamp < USER_CACHE_TTL);
+    } catch (e) { return false; }
 }
 
 function clearUserCache() {
@@ -118,87 +116,92 @@ function renderAuthUI(user) {
         return;
     }
 
-    const name = user.name || user.email?.split('@')[0] || 'مستخدم';
     const credits = Number(user.credits ?? 0);
+    const name = user.name || user.email?.split('@')[0] || 'مستخدم';
 
     if (authSection) {
-        const avatar = user.avatar
-            ? `<img src="${escapeHtml(user.avatar)}" style="width:48px;height:48px;border-radius:50%;margin-bottom:8px;object-fit:cover;">`
-            : `<i class="fas fa-user-circle" style="font-size:2.5rem;color:#86868b;margin-bottom:8px;display:block;"></i>`;
-
         authSection.innerHTML = `
             <div class="user-info-card">
-                ${avatar}
-                <div class="user-name">${escapeHtml(name)}</div>
+                <div class="user-name"><i class="fas fa-user-circle"></i> ${escapeHtml(name)}</div>
                 <div class="user-points"><i class="fas fa-coins"></i> ${credits} نقطة</div>
                 <button id="logoutBtn" style="margin-top:10px;background:none;border:none;color:#ff3b30;cursor:pointer;font-size:0.82rem;font-weight:600;">تسجيل الخروج</button>
             </div>`;
         document.getElementById('logoutBtn')?.addEventListener('click', logout);
     }
     if (topBadge) {
-        topBadge.innerHTML = `<i class="fas fa-user-circle" style="color:#007aff"></i> ${escapeHtml(name)}`;
+        topBadge.innerHTML = `<i class="fas fa-coins" style="color:#ff9500"></i> ${credits} نقطة`;
     }
 }
 
 // =================================
 // 🚀 المصادقة الذكية
+// 1. cache → عرض فوري
+// 2. Supabase getSession → تحقّق من صلاحية الجلسة
+// 3. Railway /api/user → جلب الرصيد (إن أمكن)
 // =================================
 async function checkAuth() {
-    // 1️⃣ عرض الـ cache فوراً
-    const cached = getUserCache();
-    if (cached) renderAuthUI(cached);
+    // 1️⃣ عرض الـ cache فوراً (لا انتظار)
+    const cachedUser = getUserCache();
+    if (cachedUser) {
+        renderAuthUI(cachedUser);
+    }
 
-    // 2️⃣ تحقّق من Supabase
+    // 2️⃣ تحقّق من Supabase session
     try {
         const supa = await getSupabase();
         const { data: { session } } = await supa.auth.getSession();
 
-        if (!session?.user) {
-            clearUserCache();
+        if (!session) {
+            // لا توجد جلسة → غير مسجّل
             localStorage.removeItem('token');
+            clearUserCache();
             renderAuthUI(null);
             return;
         }
 
-        // الجلسة سارية
+        // الجلسة سارية — حدّث التوكن إن لزم
         localStorage.setItem('token', session.access_token);
 
-        const u = session.user;
+        // إذا الـ cache طازج، توقّف هنا (تجنّب طلب Railway)
+        if (isCacheFresh()) return;
 
-       // جلب النقاط من السيرفر
-       let credits = cached?.credits ?? 0;
-       try {
-           const res = await fetch(`${API_BASE}/api/user/credits`, {
-               headers: { 'Authorization': `Bearer ${session.access_token}` }
-           });
-           if (res.ok) {
-               const data = await res.json();
-               // 🛠️ الإصلاح هنا: الكود الآن يقرأ من مسار السيرفر الصحيح (data.user.credits)
-               credits = data?.user?.credits ?? data?.credits ?? credits;
-               
-               // تحديث واجهة المستخدم فوراً (بما في ذلك صفحة الدبلجة)
-               document.querySelectorAll('.points-count, #user-credits').forEach(el => {
-                   el.textContent = credits;
-               });
-           }
-       } catch (e) {
-           console.warn('Failed to fetch credits:', e);
-       }
-
-        const user = {
-            id: u.id,
-            email: u.email,
-            name: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0],
-            avatar: u.user_metadata?.avatar_url,
-            credits: credits
+        // 3️⃣ حاول جلب الرصيد من Railway (اختياري — لا يفشل التحقق إن لم ينجح)
+        const supaUser = session.user || {};
+        const baseUser = {
+            id: supaUser.id,
+            email: supaUser.email,
+            name: supaUser.user_metadata?.full_name || supaUser.user_metadata?.name || supaUser.email?.split('@')[0],
+            avatar: supaUser.user_metadata?.avatar_url,
+            credits: cachedUser?.credits ?? 0
         };
 
-        saveUserCache(user);
-        renderAuthUI(user);
+        try {
+            const res = await fetch(`${API_BASE}/api/user`, {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+            if (res.ok) {
+                const d = await res.json();
+                if (d?.user) {
+                    // دمج بيانات Supabase مع رصيد Railway
+                    const merged = { ...baseUser, ...d.user };
+                    saveUserCache(merged);
+                    renderAuthUI(merged);
+                    return;
+                }
+            }
+        } catch (e) {
+            // Railway غير متاح، نستخدم بيانات Supabase فقط
+            console.warn('Railway /api/user failed, using Supabase data:', e);
+        }
+
+        // ⛑️ Railway لم يستجب — استخدم بيانات Supabase
+        saveUserCache(baseUser);
+        renderAuthUI(baseUser);
 
     } catch (e) {
-        console.warn('Auth check failed:', e);
-        if (!cached) renderAuthUI(null);
+        console.warn('Auth check error:', e);
+        // في حالة فشل كامل، أبقِ ما هو معروض من cache
+        if (!cachedUser) renderAuthUI(null);
     }
 }
 
@@ -211,7 +214,7 @@ async function logout() {
     try {
         const supa = await getSupabase();
         await supa.auth.signOut();
-    } catch (e) { console.warn('signOut failed:', e); }
+    } catch (e) { console.warn('Supabase signOut failed:', e); }
 
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
@@ -223,27 +226,10 @@ async function logout() {
 // 🔄 مزامنة بين tabs
 // =================================
 window.addEventListener('storage', (e) => {
-    if (e.key === 'token' || e.key === USER_CACHE_KEY) checkAuth();
+    if (e.key === 'token' || e.key === USER_CACHE_KEY) {
+        checkAuth();
+    }
 });
-
-// =================================
-// 🔔 الاستماع لتغيّرات Supabase Auth
-// =================================
-(async function listenToAuth() {
-    try {
-        const supa = await getSupabase();
-        supa.auth.onAuthStateChange((event, session) => {
-            console.log('Auth event:', event);
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                checkAuth();
-            } else if (event === 'SIGNED_OUT') {
-                clearUserCache();
-                localStorage.removeItem('token');
-                renderAuthUI(null);
-            }
-        });
-    } catch (e) { console.warn('Auth listener failed:', e); }
-})();
 
 // =================================
 // تهيئة
