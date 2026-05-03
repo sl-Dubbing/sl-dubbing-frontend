@@ -6,70 +6,143 @@
   <title>ملفاتي | sl-Dubbing</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .file-manager-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .folder-section { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .folder-card { background: #f8f9fa; border: 1px solid #eee; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; }
+    .folder-card:hover { background: #eef2ff; border-color: #007aff; }
+    .file-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; gap: 15px; }
+    .file-actions { margin-right: auto; display: flex; gap: 8px; }
+    .expiry-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: #fff3cd; color: #856404; }
+  </style>
 </head>
 <body>
+
 <header class="top-bar">
   <div style="display:flex;align-items:center;gap:12px;">
     <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i><span>القائمة</span></button>
     <div class="top-logo"><h2>sl-Dubbing</h2></div>
   </div>
-  <span class="account-badge" id="topAccountBadge">جاري التحميل...</span>
 </header>
+
 <div class="overlay" id="overlay"></div>
+
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-user-section" id="authSection"></div>
   <nav class="sidebar-nav">
     <ul>
-      <li><a href="index.html"><i class="fas fa-home"></i> الرئيسية</a></li>
       <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
       <li><a href="history.html" class="active"><i class="fas fa-folder-open"></i> ملفاتي</a></li>
     </ul>
   </nav>
 </aside>
+
 <main class="main-content">
   <div class="container">
-    <header class="main-header">
-      <h1>مجلد ملفاتي المدبلجة</h1>
-      <p class="lead">هنا تجد جميع ملفاتك التي تمت معالجتها سابقاً</p>
-    </header>
+    <div class="file-manager-header">
+      <h1>مجلد ملفاتي</h1>
+      <button class="btn-secondary" onclick="createNewFolder()"><i class="fas fa-folder-plus"></i> مجلد جديد</button>
+    </div>
+
+    <div id="folderContainer" class="folder-section">
+      <!-- المجلدات ستظهر هنا -->
+    </div>
+
     <section class="card">
-      <div id="historyList" class="history-grid">
-        <div style="text-align:center;padding:40px;color:#9aa1ac;"><i class="fas fa-spinner fa-spin"></i> جاري فتح المجلد...</div>
+      <h3 id="currentFolderName">كافة الملفات</h3>
+      <div id="fileList">
+        <div style="text-align:center;padding:40px;color:#9aa1ac;">جاري فتح المجلد...</div>
       </div>
     </section>
   </div>
 </main>
+
 <script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script>
-  async function loadMyFiles() {
+  let allFiles = [];
+  let folders = new Set(['الرئيسية']);
+
+  async function loadFileManager() {
     const token = localStorage.getItem('token');
-    const listEl = document.getElementById('historyList');
-    if (!token) { listEl.innerHTML = 'يرجى تسجيل الدخول.'; return; }
+    if (!token) return;
+
     try {
         const res = await fetch(`${window.API_BASE}/api/history`, { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
-        if (!data.history || data.history.length === 0) { listEl.innerHTML = 'المجلد فارغ حالياً.'; return; }
-        listEl.innerHTML = data.history.map(item => `
-            <div class="result-item" style="margin-bottom:15px; padding:15px; border:1px solid #eee; border-radius:12px; background: #fff;">
-                <div class="result-item-header" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-weight:600;"><i class="fas fa-file-video"></i> ${escapeHtml(item.filename)}</span>
-                    <span class="status-badge ${item.status}">${item.status === 'completed' ? '✓ جاهز' : '⏳ معالجة'}</span>
-                </div>
-                <div style="margin-top:10px;">
-                    <div style="font-size:0.8rem; color:#888;">اللغة: ${item.lang.toUpperCase()} | التاريخ: ${new Date(item.created_at).toLocaleDateString()}</div>
-                    ${item.audio_url ? `
-                        <audio controls src="${item.audio_url}" style="width:100%; margin-top:10px; height:30px;"></audio>
-                        <a href="${item.audio_url}" download class="btn-download" style="display:inline-block; margin-top:8px; font-size:0.85rem; background:#007aff; color:#fff; padding:6px 12px; border-radius:6px; text-decoration:none;">
-                            <i class="fas fa-download"></i> تحميل النتيجة
-                        </a>
-                    ` : ''}
-                </div>
-            </div>
-        `).join('');
-    } catch (e) { listEl.innerHTML = 'حدث خطأ أثناء فتح المجلد.'; }
+        allFiles = data.history;
+        
+        allFiles.forEach(f => folders.add(f.folder));
+        renderFolders();
+        renderFiles('الرئيسية');
+    } catch (e) { console.error(e); }
   }
-  document.addEventListener('DOMContentLoaded', loadMyFiles);
+
+  function renderFolders() {
+    const container = document.getElementById('folderContainer');
+    container.innerHTML = Array.from(folders).map(name => `
+      <div class="folder-card" onclick="renderFiles('${name}')">
+        <i class="fas fa-folder" style="font-size: 2rem; color: #ffca28; margin-bottom: 10px; display: block;"></i>
+        <span>${name}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderFiles(folderName) {
+    document.getElementById('currentFolderName').innerText = `مجلد: ${folderName}`;
+    const listEl = document.getElementById('fileList');
+    const filtered = allFiles.filter(f => f.folder === folderName);
+
+    if (filtered.length === 0) {
+        listEl.innerHTML = '<div style="padding:20px; color:#9aa1ac;">لا توجد ملفات في هذا المجلد.</div>';
+        return;
+    }
+
+    listEl.innerHTML = filtered.map(f => `
+      <div class="file-row">
+        <i class="fas fa-file-video" style="color:#6366f1;"></i>
+        <div style="flex:1;">
+          <div style="font-weight:600;">${escapeHtml(f.name)} <span class="expiry-tag">يحذف بعد ${f.expires_in} يوم</span></div>
+          <div style="font-size:0.75rem; color:#888;">اللغة: ${f.lang} | التاريخ: ${new Date(f.created_at).toLocaleDateString()}</div>
+        </div>
+        <div class="file-actions">
+          ${f.audio_url ? `<button class="btn-icon" onclick="window.open('${f.audio_url}')"><i class="fas fa-play"></i></button>` : ''}
+          <button class="btn-icon" onclick="renameFile(${f.id})"><i class="fas fa-edit"></i></button>
+          <button class="btn-icon" onclick="moveFile(${f.id})"><i class="fas fa-exchange-alt"></i></button>
+          ${f.audio_url ? `<a href="${f.audio_url}" download class="btn-icon"><i class="fas fa-download"></i></a>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function renameFile(id) {
+    const newName = prompt("أدخل الاسم الجديد للملف:");
+    if (!newName) return;
+    const res = await fetch(`${window.API_BASE}/api/file/rename`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ id, new_name: newName })
+    });
+    if (res.ok) loadFileManager();
+  }
+
+  async function moveFile(id) {
+    const folderName = prompt("إلى أي مجلد تريد النقل؟ (الرئيسية، العمل، إلخ...)");
+    if (!folderName) return;
+    const res = await fetch(`${window.API_BASE}/api/file/move`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ id, folder_name: folderName })
+    });
+    if (res.ok) { folders.add(folderName); loadFileManager(); }
+  }
+
+  function createNewFolder() {
+    const name = prompt("اسم المجلد الجديد:");
+    if (name) { folders.add(name); renderFolders(); }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadFileManager);
 </script>
 </body>
 </html>
