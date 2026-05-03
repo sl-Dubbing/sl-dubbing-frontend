@@ -112,12 +112,13 @@
 
 <div id="toasts" aria-live="polite" aria-atomic="true"></div>
 
-<script>
 (function() {
     'use strict';
 
     const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-    const SUPABASE_KEY = window.__SUPABASE_KEY__ || '';
+    
+    // ✅ الإصلاح هنا: قراءة المفتاح من الكائن الموحد الذي عرفناه في config.js
+    const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || window.__SUPABASE_KEY__ || '';
 
     // Validation helpers
     function isValidEmail(email) {
@@ -126,6 +127,7 @@
 
     function showToast(msg, type) {
         const container = document.getElementById('toasts');
+        if (!container) return;
         const box = document.createElement('div');
         box.className = 'toast ' + (type || '');
         box.textContent = msg;
@@ -155,7 +157,7 @@
     function getSupabase() {
         if (supabaseClient) return supabaseClient;
         if (!SUPABASE_KEY) {
-            showToast('مفتاح Supabase غير مُعد. تواصل مع المشرف.', 'error');
+            showToast('مفتاح Supabase غير مُعد. تأكد من ملف config.js', 'error');
             throw new Error('Supabase key not configured');
         }
         if (!window.supabase) {
@@ -174,7 +176,7 @@
             if (error) throw error;
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
-                window.location.href = 'index.html';
+                window.location.href = 'dubbing.html'; // التوجه لاستوديو الدبلجة مباشرة
             }
         } catch (e) {
             console.error('Session check failed:', e);
@@ -185,7 +187,7 @@
     async function signInWithGoogle() {
         try {
             const supa = getSupabase();
-            const redirectTo = window.location.origin + window.location.pathname.replace('login.html', 'index.html');
+            const redirectTo = window.location.origin + window.location.pathname.replace('login.html', 'dubbing.html');
             const { data, error } = await supa.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo }
@@ -228,16 +230,11 @@
             const supa = getSupabase();
             const { data, error } = await supa.auth.signInWithPassword({ 
                 email, 
-                password,
-                options: { remember: rememberMe }
+                password
             });
 
             if (error) {
-                if (error.message.includes('Invalid login')) {
-                    showToast('البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error');
-                } else {
-                    showToast(error.message, 'error');
-                }
+                showToast(error.message.includes('Invalid login') ? 'البريد أو كلمة المرور غير صحيحة' : error.message, 'error');
                 btn.textContent = 'تسجيل الدخول';
                 btn.disabled = false;
                 return;
@@ -246,9 +243,11 @@
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
                 showToast('تم تسجيل الدخول بنجاح!', 'success');
-                const targetPage = sessionStorage.getItem('returnUrl') || 'index.html';
-                sessionStorage.removeItem('returnUrl');
-                setTimeout(() => { window.location.href = targetPage; }, 500);
+                // تحديث الكاش ليراه ملف shared.js فوراً
+                if (window.saveUserCache) {
+                    window.saveUserCache({ email: data.session.user.email, id: data.session.user.id });
+                }
+                setTimeout(() => { window.location.href = 'dubbing.html'; }, 500);
             }
 
         } catch (err) {
@@ -259,7 +258,6 @@
         }
     }
 
-    // Event listeners
     document.addEventListener('DOMContentLoaded', () => {
         checkSession();
         document.getElementById('googleBtn').addEventListener('click', signInWithGoogle);
