@@ -1,4 +1,4 @@
-// dubbing.js — V5.0 Direct Upload + Parallel Multi-Lang
+// dubbing.js — V5.1 Direct Upload + Parallel Multi-Lang + History Integration
 
 async function startDubbing() {
     const file = document.getElementById('mediaFile')?.files?.[0];
@@ -6,10 +6,11 @@ async function startDubbing() {
     const customVoice = document.getElementById('customVoice');
     const token = localStorage.getItem('token');
 
-    if (!token) return showToast('يرجى تسجيل الدخول', '#f59e0b');
-    if (!file) return showToast('ارفع ملفاً أولاً', '#ef4444');
+    // 1. التحقق من المدخلات الأساسية
+    if (!token) return showToast('يرجى تسجيل الدخول أولاً', '#f59e0b');
+    if (!file) return showToast('يرجى اختيار ملف فيديو أو صوت', '#ef4444');
     if (!window.selectedLangs || window.selectedLangs.size === 0)
-        return showToast('اختر لغة', '#ef4444');
+        return showToast('يرجى اختيار لغة واحدة على الأقل', '#ef4444');
 
     const dubBtn = document.getElementById('dubBtn');
     const progressArea = document.getElementById('progressArea');
@@ -18,16 +19,17 @@ async function startDubbing() {
     const statusTxt = document.getElementById('statusTxt');
     const progFill = document.getElementById('progFill');
 
+    // تجهيز الواجهة للبدء
     dubBtn.disabled = true;
     progressArea.style.display = 'block';
     resultsCard.style.display = 'block';
     resultsList.innerHTML = '';
     progFill.style.width = '5%';
-    statusTxt.innerText = '⚡ تجهيز الرفع...';
+    statusTxt.innerText = '⚡ جاري تجهيز الرابط الآمن...';
 
     try {
         // ============================================
-        // 🚀 STEP 1: طلب presigned URL من Railway
+        // 🚀 الخطوة 1: طلب رابط رفع مباشر (Presigned URL)
         // ============================================
         const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
             method: 'POST',
@@ -49,26 +51,27 @@ async function startDubbing() {
 
         const { upload_url, file_key } = urlData;
         progFill.style.width = '10%';
-        statusTxt.innerText = `📤 رفع ${(file.size/1024/1024).toFixed(1)}MB إلى R2 مباشرة...`;
+        statusTxt.innerText = `📤 جاري الرفع المباشر (${(file.size/1024/1024).toFixed(1)}MB)...`;
 
         // ============================================
-        // 🚀 STEP 2: رفع مباشر لـ R2 (لا يمر بـ Railway!)
+        // 🚀 الخطوة 2: الرفع المباشر إلى Cloudflare R2
         // ============================================
         await uploadToR2(upload_url, file, (pct) => {
             progFill.style.width = (10 + pct * 0.5) + '%';
-            statusTxt.innerText = `📤 رفع ${pct.toFixed(0)}%...`;
+            statusTxt.innerText = `📤 اكتمل الرفع بنسبة ${pct.toFixed(0)}%...`;
         }, file.type);
 
         progFill.style.width = '60%';
-        statusTxt.innerText = '✅ الرفع اكتمل، بدء المعالجة...';
+        statusTxt.innerText = '✅ اكتمل الرفع، يبدأ الآن سحر الذكاء الاصطناعي...';
 
         // ============================================
-        // 🚀 STEP 3: إرسال طلب الدبلجة لكل لغة بالتوازي
+        // 🚀 الخطوة 3: إرسال طلبات الدبلجة بالتوازي
         // ============================================
         const langs = [...window.selectedLangs];
         const total = langs.length;
         let completed = 0;
 
+        // إنشاء بطاقات النتائج في الواجهة مسبقاً
         langs.forEach(code => {
             const lang = window.LANGUAGES?.find(l => l.code === code);
             if (!lang) return;
@@ -81,13 +84,14 @@ async function startDubbing() {
                     <span class="result-item-name">${lang.name_ar}</span>
                     <span class="result-item-status" id="status-${code}">في الانتظار</span>
                 </div>
-                <div id="body-${code}" style="font-size:0.85rem;color:#9aa1ac;padding:6px;">⏳ جاري الإرسال...</div>
+                <div id="body-${code}" style="font-size:0.85rem;color:#9aa1ac;padding:6px;">⏳ جاري إرسال الطلب...</div>
             `;
             resultsList.appendChild(card);
         });
 
+        // تحضير بيانات الصوت المخصص إن وجد
         let sample_b64 = '';
-        let voice_id_val = 'source';
+        let voice_id_val = 'original'; // القيمة الافتراضية
 
         if (customVoice?.files?.[0]) {
             sample_b64 = await fileToBase64(customVoice.files[0]);
@@ -96,13 +100,14 @@ async function startDubbing() {
             voice_id_val = voiceSelect.value;
         }
 
+        // تشغيل الطلبات لكل اللغات في نفس الوقت
         const promises = langs.map(async (langCode) => {
             const lang = window.LANGUAGES?.find(l => l.code === langCode);
             const statusEl = document.getElementById(`status-${langCode}`);
             const bodyEl = document.getElementById(`body-${langCode}`);
 
             try {
-                statusEl.textContent = 'يرسل...';
+                statusEl.textContent = 'جاري الإرسال...';
 
                 const res = await fetch(`${window.API_BASE}/api/dub`, {
                     method: 'POST',
@@ -112,27 +117,29 @@ async function startDubbing() {
                     },
                     body: JSON.stringify({
                         file_key: file_key,
+                        filename: file.name, // مهم جداً لحفظ الاسم في "ملفاتي"
                         lang: langCode,
                         voice_id: voice_id_val,
                         sample_b64: sample_b64,
-                        engine: '' 
+                        engine: 'auto'
                     })
                 });
 
                 const data = await res.json().catch(() => ({}));
-                if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+                if (!res.ok || !data.success) throw new Error(data.error || `Error ${res.status}`);
 
-                statusEl.textContent = 'يعالج...';
-                bodyEl.innerHTML = '<div style="font-size:0.85rem;color:#2563eb;padding:6px;">🎬 Modal تعالج...</div>';
+                statusEl.textContent = 'جاري المعالجة...';
+                bodyEl.innerHTML = '<div style="font-size:0.85rem;color:#2563eb;padding:6px;">🎬 جاري العمل على الملف...</div>';
 
+                // الانتظار حتى اكتمال المهمة (Polling)
                 const finalData = await waitForJob(data.job_id, token, statusEl);
 
-                statusEl.textContent = '✓ مكتمل';
+                statusEl.textContent = '✓ اكتمل';
                 statusEl.classList.add('success');
                 bodyEl.innerHTML = `
-                    <audio controls src="${finalData.audio_url}"></audio>
-                    <a href="${finalData.audio_url}" download="dub_${langCode}_${Date.now()}.wav" class="btn-download" style="margin-top:8px;">
-                        <i class="fas fa-download"></i> تحميل ${lang.name_ar}
+                    <audio controls src="${finalData.audio_url}" style="width:100%; height:35px;"></audio>
+                    <a href="${finalData.audio_url}" download="dub_${langCode}.wav" class="btn-download" style="margin-top:8px; display:inline-block;">
+                        <i class="fas fa-download"></i> تحميل ملف الـ ${lang.name_ar}
                     </a>
                 `;
             } catch (e) {
@@ -144,27 +151,32 @@ async function startDubbing() {
                 completed++;
                 const pct = 60 + Math.round((completed / total) * 40);
                 progFill.style.width = pct + '%';
-                statusTxt.innerText = `${completed}/${total} لغة مكتملة`;
+                statusTxt.innerText = `تمت معالجة ${completed} من أصل ${total} لغة`;
             }
         });
 
         await Promise.all(promises);
 
         progFill.style.width = '100%';
-        statusTxt.innerText = `✓ اكتملت ${total} لغة`;
-        showToast(`تمت دبلجة ${total} لغة`, '#10b981');
+        statusTxt.innerText = `✓ اكتملت الدبلجة لـ ${total} لغة بنجاح!`;
+        showToast(`تمت الدبلجة بنجاح! يمكنك العثور على الملفات في "ملفاتي"`, '#10b981');
+        
+        // تحديث الرصيد في الواجهة
         if (typeof checkAuth === 'function') checkAuth();
 
     } catch (e) {
         console.error('Dubbing error:', e);
-        showToast(e.message || 'فشل الرفع', '#ef4444');
-        statusTxt.innerText = '✗ ' + e.message;
+        showToast(e.message || 'حدث خطأ أثناء المعالجة', '#ef4444');
+        statusTxt.innerText = '✗ فشل العملية: ' + e.message;
         progFill.style.background = '#ef4444';
     } finally {
         dubBtn.disabled = false;
     }
 }
 
+/**
+ * دالة رفع الملف مباشرة إلى R2 باستخدام Presigned URL
+ */
 function uploadToR2(presignedUrl, file, onProgress, contentType) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -179,20 +191,23 @@ function uploadToR2(presignedUrl, file, onProgress, contentType) {
 
         xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`فشل الرفع (${xhr.status}): ${xhr.responseText.substring(0, 100)}`));
+            else reject(new Error(`فشل الرفع (${xhr.status})`));
         };
 
-        xhr.onerror = () => reject(new Error('خطأ شبكة - تحقق من CORS في R2'));
+        xhr.onerror = () => reject(new Error('خطأ في الشبكة أثناء الرفع'));
         xhr.ontimeout = () => reject(new Error('انتهت مهلة الرفع'));
 
-        xhr.timeout = 30 * 60 * 1000; 
+        xhr.timeout = 60 * 60 * 1000; // مهلة ساعة واحدة للملفات الكبيرة
         xhr.send(file);
     });
 }
 
+/**
+ * دالة مراقبة حالة المهمة حتى تكتمل
+ */
 async function waitForJob(jobId, token, statusEl) {
     const start = Date.now();
-    const TIMEOUT = 30 * 60 * 1000;
+    const TIMEOUT = 30 * 60 * 1000; // مهلة 30 دقيقة
 
     while (Date.now() - start < TIMEOUT) {
         try {
@@ -200,18 +215,25 @@ async function waitForJob(jobId, token, statusEl) {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
+            
             if (data.status === 'completed') return data;
-            if (data.status === 'failed') throw new Error(data.error || 'فشلت المعالجة');
-            if (statusEl) statusEl.textContent = `يعالج ${Math.round((Date.now()-start)/1000)}ث`;
+            if (data.status === 'failed') throw new Error(data.error || 'فشلت معالجة الملف');
+            
+            // تحديث عداد الثواني للمستخدم
+            if (statusEl) statusEl.textContent = `جاري المعالجة (${Math.round((Date.now()-start)/1000)}ث)`;
+            
         } catch (e) {
             if (e.message.includes('فشلت')) throw e;
-            console.warn('Poll error:', e);
+            console.warn('Polling status...', e);
         }
-        await new Promise(r => setTimeout(r, 3000));
+        await new Promise(r => setTimeout(r, 3000)); // فحص كل 3 ثوانٍ
     }
-    throw new Error('انتهت المهلة');
+    throw new Error('انتهت مهلة الانتظار');
 }
 
+/**
+ * تحويل الملف إلى Base64 لإرسال عينات الصوت المخصصة
+ */
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
         const r = new FileReader();
@@ -221,16 +243,13 @@ function fileToBase64(file) {
     });
 }
 
-function handleCustomVoice(input) {
-    const txt = document.getElementById('customVoiceTxt');
-    if (input.files && input.files[0]) {
-        if (txt) { txt.textContent = '✓ ' + input.files[0].name; txt.style.color = '#10b981'; }
-    }
-}
-
+// ربط الزر بالدالة عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('dubBtn')?.addEventListener('click', startDubbing);
+    const dubBtn = document.getElementById('dubBtn');
+    if (dubBtn) {
+        dubBtn.addEventListener('click', startDubbing);
+    }
 });
 
+// تصدير الدوال للنافذة العالمية
 window.startDubbing = startDubbing;
-window.handleCustomVoice = handleCustomVoice;
