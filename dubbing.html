@@ -6,6 +6,10 @@
   <title>sl-Dubbing | استوديو الدبلجة</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
+  
+  <!-- 🌟 مكتبة الموجات الصوتية (WaveSurfer) -->
+  <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+
   <style>
     /* التنسيقات العامة والخلفية */
     body { 
@@ -42,11 +46,11 @@
     
     /* شريط الأدوات السفلي */
     .action-bar { 
-      display: flex; justify-content: space-between; align-items: center; 
+      display: flex; justify-content: space-between; align-items: flex-start; 
       margin-top: 20px; width: 100%; position: relative;
     }
 
-    .left-actions { display: flex; gap: 15px; }
+    .left-actions { display: flex; gap: 15px; margin-top: 5px; }
 
     /* الأزرار (اللغة والصوت) */
     .icon-btn { 
@@ -60,7 +64,7 @@
     .arrow-ico { font-size: 0.8rem; color: #111827; font-weight: 900; transition: transform 0.3s ease; }
     .icon-btn.active .arrow-ico { transform: rotate(180deg); } /* ينعكس للأعلى عند الفتح */
     
-    /* القوائم المنسدلة (تفتح للأسفل الآن) */
+    /* القوائم المنسدلة (تفتح للأسفل) */
     .dropdown-box { 
       position: absolute; top: calc(100% + 12px); bottom: auto; left: 0; width: 280px; background: #fff; 
       border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; 
@@ -80,10 +84,10 @@
     }
     .custom-voice-label i.fa-times { float: left; cursor: pointer; color: #ef4444; padding: 2px; }
 
-    /* صندوق Lip-Sync */
+    /* صناديق أزرار التبديل (مزامنة الشفاه والفيديو) */
     .lipsync-box { 
       display: flex; align-items: center; gap: 12px; background: #fff; 
-      padding: 10px 18px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f3f4f6;
+      border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f3f4f6;
     }
     .lipsync-box span { font-family: Arial, sans-serif; font-weight: bold; font-size: 0.9rem; color: #000; }
     
@@ -101,7 +105,6 @@
 </head>
 <body>
 
-<!-- تمت إعادة الشريط العلوي لشكله الأصلي ليعمل مع shared.js -->
 <header class="top-bar">
   <div style="display:flex;align-items:center;gap:12px;">
     <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i><span>القائمة</span></button>
@@ -110,7 +113,6 @@
   <span class="account-badge" id="topAccountBadge">حساب تجريبي</span>
 </header>
 
-<!-- تمت إعادة الشريط الجانبي لشكله الأصلي -->
 <div class="overlay" id="overlay"></div>
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-user-section" id="authSection">
@@ -165,22 +167,36 @@
     <!-- شريط الأدوات -->
     <div class="action-bar" id="actionBar">
       
-      <!-- القسم الأيمن: Lip-Sync -->
-      <div class="lipsync-box" id="lipsyncOpt">
-        <label class="switch">
-          <input type="checkbox" id="lipsyncToggle">
-          <span class="slider"></span>
-        </label>
-        <span>Lip-Sync</span>
+      <!-- القسم الأيمن: أزرار التبديل (الفيديو و مزامنة الشفاه) -->
+      <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
+        
+        <!-- زر إخراج فيديو (الجديد) -->
+        <div class="lipsync-box" id="videoOpt" style="padding: 6px 14px;">
+          <label class="switch">
+            <input type="checkbox" id="videoToggle" checked>
+            <span class="slider"></span>
+          </label>
+          <span style="font-size: 0.95rem;">Video</span>
+        </div>
+
+        <!-- زر Lip-Sync -->
+        <div class="lipsync-box" id="lipsyncOpt" style="padding: 6px 14px;">
+          <label class="switch">
+            <input type="checkbox" id="lipsyncToggle">
+            <span class="slider"></span>
+          </label>
+          <span style="font-size: 0.95rem;">Lip-Sync</span>
+        </div>
+
       </div>
 
-      <!-- القسم الأيسر: الأيقونات -->
+      <!-- القسم الأيسر: الأيقونات (اللغات والصوت) -->
       <div class="left-actions">
         
         <!-- أيقونة الصوت -->
         <div class="icon-btn" id="voiceTrigger" onclick="toggleDrop('voiceTrigger')">
           <i class="fas fa-head-side-voice main-ico"></i>
-          <i class="fas fa-chevron-down arrow-ico"></i> <!-- تم تغيير السهم الافتراضي للأسفل -->
+          <i class="fas fa-chevron-down arrow-ico"></i>
           <div class="dropdown-box" onclick="event.stopPropagation()">
             <h4 style="margin-bottom: 12px; color: #111827; font-size: 1.1rem;">نبرة الصوت</h4>
             <select id="voiceSelect" class="styled-select" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; cursor: pointer;">
@@ -201,7 +217,7 @@
         <!-- أيقونة اللغة -->
         <div class="icon-btn" id="langTrigger" onclick="toggleDrop('langTrigger')">
           <i class="fas fa-globe main-ico"></i>
-          <i class="fas fa-chevron-down arrow-ico"></i> <!-- تم تغيير السهم الافتراضي للأسفل -->
+          <i class="fas fa-chevron-down arrow-ico"></i>
           <div class="dropdown-box" onclick="event.stopPropagation()">
             <h4 style="margin-bottom: 12px; color: #111827; font-size: 1.1rem;">اختر لغات الدبلجة</h4>
             <div id="selectedLangsDisplay" class="selected-langs-display"></div>
@@ -222,12 +238,15 @@
       <p id="statusTxt" style="margin-top: 10px; font-weight: bold; color: #4b5563;">جاري الرفع...</p>
     </div>
 
+    <!-- كارت النتائج (سيتم تعبئته بواسطة الجافاسكريبت) -->
+    <div id="resultsCard" style="display:none; margin-top: 20px; width: 100%;">
+       <div id="resultsList" style="display: flex; flex-direction: column; gap: 15px;"></div>
+    </div>
+
   </div>
 </main>
 
 <script>
-  // أزلت كود الشريط الجانبي من هنا لأن ملف shared.js سيتكفل به الآن بشكل طبيعي
-
   // منطق فتح وإغلاق القوائم وتدوير السهم
   function toggleDrop(id) {
     const el = document.getElementById(id);
@@ -275,7 +294,7 @@
     voiceSelect.value = 'source'; 
   }
 
-  // منطق رفع الوسائط
+  // المعاينة الأولية للملف عند اختياره
   const fileInput = document.getElementById('mediaFile');
   const previewContainer = document.getElementById('previewContainer');
   const uploadPlaceholder = document.getElementById('uploadPlaceholder');
