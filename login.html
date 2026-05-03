@@ -10,7 +10,8 @@
 
     <!-- استدعاء مكتبة Supabase (v2) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <!-- ⚠️ مفتاح Supabase من ملف منفصل (لا ترفعه على GitHub) -->
+    
+    <!-- ✅ مفتاح Supabase يجب أن يحمل أولاً -->
     <script src="js/config.js"></script>
 
     <style>
@@ -112,13 +113,22 @@
 
 <div id="toasts" aria-live="polite" aria-atomic="true"></div>
 
+<script>
 (function() {
     'use strict';
 
     const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
     
-    // ✅ الإصلاح هنا: قراءة المفتاح من الكائن الموحد الذي عرفناه في config.js
-    const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || window.__SUPABASE_KEY__ || '';
+    // ✅ الإصلاح الجذري: دالة للحصول على المفتاح بأمان
+    function getSupabaseKey() {
+        if (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_KEY) {
+            return window.APP_CONFIG.SUPABASE_KEY;
+        }
+        if (window.__SUPABASE_KEY__) {
+            return window.__SUPABASE_KEY__;
+        }
+        return '';
+    }
 
     // Validation helpers
     function isValidEmail(email) {
@@ -156,7 +166,10 @@
     let supabaseClient = null;
     function getSupabase() {
         if (supabaseClient) return supabaseClient;
-        if (!SUPABASE_KEY) {
+        
+        const key = getSupabaseKey();
+        
+        if (!key) {
             showToast('مفتاح Supabase غير مُعد. تأكد من ملف config.js', 'error');
             throw new Error('Supabase key not configured');
         }
@@ -164,7 +177,7 @@
             showToast('فشل تحميل مكتبة Supabase. أعد تحميل الصفحة.', 'error');
             throw new Error('Supabase SDK not loaded');
         }
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, key);
         return supabaseClient;
     }
 
@@ -176,7 +189,7 @@
             if (error) throw error;
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
-                window.location.href = 'dubbing.html'; // التوجه لاستوديو الدبلجة مباشرة
+                window.location.href = 'dubbing.html';
             }
         } catch (e) {
             console.error('Session check failed:', e);
@@ -230,7 +243,8 @@
             const supa = getSupabase();
             const { data, error } = await supa.auth.signInWithPassword({ 
                 email, 
-                password
+                password,
+                options: { remember: rememberMe }
             });
 
             if (error) {
@@ -243,11 +257,12 @@
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
                 showToast('تم تسجيل الدخول بنجاح!', 'success');
-                // تحديث الكاش ليراه ملف shared.js فوراً
-                if (window.saveUserCache) {
-                    window.saveUserCache({ email: data.session.user.email, id: data.session.user.id });
-                }
-                setTimeout(() => { window.location.href = 'dubbing.html'; }, 500);
+                
+                // تحديث الـ Return URL
+                const targetPage = sessionStorage.getItem('returnUrl') || 'dubbing.html';
+                sessionStorage.removeItem('returnUrl');
+                
+                setTimeout(() => { window.location.href = targetPage; }, 500);
             }
 
         } catch (err) {
