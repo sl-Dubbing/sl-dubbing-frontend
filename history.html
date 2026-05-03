@@ -7,13 +7,25 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .file-manager-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .folder-section { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
-    .folder-card { background: #f8f9fa; border: 1px solid #eee; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; }
-    .folder-card:hover { background: #eef2ff; border-color: #007aff; }
-    .file-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; gap: 15px; }
-    .file-actions { margin-right: auto; display: flex; gap: 8px; }
-    .expiry-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: #fff3cd; color: #856404; }
+    .fm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .folder-item { background: #fff; border: 1px solid #eee; padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; position: relative; }
+    .folder-item:hover { border-color: #007aff; background: #f0f7ff; }
+    .folder-item i { font-size: 2.5rem; color: #ffca28; margin-bottom: 10px; display: block; }
+    .folder-item.active { border: 2px solid #007aff; background: #eef2ff; }
+    
+    .file-list-card { background: #fff; border-radius: 15px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .file-item { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #f5f5f5; transition: 0.2s; }
+    .file-item:hover { background: #fafafa; }
+    .file-icon { font-size: 1.5rem; color: #6366f1; margin-left: 15px; }
+    .file-info { flex: 1; }
+    .file-name { font-weight: 600; display: block; margin-bottom: 4px; color: #1d1d1f; }
+    .file-meta { font-size: 0.75rem; color: #86868b; }
+    .file-actions { display: flex; gap: 10px; }
+    
+    .btn-action { background: #f5f5f7; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: #424245; transition: 0.2s; }
+    .btn-action:hover { background: #007aff; color: #fff; }
+    .expiry-badge { font-size: 0.7rem; background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; margin-right: 10px; }
   </style>
 </head>
 <body>
@@ -39,110 +51,137 @@
 
 <main class="main-content">
   <div class="container">
-    <div class="file-manager-header">
-      <h1>مجلد ملفاتي</h1>
-      <button class="btn-secondary" onclick="createNewFolder()"><i class="fas fa-folder-plus"></i> مجلد جديد</button>
-    </div>
-
-    <div id="folderContainer" class="folder-section">
-      <!-- المجلدات ستظهر هنا -->
-    </div>
-
-    <section class="card">
-      <h3 id="currentFolderName">كافة الملفات</h3>
-      <div id="fileList">
-        <div style="text-align:center;padding:40px;color:#9aa1ac;">جاري فتح المجلد...</div>
+    <div class="fm-header">
+      <div>
+        <h1>مدير الملفات</h1>
+        <p style="color:#86868b; font-size:0.9rem;">إدارة، تنظيم، وتحميل أعمالك السابقة</p>
       </div>
-    </section>
+      <button class="btn-primary" onclick="createNewFolder()" style="padding: 10px 20px; border-radius: 10px; border:none; background:#007aff; color:#fff; cursor:pointer;">
+        <i class="fas fa-folder-plus"></i> مجلد جديد
+      </button>
+    </div>
+
+    <div class="folder-grid" id="folderGrid">
+      <!-- المجلدات ستنشأ هنا -->
+    </div>
+
+    <div class="file-list-card">
+      <div style="padding: 15px 20px; background: #f9f9fb; border-bottom: 1px solid #eee; font-weight: 600;">
+        الملفات في مجلد: <span id="activeFolderName">الرئيسية</span>
+      </div>
+      <div id="fileList">
+        <div style="text-align:center;padding:50px;color:#9aa1ac;">
+          <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>جاري فتح المجلدات...
+        </div>
+      </div>
+    </div>
   </div>
 </main>
 
 <script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script>
-  let allFiles = [];
+  let allData = [];
+  let currentFolder = 'الرئيسية';
   let folders = new Set(['الرئيسية']);
 
-  async function loadFileManager() {
+  async function loadManager() {
     const token = localStorage.getItem('token');
     if (!token) return;
 
     try {
-        const res = await fetch(`${window.API_BASE}/api/history`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const data = await res.json();
-        allFiles = data.history;
-        
-        allFiles.forEach(f => folders.add(f.folder));
-        renderFolders();
-        renderFiles('الرئيسية');
-    } catch (e) { console.error(e); }
+      const res = await fetch(`${window.API_BASE}/api/history`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      allData = data.history || [];
+      
+      // استخراج المجلدات الموجودة فعلياً
+      allData.forEach(item => { if(item.folder) folders.add(item.folder); });
+      
+      renderFolders();
+      renderFiles();
+    } catch (e) {
+      showToast("خطأ في الاتصال بالسيرفر", "error");
+    }
   }
 
   function renderFolders() {
-    const container = document.getElementById('folderContainer');
-    container.innerHTML = Array.from(folders).map(name => `
-      <div class="folder-card" onclick="renderFiles('${name}')">
-        <i class="fas fa-folder" style="font-size: 2rem; color: #ffca28; margin-bottom: 10px; display: block;"></i>
-        <span>${name}</span>
+    const grid = document.getElementById('folderGrid');
+    grid.innerHTML = Array.from(folders).map(name => `
+      <div class="folder-item ${currentFolder === name ? 'active' : ''}" onclick="switchFolder('${name}')">
+        <i class="fas fa-folder"></i>
+        <span>${escapeHtml(name)}</span>
       </div>
     `).join('');
   }
 
-  function renderFiles(folderName) {
-    document.getElementById('currentFolderName').innerText = `مجلد: ${folderName}`;
-    const listEl = document.getElementById('fileList');
-    const filtered = allFiles.filter(f => f.folder === folderName);
+  function switchFolder(name) {
+    currentFolder = name;
+    document.getElementById('activeFolderName').innerText = name;
+    renderFolders();
+    renderFiles();
+  }
+
+  function renderFiles() {
+    const list = document.getElementById('fileList');
+    const filtered = allData.filter(f => f.folder === currentFolder);
 
     if (filtered.length === 0) {
-        listEl.innerHTML = '<div style="padding:20px; color:#9aa1ac;">لا توجد ملفات في هذا المجلد.</div>';
-        return;
+      list.innerHTML = '<div style="text-align:center;padding:50px;color:#9aa1ac;">المجلد فارغ</div>';
+      return;
     }
 
-    listEl.innerHTML = filtered.map(f => `
-      <div class="file-row">
-        <i class="fas fa-file-video" style="color:#6366f1;"></i>
-        <div style="flex:1;">
-          <div style="font-weight:600;">${escapeHtml(f.name)} <span class="expiry-tag">يحذف بعد ${f.expires_in} يوم</span></div>
-          <div style="font-size:0.75rem; color:#888;">اللغة: ${f.lang} | التاريخ: ${new Date(f.created_at).toLocaleDateString()}</div>
+    list.innerHTML = filtered.map(f => `
+      <div class="file-item">
+        <i class="fas fa-file-audio file-icon"></i>
+        <div class="file-info">
+          <span class="file-name">${escapeHtml(f.name)} <span class="expiry-badge">حذف خلال ${f.expires_in} يوم</span></span>
+          <span class="file-meta">اللغة: ${f.lang.toUpperCase()} | التاريخ: ${new Date(f.created_at).toLocaleDateString('ar-SA')}</span>
         </div>
         <div class="file-actions">
-          ${f.audio_url ? `<button class="btn-icon" onclick="window.open('${f.audio_url}')"><i class="fas fa-play"></i></button>` : ''}
-          <button class="btn-icon" onclick="renameFile(${f.id})"><i class="fas fa-edit"></i></button>
-          <button class="btn-icon" onclick="moveFile(${f.id})"><i class="fas fa-exchange-alt"></i></button>
-          ${f.audio_url ? `<a href="${f.audio_url}" download class="btn-icon"><i class="fas fa-download"></i></a>` : ''}
+          ${f.audio_url ? `<button class="btn-action" title="تشغيل" onclick="window.open('${f.audio_url}')"><i class="fas fa-play"></i></button>` : ''}
+          <button class="btn-action" title="إعادة تسمية" onclick="renameFile(${f.id}, '${f.name}')"><i class="fas fa-pen"></i></button>
+          <button class="btn-action" title="نقل لمجلد" onclick="moveFile(${f.id})"><i class="fas fa-folder-open"></i></button>
+          ${f.audio_url ? `<a href="${f.audio_url}" download class="btn-action" title="تحميل" style="display:flex;align-items:center;justify-content:center;text-decoration:none;"><i class="fas fa-download"></i></a>` : ''}
         </div>
       </div>
     `).join('');
   }
 
-  async function renameFile(id) {
-    const newName = prompt("أدخل الاسم الجديد للملف:");
-    if (!newName) return;
+  async function renameFile(id, oldName) {
+    const name = prompt("إعادة تسمية الملف:", oldName);
+    if (!name || name === oldName) return;
+    
     const res = await fetch(`${window.API_BASE}/api/file/rename`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      body: JSON.stringify({ id, new_name: newName })
+      body: JSON.stringify({ id, new_name: name })
     });
-    if (res.ok) loadFileManager();
+    if (res.ok) loadManager();
   }
 
   async function moveFile(id) {
-    const folderName = prompt("إلى أي مجلد تريد النقل؟ (الرئيسية، العمل، إلخ...)");
-    if (!folderName) return;
+    const folder = prompt("انقل إلى مجلد (الرئيسية، العمل، أرشيف...):");
+    if (!folder) return;
+    
     const res = await fetch(`${window.API_BASE}/api/file/move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      body: JSON.stringify({ id, folder_name: folderName })
+      body: JSON.stringify({ id, folder_name: folder })
     });
-    if (res.ok) { folders.add(folderName); loadFileManager(); }
+    if (res.ok) { folders.add(folder); loadManager(); }
   }
 
   function createNewFolder() {
     const name = prompt("اسم المجلد الجديد:");
-    if (name) { folders.add(name); renderFolders(); }
+    if (name) {
+      folders.add(name);
+      renderFolders();
+    }
   }
 
-  document.addEventListener('DOMContentLoaded', loadFileManager);
+  document.addEventListener('DOMContentLoaded', loadManager);
 </script>
 </body>
 </html>
