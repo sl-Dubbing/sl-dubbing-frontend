@@ -1,253 +1,273 @@
-// dubbing.js — V5.0 Direct Upload + Parallel Multi-Lang
+// shared.js — Supabase Auth + Cache (مصحح)
 const API_BASE = 'https://web-production-14a1.up.railway.app';
+const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
 
-async function startDubbing() {
-    const file = document.getElementById('mediaFile')?.files?.[0];
-    const voiceSelect = document.getElementById('voiceSelect');
-    const customVoice = document.getElementById('customVoice');
-    const token = localStorage.getItem('token');
+// 🚀 قراءة المفتاح من ملف config.js
+const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || '';
+const USER_CACHE_KEY = 'sl_user_cache';
 
-    if (!token) return showToast('يرجى تسجيل الدخول', '#f59e0b');
-    if (!file) return showToast('ارفع ملفاً أولاً', '#ef4444');
-    if (!window.selectedLangs || window.selectedLangs.size === 0)
-        return showToast('اختر لغة', '#ef4444');
+window.API_BASE = API_BASE;
 
-    const dubBtn = document.getElementById('dubBtn');
-    const progressArea = document.getElementById('progressArea');
-    const resultsCard = document.getElementById('resultsCard');
-    const resultsList = document.getElementById('resultsList');
-    const statusTxt = document.getElementById('statusTxt');
-    const progFill = document.getElementById('progFill');
+// =================================
+// 🔌 Supabase loader
+// =================================
+let supabaseClient = null;
+async function getSupabase() {
+    if (supabaseClient) return supabaseClient;
+    if (!SUPABASE_KEY) {
+        console.error('Supabase key missing. Set window.APP_CONFIG.SUPABASE_KEY before loading.');
+        throw new Error('Supabase key not configured');
+    }
+    if (!window.supabase) {
+        await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+            s.onload = resolve;
+            s.onerror = () => reject(new Error('Failed to load Supabase SDK'));
+            document.head.appendChild(s);
+        });
+    }
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    return supabaseClient;
+}
 
-    dubBtn.disabled = true;
-    progressArea.style.display = 'block';
-    resultsCard.style.display = 'block';
-    resultsList.innerHTML = '';
-    progFill.style.width = '5%';
-    statusTxt.innerText = '⚡ تجهيز الرفع...';
+// =================================
+// Toasts
+// =================================
+function showToast(msg, color) {
+    const t = document.getElementById('toasts');
+    if (!t) { alert(msg); return; }
+    const box = document.createElement('div');
+    box.className = 'toast';
+    box.textContent = msg;
+    if (color === '#ef4444' || color === 'error') box.style.background = '#ff3b30';
+    else if (color === '#10b981' || color === 'success') box.style.background = '#34c759';
+    else if (color === '#f59e0b' || color === 'warning') box.style.background = '#ff9500';
+    t.appendChild(box);
+    setTimeout(() => box.remove(), 4000);
+}
 
+function escapeHtml(unsafe) {
+    return String(unsafe || '').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+
+// =================================
+// Sidebar
+// =================================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    if (sidebar.classList.contains('active')) closeSidebar();
+    else openSidebar();
+}
+function openSidebar() {
+    document.getElementById('sidebar')?.classList.add('active');
+    document.getElementById('overlay')?.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+    document.getElementById('sidebar')?.classList.remove('active');
+    document.getElementById('overlay')?.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// =================================
+// 💾 Cache
+// =================================
+function saveUserCache(user) {
     try {
-        // ============================================
-        // 🚀 STEP 1: طلب presigned URL من Railway
-        // ============================================
-        const urlRes = await fetch(`${API_BASE}/api/upload-url`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                filename: file.name,
-                content_type: file.type || 'video/mp4',
-                size: file.size
-            })
-        });
+        localStorage.setItem(USER_CACHE_KEY, JSON.stringify({ user, timestamp: Date.now() }));
+    } catch (e) {}
+}
 
-        const urlData = await urlRes.json();
-        if (!urlRes.ok || !urlData.success) {
-            throw new Error(urlData.error || 'فشل الحصول على رابط الرفع');
+function getUserCache() {
+    try {
+        const raw = localStorage.getItem(USER_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        // صلاحية الكاش 24 ساعة
+        if (Date.now() - (parsed.timestamp || 0) > 24 * 60 * 60 * 1000) {
+            localStorage.removeItem(USER_CACHE_KEY);
+            return null;
+        }
+        return parsed?.user || null;
+    } catch (e) { return null; }
+}
+
+function clearUserCache() {
+    localStorage.removeItem(USER_CACHE_KEY);
+}
+
+// =================================
+// 🎨 رسم الواجهة
+// =================================
+function renderAuthUI(user) {
+    const authSection = document.getElementById('authSection');
+    const topBadge = document.getElementById('topAccountBadge');
+
+    if (!user) {
+        if (authSection) {
+            authSection.innerHTML = `
+                <div style="text-align:center;padding:8px;">
+                    <a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a>
+                </div>`;
+        }
+        if (topBadge) {
+            topBadge.innerHTML = `<a href="login.html" style="color:inherit;text-decoration:none;"><i class="fas fa-sign-in-alt"></i> دخول</a>`;
+        }
+        return;
+    }
+
+    const name = user.name || user.email?.split('@')[0] || 'مستخدم';
+    const credits = Number(user.credits ?? 0);
+
+    if (authSection) {
+        const avatar = user.avatar
+            ? `<img src="${escapeHtml(user.avatar)}" style="width:48px;height:48px;border-radius:50%;margin-bottom:8px;object-fit:cover;">`
+            : `<i class="fas fa-user-circle" style="font-size:2.5rem;color:#86868b;margin-bottom:8px;display:block;"></i>`;
+
+        authSection.innerHTML = `
+            <div class="user-info-card">
+                ${avatar}
+                <div class="user-name">${escapeHtml(name)}</div>
+                <div class="user-points"><i class="fas fa-coins"></i> ${credits} نقطة</div>
+                <button id="logoutBtn" style="margin-top:10px;background:none;border:none;color:#ff3b30;cursor:pointer;font-size:0.82rem;font-weight:600;">تسجيل الخروج</button>
+            </div>`;
+        document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    }
+    if (topBadge) {
+        topBadge.innerHTML = `<i class="fas fa-user-circle" style="color:#007aff"></i> ${escapeHtml(name)}`;
+    }
+}
+
+// =================================
+// 🚀 المصادقة الذكية
+// =================================
+async function checkAuth() {
+    // 1️⃣ عرض الـ cache فوراً
+    const cached = getUserCache();
+    if (cached) renderAuthUI(cached);
+
+    // 2️⃣ تحقّق من Supabase
+    try {
+        const supa = await getSupabase();
+        const { data: { session } } = await supa.auth.getSession();
+
+        if (!session?.user) {
+            clearUserCache();
+            localStorage.removeItem('token');
+            renderAuthUI(null);
+            return;
         }
 
-        const { upload_url, file_key } = urlData;
-        progFill.style.width = '10%';
-        statusTxt.innerText = `📤 رفع ${(file.size/1024/1024).toFixed(1)}MB إلى R2 مباشرة...`;
+        // الجلسة سارية
+        localStorage.setItem('token', session.access_token);
 
-        // ============================================
-        // 🚀 STEP 2: رفع مباشر لـ R2 (لا يمر بـ Railway!)
-        // ============================================
-        await uploadToR2(upload_url, file, (pct) => {
-            // 10% → 60% أثناء الرفع
-            progFill.style.width = (10 + pct * 0.5) + '%';
-            statusTxt.innerText = `📤 رفع ${pct.toFixed(0)}%...`;
-        }, file.type);
+        const u = session.user;
 
-        progFill.style.width = '60%';
-        statusTxt.innerText = '✅ الرفع اكتمل، بدء المعالجة...';
+       // جلب النقاط من السيرفر
+       let credits = cached?.credits ?? 0;
+       try {
+           const res = await fetch(`${API_BASE}/api/user/credits`, {
+               headers: { 'Authorization': `Bearer ${session.access_token}` }
+           });
+           if (res.ok) {
+               const data = await res.json();
+               // 🛠️ الإصلاح هنا: الكود الآن يقرأ من مسار السيرفر الصحيح (data.user.credits)
+               credits = data?.user?.credits ?? data?.credits ?? credits;
+               
+               // تحديث واجهة المستخدم فوراً (بما في ذلك صفحة الدبلجة)
+               document.querySelectorAll('.points-count, #user-credits').forEach(el => {
+                   el.textContent = credits;
+               });
+           }
+       } catch (e) {
+           console.warn('Failed to fetch credits:', e);
+       }
 
-        // ============================================
-        // 🚀 STEP 3: إرسال طلب الدبلجة لكل لغة بالتوازي
-        // ============================================
-        const langs = [...window.selectedLangs];
-        const total = langs.length;
-        let completed = 0;
+        const user = {
+            id: u.id,
+            email: u.email,
+            name: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0],
+            avatar: u.user_metadata?.avatar_url,
+            credits: credits
+        };
 
-        // إنشاء بطاقة لكل لغة
-        langs.forEach(code => {
-            const lang = window.LANGUAGES?.find(l => l.code === code);
-            if (!lang) return;
-            const card = document.createElement('div');
-            card.className = 'result-item';
-            card.id = `result-${code}`;
-            card.innerHTML = `
-                <div class="result-item-header">
-                    <span class="result-item-flag">${lang.flag}</span>
-                    <span class="result-item-name">${lang.name_ar}</span>
-                    <span class="result-item-status" id="status-${code}">في الانتظار</span>
-                </div>
-                <div id="body-${code}" style="font-size:0.85rem;color:#9aa1ac;padding:6px;">⏳ جاري الإرسال...</div>
-            `;
-            resultsList.appendChild(card);
-        });
-
-        // إعداد البصمة الصوتية
-        let sample_b64 = '';
-        let voice_id_val = 'source';
-
-        if (customVoice?.files?.[0]) {
-            sample_b64 = await fileToBase64(customVoice.files[0]);
-            voice_id_val = 'custom';
-        } else if (voiceSelect?.value && voiceSelect.value !== 'original') {
-            voice_id_val = voiceSelect.value;
-        }
-
-        // 🚀 معالجة متوازية لكل لغة
-        const promises = langs.map(async (langCode) => {
-            const lang = window.LANGUAGES?.find(l => l.code === langCode);
-            const statusEl = document.getElementById(`status-${langCode}`);
-            const bodyEl = document.getElementById(`body-${langCode}`);
-
-            try {
-                statusEl.textContent = 'يرسل...';
-
-                // إرسال JSON فقط (لا ملف!)
-                const res = await fetch(`${API_BASE}/api/dub`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        file_key: file_key,
-                        lang: langCode,
-                        voice_id: voice_id_val,
-                        sample_b64: sample_b64,
-                        engine: ''  // auto-routing
-                    })
-                });
-
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
-
-                statusEl.textContent = 'يعالج...';
-                bodyEl.innerHTML = '<div style="font-size:0.85rem;color:#2563eb;padding:6px;">🎬 Modal تعالج...</div>';
-
-                const finalData = await waitForJob(data.job_id, token, statusEl);
-
-                statusEl.textContent = '✓ مكتمل';
-                statusEl.classList.add('success');
-                bodyEl.innerHTML = `
-                    <audio controls src="${finalData.audio_url}"></audio>
-                    <a href="${finalData.audio_url}" download="dub_${langCode}_${Date.now()}.wav" class="btn-download" style="margin-top:8px;">
-                        <i class="fas fa-download"></i> تحميل ${lang.name_ar}
-                    </a>
-                `;
-            } catch (e) {
-                console.error(`Lang ${langCode} failed:`, e);
-                statusEl.textContent = '✗ فشل';
-                statusEl.classList.add('error');
-                bodyEl.innerHTML = `<div style="color:#ef4444;font-size:0.85rem;padding:6px;">${e.message}</div>`;
-            } finally {
-                completed++;
-                const pct = 60 + Math.round((completed / total) * 40);
-                progFill.style.width = pct + '%';
-                statusTxt.innerText = `${completed}/${total} لغة مكتملة`;
-            }
-        });
-
-        await Promise.all(promises);
-
-        progFill.style.width = '100%';
-        statusTxt.innerText = `✓ اكتملت ${total} لغة`;
-        showToast(`تمت دبلجة ${total} لغة`, '#10b981');
-        if (typeof checkAuth === 'function') checkAuth();
+        saveUserCache(user);
+        renderAuthUI(user);
 
     } catch (e) {
-        console.error('Dubbing error:', e);
-        showToast(e.message || 'فشل الرفع', '#ef4444');
-        statusTxt.innerText = '✗ ' + e.message;
-        progFill.style.background = '#ef4444';
-    } finally {
-        dubBtn.disabled = false;
+        console.warn('Auth check failed:', e);
+        if (!cached) renderAuthUI(null);
     }
 }
 
-// ============================================
-// 🚀 رفع مباشر لـ R2 مع progress tracking
-// ============================================
-function uploadToR2(presignedUrl, file, onProgress, contentType) {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', presignedUrl, true);
-        xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
+const updateSidebarAuth = checkAuth;
 
-        xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable && onProgress) {
-                onProgress((e.loaded / e.total) * 100);
-            }
-        };
+// =================================
+// 🚪 تسجيل الخروج
+// =================================
+async function logout() {
+    try {
+        const supa = await getSupabase();
+        await supa.auth.signOut();
+    } catch (e) { console.warn('signOut failed:', e); }
 
-        xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`فشل الرفع (${xhr.status}): ${xhr.responseText.substring(0, 100)}`));
-        };
-
-        xhr.onerror = () => reject(new Error('خطأ شبكة - تحقق من CORS في R2'));
-        xhr.ontimeout = () => reject(new Error('انتهت مهلة الرفع'));
-
-        xhr.timeout = 30 * 60 * 1000; // 30 دقيقة
-        xhr.send(file);
-    });
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    clearUserCache();
+    location.href = 'index.html';
 }
 
-async function waitForJob(jobId, token, statusEl) {
-    const start = Date.now();
-    const TIMEOUT = 30 * 60 * 1000;
-
-    while (Date.now() - start < TIMEOUT) {
-        try {
-            const res = await fetch(`${API_BASE}/api/job/${jobId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (data.status === 'completed') return data;
-            if (data.status === 'failed') throw new Error(data.error || 'فشلت المعالجة');
-            if (statusEl) statusEl.textContent = `يعالج ${Math.round((Date.now()-start)/1000)}ث`;
-        } catch (e) {
-            if (e.message.includes('فشلت')) throw e;
-            console.warn('Poll error:', e);
-        }
-        await new Promise(r => setTimeout(r, 3000));
-    }
-    throw new Error('انتهت المهلة');
-}
-
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onloadend = () => resolve(String(r.result).split(',')[1] || '');
-        r.onerror = reject;
-        r.readAsDataURL(file);
-    });
-}
-
-function handleCustomVoice(input) {
-    const txt = document.getElementById('customVoiceTxt');
-    if (input.files && input.files[0]) {
-        if (txt) { txt.textContent = '✓ ' + input.files[0].name; txt.style.color = '#10b981'; }
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('chooseMediaBtn')?.addEventListener('click', () => document.getElementById('mediaFile')?.click());
-    document.getElementById('mediaFile')?.addEventListener('change', () => {
-        const f = document.getElementById('mediaFile').files?.[0];
-        const txt = document.getElementById('fileTxt');
-        if (f && txt) { txt.textContent = `✓ ${f.name} (${(f.size/1024/1024).toFixed(1)}MB)`; txt.style.color = '#10b981'; }
-    });
-    document.getElementById('chooseCustomVoiceBtn')?.addEventListener('click', () => document.getElementById('customVoice')?.click());
-    document.getElementById('customVoice')?.addEventListener('change', (e) => handleCustomVoice(e.target));
-    document.getElementById('dubBtn')?.addEventListener('click', startDubbing);
+// =================================
+// 🔄 مزامنة بين tabs
+// =================================
+window.addEventListener('storage', (e) => {
+    if (e.key === 'token' || e.key === USER_CACHE_KEY) checkAuth();
 });
 
-window.startDubbing = startDubbing;
-window.handleCustomVoice = handleCustomVoice;
+// =================================
+// 🔔 الاستماع لتغيّرات Supabase Auth
+// =================================
+(async function listenToAuth() {
+    try {
+        const supa = await getSupabase();
+        supa.auth.onAuthStateChange((event, session) => {
+            console.log('Auth event:', event);
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                checkAuth();
+            } else if (event === 'SIGNED_OUT') {
+                clearUserCache();
+                localStorage.removeItem('token');
+                renderAuthUI(null);
+            }
+        });
+    } catch (e) { console.warn('Auth listener failed:', e); }
+})();
+
+// =================================
+// تهيئة
+// =================================
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+
+    const menuBtn = document.getElementById('menuBtn') || document.getElementById('menuToggle');
+    if (menuBtn) menuBtn.addEventListener('click', (e) => { e.preventDefault(); toggleSidebar(); });
+
+    document.getElementById('overlay')?.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+});
+
+// Exports
+window.showToast = showToast;
+window.escapeHtml = escapeHtml;
+window.toggleSidebar = toggleSidebar;
+window.openSidebar = openSidebar;
+window.closeSidebar = closeSidebar;
+window.checkAuth = checkAuth;
+window.updateSidebarAuth = updateSidebarAuth;
+window.logout = logout;
+window.saveUserCache = saveUserCache;
+window.getUserCache = getUserCache;
+window.clearUserCache = clearUserCache;
+window.getSupabase = getSupabase;
