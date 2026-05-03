@@ -1,9 +1,12 @@
-// dubbing.js — V5.1 Direct Upload + Parallel Multi-Lang + History Integration
+// dubbing.js — V6.0 (Direct Upload + Parallel Multi-Lang + LipSync + Custom Voice)
 
 async function startDubbing() {
     const file = document.getElementById('mediaFile')?.files?.[0];
     const voiceSelect = document.getElementById('voiceSelect');
-    const customVoice = document.getElementById('customVoice');
+    
+    // التحديث 1: ربط العناصر الجديدة بالواجهة
+    const customVoiceInput = document.getElementById('customVoiceInput');
+    const lipsyncToggle = document.getElementById('lipsyncToggle');
     const token = localStorage.getItem('token');
 
     // 1. التحقق من المدخلات الأساسية
@@ -20,7 +23,7 @@ async function startDubbing() {
     const progFill = document.getElementById('progFill');
 
     // تجهيز الواجهة للبدء
-    dubBtn.disabled = true;
+    dubBtn.style.display = 'none'; // إخفاء الزر أثناء المعالجة كالتصميم الجديد
     progressArea.style.display = 'block';
     resultsCard.style.display = 'block';
     resultsList.innerHTML = '';
@@ -89,16 +92,20 @@ async function startDubbing() {
             resultsList.appendChild(card);
         });
 
-        // تحضير بيانات الصوت المخصص إن وجد
+        // التحديث 2: تحضير بيانات الصوت المخصص وقراءة زر LipSync
         let sample_b64 = '';
-        let voice_id_val = 'original'; // القيمة الافتراضية
+        let voice_id_val = 'source'; // افتراضياً يستنسخ الصوت الأصلي
 
-        if (customVoice?.files?.[0]) {
-            sample_b64 = await fileToBase64(customVoice.files[0]);
-            voice_id_val = 'custom';
-        } else if (voiceSelect?.value && voiceSelect.value !== 'original') {
+        if (voiceSelect?.value === 'custom' && customVoiceInput?.files?.[0]) {
+            // إذا اختار عينة مخصصة ورفعها
+            sample_b64 = await fileToBase64(customVoiceInput.files[0]);
+            voice_id_val = 'source'; // السيرفر يقرأ العينة ويستنسخها
+        } else if (voiceSelect?.value && voiceSelect.value !== 'source' && voiceSelect.value !== 'custom') {
+            // إذا اختار صوت جاهز (ذكر أو أنثى)
             voice_id_val = voiceSelect.value;
         }
+
+        const isLipSyncEnabled = lipsyncToggle ? lipsyncToggle.checked : false;
 
         // تشغيل الطلبات لكل اللغات في نفس الوقت
         const promises = langs.map(async (langCode) => {
@@ -117,10 +124,11 @@ async function startDubbing() {
                     },
                     body: JSON.stringify({
                         file_key: file_key,
-                        filename: file.name, // مهم جداً لحفظ الاسم في "ملفاتي"
+                        filename: file.name,
                         lang: langCode,
                         voice_id: voice_id_val,
                         sample_b64: sample_b64,
+                        with_lipsync: isLipSyncEnabled, // التحديث 3: إرسال حالة زر مزامنة الشفاه
                         engine: 'auto'
                     })
                 });
@@ -136,9 +144,16 @@ async function startDubbing() {
 
                 statusEl.textContent = '✓ اكتمل';
                 statusEl.classList.add('success');
+                
+                // تحديد ما إذا كان الناتج فيديو أو صوت
+                const isVideo = finalData.output_url.toLowerCase().endsWith('.mp4');
+                const mediaElement = isVideo 
+                    ? `<video controls src="${finalData.output_url}" style="width:100%; border-radius:8px; margin-top:8px;"></video>`
+                    : `<audio controls src="${finalData.output_url}" style="width:100%; height:35px; margin-top:8px;"></audio>`;
+
                 bodyEl.innerHTML = `
-                    <audio controls src="${finalData.audio_url}" style="width:100%; height:35px;"></audio>
-                    <a href="${finalData.audio_url}" download="dub_${langCode}.wav" class="btn-download" style="margin-top:8px; display:inline-block;">
+                    ${mediaElement}
+                    <a href="${finalData.output_url}" download="dub_${langCode}" class="btn-download" style="margin-top:8px; display:inline-block;">
                         <i class="fas fa-download"></i> تحميل ملف الـ ${lang.name_ar}
                     </a>
                 `;
@@ -158,8 +173,8 @@ async function startDubbing() {
         await Promise.all(promises);
 
         progFill.style.width = '100%';
-        statusTxt.innerText = `✓ اكتملت الدبلجة لـ ${total} لغة بنجاح!`;
-        showToast(`تمت الدبلجة بنجاح! يمكنك العثور على الملفات في "ملفاتي"`, '#10b981');
+        statusTxt.innerText = `✓ اكتملت المعالجة لـ ${total} لغة بنجاح!`;
+        showToast(`تمت المعالجة بنجاح! يمكنك العثور على الملفات في "ملفاتي"`, '#10b981');
         
         // تحديث الرصيد في الواجهة
         if (typeof checkAuth === 'function') checkAuth();
@@ -170,6 +185,7 @@ async function startDubbing() {
         statusTxt.innerText = '✗ فشل العملية: ' + e.message;
         progFill.style.background = '#ef4444';
     } finally {
+        dubBtn.style.display = 'block'; // إعادة إظهار الزر
         dubBtn.disabled = false;
     }
 }
