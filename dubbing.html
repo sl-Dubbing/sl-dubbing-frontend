@@ -6,22 +6,22 @@
     <title>sl-Dubbing | Pro Studio</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- 🌟 ملف التنسيقات الرئيسي (يحتوي على تنسيقات الشريط الجانبي والعلوي الأصلية) -->
+    <!-- ملف التنسيقات الرئيسي للموقع -->
     <link rel="stylesheet" href="css/style.css">
     
     <!-- مكتبة الموجات الصوتية -->
     <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
 
     <style>
-        /* 🎨 التنسيقات المخصصة لصفحة الدبلجة فقط (نمط السينما وأدوات التحكم) */
+        /* التنسيقات الخاصة بصفحة الاستوديو (أبيض، أسود، ورمادي) */
         :root {
             --accent-green: #10b981;
             --border-color: #e5e7eb;
         }
 
-        /* --- منطقة العمل الرئيسية --- */
-        .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        .container { max-width: 950px; margin: 40px auto; padding: 0 20px; }
         
+        /* منطقة الرفع */
         .upload-box {
             border: 2px dashed var(--border-color); border-radius: 20px;
             padding: 50px; text-align: center; cursor: pointer; transition: 0.3s;
@@ -29,13 +29,14 @@
         }
         .upload-box:hover { border-color: #3b82f6; background: #f9fafb; }
         
-        #previewArea { display: none; width: 100%; margin-bottom: 25px; border-radius: 15px; overflow: hidden; background: #000; }
+        #previewArea { display: none; width: 100%; margin-bottom: 25px; border-radius: 15px; overflow: hidden; background: #000; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         #videoPreview { width: 100%; display: block; max-height: 450px; }
         #audioPreviewLabel { display: none; padding: 40px; text-align: center; background: #f1f5f9; color: #334155; }
 
-        /* --- أزرار التحكم (Switches & Dropdowns) --- */
-        .controls-grid { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 20px; align-items: flex-start; }
+        /* أدوات التحكم */
+        .controls-grid { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 20px; align-items: flex-start; flex-wrap: wrap; }
         
+        /* أزرار التفعيل (Switches) */
         .switch-container {
             display: flex; align-items: center; justify-content: space-between;
             background: #fff; border: 1px solid var(--border-color);
@@ -58,7 +59,7 @@
         .drop-btn {
             background: #fff; border: 1px solid var(--border-color);
             padding: 12px 25px; border-radius: 12px; cursor: pointer;
-            display: flex; align-items: center; gap: 10px; font-weight: 600; position: relative;
+            display: flex; align-items: center; gap: 10px; font-weight: 600; position: relative; flex: 1;
         }
         .drop-content {
             position: absolute; top: 115%; left: 0; width: 280px;
@@ -67,52 +68,61 @@
             display: none; z-index: 100; padding: 10px;
         }
         .drop-btn.active .drop-content { display: block; }
-        
-        /* تنسيق اللغات داخل القائمة المنسدلة */
         .lang-item-ui { color: #000 !important; padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
         .lang-item-ui:hover { background: #f3f4f6 !important; }
 
         .start-btn {
             width: 100%; background: #3b82f6; color: #fff; border: none;
             padding: 20px; border-radius: 15px; font-size: 1.1rem; font-weight: bold;
-            cursor: pointer; margin-top: 15px; box-shadow: 0 4px 15px rgba(59,130,246,0.2);
+            cursor: pointer; margin-top: 15px; box-shadow: 0 4px 15px rgba(59,130,246,0.2); transition: 0.3s;
         }
+        .start-btn:hover { background: #2563eb; transform: translateY(-2px); }
 
-        /* --- نمط السينما (النتائج السفلية) --- */
+        /* نمط السينما (النتائج السفلية) */
         .cinema-results {
             display: flex; gap: 15px; flex-direction: row-reverse;
-            background: #000; padding: 20px; border-radius: 20px; margin-top: 40px;
+            background: #000; padding: 20px; border-radius: 20px; margin-top: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
         }
         .cinema-player { flex: 3; position: relative; background: #000; border-radius: 12px; overflow: hidden; aspect-ratio: 16/9; }
         
         .dl-corner { position: absolute; top: 15px; right: 15px; z-index: 100; display: none; }
-        .dl-icon-btn { background: rgba(255,255,255,0.9); color: #000; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.2rem; }
+        .dl-icon-btn { 
+            background: rgba(255,255,255,0.9); color: #000; width: 45px; height: 45px; 
+            border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+            text-decoration: none; font-size: 1.2rem; transition: 0.3s; 
+        }
+        .dl-icon-btn:hover { background: #fff; transform: scale(1.1); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
 
-        .cinema-sidebar { flex: 1; background: #111; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .cinema-sidebar { flex: 1; background: #111; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 220px; max-height: 450px; overflow-y: auto;}
         .side-lang-card { padding: 12px; border-radius: 8px; background: #1a1a1a; color: #888; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s;}
+        .side-lang-card:hover { background: #222; }
         .side-lang-card.active { background: #fff; color: #000; font-weight: bold; }
+
+        @media (max-width: 800px) { .cinema-results { flex-direction: column; } .controls-grid { flex-direction: column; } }
     </style>
 </head>
 <body data-mode="fast">
 
-<!-- 🌟 الهيكل الأصلي للشريط العلوي والجانبي (مأخوذ من stt.html) 🌟 -->
+<!-- الشريط العلوي (بدون onclick ليدار بواسطة shared.js) -->
 <header class="top-bar">
   <div style="display:flex;align-items:center;gap:12px;">
-    <button class="menu-btn" id="menuBtn" type="button" onclick="openSidebar()"><i class="fas fa-bars"></i><span>القائمة</span></button>
+    <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i><span>القائمة</span></button>
     <div class="top-logo"><h2>sl-Dubbing</h2></div>
   </div>
-  <span class="account-badge" id="topAccountBadge"><i class="fas fa-coins" style="color:#f59e0b; margin-left: 5px;"></i> <span id="userPoints">18100 نقطة</span></span>
+  <span class="account-badge" id="topAccountBadge">جاري التحميل...</span>
 </header>
 
-<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+<!-- الطبقة الضبابية (بدون onclick ليدار بواسطة shared.js) -->
+<div class="overlay" id="overlay"></div>
 
+<!-- الشريط الجانبي -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-user-section" id="authSection" style="position: relative;">
-    <!-- ✖️ زر الإغلاق الجديد للشريط الجانبي -->
+    <!-- زر إغلاق أنيق للشريط الجانبي -->
     <button onclick="closeSidebar()" style="position: absolute; top: 15px; left: 15px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #9aa1ac; transition: 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#9aa1ac'">
         <i class="fas fa-times"></i>
     </button>
-    <div style="color:#9aa1ac;font-size:0.9rem;text-align:center; padding-top: 20px;">جاري التحقق...</div>
+    <div style="color:#9aa1ac;font-size:0.9rem;text-align:center; padding-top: 15px;">جاري التحقق...</div>
   </div>
   <nav class="sidebar-nav">
     <div class="nav-label">القائمة الرئيسية</div>
@@ -125,48 +135,46 @@
   </nav>
 </aside>
 
-<!-- منطقة العمل الأساسية -->
+<!-- منطقة العمل -->
 <main class="main-content">
     <div class="container">
         
-        <!-- منطقة الرفع والمعاينة -->
+        <!-- منطقة المعاينة والرفع -->
         <div id="previewArea">
             <video id="videoPreview" controls></video>
             <div id="audioPreviewLabel">
-                <i class="fas fa-music fa-3x"></i>
-                <h4 id="audioFileName"></h4>
+                <i class="fas fa-music fa-3x" style="color: #3b82f6;"></i>
+                <h4 id="audioFileName" style="margin-top: 15px;"></h4>
             </div>
         </div>
         
         <div class="upload-box" id="dropZone" onclick="document.getElementById('mediaFile').click()">
             <input type="file" id="mediaFile" style="display:none;" accept="video/*,audio/*">
-            <i class="fas fa-cloud-upload-alt" style="font-size:3rem; color:#3b82f6; margin-bottom:15px;"></i>
-            <div style="font-weight:bold; font-size:1.2rem;">اسحب الملف هنا أو اضغط للاختيار</div>
-            <p style="color:#94a3b8; font-size:0.9rem;">MP4, MOV, MP3, WAV (Up to 500MB)</p>
+            <i class="fas fa-cloud-upload-alt" style="font-size:3.5rem; color:#3b82f6; margin-bottom:15px;"></i>
+            <div style="font-weight:bold; font-size:1.3rem; color: #111827;">اسحب الملف هنا أو اضغط للاختيار</div>
+            <p style="color:#6b7280; font-size:0.9rem; margin-top: 8px;">يدعم MP4, MOV, MP3, WAV (بحد أقصى 500MB)</p>
         </div>
 
         <!-- أدوات التحكم -->
         <div class="controls-grid">
-            <!-- القائمة المنسدلة للغات -->
             <div class="drop-btn" id="langTrigger" onclick="this.classList.toggle('active')">
-                <i class="fas fa-globe"></i> اختر اللغات
+                <i class="fas fa-globe"></i> اختر اللغات المتاحة للدبلجة
                 <div class="drop-content" onclick="event.stopPropagation()">
-                    <!-- اللغات ستتولد هنا عبر الجافاسكريبت -->
+                    <!-- يتم تعبئتها بواسطة الجافاسكريبت -->
                     <div id="langList" style="max-height: 250px; overflow-y: auto;"></div>
                 </div>
             </div>
 
-            <!-- أزرار التفعيل (Switches) -->
             <div style="display:flex; flex-direction:column; gap:5px;">
                 <div class="switch-container">
-                    <span>إخراج فيديو</span>
+                    <span style="font-weight: 600;">إخراج فيديو</span>
                     <label class="switch">
                         <input type="checkbox" id="videoToggle" checked>
                         <span class="slider"></span>
                     </label>
                 </div>
                 <div class="switch-container">
-                    <span>مزامنة شفاه</span>
+                    <span style="font-weight: 600;">مزامنة شفاه</span>
                     <label class="switch">
                         <input type="checkbox" id="lipsyncToggle">
                         <span class="slider"></span>
@@ -175,31 +183,37 @@
             </div>
         </div>
 
-        <button id="dubBtn" class="start-btn" style="display:none;">بدء الدبلجة الآن</button>
+        <button id="dubBtn" class="start-btn" style="display:none;">بدء الدبلجة الآن <i class="fas fa-magic" style="margin-right: 8px;"></i></button>
 
         <!-- منطقة النتائج (السينما) -->
         <div id="resultsCard" style="display:none;">
             <div class="cinema-results">
                 <aside class="cinema-sidebar" id="cinemaLangs"></aside>
                 <div class="cinema-player">
+                    <!-- زر التحميل في الزاوية -->
                     <div id="dlArea" class="dl-corner">
-                        <a id="masterDl" href="#" target="_blank" class="dl-icon-btn" title="تحميل">
+                        <a id="masterDl" href="#" target="_blank" class="dl-icon-btn" title="تحميل النسخة المحددة">
                             <i class="fas fa-download"></i>
                         </a>
                     </div>
-                    <div id="mainPlayer" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
-                        <i class="fas fa-spinner fa-spin fa-2x" style="color:#444;"></i>
+                    <!-- المشغل -->
+                    <div id="mainPlayer" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction: column;">
+                        <i class="fas fa-spinner fa-spin fa-3x" style="color:#333; margin-bottom: 15px;"></i>
+                        <p style="color: #666; font-weight: bold;" id="processingTxt">جاري معالجة اللغات...</p>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </main>
 
-<!-- استدعاء ملفات الجافاسكريبت الأساسية -->
+<div id="toasts"></div>
+
+<!-- ملفات الجافاسكريبت الأساسية للموقع -->
 <script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/languages-data.js"></script>
-<script src="js/dubbing.js"></script> <!-- تأكد أن هذا الملف يحتوي على الكود في الأسفل -->
+<script src="js/dubbing.js"></script>
 </body>
 </html>
