@@ -1,134 +1,178 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>sl-Dubbing | Cinema Studio</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css">
-  <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>sl-Dubbing | Studio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
 
-  <style>
-    /* 🎨 الهوية البصرية: أبيض، أسود، رمادي */
-    :root {
-      --primary-white: #ffffff;
-      --secondary-gray: #f9fafb;
-      --border-gray: #e5e7eb;
-      --dark-sidebar: #111111;
-      --active-white: #ffffff;
-    }
+    <style>
+        /* 🎨 الهوية البصرية: Minimalist White & Black */
+        :root {
+            --bg-main: #ffffff;
+            --bg-secondary: #f9fafb;
+            --text-dark: #000000;
+            --text-gray: #6b7280;
+            --border: #e5e7eb;
+            --accent: #111827;
+        }
 
-    body { background: #fdfdfd; font-family: system-ui, sans-serif; }
+        body { 
+            background: var(--bg-main); color: var(--text-dark); 
+            font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0;
+        }
 
-    /* إصلاح القائمة المنسدلة (الصورة image_ca819a.png) */
-    .icon-btn { position: relative; background: #fff; border: 1px solid var(--border-gray); padding: 12px; border-radius: 10px; cursor: pointer; }
-    
-    .dropdown-box { 
-      position: absolute; top: 110%; left: 0; width: 280px; 
-      background: var(--primary-white) !important; 
-      border: 1px solid var(--border-gray); 
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
-      display: none; z-index: 1000; padding: 15px; border-radius: 12px;
-    }
-    .icon-btn.active .dropdown-box { display: block; }
-    
-    /* نصوص اللغات داخل القائمة */
-    #langList div, .styled-select { 
-      color: #000000 !important; 
-      background: #ffffff !important; 
-      padding: 10px; border-radius: 6px; cursor: pointer; 
-    }
-    #langList div:hover { background: var(--secondary-gray) !important; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
 
-    /* --- نمط السينما (Cinema Mode) --- */
-    .cinema-container { 
-      display: flex; gap: 15px; flex-direction: row-reverse; 
-      background: #000; padding: 20px; border-radius: 20px; margin-top: 30px;
-    }
+        /* --- منطقة الرفع (العلوي) --- */
+        .upload-section {
+            background: var(--bg-secondary); border: 2px dashed var(--border);
+            border-radius: 20px; padding: 60px 40px; text-align: center;
+            cursor: pointer; transition: 0.3s; margin-bottom: 30px;
+        }
+        .upload-section:hover { border-color: #000; background: #f3f4f6; }
+        .upload-icon { font-size: 3rem; color: #000; margin-bottom: 15px; }
 
-    /* قائمة اللغات الجانبية */
-    .lang-sidebar { 
-      flex: 1; background: var(--dark-sidebar); border-radius: 12px; 
-      padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 220px;
-    }
-    .sidebar-header { color: #666; font-size: 0.8rem; padding: 5px 10px; border-bottom: 1px solid #222; }
-    
-    .lang-item { 
-      padding: 12px; border-radius: 8px; background: #1a1a1a; 
-      color: #999; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 10px;
-    }
-    .lang-item.active { background: var(--active-white); color: #000; font-weight: bold; }
+        /* --- شريط الأدوات (الوسط) --- */
+        .controls-row {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 15px; margin-bottom: 25px; flex-wrap: wrap;
+        }
 
-    /* منطقة المشغل وزر التحميل في الزاوية */
-    .player-main { flex: 3; position: relative; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 16/9; }
-    
-    .download-corner { position: absolute; top: 15px; right: 15px; z-index: 20; display: none; }
-    .icon-dl-btn { 
-      background: rgba(255, 255, 255, 0.9); color: #000; 
-      width: 45px; height: 45px; border-radius: 10px; 
-      display: flex; align-items: center; justify-content: center; 
-      text-decoration: none; font-size: 1.2rem; transition: 0.3s;
-    }
-    .icon-dl-btn:hover { background: #fff; transform: scale(1.1); }
+        .dropdown-trigger {
+            background: #fff; border: 1px solid var(--border); padding: 12px 20px;
+            border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+            position: relative; font-weight: 600;
+        }
 
-    .start-btn { width: 100%; padding: 18px; background: #000; color: #fff; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-  </style>
+        /* 🌟 إصلاح قائمة اللغات (بيضاء بنص أسود) */
+        .dropdown-content {
+            position: absolute; top: 110%; left: 0; width: 280px;
+            background: #ffffff !important; color: #000000 !important;
+            border: 1px solid var(--border); border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 10px;
+        }
+        .dropdown-trigger.active .dropdown-content { display: block; }
+        
+        .lang-option { 
+            padding: 10px; border-radius: 8px; transition: 0.2s; 
+            color: #000 !important; background: #fff !important;
+        }
+        .lang-option:hover { background: #f3f4f6 !important; }
+
+        /* أزرار التبديل */
+        .toggle-btn {
+            display: flex; align-items: center; gap: 10px; background: var(--bg-secondary);
+            padding: 10px 18px; border-radius: 12px; border: 1px solid var(--border);
+        }
+
+        .start-btn {
+            width: 100%; background: #000; color: #fff; border: none;
+            padding: 20px; border-radius: 15px; font-size: 1.2rem; font-weight: bold;
+            cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        .start-btn:hover { background: #333; transform: translateY(-2px); }
+
+        /* --- 🎬 نمط السينما (السفلي) --- */
+        .cinema-wrapper {
+            display: flex; gap: 20px; flex-direction: row-reverse;
+            background: #000; padding: 20px; border-radius: 24px;
+            margin-top: 40px; box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        }
+
+        .lang-sidebar {
+            flex: 1; background: #111; border-radius: 16px; padding: 15px;
+            display: flex; flex-direction: column; gap: 10px; min-width: 240px;
+        }
+        .sidebar-title { color: #555; font-size: 0.8rem; font-weight: bold; padding: 5px; border-bottom: 1px solid #222; }
+
+        .lang-card {
+            padding: 12px; border-radius: 10px; background: #1a1a1a; color: #888;
+            cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 10px;
+        }
+        .lang-card.active { background: #fff; color: #000; font-weight: bold; }
+
+        .player-box { flex: 3; position: relative; border-radius: 16px; overflow: hidden; background: #000; aspect-ratio: 16/9; }
+
+        /* 🌟 زر التحميل (أيقونة في الزاوية) */
+        .dl-corner { position: absolute; top: 15px; right: 15px; z-index: 50; display: none; }
+        .dl-icon {
+            background: rgba(255, 255, 255, 0.9); color: #000; width: 45px; height: 45px;
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: 1.2rem; transition: 0.3s;
+        }
+        .dl-icon:hover { background: #fff; transform: scale(1.1); }
+
+        @media (max-width: 850px) { .cinema-wrapper { flex-direction: column; } }
+    </style>
 </head>
 <body>
 
-<main class="main-content">
-  <div class="workspace-wrapper">
-    <div class="dub-workspace">
-      <!-- منطقة الرفع -->
-      <section class="media-zone" onclick="document.getElementById('mediaFile').click()">
+<div class="container">
+    <!-- القسم العلوي: الرفع -->
+    <div class="upload-section" onclick="document.getElementById('mediaFile').click()">
         <input type="file" id="mediaFile" accept="video/*,audio/*" style="display:none;">
-        <div id="uploadPlaceholder">
-          <i class="fas fa-cloud-upload-alt upload-icon"></i>
-          <p>اسحب الملف أو اضغط للرفع</p>
-        </div>
-      </section>
-
-      <!-- شريط الأدوات (أبيض وأسود) -->
-      <div class="action-bar">
-        <div class="icon-btn" id="langTrigger" onclick="toggleDrop('langTrigger')">
-          <i class="fas fa-globe"></i> <span>اللغات</span>
-          <div class="dropdown-box" onclick="event.stopPropagation()">
-            <div id="langList"></div>
-          </div>
-        </div>
-        
-        <div class="options-group" style="display:flex; gap:10px;">
-           <div class="icon-btn"><span>إخراج فيديو</span> <input type="checkbox" id="videoToggle" checked></div>
-           <div class="icon-btn"><span>مزامنة شفاه</span> <input type="checkbox" id="lipsyncToggle"></div>
-        </div>
-      </div>
-
-      <button id="dubBtn" class="start-btn" style="display:none;">بدء الدبلجة الآن</button>
+        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+        <div style="font-size: 1.2rem; font-weight: bold;">اسحب الملف هنا أو اضغط للاختيار</div>
+        <div style="color: var(--text-gray); margin-top: 10px;">MP4, MOV, MP3, WAV (Up to 500MB)</div>
     </div>
 
-    <!-- كارت النتائج السينمائي -->
+    <!-- القسم الأوسط: الأدوات -->
+    <div class="controls-row">
+        <div class="dropdown-trigger" id="langTrigger" onclick="this.classList.toggle('active')">
+            <i class="fas fa-globe"></i> <span>اختر اللغات</span>
+            <div class="dropdown-content" onclick="event.stopPropagation()">
+                <div id="langList">
+                    <!-- اللغات ستظهر هنا برمجياً -->
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <div class="toggle-btn">
+                <span>إخراج فيديو</span>
+                <input type="checkbox" id="videoToggle" checked>
+            </div>
+            <div class="toggle-btn">
+                <span>مزامنة شفاه</span>
+                <input type="checkbox" id="lipsyncToggle">
+            </div>
+        </div>
+    </div>
+
+    <button id="dubBtn" class="start-btn" style="display:none;">بدء عملية الدبلجة الآن</button>
+
+    <!-- شريط التقدم -->
+    <div id="progArea" style="display:none; margin-top: 20px;">
+        <div style="height:6px; background:#eee; border-radius:10px; overflow:hidden;">
+            <div id="progFill" style="height:100%; width:0%; background:#000; transition:0.4s;"></div>
+        </div>
+        <p id="statusTxt" style="text-align:center; font-size:0.9rem; margin-top:10px;"></p>
+    </div>
+
+    <!-- القسم السفلي: نتائج السينما -->
     <div id="resultsCard" style="display:none;">
-      <div class="cinema-container">
-        <aside class="lang-sidebar">
-          <div class="sidebar-header">اللغات المكتملة</div>
-          <div id="langSidebarList"></div>
-        </aside>
-        
-        <div class="player-main">
-          <!-- أيقونة التحميل في الزاوية -->
-          <div id="downloadArea" class="download-corner">
-            <a id="masterDownloadBtn" href="#" target="_blank" class="icon-dl-btn" title="تحميل">
-              <i class="fas fa-download"></i>
-            </a>
-          </div>
-          <div id="mainMediaWrapper" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
-             <p style="color:#444;">بانتظار المعالجة...</p>
-          </div>
+        <div class="cinema-wrapper">
+            <aside class="lang-sidebar">
+                <div class="sidebar-title">اللغات المكتملة</div>
+                <div id="langSidebarList"></div>
+            </aside>
+
+            <div class="player-box">
+                <!-- زر التحميل في الزاوية -->
+                <div id="dlArea" class="dl-corner">
+                    <a id="masterDlBtn" href="#" target="_blank" class="dl-icon" title="تحميل">
+                        <i class="fas fa-download"></i>
+                    </a>
+                </div>
+                <div id="playerContent" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#333;">
+                    <i class="fas fa-circle-notch fa-spin fa-2x"></i>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
-</main>
+</div>
 
 <script src="js/dubbing.js"></script>
 </body>
