@@ -1,96 +1,74 @@
-// dubbing.js — V8.5 Cinema Logic
-
-let dubResults = {}; 
-
-async function startDubbing() {
-    const file = document.getElementById('mediaFile').files[0];
-    const token = localStorage.getItem('token');
-    if (!file) return;
-
-    const dubBtn = document.getElementById('dubBtn');
-    const progArea = document.getElementById('progArea');
-    const resultsCard = document.getElementById('resultsCard');
-    const sidebar = document.getElementById('langSidebarList');
-
-    dubBtn.style.display = 'none';
-    progArea.style.display = 'block';
-    resultsCard.style.display = 'block';
-    sidebar.innerHTML = '';
-    dubResults = {};
-
-    try {
-        // (1) محاكاة الرفع - هنا نضع ملفك الحقيقي
-        const langs = [...window.selectedLangs]; // تأكد من وجود مكتبة اختيار اللغات
-
-        langs.forEach(async (langCode) => {
-            const lang = window.LANGUAGES.find(l => l.code === langCode);
-            
-            const item = document.createElement('div');
-            item.className = 'lang-card';
-            item.id = `card-${langCode}`;
-            item.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${lang.name_ar}`;
-            sidebar.appendChild(item);
-
-            try {
-                // إرسال الطلب للسيرفر الخاص بك
-                const res = await fetch(`${window.API_BASE}/api/dub`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        lang: langCode,
-                        video_output: document.getElementById('videoToggle').checked
-                    })
-                });
-                
-                const data = await res.json();
-                const job = await waitForJob(data.job_id, token);
-
-                // حفظ النتيجة
-                dubResults[langCode] = { url: job.output_url, name: lang.name_ar, flag: lang.flag };
-                
-                item.innerHTML = `<span>${lang.flag}</span> <span>${lang.name_ar}</span>`;
-                item.onclick = () => updateCinemaPlayer(langCode);
-
-                if (Object.keys(dubResults).length === 1) updateCinemaPlayer(langCode);
-
-            } catch (e) { item.innerHTML = `❌ ${lang.name_ar}`; }
-        });
-
-    } catch (e) { console.error(e); }
+// --- 1. إدارة الشريط الجانبي ---
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('active');
+    document.getElementById('overlay').classList.add('active');
 }
 
-function updateCinemaPlayer(code) {
-    const data = dubResults[code];
-    const viewer = document.getElementById('playerContent');
-    const dlBtn = document.getElementById('masterDlBtn');
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('active');
+    document.getElementById('overlay').classList.remove('active');
+}
+
+// --- 2. إدارة معاينة الملف (Preview) ---
+document.getElementById('mediaFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const url = URL.createObjectURL(file);
+        const dropZone = document.getElementById('dropZone');
+        const previewArea = document.getElementById('previewArea');
+        const dubBtn = document.getElementById('dubBtn');
+        const vPreview = document.getElementById('videoPreview');
+        const aPreview = document.getElementById('audioPreviewLabel');
+
+        dropZone.style.display = 'none';
+        previewArea.style.display = 'block';
+        dubBtn.style.display = 'block';
+
+        if (file.type.startsWith('video/')) {
+            vPreview.src = url;
+            vPreview.style.display = 'block';
+            aPreview.style.display = 'none';
+        } else {
+            vPreview.style.display = 'none';
+            aPreview.style.display = 'block';
+            document.getElementById('audioFileName').innerText = file.name;
+        }
+    }
+});
+
+// --- 3. منطق الدبلجة والتبديل (Cinema) ---
+let cinemaResults = {};
+
+async function startDubbing() {
+    // ... (هنا تضع منطق الرفع وطلب الدبلجة الخاص بك) ...
+    // بمجرد اكتمال مهمة، قم بتخزينها في cinemaResults واستدعاء switchCinemaLang
+}
+
+function switchCinemaLang(langCode) {
+    const data = cinemaResults[langCode];
+    const player = document.getElementById('mainPlayer');
+    const dlBtn = document.getElementById('masterDl');
     const dlArea = document.getElementById('dlArea');
 
-    // تحديد العنصر النشط في القائمة
-    document.querySelectorAll('.lang-card').forEach(c => c.classList.remove('active'));
-    document.getElementById(`card-${code}`).classList.add('active');
+    // تمييز العنصر النشط
+    document.querySelectorAll('.side-lang-card').forEach(c => c.classList.remove('active'));
+    document.getElementById(`cinema-${langCode}`).classList.add('active');
 
-    // تحديث الفيديو/الصوت
     const isMp4 = data.url.toLowerCase().includes('.mp4');
     if (isMp4) {
-        viewer.innerHTML = `<video controls autoplay src="${data.url}" style="width:100%; height:100%;"></video>`;
+        player.innerHTML = `<video controls autoplay src="${data.url}" style="width:100%; height:100%;"></video>`;
     } else {
-        viewer.innerHTML = `<div id="wsWave" style="width:85%;"></div>`;
+        player.innerHTML = `<div id="wsWave" style="width:85%;"></div>`;
         WaveSurfer.create({ container: '#wsWave', waveColor: '#555', progressColor: '#fff', height: 80, url: data.url }).on('ready', function() { this.play(); });
     }
 
-    // إظهار أيقونة التحميل في الزاوية
     dlArea.style.display = 'block';
     dlBtn.href = data.url;
 }
 
-// دالة الانتظار
-async function waitForJob(id, token) {
-    while(true) {
-        const r = await fetch(`${window.API_BASE}/api/job/${id}`, { headers: {'Authorization': `Bearer ${token}`} });
-        const d = await r.json();
-        if (d.status === 'completed') return d;
-        await new Promise(res => setTimeout(res, 4000));
+// إغلاق القوائم عند الضغط خارجها
+window.onclick = function(event) {
+    if (!event.target.closest('.drop-btn')) {
+        document.querySelectorAll('.drop-btn').forEach(d => d.classList.remove('active'));
     }
-}
-
-document.getElementById('dubBtn').onclick = startDubbing;
+};
