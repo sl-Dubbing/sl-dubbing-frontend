@@ -1,4 +1,4 @@
-// js/dubbing.js — V10.3 (Fixed API Paths & Enhanced Auth Headers)
+// js/dubbing.js — V10.4 (Final Fix for 401 & Trailing Slash)
 
 let cinemaResults = {};
 
@@ -82,7 +82,6 @@ async function startDubbing() {
     const langs = [...window.selectedLangs];
 
     try {
-        // --- الخطوة 1: الحصول على رابط الرفع ---
         statusTxt.innerText = "⚡ جاري تجهيز السيرفر...";
         progFill.style.width = "5%";
         statusPct.innerText = "5%";
@@ -97,7 +96,6 @@ async function startDubbing() {
 
         const { upload_url, file_key } = urlData;
 
-        // --- الخطوة 2: الرفع وتحديث شريط التقدم ---
         statusTxt.innerText = "📤 جاري رفع الملف...";
         await uploadToR2(upload_url, file, (pct) => {
             const overallProgress = 5 + (pct * 0.45); 
@@ -105,7 +103,6 @@ async function startDubbing() {
             statusPct.innerText = `${Math.round(overallProgress)}%`;
         });
 
-        // --- الخطوة 3: إرسال الطلبات للسيرفر ---
         statusTxt.innerText = "✅ اكتمل الرفع، تبدأ الآن المعالجة...";
         progFill.style.width = "50%";
         statusPct.innerText = "50%";
@@ -137,10 +134,9 @@ async function startDubbing() {
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error);
 
-                // الانتظار حتى تنتهي الدبلجة باستخدام الدالة المعدلة
+                // استدعاء دالة الانتظار المعدلة
                 const job = await waitForJob(data.job_id, token);
 
-                // حفظ النتيجة
                 cinemaResults[langCode] = { url: job.output_url, name: lang.name_ar, flag: lang.flag };
                 
                 item.innerHTML = `<span>${lang.flag}</span> <span>${lang.name_ar}</span> <i class="fas fa-check-circle" style="color:#10b981; margin-right:auto;"></i>`;
@@ -161,7 +157,7 @@ async function startDubbing() {
                 
                 if (completedJobs === langs.length) {
                     statusTxt.innerText = "✓ اكتملت المعالجة لجميع اللغات بنجاح!";
-                    if (typeof checkAuth === 'function') checkAuth(); // لتحديث الرصيد
+                    if (typeof checkAuth === 'function') checkAuth();
                 }
             }
         });
@@ -198,11 +194,12 @@ function switchCinemaLang(langCode) {
 }
 
 // =========================================================
-// 🚀 الدالة المعدلة لمعالجة خطأ 401 والتأكد من الاتصال
+// 🚀 الدالة المعدلة: إضافة / في النهاية لحل مشكلة الـ 401
 // =========================================================
 async function waitForJob(id, token) {
     while(true) {
-        const r = await fetch(`${window.API_BASE}/api/job/${id}`, { 
+        // لاحظ إضافة / بعد ${id} لتجنب الـ Redirect الذي يسقط الـ Token
+        const r = await fetch(`${window.API_BASE}/api/job/${id}/`, { 
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -210,9 +207,8 @@ async function waitForJob(id, token) {
             } 
         });
 
-        // التقاط خطأ 401 فوراً للتنبيه بضرورة تسجيل الدخول
         if (r.status === 401) {
-            throw new Error("انتهت صلاحية الجلسة أو غير مصرح لك. يرجى تسجيل الخروج والدخول مجدداً.");
+            throw new Error("فشل التصريح (401): يرجى تحديث الصفحة وتسجيل الدخول مجدداً.");
         }
 
         const d = await r.json();
