@@ -1,4 +1,4 @@
-// js/dubbing.js — V10.5 (Final Fix: Removed Trailing Slash & Fixed CORS)
+// js/dubbing.js — V10.6 (Bulletproof R2 Upload Fix)
 
 let cinemaResults = {};
 
@@ -35,11 +35,15 @@ document.getElementById('mediaFile')?.addEventListener('change', function(e) {
 // =====================================
 // 2. دالة الرفع المباشر إلى Cloudflare R2
 // =====================================
-function uploadToR2(url, file, onProgress) {
+// 💡 التعديل: تمرير contentType الدقيق لضمان تطابق التوقيع
+function uploadToR2(url, file, contentType, onProgress) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', url, true);
-        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        
+        // إجبار المتصفح على استخدام نفس النوع الذي تم توقيع الرابط به
+        xhr.setRequestHeader('Content-Type', contentType);
+        
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable && onProgress) {
                 onProgress((e.loaded / e.total) * 100);
@@ -47,7 +51,7 @@ function uploadToR2(url, file, onProgress) {
         };
         xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error('فشل الرفع'));
+            else reject(new Error(`فشل الرفع (رمز الخطأ: ${xhr.status})`));
         };
         xhr.onerror = () => reject(new Error('خطأ في الشبكة أثناء الرفع'));
         xhr.send(file);
@@ -81,6 +85,9 @@ async function startDubbing() {
     cinemaResults = {};
     const langs = [...window.selectedLangs];
 
+    // 💡 التعديل الأهم: تثبيت نوع الملف لاستخدامه في الباك إند والفرونت إند معاً
+    const strictContentType = file.type || 'application/octet-stream';
+
     try {
         statusTxt.innerText = "⚡ جاري تجهيز السيرفر...";
         progFill.style.width = "5%";
@@ -89,15 +96,18 @@ async function startDubbing() {
         const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: file.name, content_type: file.type, size: file.size })
+            body: JSON.stringify({ filename: file.name, content_type: strictContentType, size: file.size })
         });
+        
         const urlData = await urlRes.json();
         if (!urlRes.ok) throw new Error(urlData.error || "فشل الحصول على رابط الرفع");
 
         const { upload_url, file_key } = urlData;
 
         statusTxt.innerText = "📤 جاري رفع الملف...";
-        await uploadToR2(upload_url, file, (pct) => {
+        
+        // 💡 التعديل: تمرير strictContentType إلى دالة الرفع
+        await uploadToR2(upload_url, file, strictContentType, (pct) => {
             const overallProgress = 5 + (pct * 0.45); 
             progFill.style.width = `${overallProgress}%`;
             statusPct.innerText = `${Math.round(overallProgress)}%`;
@@ -134,7 +144,6 @@ async function startDubbing() {
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error);
 
-                // استدعاء دالة الانتظار المعدلة (بدون الشرطة المائلة)
                 const job = await waitForJob(data.job_id, token);
 
                 cinemaResults[langCode] = { url: job.output_url, name: lang.name_ar, flag: lang.flag };
@@ -193,12 +202,8 @@ function switchCinemaLang(langCode) {
     if(dlBtn) dlBtn.href = data.url;
 }
 
-// =========================================================
-// 🚀 الدالة النهائية: بدون شرطة مائلة لتجنب أخطاء CORS
-// =========================================================
 async function waitForJob(id, token) {
     while(true) {
-        // تم إزالة الشرطة المائلة / من نهاية الرابط هنا:
         const r = await fetch(`${window.API_BASE}/api/job/${id}`, { 
             method: 'GET',
             headers: {
@@ -207,7 +212,6 @@ async function waitForJob(id, token) {
             } 
         });
 
-        // التقاط الأخطاء بوضوح
         if (r.status === 401) {
             throw new Error("فشل التصريح (401): يرجى تسجيل الخروج والدخول مجدداً.");
         }
