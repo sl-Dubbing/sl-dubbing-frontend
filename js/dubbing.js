@@ -1,4 +1,4 @@
-// dubbing.js — V10.1 (Fixed API Paths)
+// js/dubbing.js — V10.2 (Fixed API Paths with /api/)
 
 let cinemaResults = {};
 
@@ -87,8 +87,8 @@ async function startDubbing() {
         progFill.style.width = "5%";
         statusPct.innerText = "5%";
 
-        // 🚨 التصحيح هنا: إزالة /api الإضافية
-        const urlRes = await fetch(`${window.API_BASE}/upload-url`, {
+        // ✅ تم الإصلاح: إضافة /api/ قبل upload-url
+        const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ filename: file.name, content_type: file.type, size: file.size })
@@ -124,8 +124,8 @@ async function startDubbing() {
             sidebar.appendChild(item);
 
             try {
-                // 🚨 التصحيح هنا: إزالة /api الإضافية
-                const res = await fetch(`${window.API_BASE}/dub`, {
+                // ✅ تم الإصلاح: إضافة /api/ قبل dub
+                const res = await fetch(`${window.API_BASE}/api/dub`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -200,8 +200,8 @@ function switchCinemaLang(langCode) {
 
 async function waitForJob(id, token) {
     while(true) {
-        // 🚨 التصحيح هنا: إزالة /api الإضافية
-        const r = await fetch(`${window.API_BASE}/job/${id}`, { headers: {'Authorization': `Bearer ${token}`} });
+        // ✅ تم الإصلاح: إضافة /api/ قبل job
+        const r = await fetch(`${window.API_BASE}/api/job/${id}`, { headers: {'Authorization': `Bearer ${token}`} });
         const d = await r.json();
         if (d.status === 'completed') return d;
         if (d.status === 'failed') throw new Error(d.error || "فشل السيرفر في المعالجة");
