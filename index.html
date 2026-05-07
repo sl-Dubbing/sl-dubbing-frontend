@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ── ElevenLabs Light Theme ── */
+        /* ── ElevenLabs Light Theme (The Original Look) ── */
         :root {
             --bg-page: #fafafa;
             --bg-card: #ffffff;
@@ -20,10 +20,8 @@
             --accent-blue-soft: rgba(0,122,255,0.1);
             --success: #10b981;
             --error: #ef4444;
-            --warning: #f59e0b;
             --radius-md: 12px;
             --radius-lg: 24px;
-            --shadow-lg: 0 20px 48px rgba(0,0,0,0.12);
             --sidebar-w: 280px;
             --transition: 0.32s cubic-bezier(0.32, 0.72, 0, 1);
         }
@@ -36,53 +34,49 @@
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 18px 0 40px; }
         .logo { display: flex; align-items: center; gap: 12px; font-size: 1.25rem; font-weight: 800; text-decoration: none; color: var(--text-main); }
         .user-zone { display: flex; align-items: center; gap: 12px; }
-        .btn-login { padding: 10px 20px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-weight: 600; text-decoration: none; font-size: .9rem; }
-        .avatar { width: 38px; height: 38px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: 700; overflow: hidden; border: 1px solid var(--border-color); }
-        .username { color: var(--text-muted); font-size: .9rem; font-weight: 500; }
-
-        /* ── Sidebar ── */
         .menu-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: .9rem; }
-        .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 200; opacity: 0; visibility: hidden; transition: var(--transition); backdrop-filter: blur(8px); }
-        .sidebar-overlay.active { opacity: 1; visibility: visible; }
-        .sidebar { position: fixed; top: 0; right: -320px; width: var(--sidebar-w); height: 100vh; background: var(--bg-card); border-left: 1px solid var(--border-color); padding: 25px; z-index: 300; transition: right var(--transition); display: flex; flex-direction: column; gap: 20px; box-shadow: -10px 0 40px rgba(0,0,0,0.08); }
-        .sidebar.active { right: 0; }
-        .sidebar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-md); cursor: pointer; transition: 0.2s; color: var(--text-main); text-decoration: none; font-weight: 500; font-size: 0.92rem; }
-        .sidebar-item:hover { background: #f3f4f6; }
-        .sidebar-item i { width: 20px; color: var(--text-muted); }
-        .sidebar-item.active { background: var(--accent-blue-soft); color: var(--accent-blue); }
-        .sidebar-divider { height: 1px; background: var(--border-color); margin: 10px 0; }
+        .avatar { width: 38px; height: 38px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: 700; overflow: hidden; border: 1px solid var(--border-color); }
 
         /* ── Server Badge ── */
-        .srv-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 20px; font-size: .75rem; color: #ef4444; font-weight: 700; margin-bottom: 40px; }
+        .srv-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 20px; font-size: .75rem; color: #ef4444; font-weight: 700; margin-bottom: 40px; cursor: pointer; }
         .srv-badge.on { background: #d1fae5; border-color: #6ee7b7; color: #10b981; }
         .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: blink 2s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
 
-        /* ── Hero & Cards ── */
-        .hero { text-align: center; padding: 40px 0 60px; }
-        .hero h1 { font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 900; letter-spacing: -0.03em; margin-bottom: 15px; }
-        .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 650px; margin: 0 auto; }
-        .tools-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 40px; }
-        .tool-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 35px; cursor: pointer; transition: 0.3s; }
-        .tool-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        .tool-card i { font-size: 2rem; margin-bottom: 20px; display: block; }
+        /* ── Hero ── */
+        .hero { text-align: center; padding: 20px 0 60px; }
+        .hero h1 { font-size: clamp(2.5rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.1; margin-bottom: 16px; letter-spacing: -0.03em; }
+        .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
 
-        /* ── Modals ── */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 400; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: 0.3s; backdrop-filter: blur(5px); }
-        .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal { background: white; padding: 30px; border-radius: var(--radius-lg); width: 90%; max-width: 400px; }
-        
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1c1c1e; color: white; padding: 12px 24px; border-radius: 12px; font-size: 0.9rem; z-index: 1000; box-shadow: var(--shadow-lg); }
+        /* ── Tools Grid (3 Cards) ── */
+        .tools-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 80px; }
+        .tool-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; cursor: pointer; transition: 0.3s; text-align: left; }
+        .tool-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .tool-card .ico { font-size: 2rem; margin-bottom: 20px; display: block; color: var(--text-main); }
+        .tool-card h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 12px; }
+        .tool-card p { color: var(--text-muted); font-size: .95rem; line-height: 1.6; margin-bottom: 24px; }
+        .tool-card .go { font-weight: 600; font-size: .9rem; display: flex; align-items: center; gap: 6px; }
+
+        /* ── Pricing ── */
+        .section-title { text-align: center; margin-bottom: 50px; }
+        .plans-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 80px; }
+        .plan { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; display: flex; flex-direction: column; }
+        .price-box { background: var(--bg-page); border-radius: var(--radius-md); padding: 20px; text-align: center; margin: 20px 0; border: 1px solid var(--border-color); }
+        .price-num { font-size: 2.2rem; font-weight: 900; }
+        .buy-btn { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: 600; cursor: pointer; text-decoration: none; text-align: center; }
+
+        /* ── Sidebar ── */
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 200; opacity: 0; visibility: hidden; transition: var(--transition); backdrop-filter: blur(8px); }
+        .sidebar-overlay.active { opacity: 1; visibility: visible; }
+        .sidebar { position: fixed; top: 0; right: -320px; width: var(--sidebar-w); height: 100vh; background: var(--bg-card); border-left: 1px solid var(--border-color); padding: 25px; z-index: 300; transition: right var(--transition); display: flex; flex-direction: column; gap: 20px; }
+        .sidebar.active { right: 0; }
     </style>
 </head>
 <body>
 
 <div class="page">
     <header class="top-bar">
-        <a class="logo" href="index.html">
-            <i class="fas fa-cube"></i> sl-Dubbing
-        </a>
+        <a class="logo" href="index.html"><i class="fas fa-cube"></i> sl-Dubbing</a>
         <div class="user-zone" id="hdr">
             <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i> القائمة</button>
         </div>
@@ -90,190 +84,89 @@
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h3 style="font-weight: 800;">الإعدادات</h3>
-            <button id="sidebarClose" style="background:none;border:none;font-size:1.2rem;cursor:pointer;"><i class="fas fa-times"></i></button>
+        <h3 style="font-weight: 800; margin-bottom: 20px;">القائمة</h3>
+        <div id="sidebarUser" style="padding:15px; background:#f9fafb; border-radius:12px; margin-bottom:20px;">
+            <div id="sidebarName" style="font-weight:700;">جاري التحميل...</div>
+            <div id="sidebarCredits" style="color:var(--accent-blue); font-size:0.9rem; margin-top:5px;"><i class="fas fa-coins"></i> -- نقطة</div>
         </div>
-        
-        <div id="sidebarUserInfo" style="padding: 15px; background: #f9fafb; border-radius: 12px; border: 1px solid #eee;">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div class="avatar" id="sidebarAvatarIcon" style="width:45px; height:45px; font-size:1.2rem;">?</div>
-                <div>
-                    <div id="sidebarUserName" style="font-weight:700; font-size:0.95rem;">زائر</div>
-                    <div id="sidebarUserEmail" style="font-size:0.75rem; color:var(--text-muted);">سجل الدخول للمتابعة</div>
-                </div>
-            </div>
-            <div id="sidebarCredits" style="margin-top:12px; font-size:0.85rem; font-weight:600; color:var(--accent-blue);">
-                <i class="fas fa-coins"></i> جاري التحميل...
-            </div>
-        </div>
-
-        <nav style="margin-top:10px;">
-            <a href="index.html" class="sidebar-item active"><i class="fas fa-home"></i> الرئيسية</a>
-            <a href="dubbing.html" class="sidebar-item"><i class="fas fa-film"></i> استوديو الدبلجة</a>
-            <a href="history.html" class="sidebar-item"><i class="fas fa-history"></i> سجل العمليات</a>
-        </nav>
-
-        <div class="sidebar-divider"></div>
-        
-        <div style="margin-top:auto;">
-            <button class="sidebar-item" id="btnLogout" style="width:100%; border:none; background:none; color:var(--error);">
-                <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
-            </button>
-        </div>
+        <a href="dubbing.html" style="text-decoration:none; color:inherit; padding:10px; border-radius:8px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'"><i class="fas fa-film"></i> استوديو الدبلجة</a>
+        <a href="tts.html" style="text-decoration:none; color:inherit; padding:10px; border-radius:8px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'"><i class="fas fa-microphone"></i> تحويل النص لصوت</a>
+        <button id="btnLogout" style="margin-top:auto; padding:12px; border:none; background:#fee2e2; color:#ef4444; border-radius:8px; font-weight:600; cursor:pointer;">تسجيل الخروج</button>
     </aside>
 
     <div class="srv-badge" id="srv">
-        <span class="dot"></span><span id="srvTxt">جاري فحص اتصال RTX 3060...</span>
+        <span class="dot"></span><span id="srvTxt">جاري فحص اتصال RTX...</span>
     </div>
 
     <section class="hero">
-        <h1>دبلجة احترافية<br>بذكاء اصطناعي محلي</h1>
-        <p>استخدم قوة كرت الشاشة لديك لدبلجة الفيديوهات، استنساخ الأصوات، وتحويل النص لكلام بدقة مذهلة وسرعة البرق.</p>
-        
-        <div class="tools-row">
-            <div class="tool-card" onclick="location.href='dubbing.html'">
-                <i class="fas fa-microphone-lines" style="color: var(--accent-blue);"></i>
-                <h3>استوديو الدبلجة</h3>
-                <p>دبلج فيديوهاتك لـ 25 لغة مع الحفاظ على نبرة صوتك الأصلية ومزامنة الشفاه.</p>
-            </div>
-            <div class="tool-card" onclick="location.href='tts.html'">
-                <i class="fas fa-robot" style="color: var(--success);"></i>
-                <h3>تحويل النص لصوت</h3>
-                <p>حول أي نص مكتوب إلى صوت بشري طبيعي باستخدام أحدث محركات XTTS v2.</p>
-            </div>
-        </div>
+        <h1>أنشئ محتوى صوتي<br>احترافي بالذكاء الاصطناعي</h1>
+        <p>أحدث تقنيات الذكاء الاصطناعي لتحويل النص لصوت، دبلجة الفيديو، وتحويل الصوت لنص بدقة عالية.</p>
     </section>
 
-    <footer>
-        <p>© 2026 sl-Dubbing. جميع الحقوق محفوظة.</p>
-    </footer>
+    <div class="tools-row">
+        <div class="tool-card" onclick="location.href='tts.html'">
+            <span class="ico"><i class="fas fa-microphone-lines"></i></span>
+            <h3>تحويل النص لصوت</h3>
+            <p>حوّل أي نص إلى كلام طبيعي بـ 25 لغة. تحكم بالسرعة والنبرة بشكل دقيق.</p>
+            <span class="go">جرب الآن <i class="fas fa-arrow-left"></i></span>
+        </div>
+        <div class="tool-card" onclick="location.href='dubbing.html'">
+            <span class="ico"><i class="fas fa-video"></i></span>
+            <h3>دبلجة بالذكاء الاصطناعي</h3>
+            <p>دبلج فيديوهاتك تلقائياً. استنساخ الصوت الأصلي أو أصوات AI ممتازة مع مزامنة SRT دقيقة.</p>
+            <span class="go">جرب الآن <i class="fas fa-arrow-left"></i></span>
+        </div>
+        <div class="tool-card" onclick="location.href='stt.html'">
+            <span class="ico"><i class="fas fa-headphones"></i></span>
+            <h3>تحويل الصوت لنص</h3>
+            <p>حوّل أي ملف صوتي أو فيديو إلى نص مكتوب بدقة عالية. يدعم 25 لغة.</p>
+            <span class="go">جرب الآن <i class="fas fa-arrow-left"></i></span>
+        </div>
+    </div>
+
+    <div class="section-title">
+        <h2>وصول مدى الحياة</h2>
+        <p>دفعة واحدة. توليد غير محدود. بدون اشتراكات شهرية.</p>
+    </div>
+
+    <div class="plans-row">
+        <div class="plan"><h3>توليف الكلام</h3><div class="price-box"><div class="price-num">$10</div></div><button class="buy-btn">شراء الآن</button></div>
+        <div class="plan" style="border: 2px solid var(--primary);"><h3>دبلجة AI كاملة</h3><div class="price-box"><div class="price-num">$50</div></div><button class="buy-btn">شراء الآن</button></div>
+        <div class="plan"><h3>تحويل الكلام</h3><div class="price-box"><div class="price-num">$10</div></div><button class="buy-btn">شراء الآن</button></div>
+    </div>
 </div>
 
-<div id="toasts"></div>
-
 <script>
-(function() {
-    'use strict';
-
-    // ── الإعدادات الأساسية ──
     const BE = 'https://web-production-14a1.up.railway.app';
-    const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-    const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY'; // استبدله بمفتاحك
-
-    let supabaseClient = null;
-
-    function getSupabase() {
-        if (supabaseClient) return supabaseClient;
-        if (typeof supabase === 'undefined') return null;
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        return supabaseClient;
-    }
-
-    // ── 1. فحص حالة النظام (الربط مع RTX 3060) ──
-    async function checkServerStatus() {
+    
+    async function checkServer() {
         try {
             const r = await fetch(BE + '/api/status');
             const data = await r.json();
-            
             const badge = document.getElementById('srv');
-            const text = document.getElementById('srvTxt');
-
+            const txt = document.getElementById('srvTxt');
             if (data.is_online) {
                 badge.className = 'srv-badge on';
-                text.textContent = data.mode === 'local' ? 'متصل بـ RTX 3060 المحلي' : 'متصل بالسيرفر السحابي';
+                txt.textContent = data.mode === 'local' ? 'متصل بـ RTX 3060 المحلي' : 'متصل بالسحاب';
             } else {
                 badge.className = 'srv-badge';
-                text.textContent = 'النظام غير متصل - شغل الـ Worker';
+                txt.textContent = 'النظام غير متصل';
             }
-        } catch (e) {
-            document.getElementById('srv').className = 'srv-badge';
-            document.getElementById('srvTxt').textContent = 'تعذر الوصول للبوابة';
-        }
+        } catch (e) { document.getElementById('srvTxt').textContent = 'خطأ في الاتصال'; }
     }
 
-    // ── 2. جلب رصيد المستخدم ──
-    async function updateCredits(token) {
-        try {
-            const res = await fetch(BE + '/api/user/credits', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (data.success) {
-                document.getElementById('sidebarCredits').innerHTML = `<i class="fas fa-coins"></i> ${data.credits} نقطة`;
-            }
-        } catch (e) {
-            document.getElementById('sidebarCredits').textContent = 'الرصيد: خطأ في المزامنة';
-        }
-    }
-
-    // ── 3. إدارة الجلسة ──
-    async function initAuth() {
-        const supa = getSupabase();
-        if (!supa) return;
-
-        const { data: { session } } = await supa.auth.getSession();
-        const hdr = document.getElementById('hdr');
-
-        if (session) {
-            const user = session.user;
-            const name = user.user_metadata?.full_name || user.email.split('@')[0];
-            const avatar = user.user_metadata?.avatar_url;
-
-            localStorage.setItem('token', session.access_token);
-
-            // تحديث واجهة الهيدر
-            hdr.innerHTML = `
-                <div class="avatar">${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;">` : name[0].toUpperCase()}</div>
-                <span class="username">${name}</span>
-                <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
-            `;
-
-            // تحديث السايدبار
-            document.getElementById('sidebarUserName').textContent = name;
-            document.getElementById('sidebarUserEmail').textContent = user.email;
-            document.getElementById('sidebarAvatarIcon').innerHTML = avatar ? 
-                `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : name[0].toUpperCase();
-            
-            updateCredits(session.access_token);
-        } else {
-            hdr.innerHTML = `
-                <a href="login.html" class="btn-login">دخول</a>
-                <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
-            `;
-        }
-
-        // ربط زر القائمة
-        document.getElementById('menuBtn')?.addEventListener('click', () => {
-            document.getElementById('sidebar').classList.add('active');
-            document.getElementById('sidebarOverlay').classList.add('active');
-        });
-    }
-
-    // ── التنفيذ عند التحميل ──
-    document.addEventListener('DOMContentLoaded', () => {
-        initAuth();
-        checkServerStatus();
-        setInterval(checkServerStatus, 30000); // فحص كل 30 ثانية
-    });
-
-    // إغلاق القائمة
-    const close = () => {
+    // تفعيل السايدبار
+    document.getElementById('menuBtn').onclick = () => {
+        document.getElementById('sidebar').classList.add('active');
+        document.getElementById('sidebarOverlay').classList.add('active');
+    };
+    document.getElementById('sidebarOverlay').onclick = () => {
         document.getElementById('sidebar').classList.remove('active');
         document.getElementById('sidebarOverlay').classList.remove('active');
     };
-    document.getElementById('sidebarClose').onclick = close;
-    document.getElementById('sidebarOverlay').onclick = close;
 
-    document.getElementById('btnLogout').onclick = async () => {
-        const supa = getSupabase();
-        await supa.auth.signOut();
-        localStorage.clear();
-        location.reload();
-    };
-
-})();
+    checkServer();
+    setInterval(checkServer, 30000);
 </script>
-
 </body>
 </html>
