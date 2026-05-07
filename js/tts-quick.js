@@ -1,4 +1,4 @@
-const QUICK_API_BASE = 'https://web-production-14a1.up.railway.app';
+// js/tts-quick.js — V1.1 (Centralized API Base & Streaming)
 
 async function quickTTS(text, options = {}) {
     const { lang = 'ar', edge_voice = '', translate = true, rate = '+0%', pitch = '+0Hz' } = options;
@@ -9,8 +9,11 @@ async function quickTTS(text, options = {}) {
     if (!text?.trim()) throw new Error('النص فارغ');
 
     const t0 = performance.now();
-    const response = await fetch(`${QUICK_API_BASE}/api/tts/quick`, {
-        method: 'POST', headers,
+    
+    // استخدام window.API_BASE الموحد من shared.js (والذي ينتهي بـ /api)
+    const response = await fetch(`${window.API_BASE}/tts/quick`, {
+        method: 'POST', 
+        headers,
         body: JSON.stringify({ text, lang, edge_voice, translate, rate, pitch })
     });
 
@@ -22,7 +25,10 @@ async function quickTTS(text, options = {}) {
     const ttfb = performance.now() - t0;
     const remainingCredits = parseInt(response.headers.get('X-Remaining-Credits') || '0');
 
-    // إذا كان المتصفح لا يدعم بث MP3 المباشر
+    // تحديث الرصيد في الواجهة فوراً إذا كانت الدالة موجودة
+    if (typeof checkAuth === 'function') checkAuth();
+
+    // إذا كان المتصفح لا يدعم بث MP3 المباشر (مثل بعض متصفحات iOS القديمة)
     if (typeof MediaSource === 'undefined' || !MediaSource.isTypeSupported('audio/mpeg')) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
