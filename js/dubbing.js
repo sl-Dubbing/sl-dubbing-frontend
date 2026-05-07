@@ -1,4 +1,4 @@
-// js/dubbing.js — V10.4 (Final Fix for 401 & Trailing Slash)
+// js/dubbing.js — V10.5 (Final Fix: Removed Trailing Slash & Fixed CORS)
 
 let cinemaResults = {};
 
@@ -134,7 +134,7 @@ async function startDubbing() {
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error);
 
-                // استدعاء دالة الانتظار المعدلة
+                // استدعاء دالة الانتظار المعدلة (بدون الشرطة المائلة)
                 const job = await waitForJob(data.job_id, token);
 
                 cinemaResults[langCode] = { url: job.output_url, name: lang.name_ar, flag: lang.flag };
@@ -194,12 +194,12 @@ function switchCinemaLang(langCode) {
 }
 
 // =========================================================
-// 🚀 الدالة المعدلة: إضافة / في النهاية لحل مشكلة الـ 401
+// 🚀 الدالة النهائية: بدون شرطة مائلة لتجنب أخطاء CORS
 // =========================================================
 async function waitForJob(id, token) {
     while(true) {
-        // لاحظ إضافة / بعد ${id} لتجنب الـ Redirect الذي يسقط الـ Token
-        const r = await fetch(`${window.API_BASE}/api/job/${id}/`, { 
+        // تم إزالة الشرطة المائلة / من نهاية الرابط هنا:
+        const r = await fetch(`${window.API_BASE}/api/job/${id}`, { 
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -207,8 +207,12 @@ async function waitForJob(id, token) {
             } 
         });
 
+        // التقاط الأخطاء بوضوح
         if (r.status === 401) {
-            throw new Error("فشل التصريح (401): يرجى تحديث الصفحة وتسجيل الدخول مجدداً.");
+            throw new Error("فشل التصريح (401): يرجى تسجيل الخروج والدخول مجدداً.");
+        }
+        if (!r.ok) {
+             throw new Error(`خطأ من السيرفر: ${r.status}`);
         }
 
         const d = await r.json();
