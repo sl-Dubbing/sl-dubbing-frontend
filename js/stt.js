@@ -1,4 +1,4 @@
-// js/stt.js — Speech to Text Logic V1.0
+// js/stt.js — Speech to Text Logic V1.1 (Fixed API Paths)
 
 let currentMode = 'fast';
 
@@ -53,8 +53,8 @@ async function startSTT() {
     statusTxt.innerText = "⚡ تجهيز الرفع المباشر...";
 
     try {
-        // الخطوة 1: الحصول على رابط الرفع
-        const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
+        // الخطوة 1: الحصول على رابط الرفع (تم تصحيح المسار)
+        const urlRes = await fetch(`${window.API_BASE}/upload-url`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ filename: file.name, content_type: file.type, size: file.size })
@@ -80,9 +80,9 @@ async function startSTT() {
             xhr.send(file);
         });
 
-        // الخطوة 3: إرسال المهمة للسيرفر
+        // الخطوة 3: إرسال المهمة للسيرفر (تم تصحيح المسار)
         statusTxt.innerText = "⚙️ بدء المعالجة بالذكاء الاصطناعي...";
-        const sttRes = await fetch(`${window.API_BASE}/api/stt`, {
+        const sttRes = await fetch(`${window.API_BASE}/stt`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -112,7 +112,8 @@ async function pollStatus(jobId, token) {
     
     const interval = setInterval(async () => {
         try {
-            const res = await fetch(`${window.API_BASE}/api/job/${jobId}`, {
+            // التصحيح هنا: تم إزالة /api
+            const res = await fetch(`${window.API_BASE}/job/${jobId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -120,6 +121,8 @@ async function pollStatus(jobId, token) {
             if (data.status === 'completed') {
                 clearInterval(interval);
                 showResult(data);
+                // تحديث الرصيد إذا كانت الدالة موجودة
+                if (typeof checkAuth === 'function') checkAuth(); 
             } else if (data.status === 'failed') {
                 clearInterval(interval);
                 showToast("فشلت المعالجة: " + data.error, "error");
@@ -149,7 +152,17 @@ function showResult(data) {
             </div>
         `).join('');
     } else {
-        box.innerText = data.transcript || "لم يتم العثور على نص.";
+        box.innerText = data.transcript || data.output_text || "لم يتم العثور على نص.";
+    }
+    
+    // إضافة زر لتحميل ملف الـ SRT إذا كان متوفراً
+    if(data.output_url) {
+        const dlBtn = document.createElement('a');
+        dlBtn.href = data.output_url;
+        dlBtn.className = 'btn';
+        dlBtn.style.marginTop = '15px';
+        dlBtn.innerHTML = '<i class="fas fa-download"></i> تحميل ملف الترجمة';
+        box.parentElement.appendChild(dlBtn);
     }
 }
 
