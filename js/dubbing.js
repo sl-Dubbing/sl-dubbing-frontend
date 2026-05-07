@@ -1,4 +1,4 @@
-// dubbing.js — V10.0 (Progress Bar Fixed & Lang-Picker Restored)
+// dubbing.js — V10.1 (Fixed API Paths)
 
 let cinemaResults = {};
 
@@ -63,7 +63,6 @@ async function startDubbing() {
     
     if (!token && typeof showToast === 'function') return showToast("يرجى تسجيل الدخول أولاً", "warning");
     if (!file) return alert("يرجى اختيار ملف الوسائط!");
-    // الاعتماد على window.selectedLangs القادمة من lang-picker.js
     if (!window.selectedLangs || window.selectedLangs.size === 0) return alert("يرجى اختيار لغة واحدة على الأقل!");
 
     const dubBtn = document.getElementById('dubBtn');
@@ -88,7 +87,8 @@ async function startDubbing() {
         progFill.style.width = "5%";
         statusPct.innerText = "5%";
 
-        const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
+        // 🚨 التصحيح هنا: إزالة /api الإضافية
+        const urlRes = await fetch(`${window.API_BASE}/upload-url`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ filename: file.name, content_type: file.type, size: file.size })
@@ -101,7 +101,6 @@ async function startDubbing() {
         // --- الخطوة 2: الرفع وتحديث شريط التقدم ---
         statusTxt.innerText = "📤 جاري رفع الملف...";
         await uploadToR2(upload_url, file, (pct) => {
-            // الرفع يمثل 50% من شريط التقدم الكلي
             const overallProgress = 5 + (pct * 0.45); 
             progFill.style.width = `${overallProgress}%`;
             statusPct.innerText = `${Math.round(overallProgress)}%`;
@@ -118,7 +117,6 @@ async function startDubbing() {
             const lang = window.LANGUAGES.find(l => l.code === langCode);
             if(!lang) return;
 
-            // إنشاء بطاقة الانتظار
             const item = document.createElement('div');
             item.className = 'side-lang-card';
             item.id = `cinema-${langCode}`;
@@ -126,7 +124,8 @@ async function startDubbing() {
             sidebar.appendChild(item);
 
             try {
-                const res = await fetch(`${window.API_BASE}/api/dub`, {
+                // 🚨 التصحيح هنا: إزالة /api الإضافية
+                const res = await fetch(`${window.API_BASE}/dub`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -156,7 +155,6 @@ async function startDubbing() {
             } catch (e) { 
                 item.innerHTML = `❌ <span>${lang.name_ar}</span>`; 
             } finally {
-                // تحديث النصف الثاني من شريط التقدم
                 completedJobs++;
                 const finalProgress = 50 + ((completedJobs / langs.length) * 50);
                 progFill.style.width = `${finalProgress}%`;
@@ -202,7 +200,8 @@ function switchCinemaLang(langCode) {
 
 async function waitForJob(id, token) {
     while(true) {
-        const r = await fetch(`${window.API_BASE}/api/job/${id}`, { headers: {'Authorization': `Bearer ${token}`} });
+        // 🚨 التصحيح هنا: إزالة /api الإضافية
+        const r = await fetch(`${window.API_BASE}/job/${id}`, { headers: {'Authorization': `Bearer ${token}`} });
         const d = await r.json();
         if (d.status === 'completed') return d;
         if (d.status === 'failed') throw new Error(d.error || "فشل السيرفر في المعالجة");
@@ -210,10 +209,8 @@ async function waitForJob(id, token) {
     }
 }
 
-// ربط زر الدبلجة
 document.getElementById('dubBtn')?.addEventListener('click', startDubbing);
 
-// إغلاق قائمة اللغات المنسدلة عند الضغط خارجها
 window.onclick = function(event) {
     if (!event.target.closest('.drop-btn')) {
         document.querySelectorAll('.drop-btn').forEach(d => d.classList.remove('active'));
