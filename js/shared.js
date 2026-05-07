@@ -1,4 +1,4 @@
-// shared.js — V11.0 (Fixed Cache Trap & API Paths)
+// shared.js — V11.1 (مطابق تماماً لـ Gateway app.py V5.0)
 const API_BASE = 'https://web-production-14a1.up.railway.app';
 const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
@@ -37,7 +37,8 @@ function renderAuthUI(user) {
         return;
     }
 
-    const credits = user.credits ?? "...";
+    // تأكد من قراءة credits بشكل صحيح من الكائن
+    const credits = (user.credits !== undefined) ? user.credits : "...";
     const name = user.name || user.email?.split('@')[0] || 'مستخدم';
 
     if (authSection) {
@@ -55,10 +56,10 @@ function renderAuthUI(user) {
 }
 
 // =================================
-// 🚀 المصادقة الذكية (المحسّنة)
+// 🚀 المصادقة الذكية (المحسّنة للمسارات الجديدة)
 // =================================
 async function checkAuth() {
-    // 1. عرض الـ Cache أولاً للسرعة
+    // 1. عرض الذاكرة المؤقتة فوراً
     const cached = JSON.parse(localStorage.getItem(USER_CACHE_KEY) || 'null');
     if (cached) renderAuthUI(cached);
 
@@ -75,19 +76,20 @@ async function checkAuth() {
 
         localStorage.setItem('token', session.access_token);
 
-        // 2. جلب الرصيد الحقيقي من Railway دائماً (بدون حجز Cache)
-        const res = await fetch(`${API_BASE}/api/user`, {
+        // 🚨 التصحيح الأساسي: العنوان الجديد مطابق لـ app.py
+        const res = await fetch(`${API_BASE}/api/user/credits`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
 
         if (res.ok) {
             const d = await res.json();
-            if (d?.user) {
+            if (d?.success) {
+                // دمج بيانات الجلسة مع الرصيد القادم من Railway
                 const userData = {
                     id: session.user.id,
                     email: session.user.email,
                     name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-                    credits: d.user.credits // الرصيد القادم من داتابيز Railway
+                    credits: d.credits // سحب الرصيد من الحقل المباشر كما في app.py
                 };
                 localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userData));
                 renderAuthUI(userData);
@@ -98,7 +100,7 @@ async function checkAuth() {
     }
 }
 
-// بقية الدوال (Toast, Sidebar, Logout) تبقى كما هي...
+// الدوال المساعدة تبقى كما هي...
 function showToast(msg, color) {
     const t = document.getElementById('toasts');
     if (!t) { alert(msg); return; }
@@ -110,16 +112,10 @@ function showToast(msg, color) {
     t.appendChild(box);
     setTimeout(() => box.remove(), 4000);
 }
-
 function escapeHtml(u) { return String(u||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m])); }
-
-function toggleSidebar() { 
-    const s = document.getElementById('sidebar');
-    if(s?.classList.contains('active')) closeSidebar(); else openSidebar();
-}
+function toggleSidebar() { const s = document.getElementById('sidebar'); if(s?.classList.contains('active')) closeSidebar(); else openSidebar(); }
 function openSidebar() { document.getElementById('sidebar')?.classList.add('active'); document.getElementById('overlay')?.classList.add('active'); }
 function closeSidebar() { document.getElementById('sidebar')?.classList.remove('active'); document.getElementById('overlay')?.classList.remove('active'); }
-
 async function logout() {
     const supa = await getSupabase();
     await supa.auth.signOut();
