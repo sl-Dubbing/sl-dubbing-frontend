@@ -1,9 +1,9 @@
-// js/dubbing.js — V10.6 (Bulletproof R2 Upload Fix)
-
+// js/dubbing.js — الإصدار السينمائي المتقدم
 let cinemaResults = {};
+let activeWavesurfer = null;
 
 // =====================================
-// 1. معاينة الوسائط المرفوعة (Preview)
+// 1. معاينة الملف المرفوع
 // =====================================
 document.getElementById('mediaFile')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -21,216 +21,201 @@ document.getElementById('mediaFile')?.addEventListener('change', function(e) {
     if(dubBtn) dubBtn.style.display = 'block';
 
     if (file.type.startsWith('video/')) {
-        if(vPreview) { vPreview.src = url; vPreview.style.display = 'block'; }
-        if(aPreview) aPreview.style.display = 'none';
+        vPreview.src = url;
+        vPreview.style.display = 'block';
+        aPreview.style.display = 'none';
     } else {
-        if(vPreview) vPreview.style.display = 'none';
-        if(aPreview) {
-            aPreview.style.display = 'block';
-            document.getElementById('audioFileName').innerText = file.name;
-        }
+        vPreview.style.display = 'none';
+        aPreview.style.display = 'block';
+        document.getElementById('audioFileName').innerText = file.name;
     }
 });
 
 // =====================================
-// 2. دالة الرفع المباشر إلى Cloudflare R2
-// =====================================
-// 💡 التعديل: تمرير contentType الدقيق لضمان تطابق التوقيع
-function uploadToR2(url, file, contentType, onProgress) {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', url, true);
-        
-        // إجبار المتصفح على استخدام نفس النوع الذي تم توقيع الرابط به
-        xhr.setRequestHeader('Content-Type', contentType);
-        
-        xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable && onProgress) {
-                onProgress((e.loaded / e.total) * 100);
-            }
-        };
-        xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`فشل الرفع (رمز الخطأ: ${xhr.status})`));
-        };
-        xhr.onerror = () => reject(new Error('خطأ في الشبكة أثناء الرفع'));
-        xhr.send(file);
-    });
-}
-
-// =====================================
-// 3. منطق الدبلجة ومشغل السينما
+// 2. بدء عملية الدبلجة
 // =====================================
 async function startDubbing() {
     const file = document.getElementById('mediaFile')?.files[0];
     const token = localStorage.getItem('token');
     
-    if (!token && typeof showToast === 'function') return showToast("يرجى تسجيل الدخول أولاً", "warning");
-    if (!file) return alert("يرجى اختيار ملف الوسائط!");
-    if (!window.selectedLangs || window.selectedLangs.size === 0) return alert("يرجى اختيار لغة واحدة على الأقل!");
+    if (!token) return alert("يرجى تسجيل الدخول أولاً");
+    if (!file) return alert("يرجى اختيار ملف!");
+    if (!window.selectedLangs || window.selectedLangs.size === 0) return alert("اختر لغة واحدة على الأقل!");
 
-    const dubBtn = document.getElementById('dubBtn');
-    const resultsCard = document.getElementById('resultsCard');
+    // تجهيز الواجهة
+    document.getElementById('dubBtn').style.display = 'none';
+    document.getElementById('progressArea').style.display = 'block';
+    document.getElementById('resultsCard').style.display = 'block';
     const sidebar = document.getElementById('cinemaLangs');
-    const progressArea = document.getElementById('progressArea');
-    const progFill = document.getElementById('progFill');
-    const statusTxt = document.getElementById('statusTxt');
-    const statusPct = document.getElementById('statusPct');
-
-    if(dubBtn) dubBtn.style.display = 'none';
-    if(progressArea) progressArea.style.display = 'block';
-    if(resultsCard) resultsCard.style.display = 'block';
-    if(sidebar) sidebar.innerHTML = '';
-    
+    sidebar.innerHTML = '';
     cinemaResults = {};
-    const langs = [...window.selectedLangs];
-
-    // 💡 التعديل الأهم: تثبيت نوع الملف لاستخدامه في الباك إند والفرونت إند معاً
-    const strictContentType = file.type || 'application/octet-stream';
 
     try {
-        statusTxt.innerText = "⚡ جاري تجهيز السيرفر...";
-        progFill.style.width = "5%";
-        statusPct.innerText = "5%";
-
+        updateProgress("⚡ جاري رفع الملف...", 10);
+        
+        // 1. الحصول على رابط الرفع
         const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: file.name, content_type: strictContentType, size: file.size })
+            body: JSON.stringify({ filename: file.name, content_type: file.type })
         });
-        
         const urlData = await urlRes.json();
-        if (!urlRes.ok) throw new Error(urlData.error || "فشل الحصول على رابط الرفع");
-
-        const { upload_url, file_key } = urlData;
-
-        statusTxt.innerText = "📤 جاري رفع الملف...";
         
-        // 💡 التعديل: تمرير strictContentType إلى دالة الرفع
-        await uploadToR2(upload_url, file, strictContentType, (pct) => {
-            const overallProgress = 5 + (pct * 0.45); 
-            progFill.style.width = `${overallProgress}%`;
-            statusPct.innerText = `${Math.round(overallProgress)}%`;
-        });
+        // 2. الرفع المباشر لـ R2
+        await fetch(urlData.upload_url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
 
-        statusTxt.innerText = "✅ اكتمل الرفع، تبدأ الآن المعالجة...";
-        progFill.style.width = "50%";
-        statusPct.innerText = "50%";
+        updateProgress("⚙️ بدأت المعالجة في السحابة...", 50);
 
-        let completedJobs = 0;
+        // 3. إرسال طلبات الدبلجة لكل لغة
+        const langCodes = Array.from(window.selectedLangs);
+        let completed = 0;
 
-        langs.forEach(async (langCode) => {
-            const lang = window.LANGUAGES.find(l => l.code === langCode);
-            if(!lang) return;
-
+        for (const langCode of langCodes) {
+            const langInfo = window.LANGUAGES.find(l => l.code === langCode);
+            
+            // إضافة بطاقة لغة في السايدبار (Loading)
             const item = document.createElement('div');
             item.className = 'side-lang-card';
-            item.id = `cinema-${langCode}`;
-            item.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${lang.name_ar}</span>`;
+            item.id = `side-${langCode}`;
+            item.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${langInfo.name_ar}</span>`;
             sidebar.appendChild(item);
 
-            try {
-                const res = await fetch(`${window.API_BASE}/api/dub`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        file_key: file_key,
-                        lang: langCode,
-                        with_lipsync: document.getElementById('lipsyncToggle')?.checked || false,
-                        return_video: document.getElementById('videoToggle')?.checked || false
-                    })
-                });
-                
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error);
-
+            // طلب الدبلجة من Railway
+            fetch(`${window.API_BASE}/api/dub`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file_key: urlData.file_key,
+                    lang: langCode,
+                    with_lipsync: document.getElementById('lipsyncToggle').checked,
+                    video_output: document.getElementById('videoToggle').checked
+                })
+            }).then(res => res.json()).then(async (data) => {
                 const job = await waitForJob(data.job_id, token);
-
-                cinemaResults[langCode] = { url: job.output_url, name: lang.name_ar, flag: lang.flag };
                 
-                item.innerHTML = `<span>${lang.flag}</span> <span>${lang.name_ar}</span> <i class="fas fa-check-circle" style="color:#10b981; margin-right:auto;"></i>`;
+                // تخزين النتيجة
+                cinemaResults[langCode] = { 
+                    url: job.output_url, 
+                    name: langInfo.name_ar, 
+                    flag: langInfo.flag 
+                };
+
+                // تحديث بطاقة اللغة
+                item.innerHTML = `<span>${langInfo.flag}</span> <span>${langInfo.name_ar}</span> <i class="fas fa-check-circle" style="color:var(--accent-green); margin-right:auto;"></i>`;
                 item.onclick = () => switchCinemaLang(langCode);
 
-                if (Object.keys(cinemaResults).length === 1) {
-                    switchCinemaLang(langCode);
-                }
+                // تشغيل أول لغة تجهز تلقائياً
+                if (Object.keys(cinemaResults).length === 1) switchCinemaLang(langCode);
 
-            } catch (e) { 
-                item.innerHTML = `❌ <span>${lang.name_ar}</span>`; 
-                console.error(`Error processing ${langCode}:`, e);
-            } finally {
-                completedJobs++;
-                const finalProgress = 50 + ((completedJobs / langs.length) * 50);
-                progFill.style.width = `${finalProgress}%`;
-                statusPct.innerText = `${Math.round(finalProgress)}%`;
-                
-                if (completedJobs === langs.length) {
-                    statusTxt.innerText = "✓ اكتملت المعالجة لجميع اللغات بنجاح!";
-                    if (typeof checkAuth === 'function') checkAuth();
-                }
-            }
-        });
+                completed++;
+                const pct = 50 + (completed / langCodes.length * 50);
+                updateProgress(completed === langCodes.length ? "✅ اكتملت جميع اللغات!" : "⏳ معالجة اللغات...", pct);
+            });
+        }
 
     } catch (e) {
-        statusTxt.innerText = `❌ خطأ: ${e.message}`;
-        progFill.style.background = "#ef4444";
-        if(dubBtn) dubBtn.style.display = 'block';
+        alert("حدث خطأ: " + e.message);
+        document.getElementById('dubBtn').style.display = 'block';
     }
 }
 
+// =====================================
+// 3. مشغل السينما الذكي (Video vs Audio)
+// =====================================
 function switchCinemaLang(langCode) {
     const data = cinemaResults[langCode];
-    if(!data) return;
+    if (!data) return;
 
-    const player = document.getElementById('mainPlayer');
-    const dlBtn = document.getElementById('masterDl');
-    const dlArea = document.getElementById('dlArea');
-
+    // تحديث الشكل النشط في السايدبار
     document.querySelectorAll('.side-lang-card').forEach(c => c.classList.remove('active'));
-    const activeCard = document.getElementById(`cinema-${langCode}`);
-    if(activeCard) activeCard.classList.add('active');
+    document.getElementById(`side-${langCode}`).classList.add('active');
 
-    const isMp4 = data.url.toLowerCase().includes('.mp4');
-    if (isMp4) {
-        player.innerHTML = `<video controls autoplay src="${data.url}" style="width:100%; height:100%; object-fit: contain;"></video>`;
+    const playerContainer = document.getElementById('mainPlayer');
+    const dlArea = document.getElementById('dlArea');
+    const dlBtn = document.getElementById('masterDl');
+
+    // إيقاف أي مشغل صوتي سابق
+    if (activeWavesurfer) { activeWavesurfer.destroy(); activeWavesurfer = null; }
+
+    dlArea.style.display = 'block';
+    dlBtn.href = data.url;
+
+    const isVideo = data.url.toLowerCase().includes('.mp4');
+
+    if (isVideo) {
+        playerContainer.innerHTML = `<video controls autoplay src="${data.url}"></video>`;
     } else {
-        player.innerHTML = `<div style="width:85%; display:flex; flex-direction:column; align-items:center;"><div id="wsWave" style="width:100%;"></div><p style="color:#888; margin-top:15px; font-weight:bold;">${data.flag} ${data.name}</p></div>`;
-        WaveSurfer.create({ container: '#wsWave', waveColor: '#555', progressColor: '#fff', height: 80, url: data.url }).on('ready', function() { this.play(); });
-    }
+        // بناء مشغل الصوت الاحترافي (Waveform)
+        playerContainer.innerHTML = `
+            <div class="audio-player-wrapper">
+                <div class="audio-player-header">
+                    <span class="flag">${data.flag}</span>
+                    <span>النسخة المدبلجة - ${data.name}</span>
+                </div>
+                <div id="waveform" class="audio-waveform"></div>
+                <div class="audio-controls">
+                    <button class="play-btn" id="wavePlayBtn"><i class="fas fa-play"></i></button>
+                    <div class="audio-time" id="waveTime">00:00 / 00:00</div>
+                </div>
+            </div>
+        `;
 
-    if(dlArea) dlArea.style.display = 'block';
-    if(dlBtn) dlBtn.href = data.url;
-}
-
-async function waitForJob(id, token) {
-    while(true) {
-        const r = await fetch(`${window.API_BASE}/api/job/${id}`, { 
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            } 
+        // تشغيل WaveSurfer
+        activeWavesurfer = WaveSurfer.create({
+            container: '#waveform',
+            waveColor: '#4b5563',
+            progressColor: '#3b82f6',
+            cursorColor: '#fff',
+            barWidth: 3,
+            barRadius: 3,
+            responsive: true,
+            height: 80,
         });
 
-        if (r.status === 401) {
-            throw new Error("فشل التصريح (401): يرجى تسجيل الخروج والدخول مجدداً.");
-        }
-        if (!r.ok) {
-             throw new Error(`خطأ من السيرفر: ${r.status}`);
-        }
-
-        const d = await r.json();
-        if (d.status === 'completed') return d;
-        if (d.status === 'failed') throw new Error(d.error || "فشل السيرفر في المعالجة");
+        activeWavesurfer.load(data.url);
         
-        await new Promise(res => setTimeout(res, 4000));
+        activeWavesurfer.on('ready', () => {
+            activeWavesurfer.play();
+            document.getElementById('wavePlayBtn').innerHTML = '<i class="fas fa-pause"></i>';
+        });
+
+        activeWavesurfer.on('audioprocess', () => {
+            const current = formatTime(activeWavesurfer.getCurrentTime());
+            const total = formatTime(activeWavesurfer.getDuration());
+            document.getElementById('waveTime').innerText = `${current} / ${total}`;
+        });
+
+        document.getElementById('wavePlayBtn').onclick = () => {
+            activeWavesurfer.playPause();
+            const isPlaying = activeWavesurfer.isPlaying();
+            document.getElementById('wavePlayBtn').innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+        };
     }
 }
 
-document.getElementById('dubBtn')?.addEventListener('click', startDubbing);
-
-window.onclick = function(event) {
-    if (!event.target.closest('.drop-btn')) {
-        document.querySelectorAll('.drop-btn').forEach(d => d.classList.remove('active'));
+// =====================================
+// أدوات مساعدة
+// =====================================
+async function waitForJob(id, token) {
+    while(true) {
+        const res = await fetch(`${window.API_BASE}/api/job/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        if (data.status === 'completed') return data;
+        if (data.status === 'failed') throw new Error("فشلت المعالجة");
+        await new Promise(r => setTimeout(r, 3000));
     }
-};
+}
+
+function updateProgress(txt, pct) {
+    document.getElementById('statusTxt').innerText = txt;
+    document.getElementById('statusPct').innerText = Math.round(pct) + "%";
+    document.getElementById('progFill').style.width = pct + "%";
+}
+
+function formatTime(s) {
+    const min = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+}
+
+document.getElementById('dubBtn').onclick = startDubbing;
