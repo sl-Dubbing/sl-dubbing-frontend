@@ -1,9 +1,9 @@
-// js/dubbing.js — الإصدار السينمائي المتقدم
+// js/dubbing.js — الإصدار السينمائي المتقدم (V11.0 - إصلاح الرفع)
 let cinemaResults = {};
 let activeWavesurfer = null;
 
 // =====================================
-// 1. معاينة الملف المرفوع
+// 1. معاينة الملف المرفوع (Preview)
 // =====================================
 document.getElementById('mediaFile')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -32,7 +32,38 @@ document.getElementById('mediaFile')?.addEventListener('change', function(e) {
 });
 
 // =====================================
-// 2. بدء عملية الدبلجة
+// 2. دالة الرفع المباشر لـ Cloudflare R2
+// =====================================
+// 💡 تم تحديث هذه الدالة لضمان توافق التوقيع الرقمي مع الباك إند
+async function uploadToR2(url, file, contentType) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', url, true);
+        
+        // 🚨 حيوي: يجب أن يطابق تماماً ما تم إرساله للسيرفر لتوقيع الرابط
+        xhr.setRequestHeader('Content-Type', contentType);
+        
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const pct = Math.round((e.loaded / e.total) * 100);
+                // رفع شريط التقدم من 10% إلى 50% أثناء الرفع الفعلي
+                const overallProgress = 10 + (pct * 0.4); 
+                updateProgress("📤 جاري رفع الملف للمخزن السحابي...", overallProgress);
+            }
+        };
+        
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`فشل الرفع (Status: ${xhr.status})`));
+        };
+        
+        xhr.onerror = () => reject(new Error("حدث خطأ في اتصال الشبكة أثناء الرفع"));
+        xhr.send(file);
+    });
+}
+
+// =====================================
+// 3. بدء عملية الدبلجة (Main Controller)
 // =====================================
 async function startDubbing() {
     const file = document.getElementById('mediaFile')?.files[0];
@@ -51,20 +82,30 @@ async function startDubbing() {
     cinemaResults = {};
 
     try {
-        updateProgress("⚡ جاري رفع الملف...", 10);
+        updateProgress("⚡ جاري تهيئة رابط الرفع...", 5);
         
-        // 1. الحصول على رابط الرفع
+        // 💡 التعديل: إرسال نوع الملف الدقيق للباك إند لضمان تطابق التوقيع
+        const strictContentType = file.type || 'application/octet-stream';
+
+        // 1. الحصول على رابط الرفع من Railway
         const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: file.name, content_type: file.type })
+            body: JSON.stringify({ 
+                filename: file.name, 
+                content_type: strictContentType 
+            })
         });
+        
+        if (!urlRes.ok) throw new Error("فشل السيرفر في توليد رابط الرفع");
         const urlData = await urlRes.json();
         
-        // 2. الرفع المباشر لـ R2
-        await fetch(urlData.upload_url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+        updateProgress("📤 جاري بدء الرفع...", 10);
 
-        updateProgress("⚙️ بدأت المعالجة في السحابة...", 50);
+        // 2. الرفع المباشر لـ Cloudflare R2 باستخدام الدالة المحسنة
+        await uploadToR2(urlData.upload_url, file, strictContentType);
+
+        updateProgress("⚙️ اكتمل الرفع، بدأت المعالجة بذكائك الاصطناعي...", 50);
 
         // 3. إرسال طلبات الدبلجة لكل لغة
         const langCodes = Array.from(window.selectedLangs);
@@ -73,7 +114,6 @@ async function startDubbing() {
         for (const langCode of langCodes) {
             const langInfo = window.LANGUAGES.find(l => l.code === langCode);
             
-            // إضافة بطاقة لغة في السايدبار (Loading)
             const item = document.createElement('div');
             item.className = 'side-lang-card';
             item.id = `side-${langCode}`;
@@ -93,48 +133,45 @@ async function startDubbing() {
             }).then(res => res.json()).then(async (data) => {
                 const job = await waitForJob(data.job_id, token);
                 
-                // تخزين النتيجة
                 cinemaResults[langCode] = { 
                     url: job.output_url, 
                     name: langInfo.name_ar, 
                     flag: langInfo.flag 
                 };
 
-                // تحديث بطاقة اللغة
                 item.innerHTML = `<span>${langInfo.flag}</span> <span>${langInfo.name_ar}</span> <i class="fas fa-check-circle" style="color:var(--accent-green); margin-right:auto;"></i>`;
                 item.onclick = () => switchCinemaLang(langCode);
 
-                // تشغيل أول لغة تجهز تلقائياً
                 if (Object.keys(cinemaResults).length === 1) switchCinemaLang(langCode);
 
                 completed++;
                 const pct = 50 + (completed / langCodes.length * 50);
-                updateProgress(completed === langCodes.length ? "✅ اكتملت جميع اللغات!" : "⏳ معالجة اللغات...", pct);
+                updateProgress(completed === langCodes.length ? "✅ تم الانتهاء من جميع اللغات!" : "⏳ جاري معالجة اللغات...", pct);
             });
         }
 
     } catch (e) {
-        alert("حدث خطأ: " + e.message);
+        console.error("Dubbing Error:", e);
+        alert("حدث خطأ تقني: " + e.message);
         document.getElementById('dubBtn').style.display = 'block';
     }
 }
 
 // =====================================
-// 3. مشغل السينما الذكي (Video vs Audio)
+// 4. مشغل السينما الذكي (Video vs Audio)
 // =====================================
 function switchCinemaLang(langCode) {
     const data = cinemaResults[langCode];
     if (!data) return;
 
-    // تحديث الشكل النشط في السايدبار
     document.querySelectorAll('.side-lang-card').forEach(c => c.classList.remove('active'));
-    document.getElementById(`side-${langCode}`).classList.add('active');
+    const sideCard = document.getElementById(`side-${langCode}`);
+    if (sideCard) sideCard.classList.add('active');
 
     const playerContainer = document.getElementById('mainPlayer');
     const dlArea = document.getElementById('dlArea');
     const dlBtn = document.getElementById('masterDl');
 
-    // إيقاف أي مشغل صوتي سابق
     if (activeWavesurfer) { activeWavesurfer.destroy(); activeWavesurfer = null; }
 
     dlArea.style.display = 'block';
@@ -145,7 +182,6 @@ function switchCinemaLang(langCode) {
     if (isVideo) {
         playerContainer.innerHTML = `<video controls autoplay src="${data.url}"></video>`;
     } else {
-        // بناء مشغل الصوت الاحترافي (Waveform)
         playerContainer.innerHTML = `
             <div class="audio-player-wrapper">
                 <div class="audio-player-header">
@@ -160,7 +196,6 @@ function switchCinemaLang(langCode) {
             </div>
         `;
 
-        // تشغيل WaveSurfer
         activeWavesurfer = WaveSurfer.create({
             container: '#waveform',
             waveColor: '#4b5563',
@@ -194,22 +229,25 @@ function switchCinemaLang(langCode) {
 }
 
 // =====================================
-// أدوات مساعدة
+// 5. أدوات مساعدة (Wait & Format)
 // =====================================
 async function waitForJob(id, token) {
     while(true) {
         const res = await fetch(`${window.API_BASE}/api/job/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         if (data.status === 'completed') return data;
-        if (data.status === 'failed') throw new Error("فشلت المعالجة");
-        await new Promise(r => setTimeout(r, 3000));
+        if (data.status === 'failed') throw new Error("فشلت معالجة الفيديو في السيرفر");
+        await new Promise(r => setTimeout(r, 4000));
     }
 }
 
 function updateProgress(txt, pct) {
-    document.getElementById('statusTxt').innerText = txt;
-    document.getElementById('statusPct').innerText = Math.round(pct) + "%";
-    document.getElementById('progFill').style.width = pct + "%";
+    const sTxt = document.getElementById('statusTxt');
+    const sPct = document.getElementById('statusPct');
+    const pFill = document.getElementById('progFill');
+    if (sTxt) sTxt.innerText = txt;
+    if (sPct) sPct.innerText = Math.round(pct) + "%";
+    if (pFill) pFill.style.width = pct + "%";
 }
 
 function formatTime(s) {
