@@ -1,205 +1,86 @@
-// js/tts.js - Text to Speech Logic (إصدار مدير الملفات)
+// js/tts-quick.js — V1.1 (Centralized API Base & Streaming)
 
-document.addEventListener('DOMContentLoaded', () => {
-    const ttsInput = document.getElementById('ttsInput');
-    const charCount = document.getElementById('charCount');
-    const modeOptions = document.querySelectorAll('.mode-option');
-
-    // 1. تحديث عداد الحروف اللحظي
-    ttsInput?.addEventListener('input', () => {
-        if (charCount) charCount.innerText = ttsInput.value.length;
-    });
-
-    // 2. إدارة تبديل الأوضاع (سريع / عالي الجودة)
-    modeOptions.forEach(opt => {
-        opt.addEventListener('click', () => {
-            modeOptions.forEach(o => o.classList.remove('active'));
-            opt.classList.add('active');
-            // تغيير السمة في body للتحكم في ظهور العناصر عبر CSS
-            document.body.setAttribute('data-mode', opt.dataset.mode);
-        });
-    });
-
-    // 3. ربط زر التوليد بالدالة الأساسية
-    document.getElementById('ttsBtn')?.addEventListener('click', startTTSGeneration);
-});
-
-/**
- * دالة البدء في عملية تحويل النص لصوت
- */
-async function startTTSGeneration() {
-    const text = document.getElementById('ttsInput').value.trim();
+async function quickTTS(text, options = {}) {
+    const { lang = 'ar', edge_voice = '', translate = true, rate = '+0%', pitch = '+0Hz' } = options;
     const token = localStorage.getItem('token');
-    const mode = document.body.getAttribute('data-mode') || 'fast';
-    const voiceId = document.getElementById('voiceSelect')?.value || 'source';
-    const customVoice = document.getElementById('customVoice')?.files[0];
+    const headers = { 'Content-Type': 'application/json' };
+    
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (!text?.trim()) throw new Error('النص فارغ');
 
-    // التحقق من المتطلبات
-    if (!token) return showToast("يرجى تسجيل الدخول أولاً", "error");
-    if (!text) return showToast("اكتب النص الذي تريد تحويله", "warning");
-    if (!window.selectedLangs || window.selectedLangs.size === 0) 
-        return showToast("يرجى اختيار لغة واحدة على الأقل من القائمة", "warning");
+    const t0 = performance.now();
+    
+    // استخدام window.API_BASE الموحد من shared.js (والذي ينتهي بـ /api)
+    const response = await fetch(`${window.API_BASE}/tts/quick`, {
+        method: 'POST', 
+        headers,
+        body: JSON.stringify({ text, lang, edge_voice, translate, rate, pitch })
+    });
 
-    const btn = document.getElementById('ttsBtn');
-    const resultsCard = document.getElementById('resultsCard');
-    const resultsList = document.getElementById('resultsList');
-    const progArea = document.getElementById('progressArea');
-    const progFill = document.getElementById('progFill');
-    const statusTxt = document.getElementById('statusTxt');
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${response.status}`);
+    }
 
-    // تجهيز الواجهة
-    btn.disabled = true;
-    progArea.style.display = 'block';
-    resultsCard.style.display = 'block';
-    resultsList.innerHTML = ''; 
-    progFill.style.width = '10%';
-    statusTxt.innerText = "جاري إرسال الطلبات للسيرفر...";
+    const ttfb = performance.now() - t0;
+    const remainingCredits = parseInt(response.headers.get('X-Remaining-Credits') || '0');
 
-    try {
-        let sample_b64 = "";
-        // إذا كان الوضع "عالي الجودة" وهناك ملف صوتي مرفوع
-        if (mode === 'quality' && customVoice) {
-            statusTxt.innerText = "جاري معالجة البصمة الصوتية...";
-            sample_b64 = await fileToBase64(customVoice);
-        }
+    // تحديث الرصيد في الواجهة فوراً إذا كانت الدالة موجودة
+    if (typeof checkAuth === 'function') checkAuth();
 
-        const langs = [...window.selectedLangs];
-        const total = langs.length;
-        let started = 0;
+    // إذا كان المتصفح لا يدعم بث MP3 المباشر (مثل بعض متصفحات iOS القديمة)
+    if (typeof MediaSource === 'undefined' || !MediaSource.isTypeSupported('audio/mpeg')) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        return { audio: new Audio(url), url, ttfb, totalTime: performance.now() - t0, remainingCredits };
+    }
 
-        // إرسال الطلبات لكل اللغات المحددة بالتوازي
-        const promises = langs.map(async (langCode) => {
+    // تقنية البث المباشر (Real-time Streaming)
+    const mediaSource = new MediaSource();
+    const audio = new Audio(URL.createObjectURL(mediaSource));
+    const chunks = []; 
+
+    return new Promise((resolve, reject) => {
+        mediaSource.addEventListener('sourceopen', async () => {
             try {
-                const res = await fetch(`${window.API_BASE}/api/tts`, {
-                    method: 'POST',
-                    headers: { 
-                        'Authorization': `Bearer ${token}`, 
-                        'Content-Type': 'application/json' 
-                    },
-                    body: JSON.stringify({
-                        text: text,
-                        filename: text.substring(0, 20) + "...", // إرسال جزء من النص كاسم للملف في "ملفاتي"
-                        lang: langCode,
-                        mode: mode,
-                        voice_id: voiceId,
-                        sample_b64: sample_b64
-                    })
+                const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+                const reader = response.body.getReader();
+                
+                const pushChunks = async () => {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            if (mediaSource.readyState === 'open' && !sourceBuffer.updating) {
+                                mediaSource.endOfStream();
+                            }
+                            break;
+                        }
+                        chunks.push(value); 
+                        if (sourceBuffer.updating) {
+                            await new Promise(r => sourceBuffer.addEventListener('updateend', r, { once: true }));
+                        }
+                        if (mediaSource.readyState === 'open') {
+                            sourceBuffer.appendBuffer(value);
+                        }
+                    }
+                    return URL.createObjectURL(new Blob(chunks, { type: 'audio/mpeg' }));
+                };
+
+                const blobPromise = pushChunks();
+
+                resolve({
+                    audio: audio,
+                    url: audio.src, 
+                    blobPromise: blobPromise, 
+                    ttfb,
+                    totalTime: performance.now() - t0,
+                    remainingCredits
                 });
 
-                const data = await res.json();
-                if (data.success) {
-                    started++;
-                    progFill.style.width = (10 + (started / total) * 20) + "%";
-                    return pollTTSJob(data.job_id, langCode);
-                } else {
-                    throw new Error(data.error || `فشل البدء في لغة ${langCode}`);
-                }
-            } catch (err) {
-                renderErrorItem(langCode, err.message);
-            }
+            } catch (e) { reject(new Error('خطأ في معالجة البث المباشر')); }
         });
-
-        await Promise.all(promises);
-        showToast("اكتملت كافة الطلبات بنجاح!", "success");
-        
-        // تحديث الرصيد في الواجهة لأن الـ TTS يستهلك نقاطاً
-        if (typeof checkAuth === 'function') checkAuth();
-
-    } catch (e) {
-        showToast(e.message, "error");
-    } finally {
-        btn.disabled = false;
-        progFill.style.width = '100%';
-        statusTxt.innerText = "اكتملت معالجة كافة اللغات";
-    }
-}
-
-/**
- * مراقبة حالة المهمة حتى اكتمال الصوت
- */
-async function pollTTSJob(jobId, langCode) {
-    const token = localStorage.getItem('token');
-    const start = Date.now();
-    const resultsList = document.getElementById('resultsList');
-    const langObj = window.LANGUAGES?.find(l => l.code === langCode);
-    const langName = langObj ? langObj.name_ar : langCode.toUpperCase();
-
-    // إنشاء عنصر "جاري المعالجة" في القائمة
-    const item = document.createElement('div');
-    item.className = 'result-item';
-    item.id = `tts-res-${jobId}`;
-    item.innerHTML = `
-        <div class="result-item-header">
-            <strong>${langName}</strong>
-            <span class="status-wait">⏳ جاري التوليد...</span>
-        </div>
-    `;
-    resultsList.appendChild(item);
-
-    // فحص الحالة كل 3 ثوانٍ (بحد أقصى 5 دقائق)
-    while (Date.now() - start < 300000) {
-        try {
-            const res = await fetch(`${window.API_BASE}/api/job/${jobId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-
-            if (data.status === 'completed') {
-                item.innerHTML = `
-                    <div class="result-item-header">
-                        <strong>${langName}</strong>
-                        <span class="success">✓ جاهز</span>
-                    </div>
-                    <audio controls src="${data.audio_url}" style="width:100%; margin-top:8px; height:35px;"></audio>
-                    <div style="margin-top:8px; font-size:0.75rem; color:#86868b;">* تم حفظه في "ملفاتي"</div>
-                `;
-                return data;
-            }
-            
-            if (data.status === 'failed') {
-                item.innerHTML = `
-                    <div class="result-item-header">
-                        <strong>${langName}</strong>
-                        <span class="error">✗ فشل</span>
-                    </div>
-                    <div style="color:#ef4444; font-size:0.8rem; margin-top:5px;">${data.error || 'خطأ غير معروف'}</div>
-                `;
-                return;
-            }
-        } catch (e) {
-            console.warn("فشل في تحديث حالة TTS:", e);
-        }
-        await new Promise(r => setTimeout(r, 3000));
-    }
-    
-    item.innerHTML = `<div class="result-item-header"><strong>${langName}</strong> <span class="error">✗ انتهت المهلة</span></div>`;
-}
-
-/**
- * عرض خطأ في حال فشل لغة معينة قبل البدء
- */
-function renderErrorItem(langCode, errorMsg) {
-    const resultsList = document.getElementById('resultsList');
-    const item = document.createElement('div');
-    item.className = 'result-item';
-    item.innerHTML = `
-        <div class="result-item-header">
-            <strong>${langCode.toUpperCase()}</strong>
-            <span class="error">✗ خطأ</span>
-        </div>
-        <div style="color:#ef4444; font-size:0.8rem; margin-top:5px;">${errorMsg}</div>
-    `;
-    resultsList.appendChild(item);
-}
-
-/**
- * تحويل الملف الصوتي لـ Base64
- */
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(r.result.split(',')[1]);
-        r.onerror = (err) => reject(new Error("فشل قراءة ملف الصوت"));
-        r.readAsDataURL(file);
+        mediaSource.addEventListener('error', () => reject(new Error('خطأ في المشغل')));
     });
 }
+
+window.quickTTS = quickTTS;
