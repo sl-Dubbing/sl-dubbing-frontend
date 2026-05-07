@@ -1,4 +1,4 @@
-// js/dubbing.js — V10.2 (Fixed API Paths with /api/)
+// js/dubbing.js — V10.3 (Fixed API Paths & Enhanced Auth Headers)
 
 let cinemaResults = {};
 
@@ -87,7 +87,6 @@ async function startDubbing() {
         progFill.style.width = "5%";
         statusPct.innerText = "5%";
 
-        // ✅ تم الإصلاح: إضافة /api/ قبل upload-url
         const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -124,7 +123,6 @@ async function startDubbing() {
             sidebar.appendChild(item);
 
             try {
-                // ✅ تم الإصلاح: إضافة /api/ قبل dub
                 const res = await fetch(`${window.API_BASE}/api/dub`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -139,7 +137,7 @@ async function startDubbing() {
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error);
 
-                // الانتظار حتى تنتهي الدبلجة
+                // الانتظار حتى تنتهي الدبلجة باستخدام الدالة المعدلة
                 const job = await waitForJob(data.job_id, token);
 
                 // حفظ النتيجة
@@ -154,6 +152,7 @@ async function startDubbing() {
 
             } catch (e) { 
                 item.innerHTML = `❌ <span>${lang.name_ar}</span>`; 
+                console.error(`Error processing ${langCode}:`, e);
             } finally {
                 completedJobs++;
                 const finalProgress = 50 + ((completedJobs / langs.length) * 50);
@@ -198,13 +197,28 @@ function switchCinemaLang(langCode) {
     if(dlBtn) dlBtn.href = data.url;
 }
 
+// =========================================================
+// 🚀 الدالة المعدلة لمعالجة خطأ 401 والتأكد من الاتصال
+// =========================================================
 async function waitForJob(id, token) {
     while(true) {
-        // ✅ تم الإصلاح: إضافة /api/ قبل job
-        const r = await fetch(`${window.API_BASE}/api/job/${id}`, { headers: {'Authorization': `Bearer ${token}`} });
+        const r = await fetch(`${window.API_BASE}/api/job/${id}`, { 
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            } 
+        });
+
+        // التقاط خطأ 401 فوراً للتنبيه بضرورة تسجيل الدخول
+        if (r.status === 401) {
+            throw new Error("انتهت صلاحية الجلسة أو غير مصرح لك. يرجى تسجيل الخروج والدخول مجدداً.");
+        }
+
         const d = await r.json();
         if (d.status === 'completed') return d;
         if (d.status === 'failed') throw new Error(d.error || "فشل السيرفر في المعالجة");
+        
         await new Promise(res => setTimeout(res, 4000));
     }
 }
