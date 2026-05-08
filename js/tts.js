@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 // إرسال الطلب إلى الخادم المحلي (Local Factory) الذي صممناه
                 // 👈 تم إضافة /text-to-speech في نهاية الرابط هنا
-                const response = await fetch('https://developers.cloudflare.com/cloudflare-one/connections/connect-apps', {
+                const response = await fetch('https://duty-grow-pic-becomes.trycloudflare.com', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
