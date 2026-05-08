@@ -6,8 +6,8 @@
   <title>تحويل النص إلى صوت | sl-Dubbing</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
-  <script>window.LANG_STORAGE_KEY = 'tts_langs';</script>
   <style>
+    /* تنسيقات الأزرار والوضعيات */
     .mode-switcher{display:flex;gap:10px;background:#f7f8fa;padding:6px;border-radius:10px;border:1px solid #e5e7eb;margin-bottom:16px}
     .mode-option{flex:1;padding:12px 14px;background:transparent;border:2px solid transparent;border-radius:6px;cursor:pointer;transition:0.25s;color:#5b6471;text-align:right}
     .mode-option:hover{background:white;color:#1a1d23}
@@ -19,10 +19,23 @@
     .badge-quality{background:#eff6ff;color:#2563eb}
     .quality-only{display:none}
     body[data-mode="quality"] .quality-only{display:block}
-    .btn-instant{background:#f59e0b;color:white;border:none;padding:13px 20px;border-radius:10px;font-weight:700;font-size:0.98rem;cursor:pointer;width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px}
-    .btn-instant:hover:not(:disabled){background:#d97706}
-    .btn-instant:disabled{opacity:0.5;cursor:not-allowed}
-    .char-counter{font-size:0.78rem;color:#9aa1ac;margin-top:6px;text-align:left}
+
+    /* 🎨 التنسيقات الجديدة لمربع النص المدمج (المحرر الذكي) */
+    .editor-wrapper { border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; transition: 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .editor-wrapper:focus-within { border-color: #2563eb; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1); }
+    .editor-textarea { width: 100%; min-height: 160px; padding: 15px; border: none; resize: none; font-size: 1rem; color: #1a1d23; background: transparent; outline: none; font-family: inherit; line-height: 1.6; }
+    .editor-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #f8fafc; border-top: 1px solid #e5e7eb; }
+    
+    /* القائمة المنسدلة للغات (يمين) */
+    .editor-select { padding: 8px 35px 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; background-color: #fff; font-size: 0.9rem; font-weight: 600; color: #475569; cursor: pointer; outline: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23475569%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: left 10px center; background-size: 10px auto; transition: 0.2s;}
+    .editor-select:hover { border-color: #94a3b8; }
+    
+    /* أدوات اليسار (العداد + الميكروفون) */
+    .toolbar-left { display: flex; align-items: center; gap: 15px; }
+    .char-counter{font-size:0.85rem;color:#9aa1ac; font-weight: 600;}
+    .btn-mic { width: 44px; height: 44px; border-radius: 50%; background: #f59e0b; color: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); }
+    .btn-mic:hover:not(:disabled) { background: #d97706; transform: scale(1.08); box-shadow: 0 6px 14px rgba(245, 158, 11, 0.4); }
+    .btn-mic:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; transform: none; }
   </style>
 </head>
 <body data-mode="fast">
@@ -56,7 +69,7 @@
   <div class="container">
     <header class="main-header">
       <h1>تحويل النص إلى صوت</h1>
-      <p>أكثر من 100 لغة — توليد عدة لغات بالتوازي</p>
+      <p>محرك النطق العالمي — اكتب واستمع فوراً</p>
     </header>
 
     <div class="workspace-grid">
@@ -67,7 +80,7 @@
           <div class="mode-switcher">
             <button class="mode-option active" data-mode="fast" type="button">
               <div class="mode-title"><i class="fas fa-bolt"></i><span>سريع</span><span class="mode-badge badge-fast">⚡ 0.5s</span></div>
-              <div class="mode-desc">صوت Microsoft الافتراضي</div>
+              <div class="mode-desc">صوت الذكاء الاصطناعي الافتراضي</div>
             </button>
             <button class="mode-option" data-mode="quality" type="button">
               <div class="mode-title"><i class="fas fa-gem"></i><span>عالي الجودة</span><span class="mode-badge badge-quality">🎨 1.5s</span></div>
@@ -76,26 +89,28 @@
           </div>
         </section>
 
-        <section class="card">
-          <h3><i class="fas fa-edit"></i> 1. اكتب النص</h3>
-          <textarea id="ttsInput" class="styled-textarea" placeholder="اكتب النص هنا ليتحول إلى صوت..."></textarea>
-          <div class="char-counter"><span id="charCount">0</span> حرف</div>
-        </section>
-
-        <section class="card">
-          <h3><i class="fas fa-globe"></i> 2. اختر اللغات</h3>
-          <div class="selected-langs-display" id="selectedLangsDisplay">
-            <div class="selected-langs-empty">جاري التحميل...</div>
+        <section class="card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+          <div class="editor-wrapper">
+            <textarea id="ttsInput" class="editor-textarea" placeholder="اكتب أو انسخ النص هنا ليتحول إلى صوت فوراً..."></textarea>
+            
+            <div class="editor-toolbar">
+              <div class="toolbar-right">
+                <select id="singleLangSelect" class="editor-select">
+                  </select>
+              </div>
+              
+              <div class="toolbar-left">
+                <span class="char-counter"><span id="charCount">0</span> حرف</span>
+                <button id="ttsMicBtn" class="btn-mic" type="button" title="نطق النص فوراً">
+                  <i class="fas fa-microphone"></i>
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="lang-search-wrapper">
-            <input type="text" id="langSearch" class="lang-search" placeholder="ابحث عن لغة...">
-            <i class="fas fa-search lang-search-icon"></i>
-          </div>
-          <div class="lang-list" id="langList"></div>
         </section>
 
         <section class="card quality-only">
-          <h3><i class="fas fa-microphone-alt"></i> 3. البصمة الصوتية</h3>
+          <h3><i class="fas fa-fingerprint"></i> البصمة الصوتية</h3>
           <select id="voiceSelect" class="styled-select" style="margin-bottom:12px;">
             <option value="">🎤 اختر عينة جاهزة</option>
           </select>
@@ -104,13 +119,6 @@
           <p id="customVoiceTxt" class="file-info"></p>
         </section>
 
-        <button id="ttsBtn" class="btn-primary-action" type="button">
-          <i class="fas fa-volume-up"></i> توليد وحفظ في ملفاتي
-        </button>
-
-        <button id="ttsInstantBtn" class="btn-instant" type="button">
-          <i class="fas fa-play-circle"></i> ⚡ تشغيل فوري سريع
-        </button>
       </div>
 
       <div class="results-container">
@@ -133,8 +141,6 @@
 <script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/languages-data.js"></script>
-<script src="js/lang-picker.js"></script>
-<script src="js/tts-quick.js"></script>
 <script src="js/tts.js"></script>
 </body>
 </html>
