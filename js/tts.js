@@ -1,13 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+
     // 1. تبديل وضع الجودة (سريع / عالي الجودة)
     const modeButtons = document.querySelectorAll('.mode-option');
     modeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-            // إزالة التفعيل من كل الأزرار
             modeButtons.forEach(b => b.classList.remove('active'));
-            // تفعيل الزر المضغوط
             btn.classList.add('active');
-            // تغيير الـ data-mode في الـ body لإظهار/إخفاء قسم البصمة الصوتية
             document.body.setAttribute('data-mode', btn.dataset.mode);
         });
     });
@@ -21,37 +19,45 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. ربط زر التوليد (تشغيل فوري سريع) بسيرفر البايثون الخاص بنا
+    // 3. زر التوليد (تشغيل فوري سريع)
     const instantBtn = document.getElementById('ttsInstantBtn');
     if (instantBtn) {
         instantBtn.addEventListener('click', async () => {
             const text = textInput.value.trim();
             if (!text) {
                 if (window.showToast) showToast('الرجاء كتابة نص أولاً', 'error');
-                else alert('الرجاء كتابة نص أولاً');
                 return;
             }
 
-            // معرفة الوضع الحالي (سريع أو جودة عالية)
-            const mode = document.body.getAttribute('data-mode'); // 'fast' أو 'quality'
+            // 👈 1. قراءة كود اللغة المختارة من lang-picker.js (الافتراضي: ar)
+            let targetLangCode = 'ar'; 
+            if (window.selectedLangs && window.selectedLangs.size > 0) {
+                targetLangCode = Array.from(window.selectedLangs)[0]; 
+            }
+
+            // 👈 2. جلب اسم اللغة بالعربي من languages-data.js لعرضه في الإشعار
+            let targetLangName = targetLangCode;
+            if (window.LANGUAGES) {
+                const langObj = window.LANGUAGES.find(l => l.code === targetLangCode);
+                if (langObj) {
+                    targetLangName = langObj.name_ar; // سيجلب "الإنجليزية" مثلاً
+                }
+            }
+
+            const mode = document.body.getAttribute('data-mode') || 'fast';
             
-            // للحصول على اللغة (مؤقتاً سنضعها عربي، ويمكنك ربطها بـ lang-picker لاحقاً)
-            const lang = 'ar'; 
-            
-            // تعطيل الزر وتغيير النص لتوضيح حالة التحميل
             const originalHtml = instantBtn.innerHTML;
-            instantBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوليد والرفع...';
+            instantBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوليد...';
             instantBtn.disabled = true;
 
             try {
-                // إرسال الطلب إلى الخادم المحلي (Local Factory) الذي صممناه
-                // 👈 تم إضافة /text-to-speech في نهاية الرابط هنا
+                // ⚠️ تأكد دائماً أن الرابط هو رابط النفق النشط 
                 const response = await fetch('https://duty-grow-pic-becomes.trycloudflare.com/text-to-speech', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         text: text, 
-                        lang: lang,
+                        lang: targetLangCode, // إرسال الكود مثل: en, fr, zh
                         mode: mode === 'quality' ? 'hq' : 'fast' 
                     })
                 });
@@ -59,9 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 
                 if (data.status === 'success' && data.audio_url) {
-                    if (window.showToast) showToast('✅ تم توليد الصوت بنجاح!', 'success');
+                    // استخدام الاسم العربي في الإشعار
+                    if (window.showToast) showToast(`✅ تم التوليد باللغة (${targetLangName}) بنجاح!`, 'success');
                     
-                    // تشغيل الصوت فوراً في المتصفح
                     const audio = new Audio(data.audio_url);
                     audio.play();
                 } else {
@@ -69,9 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (err) {
                 console.error(err);
-                if (window.showToast) showToast('❌ حدث خطأ: تأكد أن سيرفر البايثون يعمل', 'error');
+                if (window.showToast) showToast('❌ حدث خطأ في الاتصال بالخادم', 'error');
             } finally {
-                // إعادة الزر لحالته الطبيعية
                 instantBtn.innerHTML = originalHtml;
                 instantBtn.disabled = false;
             }
