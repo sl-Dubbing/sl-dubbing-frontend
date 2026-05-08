@@ -3,74 +3,64 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>sl-Dubbing Studio | تحويل النص إلى صوت</title>
+  <title>sl-Dubbing Studio | TTS Pro</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* 🚀 استغلال كامل الشاشة وتصميم ElevenLabs */
+    /* 🚀 تصميم ElevenLabs كامل الشاشة */
     .studio-container { max-width: 1600px; margin: 0 auto; padding: 20px; }
-    .studio-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
-
-    /* 📝 المحرر الاحترافي */
+    .studio-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+    
     .main-editor-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; display: flex; flex-direction: column; overflow: visible; }
-    .editor-textarea { width: 100%; min-height: 550px; padding: 25px; border: none; resize: vertical; font-size: 1.15rem; color: #000; background: transparent; outline: none; line-height: 1.8; font-family: inherit; }
+    .editor-textarea { width: 100%; min-height: 550px; padding: 25px; border: none; resize: vertical; font-size: 1.15rem; color: #000; outline: none; line-height: 1.8; }
     
-    /* 🎛️ شريط الأدوات السفلي */
-    .editor-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: #fff; border-top: 1px solid #eee; border-radius: 0 0 12px 12px; }
+    .editor-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: #fcfcfc; border-top: 1px solid #eee; border-radius: 0 0 12px 12px; }
     
-    /* 🌍 القائمة المنسدلة */
-    .custom-dropdown { position: relative; user-select: none; z-index: 100; }
-    .dropdown-selected { padding: 8px 12px; border-radius: 8px; border: 1px solid #eee; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.85rem; font-weight: 700; color: #000; min-width: 200px; }
-    .dropdown-menu { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 240px; list-style: none; padding: 5px 0; display: none; margin-top: 5px; }
+    /* أيقونات سوداء نقيّة Minimal */
+    .toolbar-left { display: flex; align-items: center; gap: 20px; }
+    .btn-tool { background: transparent; border: none; cursor: pointer; font-size: 1.4rem; color: #000; transition: 0.2s; padding: 5px; }
+    .btn-tool:hover:not(:disabled) { opacity: 0.5; transform: scale(1.1); }
+    .btn-tool:disabled { color: #ddd; }
+    .active-mic { color: #ef4444; }
+
+    /* شريط السرعة الأسود */
+    .styled-slider { width: 100%; accent-color: #000; appearance: none; height: 3px; background: #eee; cursor: pointer; }
+    .styled-slider::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; background: #000; border-radius: 50%; }
+
+    /* تخصيص القائمة المنسدلة لتفتح للأسفل دائماً */
+    .custom-dropdown { position: relative; z-index: 100; }
+    .dropdown-selected { padding: 10px 15px; border: 1px solid #eee; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; min-width: 220px; font-weight: bold; }
+    .dropdown-menu { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #eee; border-radius: 8px; width: 240px; display: none; margin-top: 5px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
     .custom-dropdown.open .dropdown-menu { display: block; }
-    .dropdown-menu li { padding: 10px 15px; cursor: pointer; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
-    .dropdown-menu li:hover { background: #f8fafc; }
-    .has-submenu > .submenu { position: absolute; right: 100%; top: -5px; background: #fff; border: 1px solid #eee; border-radius: 8px; width: 180px; display: none; box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
+    
+    /* 🌳 قائمة اللهجات الفرعية */
+    .has-submenu > .submenu { position: absolute; right: 100%; top: 0; background: #fff; border: 1px solid #eee; border-radius: 8px; width: 180px; display: none; }
     .has-submenu:hover > .submenu { display: block; }
 
-    /* 🎛️ أدوات اليسار (أيقونات سوداء Minimal) */
-    .toolbar-left { display: flex; align-items: center; gap: 18px; }
-    .char-counter { font-size: 0.8rem; color: #bbb; font-weight: 600; margin-left: 5px; }
-    .btn-tool { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; transition: 0.2s; color: #000; padding: 4px; }
-    .btn-tool:hover:not(:disabled) { transform: scale(1.15); opacity: 0.5; }
-    .btn-tool:disabled { color: #eee; cursor: not-allowed; }
-    .active-recording { color: #ef4444 !important; }
-
-    /* ⚙️ اللوحة الجانبية */
-    .settings-sidebar { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; }
-    .settings-group { margin-bottom: 25px; }
-    .settings-title { font-size: 0.85rem; font-weight: 800; color: #000; margin-bottom: 12px; display: flex; justify-content: space-between; }
-    
-    /* شريط السرعة الأسود الملكي */
-    .slider-container { display: flex; flex-direction: column; gap: 10px; }
-    .styled-slider { width: 100%; cursor: pointer; accent-color: #000; appearance: none; height: 2px; background: #eee; }
-    .styled-slider::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; background: #000; border-radius: 50%; }
-    .slider-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: #ccc; }
-
-    .mode-option { padding: 12px; background: #fff; border: 1px solid #eee; border-radius: 8px; cursor: pointer; margin-bottom: 8px; }
-    .mode-option.active { border-color: #000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-    .mode-title { font-weight: 800; font-size: 0.8rem; }
-
-    /* تحسين شكل القائمة الجانبية */
-    .sidebar { transition: transform 0.3s ease; z-index: 1001; }
-    .sidebar.open { transform: translateX(0) !important; }
-    .overlay.active { display: block !important; }
+    /* الشريط الجانبي (Sidebar) مطابق لصفحة الدبلجة */
+    .sidebar { transition: 0.3s ease; z-index: 1001; transform: translateX(100%); }
+    .sidebar.open { transform: translateX(0); }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; }
+    .overlay.active { display: block; }
   </style>
 </head>
 <body data-mode="fast">
 
 <header class="top-bar">
   <div style="display:flex;align-items:center;gap:12px;">
-    <button class="menu-btn" id="mainMenuBtn" type="button"><i class="fas fa-bars"></i></button>
+    <button class="menu-btn" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
     <div class="top-logo"><h2>sl-Dubbing</h2></div>
   </div>
 </header>
 
-<div class="overlay" id="mainOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:1000;"></div>
+<div class="overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-<aside class="sidebar" id="mainSidebar" style="transform: translateX(100%);">
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-user-section">
+    <button onclick="closeSidebar()" style="background:none; border:none; color:#9aa1ac; cursor:pointer; font-size:1.2rem;"><i class="fas fa-times"></i></button>
+    <div style="margin-top:10px;">استوديو المحترفين</div>
+  </div>
   <nav class="sidebar-nav">
-    <div class="nav-label">الاستوديو</div>
     <ul>
       <li><a href="dubbing.html"><i class="fas fa-film"></i> الدبلجة الذكية</a></li>
       <li><a href="tts.html" class="active"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
@@ -82,51 +72,44 @@
   <div class="studio-container">
     <div class="studio-grid">
       <div class="main-editor-card">
-        <textarea id="ttsInput" class="editor-textarea" placeholder="ضع المؤشر في أي مكان للبدء بالقراءة من هناك..."></textarea>
-        
+        <textarea id="ttsInput" class="editor-textarea" placeholder="ضع المؤشر في أي مكان للبدء بالقراءة..."></textarea>
         <div class="editor-toolbar">
-          <div class="toolbar-right">
-            <div class="custom-dropdown" id="langDropdown">
-              <div class="dropdown-selected" id="langSelected">
-                <div><span class="flag">🇸🇦</span> <span class="name">العربية (السعودية)</span></div>
-                <i class="fas fa-chevron-down"></i>
-              </div>
-              <ul class="dropdown-menu" id="langMenu"></ul>
+          <div class="custom-dropdown" id="langDropdown">
+            <div class="dropdown-selected" id="langSelected">
+              <div><span class="flag">🇸🇦</span> <span class="name">العربية (السعودية)</span></div>
+              <i class="fas fa-chevron-down"></i>
             </div>
+            <ul class="dropdown-menu" id="langMenu"></ul>
           </div>
-          
           <div class="toolbar-left">
             <span class="char-counter"><span id="charCount">0</span> حرف</span>
-            <button id="ttsFixBtn" class="btn-tool" title="تصحيح الأخطاء الإملائية"><i class="fas fa-wand-magic-sparkles"></i></button>
-            <button id="sttMicBtn" class="btn-tool" title="إملاء صوتي"><i class="fas fa-microphone"></i></button>
-            <button id="ttsDownloadBtn" class="btn-tool" title="تنزيل النص كاملاً"><i class="fas fa-download"></i></button>
+            <button id="ttsFixBtn" class="btn-tool" title="تدقيق ذكي (AI)"><i class="fas fa-wand-magic-sparkles"></i></button>
+            <button id="sttMicBtn" class="btn-tool" title="إملاء"><i class="fas fa-microphone"></i></button>
+            <button id="ttsDownloadBtn" class="btn-tool" title="تنزيل كامل"><i class="fas fa-download"></i></button>
             <button id="ttsStopBtn" class="btn-tool" title="إيقاف" style="display:none;"><i class="fas fa-stop"></i></button>
-            <button id="ttsPlayBtn" class="btn-tool" title="تشغيل من مكان المؤشر"><i class="fas fa-play"></i></button>
+            <button id="ttsPlayBtn" class="btn-tool" title="تشغيل"><i class="fas fa-play"></i></button>
           </div>
         </div>
       </div>
-
       <div class="settings-sidebar">
         <div class="settings-group">
-          <div class="settings-title">النموذج (Model)</div>
-          <div class="mode-switcher">
-            <div class="mode-option active" data-mode="fast"><div class="mode-title">الوضع السريع ⚡</div></div>
-            <div class="mode-option" data-mode="quality"><div class="mode-title">جودة عالية 💎</div></div>
-          </div>
+          <div style="font-weight:800; margin-bottom:10px;">السرعة (Speed)</div>
+          <input type="range" id="speedSlider" class="styled-slider" min="-50" max="50" value="0">
+          <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#999; margin-top:5px;"><span>أبطأ</span><span id="speedVal">طبيعي</span><span>أسرع</span></div>
         </div>
-        <div class="settings-group">
-          <div class="settings-title"><span>السرعة (Speed)</span> <span id="speedValueTxt">طبيعي</span></div>
-          <div class="slider-container">
-            <input type="range" id="speedSlider" class="styled-slider" min="-50" max="50" value="0">
-            <div class="slider-labels"><span>أبطأ</span><span>أسرع</span></div>
-          </div>
-        </div>
+        <div class="mode-option active" data-mode="fast">الوضع السريع ⚡</div>
+        <div class="mode-option" data-mode="quality">جودة عالية 💎</div>
       </div>
     </div>
   </div>
 </main>
 
 <div id="toasts"></div>
+<script>
+  // وظائف الشريط الجانبي (مطابقة لصفحة الدبلجة)
+  function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); }
+  function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); }
+</script>
 <script src="js/shared.js"></script>
 <script src="js/languages-data.js"></script>
 <script src="js/tts.js"></script>
