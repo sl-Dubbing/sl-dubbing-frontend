@@ -1,4 +1,4 @@
-// js/dubbing.js — الإصدار السينمائي المتقدم (V11.0 - Final Fix)
+// js/dubbing.js — الإصدار السينمائي المتقدم (V11.0 - Final)
 let cinemaResults = {};
 let activeWavesurfer = null;
 
@@ -39,13 +39,12 @@ async function uploadToR2(url, file, contentType) {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', url, true);
         
-        // 🚨 حيوي: إجبار المتصفح على استخدام نفس نوع الملف الذي وقعنا به الرابط
+        // 🚨 إجبار المتصفح على استخدام نفس نوع الملف الذي وقعنا به الرابط
         xhr.setRequestHeader('Content-Type', contentType);
         
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable) {
                 const pct = Math.round((e.loaded / e.total) * 100);
-                // رفع شريط التقدم من 10% إلى 50% أثناء الرفع الفعلي
                 const overallProgress = 10 + (pct * 0.4); 
                 updateProgress("📤 جاري رفع الملف للمخزن السحابي...", overallProgress);
             }
@@ -72,7 +71,6 @@ async function startDubbing() {
     if (!file) return alert("يرجى اختيار ملف!");
     if (!window.selectedLangs || window.selectedLangs.size === 0) return alert("اختر لغة واحدة على الأقل!");
 
-    // تجهيز الواجهة
     document.getElementById('dubBtn').style.display = 'none';
     document.getElementById('progressArea').style.display = 'block';
     document.getElementById('resultsCard').style.display = 'block';
@@ -119,7 +117,6 @@ async function startDubbing() {
             item.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${langInfo.name_ar}</span>`;
             sidebar.appendChild(item);
 
-            // طلب الدبلجة من Railway
             fetch(`${window.API_BASE}/api/dub`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
