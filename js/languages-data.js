@@ -1,28 +1,48 @@
-// languages-data.js — بيانات اللغات المدعومة
+// languages-data.js — البيانات الشاملة للغات واللهجات
+
 window.LANGUAGES = [
-    { code: 'ar',  name_ar: 'العربية',      name_en: 'Arabic',     flag: '🇸🇦', popular: true },
-    { code: 'en',  name_ar: 'الإنجليزية',   name_en: 'English',    flag: '🇬🇧', popular: true },
-    { code: 'es',  name_ar: 'الإسبانية',    name_en: 'Spanish',    flag: '🇪🇸', popular: true },
-    { code: 'fr',  name_ar: 'الفرنسية',     name_en: 'French',     flag: '🇫🇷', popular: true },
-    { code: 'de',  name_ar: 'الألمانية',    name_en: 'German',     flag: '🇩🇪', popular: true },
-    { code: 'it',  name_ar: 'الإيطالية',    name_en: 'Italian',    flag: '🇮🇹', popular: true },
-    { code: 'pt',  name_ar: 'البرتغالية',   name_en: 'Portuguese', flag: '🇵🇹', popular: true },
-    { code: 'ru',  name_ar: 'الروسية',      name_en: 'Russian',    flag: '🇷🇺', popular: true },
-    { code: 'tr',  name_ar: 'التركية',      name_en: 'Turkish',    flag: '🇹🇷', popular: true },
-    { code: 'zh',  name_ar: 'الصينية',      name_en: 'Chinese',    flag: '🇨🇳', popular: true },
-    { code: 'ja',  name_ar: 'اليابانية',    name_en: 'Japanese',   flag: '🇯🇵', popular: false },
-    { code: 'ko',  name_ar: 'الكورية',      name_en: 'Korean',     flag: '🇰🇷', popular: false },
-    { code: 'hi',  name_ar: 'الهندية',      name_en: 'Hindi',      flag: '🇮🇳', popular: false },
-    { code: 'nl',  name_ar: 'الهولندية',    name_en: 'Dutch',      flag: '🇳🇱', popular: false },
-    { code: 'sv',  name_ar: 'السويدية',     name_en: 'Swedish',    flag: '🇸🇪', popular: false },
-    { code: 'pl',  name_ar: 'البولندية',    name_en: 'Polish',     flag: '🇵🇱', popular: false },
-    { code: 'fa',  name_ar: 'الفارسية',     name_en: 'Persian',    flag: '🇮🇷', popular: false },
-    { code: 'id',  name_ar: 'الإندونيسية',  name_en: 'Indonesian', flag: '🇮🇩', popular: false },
-    { code: 'th',  name_ar: 'التايلندية',   name_en: 'Thai',       flag: '🇹🇭', popular: false },
-    { code: 'vi',  name_ar: 'الفيتنامية',   name_en: 'Vietnamese', flag: '🇻🇳', popular: false },
-    { code: 'uk',  name_ar: 'الأوكرانية',   name_en: 'Ukrainian',  flag: '🇺🇦', popular: false },
-    { code: 'el',  name_ar: 'اليونانية',    name_en: 'Greek',      flag: '🇬🇷', popular: false },
-    { code: 'cs',  name_ar: 'التشيكية',     name_en: 'Czech',      flag: '🇨🇿', popular: false },
-    { code: 'ro',  name_ar: 'الرومانية',    name_en: 'Romanian',   flag: '🇷🇴', popular: false },
-    { code: 'he',  name_ar: 'العبرية',      name_en: 'Hebrew',     flag: '🇮🇱', popular: false }
+    // --- 🌍 اللهجات العربية ---
+    { code: 'ar-sa', name_ar: 'العربية (السعودية)', flag: '🇸🇦' },
+    { code: 'ar-eg', name_ar: 'العربية (مصر)', flag: '🇪🇬' },
+    { code: 'ar-ae', name_ar: 'العربية (الإمارات)', flag: '🇦🇪' },
+    { code: 'ar-ma', name_ar: 'العربية (المغرب)', flag: '🇲🇦' },
+    { code: 'ar-dz', name_ar: 'العربية (الجزائر)', flag: '🇩🇿' },
+    { code: 'ar-iq', name_ar: 'العربية (العراق)', flag: '🇮🇶' },
+    { code: 'ar-lb', name_ar: 'العربية (لبنان)', flag: '🇱🇧' },
+
+    // --- 🌍 اللهجات الإنجليزية ---
+    { code: 'en-us', name_ar: 'الإنجليزية (أمريكا)', flag: '🇺🇸' },
+    { code: 'en-gb', name_ar: 'الإنجليزية (بريطانيا)', flag: '🇬🇧' },
+    { code: 'en-au', name_ar: 'الإنجليزية (أستراليا)', flag: '🇦🇺' },
+    { code: 'en-ca', name_ar: 'الإنجليزية (كندا)', flag: '🇨🇦' },
+
+    // --- 🌍 اللهجات الإسبانية والفرنسية ---
+    { code: 'es-es', name_ar: 'الإسبانية (إسبانيا)', flag: '🇪🇸' },
+    { code: 'es-mx', name_ar: 'الإسبانية (المكسيك)', flag: '🇲🇽' },
+    { code: 'fr-fr', name_ar: 'الفرنسية (فرنسا)', flag: '🇫🇷' },
+    { code: 'fr-ca', name_ar: 'الفرنسية (كندا)', flag: '🇨🇦' },
+
+    // --- 🌍 اللغات العالمية الأخرى ---
+    { code: 'de-de', name_ar: 'الألمانية', flag: '🇩🇪' },
+    { code: 'it-it', name_ar: 'الإيطالية', flag: '🇮🇹' },
+    { code: 'pt-pt', name_ar: 'البرتغالية (البرتغال)', flag: '🇵🇹' },
+    { code: 'pt-br', name_ar: 'البرتغالية (البرازيل)', flag: '🇧🇷' },
+    { code: 'ru-ru', name_ar: 'الروسية', flag: '🇷🇺' },
+    { code: 'tr-tr', name_ar: 'التركية', flag: '🇹🇷' },
+    { code: 'zh-cn', name_ar: 'الصينية (الماندرين)', flag: '🇨🇳' },
+    { code: 'ja-jp', name_ar: 'اليابانية', flag: '🇯🇵' },
+    { code: 'ko-kr', name_ar: 'الكورية', flag: '🇰🇷' },
+    { code: 'hi-in', name_ar: 'الهندية', flag: '🇮🇳' },
+    { code: 'nl-nl', name_ar: 'الهولندية', flag: '🇳🇱' },
+    { code: 'sv-se', name_ar: 'السويدية', flag: '🇸🇪' },
+    { code: 'pl-pl', name_ar: 'البولندية', flag: '🇵🇱' },
+    { code: 'fa-ir', name_ar: 'الفارسية', flag: '🇮🇷' },
+    { code: 'id-id', name_ar: 'الإندونيسية', flag: '🇮🇩' },
+    { code: 'th-th', name_ar: 'التايلندية', flag: '🇹🇭' },
+    { code: 'vi-vn', name_ar: 'الفيتنامية', flag: '🇻🇳' },
+    { code: 'uk-ua', name_ar: 'الأوكرانية', flag: '🇺🇦' },
+    { code: 'el-gr', name_ar: 'اليونانية', flag: '🇬🇷' },
+    { code: 'cs-cz', name_ar: 'التشيكية', flag: '🇨🇿' },
+    { code: 'ro-ro', name_ar: 'الرومانية', flag: '🇷🇴' },
+    { code: 'he-il', name_ar: 'العبرية', flag: '🇮🇱' }
 ];
