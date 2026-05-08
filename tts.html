@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
   <style>
+    /* 🚀 استغلال كامل الشاشة وتصميم ElevenLabs */
     .studio-container { max-width: 1600px; margin: 0 auto; padding: 20px; }
     .studio-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
 
@@ -15,60 +16,73 @@
     .editor-textarea { width: 100%; min-height: 550px; padding: 25px; border: none; resize: vertical; font-size: 1.15rem; color: #000; background: transparent; outline: none; line-height: 1.8; font-family: inherit; }
     
     /* 🎛️ شريط الأدوات السفلي */
-    .editor-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: #fcfcfc; border-top: 1px solid #eee; border-radius: 0 0 12px 12px; }
+    .editor-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: #fff; border-top: 1px solid #eee; border-radius: 0 0 12px 12px; }
     
-    /* 🌍 القائمة المنسدلة المخصصة */
+    /* 🌍 القائمة المنسدلة */
     .custom-dropdown { position: relative; user-select: none; z-index: 100; }
-    .dropdown-selected { padding: 10px 15px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.9rem; font-weight: 600; color: #000; min-width: 220px; }
-    .dropdown-menu { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); width: 240px; list-style: none; padding: 5px 0; display: none; margin-top: 5px; }
+    .dropdown-selected { padding: 8px 12px; border-radius: 8px; border: 1px solid #eee; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.85rem; font-weight: 700; color: #000; min-width: 200px; }
+    .dropdown-menu { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 240px; list-style: none; padding: 5px 0; display: none; margin-top: 5px; }
     .custom-dropdown.open .dropdown-menu { display: block; }
-    .dropdown-menu li { padding: 10px 15px; cursor: pointer; font-size: 0.9rem; color: #000; display: flex; justify-content: space-between; }
+    .dropdown-menu li { padding: 10px 15px; cursor: pointer; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
     .dropdown-menu li:hover { background: #f8fafc; }
-    .has-submenu > .submenu { position: absolute; right: 100%; top: -5px; background: #fff; border: 1px solid #eee; border-radius: 8px; width: 180px; display: none; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+    .has-submenu > .submenu { position: absolute; right: 100%; top: -5px; background: #fff; border: 1px solid #eee; border-radius: 8px; width: 180px; display: none; box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
     .has-submenu:hover > .submenu { display: block; }
 
-    /* 🎛️ أيقونات سوداء نقيّة (Minimal) */
+    /* 🎛️ أدوات اليسار (أيقونات سوداء Minimal) */
     .toolbar-left { display: flex; align-items: center; gap: 18px; }
-    .char-counter { font-size: 0.8rem; color: #999; font-weight: 600; margin-left: 5px; }
-    
-    .btn-tool { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; transition: 0.2s; color: #000; padding: 4px; outline: none; }
-    .btn-tool:hover:not(:disabled) { transform: scale(1.15); opacity: 0.6; }
-    .btn-tool:disabled { color: #ddd; cursor: not-allowed; }
-    .btn-tool.active-mic { color: #ef4444; animation: blink 1.5s infinite; }
+    .char-counter { font-size: 0.8rem; color: #bbb; font-weight: 600; margin-left: 5px; }
+    .btn-tool { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; transition: 0.2s; color: #000; padding: 4px; }
+    .btn-tool:hover:not(:disabled) { transform: scale(1.15); opacity: 0.5; }
+    .btn-tool:disabled { color: #eee; cursor: not-allowed; }
+    .active-recording { color: #ef4444 !important; }
 
-    /* ⚙️ لوحة الإعدادات الجانبية */
+    /* ⚙️ اللوحة الجانبية */
     .settings-sidebar { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; }
-    .settings-group { margin-bottom: 30px; }
-    .settings-title { font-size: 0.9rem; font-weight: 800; color: #000; margin-bottom: 15px; display: flex; justify-content: space-between; }
+    .settings-group { margin-bottom: 25px; }
+    .settings-title { font-size: 0.85rem; font-weight: 800; color: #000; margin-bottom: 12px; display: flex; justify-content: space-between; }
     
-    /* شريط السرعة الأسود */
-    .slider-container { display: flex; flex-direction: column; gap: 12px; }
-    .styled-slider { width: 100%; cursor: pointer; accent-color: #000; appearance: none; height: 3px; background: #eee; }
-    .styled-slider::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; background: #000; border-radius: 50%; }
-    .slider-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: #bbb; }
+    /* شريط السرعة الأسود الملكي */
+    .slider-container { display: flex; flex-direction: column; gap: 10px; }
+    .styled-slider { width: 100%; cursor: pointer; accent-color: #000; appearance: none; height: 2px; background: #eee; }
+    .styled-slider::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; background: #000; border-radius: 50%; }
+    .slider-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: #ccc; }
 
-    .mode-option { padding: 12px; background: #fcfcfc; border: 1px solid #eee; border-radius: 8px; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
-    .mode-option.active { border-color: #000; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .mode-title { font-weight: 800; font-size: 0.85rem; color: #000; }
+    .mode-option { padding: 12px; background: #fff; border: 1px solid #eee; border-radius: 8px; cursor: pointer; margin-bottom: 8px; }
+    .mode-option.active { border-color: #000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .mode-title { font-weight: 800; font-size: 0.8rem; }
 
-    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    /* تحسين شكل القائمة الجانبية */
+    .sidebar { transition: transform 0.3s ease; z-index: 1001; }
+    .sidebar.open { transform: translateX(0) !important; }
+    .overlay.active { display: block !important; }
   </style>
 </head>
 <body data-mode="fast">
 
 <header class="top-bar">
   <div style="display:flex;align-items:center;gap:12px;">
-    <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
+    <button class="menu-btn" id="mainMenuBtn" type="button"><i class="fas fa-bars"></i></button>
     <div class="top-logo"><h2>sl-Dubbing</h2></div>
   </div>
 </header>
 
+<div class="overlay" id="mainOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:1000;"></div>
+
+<aside class="sidebar" id="mainSidebar" style="transform: translateX(100%);">
+  <nav class="sidebar-nav">
+    <div class="nav-label">الاستوديو</div>
+    <ul>
+      <li><a href="dubbing.html"><i class="fas fa-film"></i> الدبلجة الذكية</a></li>
+      <li><a href="tts.html" class="active"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
+    </ul>
+  </nav>
+</aside>
+
 <main class="main-content">
   <div class="studio-container">
     <div class="studio-grid">
-      
       <div class="main-editor-card">
-        <textarea id="ttsInput" class="editor-textarea" placeholder="ضع المؤشر في أي مكان للبدء بالقراءة من هناك، أو اضغط تنزيل للحصول على الملف كاملاً..."></textarea>
+        <textarea id="ttsInput" class="editor-textarea" placeholder="ضع المؤشر في أي مكان للبدء بالقراءة من هناك..."></textarea>
         
         <div class="editor-toolbar">
           <div class="toolbar-right">
@@ -83,10 +97,9 @@
           
           <div class="toolbar-left">
             <span class="char-counter"><span id="charCount">0</span> حرف</span>
-            
-            <button id="ttsFixBtn" class="btn-tool" title="تدقيق إملائي"><i class="fas fa-wand-magic-sparkles"></i></button>
+            <button id="ttsFixBtn" class="btn-tool" title="تصحيح الأخطاء الإملائية"><i class="fas fa-wand-magic-sparkles"></i></button>
             <button id="sttMicBtn" class="btn-tool" title="إملاء صوتي"><i class="fas fa-microphone"></i></button>
-            <button id="ttsDownloadBtn" class="btn-tool" title="تنزيل النص كاملاً بالسرعة المختارة"><i class="fas fa-download"></i></button>
+            <button id="ttsDownloadBtn" class="btn-tool" title="تنزيل النص كاملاً"><i class="fas fa-download"></i></button>
             <button id="ttsStopBtn" class="btn-tool" title="إيقاف" style="display:none;"><i class="fas fa-stop"></i></button>
             <button id="ttsPlayBtn" class="btn-tool" title="تشغيل من مكان المؤشر"><i class="fas fa-play"></i></button>
           </div>
@@ -95,13 +108,12 @@
 
       <div class="settings-sidebar">
         <div class="settings-group">
-          <div class="settings-title"><span>النموذج (Model)</span></div>
+          <div class="settings-title">النموذج (Model)</div>
           <div class="mode-switcher">
             <div class="mode-option active" data-mode="fast"><div class="mode-title">الوضع السريع ⚡</div></div>
             <div class="mode-option" data-mode="quality"><div class="mode-title">جودة عالية 💎</div></div>
           </div>
         </div>
-
         <div class="settings-group">
           <div class="settings-title"><span>السرعة (Speed)</span> <span id="speedValueTxt">طبيعي</span></div>
           <div class="slider-container">
@@ -110,7 +122,6 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </main>
