@@ -1,86 +1,79 @@
-// js/tts-quick.js — V1.1 (Centralized API Base & Streaming)
-
-async function quickTTS(text, options = {}) {
-    const { lang = 'ar', edge_voice = '', translate = true, rate = '+0%', pitch = '+0Hz' } = options;
-    const token = localStorage.getItem('token');
-    const headers = { 'Content-Type': 'application/json' };
-    
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    if (!text?.trim()) throw new Error('النص فارغ');
-
-    const t0 = performance.now();
-    
-    // استخدام window.API_BASE الموحد من shared.js (والذي ينتهي بـ /api)
-    const response = await fetch(`${window.API_BASE}/tts/quick`, {
-        method: 'POST', 
-        headers,
-        body: JSON.stringify({ text, lang, edge_voice, translate, rate, pitch })
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. تبديل وضع الجودة (سريع / عالي الجودة)
+    const modeButtons = document.querySelectorAll('.mode-option');
+    modeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // إزالة التفعيل من كل الأزرار
+            modeButtons.forEach(b => b.classList.remove('active'));
+            // تفعيل الزر المضغوط
+            btn.classList.add('active');
+            // تغيير الـ data-mode في الـ body لإظهار/إخفاء قسم البصمة الصوتية
+            document.body.setAttribute('data-mode', btn.dataset.mode);
+        });
     });
 
-    if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${response.status}`);
+    // 2. عداد الحروف الديناميكي
+    const textInput = document.getElementById('ttsInput');
+    const charCount = document.getElementById('charCount');
+    if (textInput && charCount) {
+        textInput.addEventListener('input', () => {
+            charCount.textContent = textInput.value.length;
+        });
     }
 
-    const ttfb = performance.now() - t0;
-    const remainingCredits = parseInt(response.headers.get('X-Remaining-Credits') || '0');
+    // 3. ربط زر التوليد (تشغيل فوري سريع) بسيرفر البايثون الخاص بنا
+    const instantBtn = document.getElementById('ttsInstantBtn');
+    if (instantBtn) {
+        instantBtn.addEventListener('click', async () => {
+            const text = textInput.value.trim();
+            if (!text) {
+                if (window.showToast) showToast('الرجاء كتابة نص أولاً', 'error');
+                else alert('الرجاء كتابة نص أولاً');
+                return;
+            }
 
-    // تحديث الرصيد في الواجهة فوراً إذا كانت الدالة موجودة
-    if (typeof checkAuth === 'function') checkAuth();
+            // معرفة الوضع الحالي (سريع أو جودة عالية)
+            const mode = document.body.getAttribute('data-mode'); // 'fast' أو 'quality'
+            
+            // للحصول على اللغة (مؤقتاً سنضعها عربي، ويمكنك ربطها بـ lang-picker لاحقاً)
+            const lang = 'ar'; 
+            
+            // تعطيل الزر وتغيير النص لتوضيح حالة التحميل
+            const originalHtml = instantBtn.innerHTML;
+            instantBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوليد والرفع...';
+            instantBtn.disabled = true;
 
-    // إذا كان المتصفح لا يدعم بث MP3 المباشر (مثل بعض متصفحات iOS القديمة)
-    if (typeof MediaSource === 'undefined' || !MediaSource.isTypeSupported('audio/mpeg')) {
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        return { audio: new Audio(url), url, ttfb, totalTime: performance.now() - t0, remainingCredits };
-    }
-
-    // تقنية البث المباشر (Real-time Streaming)
-    const mediaSource = new MediaSource();
-    const audio = new Audio(URL.createObjectURL(mediaSource));
-    const chunks = []; 
-
-    return new Promise((resolve, reject) => {
-        mediaSource.addEventListener('sourceopen', async () => {
             try {
-                const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
-                const reader = response.body.getReader();
-                
-                const pushChunks = async () => {
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) {
-                            if (mediaSource.readyState === 'open' && !sourceBuffer.updating) {
-                                mediaSource.endOfStream();
-                            }
-                            break;
-                        }
-                        chunks.push(value); 
-                        if (sourceBuffer.updating) {
-                            await new Promise(r => sourceBuffer.addEventListener('updateend', r, { once: true }));
-                        }
-                        if (mediaSource.readyState === 'open') {
-                            sourceBuffer.appendBuffer(value);
-                        }
-                    }
-                    return URL.createObjectURL(new Blob(chunks, { type: 'audio/mpeg' }));
-                };
-
-                const blobPromise = pushChunks();
-
-                resolve({
-                    audio: audio,
-                    url: audio.src, 
-                    blobPromise: blobPromise, 
-                    ttfb,
-                    totalTime: performance.now() - t0,
-                    remainingCredits
+                // إرسال الطلب إلى الخادم المحلي (Local Factory) الذي صممناه
+                const response = await fetch('http://localhost:7860/text-to-speech', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text: text, 
+                        lang: lang,
+                        mode: mode === 'quality' ? 'hq' : 'fast' 
+                    })
                 });
 
-            } catch (e) { reject(new Error('خطأ في معالجة البث المباشر')); }
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.audio_url) {
+                    if (window.showToast) showToast('✅ تم توليد الصوت بنجاح!', 'success');
+                    
+                    // تشغيل الصوت فوراً في المتصفح
+                    const audio = new Audio(data.audio_url);
+                    audio.play();
+                } else {
+                    throw new Error(data.error || 'فشل التوليد في الخادم');
+                }
+            } catch (err) {
+                console.error(err);
+                if (window.showToast) showToast('❌ حدث خطأ: تأكد أن سيرفر البايثون يعمل', 'error');
+            } finally {
+                // إعادة الزر لحالته الطبيعية
+                instantBtn.innerHTML = originalHtml;
+                instantBtn.disabled = false;
+            }
         });
-        mediaSource.addEventListener('error', () => reject(new Error('خطأ في المشغل')));
-    });
-}
-
-window.quickTTS = quickTTS;
+    }
+});
