@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentLangCode = 'ar-sa';
     let currentAudio = null;
 
-    // --- بناء قائمة اللغات ---
+    // --- بناء قائمة اللغات المنسدلة ---
     const menuEl = document.getElementById('langMenu');
     if (menuEl && window.LANG_MENU) {
         window.LANG_MENU.forEach(item => {
@@ -38,11 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('langSelected').onclick = (e) => { e.stopPropagation(); document.getElementById('langDropdown').classList.toggle('open'); };
     document.addEventListener('click', () => document.getElementById('langDropdown').classList.remove('open'));
 
-    // --- ✨ ميزة التدقيق الذكي (تتصل بسيرفر البايثون) ---
+    // --- ✨ التدقيق الذكي (AI) ---
     document.getElementById('ttsFixBtn').onclick = async () => {
         const text = document.getElementById('ttsInput').value.trim();
         if(!text) return;
         const btn = document.getElementById('ttsFixBtn');
+        const oldIcon = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         
         try {
@@ -54,36 +55,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if(data.status === 'success') {
                 document.getElementById('ttsInput').value = data.fixed_text;
-                window.showToast?.('✨ تم تحسين الحوار وتصحيح النص ذكياً', 'success');
+                if(window.showToast) showToast('✨ تم تحسين الحوار وتصحيح النص ذكياً', 'success');
             }
-        } catch (e) { window.showToast?.('خطأ في الاتصال بالسيرفر', 'error'); }
-        finally { btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i>'; }
+        } catch (e) { console.error(e); }
+        finally { btn.innerHTML = oldIcon; }
     };
 
-    // --- الإملاء والسرعة ---
-    document.getElementById('ttsInput').oninput = (e) => { document.getElementById('charCount').innerText = e.target.value.length; };
-    document.getElementById('speedSlider').oninput = (e) => {
-        const v = e.target.value;
-        document.getElementById('speedVal').innerText = v == 0 ? 'طبيعي' : (v > 0 ? `+${v}%` : `${v}%`);
-    };
-
-    // --- التشغيل والتنزيل ---
-    async function processVoice(isDownload = false) {
+    // --- النطق والتنزيل ---
+    async function processTTS(isDownload = false) {
         const input = document.getElementById('ttsInput');
-        const text = isDownload ? input.value : (input.value.substring(input.selectionStart).trim() || input.value.trim());
-        if(!text) return;
+        const textToRead = isDownload ? input.value.trim() : (input.value.substring(input.selectionStart).trim() || input.value.trim());
+        
+        if(!textToRead) return window.showToast?.('اكتب نصاً أولاً', 'error');
 
         const btn = isDownload ? document.getElementById('ttsDownloadBtn') : document.getElementById('ttsPlayBtn');
         const oldHtml = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        const mode = document.querySelector('.mode-option.active').dataset.mode;
 
         try {
             const res = await fetch('https://duty-grow-pic-becomes.trycloudflare.com/text-to-speech', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    text: text, lang: currentLangCode, 
-                    speed: document.getElementById('speedSlider').value 
+                    text: textToRead, lang: currentLangCode, 
+                    speed: document.getElementById('speedSlider').value,
+                    mode: mode
                 })
             });
             const data = await res.json();
@@ -102,7 +100,22 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally { btn.innerHTML = oldHtml; }
     }
 
-    document.getElementById('ttsPlayBtn').onclick = () => processVoice(false);
-    document.getElementById('ttsDownloadBtn').onclick = () => processVoice(true);
+    document.getElementById('ttsPlayBtn').onclick = () => processTTS(false);
+    document.getElementById('ttsDownloadBtn').onclick = () => processTTS(true);
     document.getElementById('ttsStopBtn').onclick = () => { if(currentAudio) currentAudio.pause(); document.getElementById('ttsStopBtn').style.display = 'none'; document.getElementById('ttsPlayBtn').style.display = 'flex'; };
+
+    // تبديل أوضاع الجودة
+    document.querySelectorAll('.mode-option').forEach(opt => {
+        opt.onclick = () => {
+            document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
+            opt.classList.add('active');
+        };
+    });
+
+    // عداد الحروف والسرعة
+    document.getElementById('ttsInput').oninput = (e) => { document.getElementById('charCount').innerText = e.target.value.length; };
+    document.getElementById('speedSlider').oninput = (e) => {
+        const v = e.target.value;
+        document.getElementById('speedVal').innerText = v == 0 ? 'طبيعي' : (v > 0 ? `+${v}%` : `${v}%`);
+    };
 });
