@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentLangCode = 'ar-sa';
     let currentLangName = 'العربية (السعودية)';
-    let lastGeneratedAudioUrl = null; // لحفظ رابط الصوت للتنزيل
+    let lastGeneratedAudioUrl = null; 
+    let currentAudio = null; 
 
     // --- 1. بناء القائمة المنسدلة ---
     const dropdown = document.getElementById('langDropdown');
@@ -54,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // تحديث نص شريط السرعة
     const speedSlider = document.getElementById('speedSlider');
     const speedValueTxt = document.getElementById('speedValueTxt');
     if (speedSlider && speedValueTxt) {
@@ -66,7 +66,66 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 3. 🎙️ الكتابة بالصوت (STT) ---
+    // --- 3. ✨ التدقيق الإملائي والتصحيح الذكي (الجديد) ---
+    const fixBtn = document.getElementById('ttsFixBtn');
+    if (fixBtn) {
+        fixBtn.addEventListener('click', async () => {
+            const text = textInput ? textInput.value.trim() : '';
+            if (!text) return window.showToast ? showToast('الرجاء كتابة نص أولاً لتدقيقه!', 'error') : alert('اكتب نصاً');
+
+            const originalIcon = fixBtn.innerHTML;
+            fixBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            fixBtn.disabled = true;
+
+            try {
+                // استخراج اللغة الأساسية (مثلاً: من ar-sa نأخذ ar فقط ليفهمها المدقق)
+                const langBase = currentLangCode.split('-')[0];
+                
+                // إرسال النص إلى خدمة LanguageTool المجانية
+                const response = await fetch('https://api.languagetool.org/v2/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        text: text,
+                        language: langBase === 'ar' ? 'ar' : 'auto' 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.matches && data.matches.length > 0) {
+                    let newText = text;
+                    let fixCount = 0;
+                    
+                    // الترتيب العكسي ضروري لكي لا تتلخبط أماكن الحروف عند استبدال الكلمات
+                    const matches = data.matches.sort((a, b) => b.offset - a.offset);
+                    
+                    matches.forEach(match => {
+                        if (match.replacements && match.replacements.length > 0) {
+                            const rep = match.replacements[0].value;
+                            newText = newText.slice(0, match.offset) + rep + newText.slice(match.offset + match.length);
+                            fixCount++;
+                        }
+                    });
+
+                    textInput.value = newText;
+                    if (charCount) charCount.textContent = newText.length;
+                    
+                    if (window.showToast) showToast(`✨ تم تصحيح ${fixCount} أخطاء إملائية بنجاح!`, 'success');
+                } else {
+                    if (window.showToast) showToast('✅ النص سليم ولا يوجد به أخطاء إملائية.', 'success');
+                }
+            } catch (err) {
+                console.error(err);
+                if (window.showToast) showToast('❌ حدث خطأ أثناء الاتصال بخدمة التدقيق.', 'error');
+            } finally {
+                fixBtn.innerHTML = originalIcon;
+                fixBtn.disabled = false;
+            }
+        });
+    }
+
+    // --- 4. 🎙️ الكتابة بالصوت (STT) ---
     const sttMicBtn = document.getElementById('sttMicBtn');
     let recognition, isRecording = false;
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -88,9 +147,21 @@ document.addEventListener('DOMContentLoaded', () => {
         else { recognition.lang = currentLangCode; recognition.start(); }
     });
 
-    // --- 4. ▶️ التوليد والنطق (TTS) ---
+    // --- 5. ▶️ التوليد والنطق (TTS) و 🛑 الإيقاف ---
     const playBtn = document.getElementById('ttsPlayBtn');
+    const stopBtn = document.getElementById('ttsStopBtn');
     const downloadBtn = document.getElementById('ttsDownloadBtn');
+
+    if (stopBtn) {
+        stopBtn.addEventListener('click', () => {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            stopBtn.style.display = 'none';
+            if (playBtn) playBtn.style.display = 'flex';
+        });
+    }
 
     if (playBtn) {
         playBtn.addEventListener('click', async () => {
@@ -98,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!text) return window.showToast ? showToast('الرجاء كتابة نص!', 'error') : alert('اكتب نصاً');
 
             const mode = document.body.getAttribute('data-mode') || 'fast';
-            const speed = speedSlider ? speedSlider.value : 0; // استخراج السرعة
+            const speed = speedSlider ? speedSlider.value : 0;
 
             const originalIcon = playBtn.innerHTML;
             playBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -106,27 +177,37 @@ document.addEventListener('DOMContentLoaded', () => {
             if(downloadBtn) downloadBtn.disabled = true;
 
             try {
-                // إرسال الطلب مع متغير السرعة الجديد!
                 const response = await fetch('https://duty-grow-pic-becomes.trycloudflare.com/text-to-speech', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        text: text, 
-                        lang: currentLangCode, 
-                        mode: mode === 'quality' ? 'hq' : 'fast',
-                        speed: speed // إضافة السرعة للبايلود
-                    })
+                    body: JSON.stringify({ text: text, lang: currentLangCode, mode: mode === 'quality' ? 'hq' : 'fast', speed: speed })
                 });
 
                 const data = await response.json();
                 
                 if (data.status === 'success' && data.audio_url) {
-                    lastGeneratedAudioUrl = data.audio_url; // حفظ الرابط
-                    if (downloadBtn) downloadBtn.disabled = false; // تفعيل زر التنزيل
+                    lastGeneratedAudioUrl = data.audio_url; 
+                    if (downloadBtn) downloadBtn.disabled = false; 
 
                     if (window.showToast) showToast(`✅ جاري نطق النص بـ ${currentLangName}`, 'success');
-                    const audio = new Audio(data.audio_url);
-                    audio.play();
+                    
+                    if (currentAudio) {
+                        currentAudio.pause();
+                        currentAudio.currentTime = 0;
+                    }
+
+                    currentAudio = new Audio(data.audio_url);
+                    
+                    playBtn.style.display = 'none';
+                    if (stopBtn) stopBtn.style.display = 'flex';
+
+                    currentAudio.play();
+
+                    currentAudio.onended = () => {
+                        if (stopBtn) stopBtn.style.display = 'none';
+                        playBtn.style.display = 'flex';
+                    };
+
                 } else throw new Error(data.error || 'فشل التوليد');
             } catch (err) {
                 if (window.showToast) showToast('❌ حدث خطأ في الاتصال بالخادم.', 'error');
@@ -137,11 +218,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 5. 📥 التنزيل ---
+    // --- 6. 📥 التنزيل ---
     if (downloadBtn) {
         downloadBtn.addEventListener('click', () => {
             if (lastGeneratedAudioUrl) {
-                // إنشاء زر مخفي لتحميل الملف مباشرة
                 const a = document.createElement('a');
                 a.href = lastGeneratedAudioUrl;
                 a.download = `Voice_${currentLangCode}_${new Date().getTime()}.mp3`;
