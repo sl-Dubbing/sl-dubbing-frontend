@@ -1,4 +1,4 @@
-// js/dubbing.js — الإصدار السينمائي المتقدم (V11.0 - إصلاح الرفع)
+// js/dubbing.js — الإصدار السينمائي المتقدم (V11.0 - Final Fix)
 let cinemaResults = {};
 let activeWavesurfer = null;
 
@@ -34,13 +34,12 @@ document.getElementById('mediaFile')?.addEventListener('change', function(e) {
 // =====================================
 // 2. دالة الرفع المباشر لـ Cloudflare R2
 // =====================================
-// 💡 تم تحديث هذه الدالة لضمان توافق التوقيع الرقمي مع الباك إند
 async function uploadToR2(url, file, contentType) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', url, true);
         
-        // 🚨 حيوي: يجب أن يطابق تماماً ما تم إرساله للسيرفر لتوقيع الرابط
+        // 🚨 حيوي: إجبار المتصفح على استخدام نفس نوع الملف الذي وقعنا به الرابط
         xhr.setRequestHeader('Content-Type', contentType);
         
         xhr.upload.onprogress = (e) => {
@@ -84,7 +83,7 @@ async function startDubbing() {
     try {
         updateProgress("⚡ جاري تهيئة رابط الرفع...", 5);
         
-        // 💡 التعديل: إرسال نوع الملف الدقيق للباك إند لضمان تطابق التوقيع
+        // 💡 استخراج نوع الملف الدقيق لمنع رفض Cloudflare
         const strictContentType = file.type || 'application/octet-stream';
 
         // 1. الحصول على رابط الرفع من Railway
@@ -102,7 +101,7 @@ async function startDubbing() {
         
         updateProgress("📤 جاري بدء الرفع...", 10);
 
-        // 2. الرفع المباشر لـ Cloudflare R2 باستخدام الدالة المحسنة
+        // 2. الرفع المباشر لـ Cloudflare R2
         await uploadToR2(urlData.upload_url, file, strictContentType);
 
         updateProgress("⚙️ اكتمل الرفع، بدأت المعالجة بذكائك الاصطناعي...", 50);
