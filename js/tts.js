@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 // إرسال الطلب إلى الخادم المحلي (Local Factory) الذي صممناه
                 // 👈 تم إضافة /text-to-speech في نهاية الرابط هنا
-                const response = await fetch('https://steps-dental-matthew-vancouver.trycloudflare.com/text-to-speech', {
+                const response = await fetch('https://developers.cloudflare.com/cloudflare-one/connections/connect-apps', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
