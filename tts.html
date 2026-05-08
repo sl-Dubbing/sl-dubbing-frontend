@@ -7,63 +7,51 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* 🚀 التخطيط الجديد المستوحى من ElevenLabs */
     .studio-container { max-width: 1600px; margin: 0 auto; padding: 20px; }
     .studio-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
-    @media (max-width: 992px) { .studio-grid { grid-template-columns: 1fr; } }
 
     /* 📝 المحرر العملاق */
-    .main-editor-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; flex-direction: column; overflow: visible; }
-    .editor-textarea { width: 100%; min-height: 500px; padding: 25px; border: none; resize: vertical; font-size: 1.1rem; color: #1a1d23; background: transparent; outline: none; font-family: inherit; line-height: 1.8; }
-    .editor-textarea::placeholder { color: #94a3b8; font-size: 1.5rem; font-weight: 300; }
+    .main-editor-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; display: flex; flex-direction: column; overflow: visible; }
+    .editor-textarea { width: 100%; min-height: 500px; padding: 25px; border: none; resize: vertical; font-size: 1.1rem; color: #1a1d23; background: transparent; outline: none; line-height: 1.8; }
     
     /* 🎛️ شريط الأدوات السفلي */
     .editor-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: #f8fafc; border-top: 1px solid #e5e7eb; border-radius: 0 0 12px 12px; }
     
     /* 🌍 القائمة المنسدلة */
     .custom-dropdown { position: relative; user-select: none; z-index: 50; }
-    .dropdown-selected { padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.95rem; font-weight: 600; color: #475569; min-width: 220px; transition: 0.2s;}
-    .dropdown-selected:hover { border-color: #94a3b8; }
-    .dropdown-menu { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 240px; list-style: none; padding: 5px 0; margin: 5px 0 0 0; display: none; }
-    .custom-dropdown.open .dropdown-menu { display: block; animation: fadeInDown 0.2s ease-out; }
-    .dropdown-menu li { padding: 10px 15px; cursor: pointer; transition: 0.2s; position: relative; font-size: 0.9rem; color: #1a1d23; display: flex; justify-content: space-between; align-items: center; }
-    .dropdown-menu li:hover { background: #f1f5f9; color: #2563eb; }
-    .has-submenu > .submenu { position: absolute; right: 100%; top: -5px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 180px; list-style: none; padding: 5px 0; display: none; z-index: 101; }
-    .has-submenu:hover > .submenu { display: block; animation: fadeInLeft 0.2s ease-out; }
+    .dropdown-selected { padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.95rem; font-weight: 600; color: #475569; min-width: 220px; }
+    .dropdown-menu { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 240px; list-style: none; padding: 5px 0; display: none; }
+    .custom-dropdown.open .dropdown-menu { display: block; }
+    .dropdown-menu li { padding: 10px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+    .dropdown-menu li:hover { background: #f1f5f9; }
+    .has-submenu > .submenu { position: absolute; right: 100%; top: -5px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; width: 180px; display: none; }
+    .has-submenu:hover > .submenu { display: block; }
 
-    /* 🎛️ أدوات اليسار */
-    .toolbar-left { display: flex; align-items: center; gap: 12px; }
-    .char-counter { font-size: 0.85rem; color: #9aa1ac; font-weight: 600; margin-left: 10px; }
+    /* 🎛️ أيقونات سوداء بدون مربعات (Minimalist) */
+    .toolbar-left { display: flex; align-items: center; gap: 20px; }
+    .char-counter { font-size: 0.85rem; color: #9aa1ac; font-weight: 600; }
     
-    .btn-tool { width: 40px; height: 40px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; transition: 0.2s; color: #1e293b; }
-    .btn-tool:hover:not(:disabled) { transform: scale(1.15); color: #2563eb; } 
-    
-    /* ألوان مخصصة عند التمرير لبعض الأزرار */
-    .btn-magic:hover:not(:disabled) { color: #8b5cf6; } /* عصا التصحيح (بنفسجي) */
-    .btn-download:hover:not(:disabled) { color: #10b981; } /* التنزيل (أخضر) */
-    
-    .btn-tool.recording { animation: pulse-mic 1.5s infinite; color: #ef4444; }
-    .btn-tool:disabled { color: #cbd5e1; cursor: not-allowed; transform: none; }
+    .btn-tool { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; transition: 0.2s; color: #000; padding: 5px; }
+    .btn-tool:hover:not(:disabled) { transform: scale(1.2); opacity: 0.7; }
+    .btn-tool.recording { color: #ef4444; animation: pulse-mic 1.5s infinite; }
+    .btn-tool:disabled { color: #e2e8f0; cursor: not-allowed; }
 
-    /* ⚙️ اللوحة الجانبية للإعدادات */
-    .settings-sidebar { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    /* ⚙️ اللوحة الجانبية */
+    .settings-sidebar { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; }
     .settings-group { margin-bottom: 25px; border-bottom: 1px solid #f1f5f9; padding-bottom: 20px; }
-    .settings-group:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .settings-title { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .settings-title { font-size: 0.95rem; font-weight: 700; color: #000; margin-bottom: 15px; display: flex; justify-content: space-between; }
     
+    /* شريط السرعة باللون الأسود */
     .slider-container { display: flex; flex-direction: column; gap: 10px; }
-    .styled-slider { width: 100%; cursor: pointer; accent-color: #2563eb; }
+    .styled-slider { width: 100%; cursor: pointer; accent-color: #000; appearance: none; height: 4px; background: #e2e8f0; border-radius: 2px; }
+    .styled-slider::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; background: #000; border-radius: 50%; cursor: pointer; }
     .slider-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; }
 
-    .mode-switcher{display:flex;flex-direction:column;gap:10px;}
-    .mode-option{padding:12px;background:#f8fafc;border:2px solid transparent;border-radius:8px;cursor:pointer;transition:0.2s;text-align:right;}
-    .mode-option.active{background:#eff6ff;border-color:#2563eb;}
-    .mode-title{font-weight:700;font-size:0.9rem; color:#1e293b; display:flex; justify-content:space-between;}
-    .mode-desc{font-size:0.75rem;color:#64748b; margin-top:4px;}
+    .mode-option{padding:12px;background:#f8fafc;border:2px solid transparent;border-radius:8px;cursor:pointer;margin-bottom:8px;text-align:right;}
+    .mode-option.active{border-color:#000;background:#fff;}
+    .mode-title{font-weight:700;font-size:0.9rem; color:#000;}
 
-    @keyframes pulse-mic { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
-    @keyframes fadeInDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeInLeft { from { opacity: 0; transform: translateX(5px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes pulse-mic { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
   </style>
 </head>
 <body data-mode="fast">
@@ -75,24 +63,12 @@
   </div>
 </header>
 
-<div class="overlay" id="overlay"></div>
-
-<aside class="sidebar" id="sidebar">
-  <nav class="sidebar-nav">
-    <ul>
-      <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
-      <li><a href="tts.html" class="active"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
-    </ul>
-  </nav>
-</aside>
-
 <main class="main-content">
   <div class="studio-container">
-    
     <div class="studio-grid">
       
       <div class="main-editor-card">
-        <textarea id="ttsInput" class="editor-textarea" placeholder="اكتب أو انسخ أي نص هنا لتحويله إلى صوت نابض بالحياة..."></textarea>
+        <textarea id="ttsInput" class="editor-textarea" placeholder="اكتب أو انسخ النص هنا... سيتم النطق من مكان وقوف المؤشر."></textarea>
         
         <div class="editor-toolbar">
           <div class="toolbar-right">
@@ -108,55 +84,29 @@
           <div class="toolbar-left">
             <span class="char-counter"><span id="charCount">0</span> حرف</span>
             
-            <button id="ttsFixBtn" class="btn-tool btn-magic" type="button" title="تدقيق وتصحيح النص (AI)">
-              <i class="fas fa-wand-magic-sparkles"></i>
-            </button>
-
-            <button id="sttMicBtn" class="btn-tool" type="button" title="كتابة بالصوت">
-              <i class="fas fa-microphone"></i>
-            </button>
-            
-            <button id="ttsDownloadBtn" class="btn-tool btn-download" type="button" title="تنزيل الصوت" disabled>
-              <i class="fas fa-download"></i>
-            </button>
-
-            <button id="ttsStopBtn" class="btn-tool" type="button" title="إيقاف النطق" style="display:none;">
-              <i class="fas fa-stop"></i>
-            </button>
-
-            <button id="ttsPlayBtn" class="btn-tool" type="button" title="توليد ونطق">
-              <i class="fas fa-play"></i>
-            </button>
+            <button id="ttsFixBtn" class="btn-tool" title="تدقيق النص"><i class="fas fa-wand-magic-sparkles"></i></button>
+            <button id="sttMicBtn" class="btn-tool" title="إملاء صوتي"><i class="fas fa-microphone"></i></button>
+            <button id="ttsDownloadBtn" class="btn-tool" title="تنزيل" disabled><i class="fas fa-download"></i></button>
+            <button id="ttsStopBtn" class="btn-tool" title="إيقاف" style="display:none;"><i class="fas fa-stop"></i></button>
+            <button id="ttsPlayBtn" class="btn-tool" title="تشغيل"><i class="fas fa-play"></i></button>
           </div>
         </div>
       </div>
 
       <div class="settings-sidebar">
         <div class="settings-group">
-          <div class="settings-title"><span>إعدادات الصوت (Model)</span></div>
+          <div class="settings-title"><span>الوضع (Model)</span></div>
           <div class="mode-switcher">
-            <div class="mode-option active" data-mode="fast">
-              <div class="mode-title"><span>الوضع السريع ⚡</span></div>
-              <div class="mode-desc">أصوات الذكاء الاصطناعي القياسية بسرعة فائقة</div>
-            </div>
-            <div class="mode-option" data-mode="quality">
-              <div class="mode-title"><span>جودة عالية 💎</span></div>
-              <div class="mode-desc">استنساخ بصمة صوتية مخصصة للعملاء</div>
-            </div>
+            <div class="mode-option active" data-mode="fast"><div class="mode-title">الوضع السريع ⚡</div></div>
+            <div class="mode-option" data-mode="quality"><div class="mode-title">جودة عالية 💎</div></div>
           </div>
         </div>
 
         <div class="settings-group">
-          <div class="settings-title">
-            <span>سرعة النطق (Speed)</span>
-            <span id="speedValueTxt" style="color:#2563eb; font-size:0.85rem;">طبيعي</span>
-          </div>
+          <div class="settings-title"><span>السرعة (Speed)</span> <span id="speedValueTxt" style="color:#000;">طبيعي</span></div>
           <div class="slider-container">
-            <input type="range" id="speedSlider" class="styled-slider" min="-50" max="50" value="0" step="5">
-            <div class="slider-labels">
-              <span>بطيء جداً</span>
-              <span>سريع جداً</span>
-            </div>
+            <input type="range" id="speedSlider" class="styled-slider" min="-50" max="50" value="0">
+            <div class="slider-labels"><span>أبطأ</span><span>أسرع</span></div>
           </div>
         </div>
       </div>
