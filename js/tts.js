@@ -19,45 +19,52 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. زر التوليد (تشغيل فوري سريع)
-    const instantBtn = document.getElementById('ttsInstantBtn');
-    if (instantBtn) {
-        instantBtn.addEventListener('click', async () => {
-            const text = textInput.value.trim();
+    // 3. تعبئة القائمة المنسدلة للغات (من ملف languages-data.js)
+    const langSelect = document.getElementById('singleLangSelect');
+    if (langSelect && window.LANGUAGES) {
+        window.LANGUAGES.forEach(lang => {
+            const option = document.createElement('option');
+            option.value = lang.code;
+            // عرض العلم + اسم اللغة + الكود (مثال: 🇸🇦 العربية (AR) )
+            option.textContent = `${lang.flag} ${lang.name_ar} (${lang.code.toUpperCase()})`;
+            
+            // جعل اللغة العربية هي الافتراضية
+            if(lang.code === 'ar') option.selected = true; 
+            
+            langSelect.appendChild(option);
+        });
+    }
+
+    // 4. برمجة زر الميكروفون 🎙️ (التشغيل والنطق الفوري)
+    const micBtn = document.getElementById('ttsMicBtn');
+    if (micBtn) {
+        micBtn.addEventListener('click', async () => {
+            const text = textInput ? textInput.value.trim() : '';
             if (!text) {
-                if (window.showToast) showToast('الرجاء كتابة نص أولاً', 'error');
+                if (window.showToast) showToast('الرجاء كتابة نص أولاً ليتم نطقه!', 'error');
                 return;
             }
 
-            // 👈 1. قراءة كود اللغة المختارة من lang-picker.js (الافتراضي: ar)
-            let targetLangCode = 'ar'; 
-            if (window.selectedLangs && window.selectedLangs.size > 0) {
-                targetLangCode = Array.from(window.selectedLangs)[0]; 
-            }
-
-            // 👈 2. جلب اسم اللغة بالعربي من languages-data.js لعرضه في الإشعار
-            let targetLangName = targetLangCode;
-            if (window.LANGUAGES) {
-                const langObj = window.LANGUAGES.find(l => l.code === targetLangCode);
-                if (langObj) {
-                    targetLangName = langObj.name_ar; // سيجلب "الإنجليزية" مثلاً
-                }
-            }
+            // قراءة كود اللغة المختارة من القائمة المنسدلة (مثلاً: ar أو es أو ja)
+            const targetLangCode = langSelect.value;
+            // قراءة اسم اللغة لعرضها في الإشعار
+            const targetLangName = langSelect.options[langSelect.selectedIndex].text;
 
             const mode = document.body.getAttribute('data-mode') || 'fast';
             
-            const originalHtml = instantBtn.innerHTML;
-            instantBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوليد...';
-            instantBtn.disabled = true;
+            // تغيير شكل الميكروفون لدائرة تحميل أثناء الاتصال
+            const originalIcon = micBtn.innerHTML;
+            micBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            micBtn.disabled = true;
 
             try {
-                // ⚠️ تأكد دائماً أن الرابط هو رابط النفق النشط 
+                // ⚠️ تأكد دائماً أن الرابط هو رابط النفق النشط حالياً
                 const response = await fetch('https://duty-grow-pic-becomes.trycloudflare.com/text-to-speech', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         text: text, 
-                        lang: targetLangCode, // إرسال الكود مثل: en, fr, zh
+                        lang: targetLangCode,
                         mode: mode === 'quality' ? 'hq' : 'fast' 
                     })
                 });
@@ -65,9 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 
                 if (data.status === 'success' && data.audio_url) {
-                    // استخدام الاسم العربي في الإشعار
-                    if (window.showToast) showToast(`✅ تم التوليد باللغة (${targetLangName}) بنجاح!`, 'success');
+                    if (window.showToast) showToast(`✅ جاري نطق النص بـ ${targetLangName}`, 'success');
                     
+                    // تشغيل الصوت فوراً
                     const audio = new Audio(data.audio_url);
                     audio.play();
                 } else {
@@ -75,10 +82,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (err) {
                 console.error(err);
-                if (window.showToast) showToast('❌ حدث خطأ في الاتصال بالخادم', 'error');
+                if (window.showToast) showToast('❌ حدث خطأ في الاتصال بالخادم. تأكد من عمل النفق.', 'error');
             } finally {
-                instantBtn.innerHTML = originalHtml;
-                instantBtn.disabled = false;
+                // إعادة شكل الميكروفون بعد الانتهاء
+                micBtn.innerHTML = originalIcon;
+                micBtn.disabled = false;
             }
         });
     }
