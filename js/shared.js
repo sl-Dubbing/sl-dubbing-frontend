@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start
     window.checkAuth();
     window.checkServer();
-    setInterval(window.checkServer, 30000);
+    setInterval(window.checkServer, 300000);
 
     // Auth State Changes
     setTimeout(() => {
