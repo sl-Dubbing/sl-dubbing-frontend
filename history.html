@@ -162,66 +162,9 @@
   </main>
 </div>
 
+<script src="js/config.js"></script>
+<script src="js/shared.js"></script>
 <script>
-    // System Config & Auth logic
-    const BE = 'https://api.glotix.ai';
-    const SUPABASE_URL = "https://ckjkkxrlgisjdolwddfg.supabase.co"; 
-    const SUPABASE_KEY = "sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW"; 
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // Dropdown Logic
-    const menuBtn = document.getElementById('menuBtn');
-    const dropdownMenu = document.getElementById('mainMenuDropdown');
-    menuBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('active'); });
-    document.addEventListener('click', (e) => { if (!dropdownMenu.contains(e.target) && !menuBtn.contains(e.target)) { dropdownMenu.classList.remove('active'); } });
-
-    function escapeHtml(u) { return String(u||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m])); }
-
-    function updateDropdownUI(user) {
-        const guestMenu = document.getElementById('guestMenu');
-        const userMenu = document.getElementById('userMenu');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const menuUserName = document.getElementById('menuUserName');
-        const menuCredits = document.getElementById('menuCredits');
-        const menuAvatar = document.getElementById('menuAvatar');
-
-        if (user && user.id) {
-            guestMenu.style.display = 'none';
-            userMenu.style.display = 'block';
-            logoutBtn.style.display = 'flex';
-            menuUserName.textContent = user.name || 'My Account';
-            menuCredits.textContent = user.credits !== undefined ? user.credits : '...';
-            if (user.avatar) menuAvatar.src = user.avatar;
-        } else {
-            guestMenu.style.display = 'flex';
-            userMenu.style.display = 'none';
-            logoutBtn.style.display = 'none'; 
-        }
-    }
-
-    async function fetchLiveAuth() {
-        const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
-        updateDropdownUI(cachedUser);
-        try {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) { localStorage.removeItem('token'); localStorage.removeItem('sl_user_cache'); updateDropdownUI(null); return; }
-            localStorage.setItem('token', session.access_token);
-            const res = await fetch(`${BE}/api/user/credits`, { headers: { 'Authorization': `Bearer ${session.access_token}` } });
-            if (res.ok) {
-                const d = await res.json();
-                const userData = { id: session.user.id, email: session.user.email, name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0], avatar: session.user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y', credits: d.success ? d.credits : '...' };
-                localStorage.setItem('sl_user_cache', JSON.stringify(userData));
-                updateDropdownUI(userData);
-            }
-        } catch(e) { console.error("Auth sync error:", e); }
-    }
-
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await supabaseClient.auth.signOut();
-        localStorage.removeItem('token'); localStorage.removeItem('sl_user_cache');
-        window.location.reload();
-    });
-
     // ── File Manager Logic ──
     let allData = [];
     let currentFolder = 'Root';
@@ -235,12 +178,11 @@
         }
 
         try {
-            const res = await fetch(`${BE}/api/history`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const res = await fetch(`${window.API_BASE}/api/history`, { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             allData = data.history || [];
             
             allData.forEach(item => { 
-                // Treat empty or Arabic 'الرئيسية' folders as 'Root'
                 if(!item.folder || item.folder === 'الرئيسية') item.folder = 'Root';
                 folders.add(item.folder); 
             });
@@ -255,9 +197,9 @@
     function renderFolders() {
         const grid = document.getElementById('folderGrid');
         grid.innerHTML = Array.from(folders).map(name => `
-            <div class="folder-item ${currentFolder === name ? 'active' : ''}" onclick="switchFolder('${escapeHtml(name)}')">
+            <div class="folder-item ${currentFolder === name ? 'active' : ''}" onclick="switchFolder('${window.escapeHtml(name)}')">
                 <i class="fas fa-folder"></i>
-                <span>${escapeHtml(name)}</span>
+                <span>${window.escapeHtml(name)}</span>
             </div>
         `).join('');
     }
@@ -283,19 +225,19 @@
                 <i class="fas fa-file-audio file-icon"></i>
                 <div class="file-info">
                     <div class="file-name">
-                        ${escapeHtml(f.name || 'Untitled File')} 
+                        ${window.escapeHtml(f.name || 'Untitled File')} 
                         ${f.expires_in ? `<span class="expiry-badge">Deletes in ${f.expires_in} days</span>` : ''}
                     </div>
                     <div class="file-meta">
-                        ${f.lang ? `Language: ${escapeHtml(f.lang.toUpperCase())} | ` : ''} 
+                        ${f.lang ? `Language: ${window.escapeHtml(f.lang.toUpperCase())} | ` : ''} 
                         Date: ${new Date(f.created_at).toLocaleDateString()}
                     </div>
                 </div>
                 <div class="file-actions">
-                    ${f.audio_url ? `<button class="btn-action" title="Play" onclick="window.open('${escapeHtml(f.audio_url)}')"><i class="fas fa-play"></i></button>` : ''}
-                    <button class="btn-action" title="Rename" onclick="renameFile(${f.id}, '${escapeHtml(f.name || '')}')"><i class="fas fa-pen"></i></button>
+                    ${f.audio_url ? `<button class="btn-action" title="Play" onclick="window.open('${window.escapeHtml(f.audio_url)}')"><i class="fas fa-play"></i></button>` : ''}
+                    <button class="btn-action" title="Rename" onclick="renameFile(${f.id}, '${window.escapeHtml(f.name || '')}')"><i class="fas fa-pen"></i></button>
                     <button class="btn-action" title="Move to Folder" onclick="moveFile(${f.id})"><i class="fas fa-folder-open"></i></button>
-                    ${f.audio_url ? `<a href="${escapeHtml(f.audio_url)}" download class="btn-action" title="Download"><i class="fas fa-download"></i></a>` : ''}
+                    ${f.audio_url ? `<a href="${window.escapeHtml(f.audio_url)}" download class="btn-action" title="Download"><i class="fas fa-download"></i></a>` : ''}
                 </div>
             </div>
         `).join('');
@@ -305,7 +247,7 @@
         const name = prompt("Rename file:", oldName);
         if (!name || name === oldName) return;
         
-        const res = await fetch(`${BE}/api/file/rename`, {
+        const res = await fetch(`${window.API_BASE}/api/file/rename`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
             body: JSON.stringify({ id, new_name: name })
@@ -317,7 +259,7 @@
         const folder = prompt("Move to folder (e.g., Work, Archive):");
         if (!folder) return;
         
-        const res = await fetch(`${BE}/api/file/move`, {
+        const res = await fetch(`${window.API_BASE}/api/file/move`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
             body: JSON.stringify({ id, folder_name: folder })
@@ -334,7 +276,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        fetchLiveAuth();
         loadManager();
     });
 </script>
