@@ -183,8 +183,8 @@
             const { data, error } = await supa.auth.getSession();
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
-                // Redirect to dubbing after login
-                window.location.href = '/dubbing'; 
+                // التوجيه للرئيسية بدلاً من الدبلجة
+                window.location.href = '/'; 
             }
         } catch (e) {}
     }
@@ -234,8 +234,8 @@
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
                 showToast('Signed in successfully!', 'success');
-                // Redirect to dubbing after login
-                const targetPage = sessionStorage.getItem('returnUrl') || '/dubbing';
+                // التوجيه للرئيسية بدلاً من الدبلجة
+                const targetPage = sessionStorage.getItem('returnUrl') || '/';
                 sessionStorage.removeItem('returnUrl');
                 setTimeout(() => { window.location.href = targetPage; }, 500);
             }
