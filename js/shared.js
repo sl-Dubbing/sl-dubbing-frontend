@@ -26,32 +26,32 @@ async function getSupabase() {
 }
 
 // =================================
-// 🎨 2. رسم واجهة الUser
+// 🎨 2. رسم واجهة المستخدم
 // =================================
 function renderAuthUI(user) {
     const authSection = document.getElementById('authSection');
     const topBadge = document.getElementById('topAccountBadge');
 
     if (!user) {
-        if (authSection) authSection.innerHTML = `<div style="text-align:center;padding:8px;"><a href="/login" class="btn-login-sidebar">Sign In</a></div>`;
-        if (topBadge) topBadge.innerHTML = `<a href="/login" style="color:inherit;text-decoration:none;"><i class="fas fa-sign-in-alt"></i> Login</a>`;
+        if (authSection) authSection.innerHTML = `<div style="text-align:center;padding:8px;"><a href="/login" class="btn-login-sidebar">تسجيل الدخول</a></div>`;
+        if (topBadge) topBadge.innerHTML = `<a href="/login" style="color:inherit;text-decoration:none;"><i class="fas fa-sign-in-alt"></i> دخول</a>`;
         return;
     }
 
     const credits = (user.credits !== undefined) ? user.credits : "...";
-    const name = user.name || user.email?.split('@')[0] || 'User';
+    const name = user.name || user.email?.split('@')[0] || 'مستخدم';
 
     if (authSection) {
         authSection.innerHTML = `
             <div class="user-info-card">
                 <div class="user-name"><i class="fas fa-user-circle"></i> ${escapeHtml(name)}</div>
-                <div class="user-points"><i class="fas fa-coins"></i> ${credits} Credits</div>
-                <button id="logoutBtn" style="margin-top:10px;background:none;border:none;color:#ff3b30;cursor:pointer;font-size:0.82rem;font-weight:600;">Logout</button>
+                <div class="user-points"><i class="fas fa-coins"></i> ${credits} نقطة</div>
+                <button id="logoutBtn" style="margin-top:10px;background:none;border:none;color:#ff3b30;cursor:pointer;font-size:0.82rem;font-weight:600;">تسجيل الخروج</button>
             </div>`;
         document.getElementById('logoutBtn')?.addEventListener('click', logout);
     }
     if (topBadge) {
-        topBadge.innerHTML = `<i class="fas fa-coins" style="color:#ff9500"></i> ${credits} Credits`;
+        topBadge.innerHTML = `<i class="fas fa-coins" style="color:#ff9500"></i> ${credits} نقطة`;
     }
 }
 
@@ -120,7 +120,7 @@ function closeSidebar() {
 }
 
 // =================================
-// 🚪 5. Logout
+// 🚪 5. تسجيل الخروج
 // =================================
 async function logout() {
     const supa = await getSupabase();
@@ -134,8 +134,8 @@ async function logout() {
 // =================================
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
-    const menuBtn = document.getElementById('menuBtn') || document.getElementById('menuToggle') || document.querySelector('.menu-icon');
-    if (menuBtn) menuBtn.addEventListener('click', (e) => { e.preventDefault(); toggleSidebar(); });
+    const menuToggle = document.getElementById('menuToggle') || document.querySelector('.menu-icon');
+    if (menuToggle) menuToggle.addEventListener('click', (e) => { e.preventDefault(); toggleSidebar(); });
     const overlay = document.getElementById('overlay');
     if (overlay) overlay.addEventListener('click', closeSidebar);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
