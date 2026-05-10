@@ -80,7 +80,6 @@
         
         @media (max-width: 420px) { .login-container { padding: 24px; border-radius: 16px; } }
     </style>
-<base target="_blank">
 </head>
 <body>
 
@@ -198,7 +197,7 @@
                 provider: 'google',
                 options: { redirectTo }
             });
-            if (data?.url) window.location.href = data.url;
+            if (data?.url) window.location.replace(data.url);
         } catch (e) { showToast('Google sign in failed.', 'error'); }
     }
 
