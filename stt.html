@@ -1,149 +1,112 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>تحويل الصوت إلى نص | sl-Dubbing</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css">
+  <title>Speech to Text | Glotix</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <style>
-    .mode-switcher{display:flex;gap:10px;background:var(--bg-secondary);padding:6px;border-radius:10px;border:0.5px solid var(--border-default);margin-bottom:16px}
-    .mode-option{flex:1;padding:12px 14px;background:transparent;border:2px solid transparent;border-radius:8px;cursor:pointer;transition:0.25s;color:var(--text-secondary);text-align:right;font-family:var(--font-system)}
-    .mode-option:hover{background:var(--bg-card);color:var(--text-primary)}
-    .mode-option.active{background:var(--bg-card);border-color:var(--accent);color:var(--text-primary)}
-    .mode-option .mode-title{display:flex;align-items:center;gap:8px;font-weight:600;font-size:0.95rem;margin-bottom:4px}
-    .mode-option .mode-desc{font-size:0.75rem;color:var(--text-muted)}
-    .mode-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:0.68rem;font-weight:600;margin-right:4px}
-    .badge-fast{background:var(--warning-light);color:var(--warning)}
-    .badge-precise{background:var(--accent-soft);color:var(--accent)}
+    /* ── Core Theme Variables ── */
+    :root {
+      --bg-page: #fafafa;
+      --bg-card: #ffffff;
+      --border-color: #e5e7eb;
+      --text-main: #0f0f10;
+      --text-muted: #6b7280;
+      --primary: #0f0f10;
+      --primary-hover: #27272a;
+      --accent-blue: #007aff;
+      --accent-green: #10b981;
+      --error: #ef4444;
+      --radius-md: 12px;
+      --radius-lg: 24px;
+    }
 
-    .options-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
-    .option-toggle{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg-secondary);border:0.5px solid var(--border-default);border-radius:100px;cursor:pointer;font-size:0.82rem;font-weight:500;transition:var(--transition-fast)}
-    .option-toggle.active{background:var(--accent);color:white;border-color:var(--accent)}
-    .option-toggle input{display:none}
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; overflow-x: hidden; line-height: 1.5; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px 3%; }
 
-    .transcript-box{background:var(--bg-secondary);border:0.5px solid var(--border-default);border-radius:var(--radius-md);padding:14px;max-height:400px;overflow-y:auto;font-size:0.9rem;line-height:1.7;white-space:pre-wrap}
-    .transcript-box .segment{padding:6px 0;border-bottom:0.5px solid var(--border-default)}
-    .transcript-box .segment:last-child{border-bottom:none}
-    .transcript-box .timestamp{color:var(--text-muted);font-size:0.75rem;font-family:monospace;margin-left:8px}
-    .transcript-box .speaker{display:inline-block;background:var(--accent-soft);color:var(--accent);padding:1px 8px;border-radius:8px;font-size:0.72rem;font-weight:600;margin-left:6px}
+    /* ── Header & Dropdown ── */
+    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0 40px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 1.6rem; font-weight: 900; text-decoration: none; color: var(--text-main); letter-spacing: -0.5px; }
+    .logo svg { width: 36px; height: 36px; }
 
-    .download-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    .download-row a{flex:1;min-width:120px}
-  </style>
-</head>
-<body>
+    .user-zone { position: relative; display: flex; align-items: center; gap: 12px; }
+    .menu-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1rem; color: var(--text-main); transition: 0.2s; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+    .menu-btn:hover { background: #f3f4f6; }
 
-<header class="top-bar">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <button class="menu-btn" id="menuBtn" type="button"><i class="fas fa-bars"></i><span>القائمة</span></button>
-    <div class="top-logo"><h2>sl-Dubbing</h2></div>
-  </div>
-  <span class="account-badge" id="topAccountBadge">حساب تجريبي</span>
-</header>
+    .dropdown-panel { position: absolute; top: calc(100% + 12px); right: 0; width: 300px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 15px 50px rgba(0,0,0,0.1); padding: 16px; display: flex; flex-direction: column; gap: 8px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: 0.25s cubic-bezier(0.32, 0.72, 0, 1); z-index: 1000; }
+    .dropdown-panel.active { opacity: 1; visibility: visible; transform: translateY(0); }
+    .dropdown-panel a, .dropdown-panel button.menu-item { text-decoration: none; color: var(--text-main); padding: 12px 14px; border-radius: 10px; font-weight: 500; display: flex; align-items: center; gap: 14px; transition: 0.2s; background: transparent; border: none; width: 100%; text-align: left; cursor: pointer; font-size: 1rem; }
+    .dropdown-panel a:hover, .dropdown-panel button.menu-item:hover { background: #f3f4f6; color: var(--accent-blue); }
+    .menu-divider { border: none; border-top: 1px solid var(--border-color); margin: 8px 0; }
+    
+    .auth-buttons { display: flex; gap: 10px; margin-bottom: 5px; }
+    .btn-login, .btn-signup { flex: 1; padding: 12px; border-radius: 10px; text-align: center; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: 0.2s; cursor: pointer; }
+    .btn-login { background: var(--bg-page); border: 1px solid var(--border-color); color: var(--text-main); }
+    .btn-login:hover { background: #e5e7eb; }
+    .btn-signup { background: var(--primary); color: white; border: 1px solid var(--primary); }
+    .btn-signup:hover { background: var(--primary-hover); }
+    
+    .logged-in-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; margin-bottom: 5px; display: none; }
+    .user-name { font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; }
+    .balance-text { color: var(--accent-blue); font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; background: #eff6ff; padding: 6px 10px; border-radius: 8px; width: fit-content; }
+    .logout-btn { color: var(--error) !important; display: none; }
+    .logout-btn:hover { background: #fee2e2 !important; color: #dc2626 !important; }
 
-<div class="overlay" id="overlay"></div>
+    /* ── STT Layout ── */
+    .main-header { text-align: center; margin-bottom: 40px; }
+    .main-header h1 { font-size: 2.5rem; font-weight: 900; margin-bottom: 10px; }
+    .main-header p { color: var(--text-muted); font-size: 1.1rem; }
 
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-user-section" id="authSection">
-    <div style="color:#9aa1ac;font-size:0.9rem;text-align:center;">جاري التحقق...</div>
-  </div>
-  <nav class="sidebar-nav">
-    <div class="nav-label">القائمة الرئيسية</div>
-    <ul>
-      <li><a href="dubbing.html"><i class="fas fa-film"></i> استوديو الدبلجة</a></li>
-      <li><a href="history.html"><i class="fas fa-folder-open"></i> ملفاتي (المجلدات)</a></li>
-      <li><a href="tts.html"><i class="fas fa-microphone"></i> تحويل النص لصوت</a></li>
-      <li><a href="stt.html" class="active"><i class="fas fa-file-alt"></i> تحويل الصوت لنص</a></li>
-    </ul>
-  </nav>
-</aside>
+    .workspace-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    @media (max-width: 900px) { .workspace-grid { grid-template-columns: 1fr; } }
 
-<main class="main-content">
-  <div class="container">
-    <header class="main-header">
-      <h1>تحويل الصوت إلى نص</h1>
-      <p>تفريغ احترافي بـ 99 لغة — مع timestamps وكشف المتحدثين</p>
-    </header>
+    .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 30px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
+    .card h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
 
-    <div class="workspace-grid">
-      <div class="tools-container">
+    /* ── Mode Switcher ── */
+    .mode-switcher { display: flex; gap: 15px; background: var(--bg-page); padding: 8px; border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 20px; flex-wrap: wrap; }
+    .mode-option { flex: 1; min-width: 200px; padding: 18px; background: transparent; border: 2px solid transparent; border-radius: 12px; cursor: pointer; transition: 0.2s; color: var(--text-muted); text-align: left; }
+    .mode-option:hover { background: var(--bg-card); color: var(--text-main); }
+    .mode-option.active { background: var(--bg-card); border-color: var(--accent-blue); color: var(--text-main); box-shadow: 0 4px 15px rgba(0,122,255,0.08); }
+    .mode-title { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; margin-bottom: 6px; }
+    .mode-desc { font-size: 0.9rem; color: var(--text-muted); }
+    .mode-badge { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; margin-left: auto; }
+    .badge-fast { background: #fef3c7; color: #d97706; }
+    .badge-precise { background: #e0e7ff; color: #4f46e5; }
 
-        <section class="card">
-          <h3><i class="fas fa-bolt"></i> اختر الوضع</h3>
-          <div class="mode-switcher">
-            <button class="mode-option active" id="modeFast" data-mode="fast" type="button">
-              <div class="mode-title"><i class="fas fa-bolt"></i><span>سريع</span><span class="mode-badge badge-fast">⚡ Whisper Turbo</span></div>
-              <div class="mode-desc">10x أسرع من real-time</div>
-            </button>
-            <button class="mode-option" id="modePrecise" data-mode="precise" type="button">
-              <div class="mode-title"><i class="fas fa-gem"></i><span>دقيق</span><span class="mode-badge badge-precise">🎯 WhisperX</span></div>
-              <div class="mode-desc">دقة كلمة + كشف المتحدثين</div>
-            </button>
-          </div>
-        </section>
+    /* ── Form Controls ── */
+    .upload-wrapper { text-align: center; }
+    .btn-secondary { background: var(--bg-page); border: 1px solid var(--border-color); padding: 16px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.2s; font-size: 1rem; color: var(--text-main); }
+    .btn-secondary:hover { background: #f3f4f6; border-color: #d1d5db; }
+    .file-info { margin-top: 12px; font-size: 0.95rem; color: var(--text-muted); font-weight: 500; }
+    
+    .styled-select { width: 100%; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-page); color: var(--text-main); font-size: 1rem; outline: none; transition: 0.2s; margin-bottom: 20px; font-weight: 500; }
+    .styled-select:focus { border-color: var(--accent-blue); }
 
-        <section class="card">
-          <h3><i class="fas fa-upload"></i> 1. رفع الملف</h3>
-          <div class="upload-wrapper">
-            <input type="file" id="mediaFile" accept="audio/*,video/*" style="display:none;" onchange="if(this.files[0]){var s=(this.files[0].size/1024/1024).toFixed(1);document.getElementById('fileTxt').innerHTML='✓ '+this.files[0].name+' ('+s+'MB)';document.getElementById('fileTxt').style.color='#10b981';}">
-            <button class="btn-secondary" id="chooseMediaBtn" type="button" onclick="document.getElementById('mediaFile').click()"><i class="fas fa-file-audio"></i> اختر صوت أو فيديو</button>
-            <p id="fileTxt" class="file-info">لم يتم اختيار ملف بعد</p>
-          </div>
-        </section>
+    .options-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .option-toggle { display: flex; align-items: center; gap: 8px; padding: 12px 20px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 100px; cursor: pointer; font-size: 0.95rem; font-weight: 600; transition: 0.2s; user-select: none; color: var(--text-muted); }
+    .option-toggle:hover { border-color: #d1d5db; color: var(--text-main); }
+    .option-toggle.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+    .option-toggle input { display: none; }
 
-        <section class="card">
-          <h3><i class="fas fa-globe"></i> 2. اللغة والإعدادات</h3>
-          <select id="langSelect" class="styled-select">
-            <option value="auto" selected>🌍 كشف تلقائي</option>
-            <option value="ar">🇸🇦 العربية</option>
-            <option value="en">🇺🇸 الإنجليزية</option>
-            <option value="fr">🇫🇷 الفرنسية</option>
-            <option value="es">🇪🇸 الإسبانية</option>
-            <option value="tr">🇹🇷 التركية</option>
-          </select>
+    .btn-primary-action { width: 100%; background: var(--primary); color: white; border: none; padding: 20px; border-radius: 16px; font-size: 1.15rem; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+    .btn-primary-action:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
 
-          <div class="options-row">
-            <label class="option-toggle" id="translateToggle">
-              <input type="checkbox" id="translateChk">
-              <i class="fas fa-language"></i>
-              <span>ترجمة للإنجليزية</span>
-            </label>
-            <label class="option-toggle" id="diarizeToggle" style="display:none;">
-              <input type="checkbox" id="diarizeChk">
-              <i class="fas fa-users"></i>
-              <span>كشف المتحدثين</span>
-            </label>
-          </div>
-        </section>
+    /* ── Progress & Results ── */
+    .progress-bar { height: 8px; background: #f3f4f6; border-radius: 4px; overflow: hidden; margin-top: 15px; }
+    .prog-fill { height: 100%; width: 0%; background: var(--accent-blue); transition: 0.4s; }
+    #statusTxt { color: var(--text-muted); font-weight: 500; margin-top: 10px; }
 
-        <button id="sttBtn" class="btn-primary-action" type="button">
-          <i class="fas fa-file-alt"></i> ابدأ التفريغ الآن
-        </button>
-      </div>
-
-      <div class="results-container">
-        <section class="card" id="progressArea" style="display:none;">
-          <h3><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</h3>
-          <p id="statusTxt">في الانتظار</p>
-          <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
-        </section>
-
-        <section class="card" id="resultsCard" style="display:none;">
-          <h3><i class="fas fa-check-circle"></i> النتيجة</h3>
-          <div id="metaInfo" style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;"></div>
-          <div class="transcript-box" id="transcriptBox"></div>
-          <div class="download-row" id="downloadRow"></div>
-        </section>
-      </div>
-    </div>
-  </div>
-</main>
-
-<div id="toasts"></div>
-
-<script src="js/config.js"></script>
-<script src="js/shared.js"></script>
-<script src="js/stt.js"></script>
-</body>
-</html>
+    .transcript-box { background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; max-height: 500px; overflow-y: auto; font-size: 1rem; line-height: 1.8; white-space: pre-wrap; }
+    .transcript-box .segment { padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+    .transcript-box .segment:last-child { border-bottom: none; }
+    .transcript-box .timestamp { color: var(--text-muted); font-size: 0.85rem; font-family: monospace; margin-right: 12px; }
+    .transcript-box .speaker { display: inline-block; background: #e0e7ff; color: #4f46e5; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; margin-right: 12px; }
+    
+    .download-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+    .download-row .btn { flex: 1; min-width: 150px; background: var(--bg-page); border: 1px solid var(--border-color); padding: 12px
