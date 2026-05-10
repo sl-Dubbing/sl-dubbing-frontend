@@ -183,13 +183,15 @@
 <script src="js/shared.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // تنظيف الرابط من علامة # بعد تسجيل الدخول بـ Google
+        // ننتظر قليلاً (نصف ثانية) لنسمح لـ Supabase بقراءة التوكن وتسجيل الدخول
+        // ثم نقوم بتنظيف الرابط من علامة # بشكل صامت بدون إعادة تحميل الصفحة
         setTimeout(() => {
-            if (window.location.hash) {
+            if (window.location.hash && window.location.hash.includes('access_token')) {
                 window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
             }
-        }, 300);
+        }, 500);
     });
 </script>
 </body>
+</html>
 </html>
