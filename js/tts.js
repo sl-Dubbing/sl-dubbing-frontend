@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if(data.status === 'success') {
                 document.getElementById('ttsInput').value = data.fixed_text;
-                if(window.showToast) showToast('✨ تم تحسين الحوار وتصحيح النص ذكياً', 'success');
+                if(window.showToast) showToast('✨ Text improved and corrected', 'success');
             }
         } catch (e) { console.error(e); }
         finally { btn.innerHTML = oldIcon; }
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = document.getElementById('ttsInput');
         const textToRead = isDownload ? input.value.trim() : (input.value.substring(input.selectionStart).trim() || input.value.trim());
         
-        if(!textToRead) return window.showToast?.('اكتب نصاً أولاً', 'error');
+        if(!textToRead) return window.showToast?.('Please enter text first', 'error');
 
         const btn = isDownload ? document.getElementById('ttsDownloadBtn') : document.getElementById('ttsPlayBtn');
         const oldHtml = btn.innerHTML;
@@ -79,7 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    text: textToRead, lang: currentLangCode, 
+                    text: textToRead, lang: currentLangCode,
+                    voice_config: window.getVoiceConfig ? window.getVoiceConfig() : { source: 'original' }, 
                     speed: document.getElementById('speedSlider').value,
                     mode: mode
                 })
@@ -116,6 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ttsInput').oninput = (e) => { document.getElementById('charCount').innerText = e.target.value.length; };
     document.getElementById('speedSlider').oninput = (e) => {
         const v = e.target.value;
-        document.getElementById('speedVal').innerText = v == 0 ? 'طبيعي' : (v > 0 ? `+${v}%` : `${v}%`);
+        document.getElementById('speedVal').innerText = v == 0 ? 'Normal' : (v > 0 ? `+${v}%` : `${v}%`);
     };
 });
