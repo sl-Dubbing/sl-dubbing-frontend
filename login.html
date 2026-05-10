@@ -107,6 +107,7 @@
 <script src="js/shared.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // توجيه المستخدم للرئيسية إذا كان مسجلاً للدخول بالفعل
     if (localStorage.getItem('token')) {
         window.location.replace('/');
         return;
@@ -114,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const supa = window.supabase.createClient(window.APP_CONFIG.SUPABASE_URL, window.APP_CONFIG.SUPABASE_KEY);
 
+    // تسجيل الدخول بجوجل
     document.getElementById('googleBtn').addEventListener('click', async () => {
         const { data, error } = await supa.auth.signInWithOAuth({
             provider: 'google',
@@ -122,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data?.url) window.location.assign(data.url);
     });
 
+    // تسجيل الدخول بالإيميل والباسورد
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('email').value.trim();
