@@ -70,11 +70,11 @@
         .buy-btn { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: 600; cursor: pointer; text-decoration: none; text-align: center; transition: 0.2s; }
         .buy-btn:hover { background: var(--primary-hover); }
 
-        /* ── Sidebar (Left for English LTR) ── */
+        /* ── Sidebar (Fixed to open from RIGHT side) ── */
         .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 200; opacity: 0; visibility: hidden; transition: var(--transition); backdrop-filter: blur(4px); }
         .sidebar-overlay.active { opacity: 1; visibility: visible; }
-        .sidebar { position: fixed; top: 0; left: -320px; width: var(--sidebar-w); height: 100vh; background: var(--bg-card); border-right: 1px solid var(--border-color); padding: 25px; z-index: 300; transition: left var(--transition); display: flex; flex-direction: column; gap: 20px; }
-        .sidebar.active { left: 0; }
+        .sidebar { position: fixed; top: 0; right: -320px; width: var(--sidebar-w); height: 100vh; background: var(--bg-card); border-left: 1px solid var(--border-color); padding: 25px; z-index: 300; transition: right var(--transition); display: flex; flex-direction: column; gap: 20px; }
+        .sidebar.active { right: 0; }
         .sidebar a { text-decoration: none; color: inherit; padding: 12px; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
         .sidebar a:hover { background: #f3f4f6; color: var(--accent-blue); }
     </style>
