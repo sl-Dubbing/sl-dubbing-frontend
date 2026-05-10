@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ── ElevenLabs Light Theme ── */
+        /* ── Theme ── */
         :root {
             --bg-page: #fafafa;
             --bg-card: #ffffff;
@@ -25,24 +25,18 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; overflow-x: hidden; line-height: 1.5; }
-        
-        /* 🚀 التوسيع الأقصى: دفع الشعار لليسار والقائمة لليمين */
         .page { max-width: 1700px; margin: 0 auto; padding: 20px 3%; }
 
         /* ── Header ── */
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0 50px; }
-        
-        /* 🎨 Custom G Logo Styling */
         .logo { display: flex; align-items: center; gap: 12px; font-size: 1.6rem; font-weight: 900; text-decoration: none; color: var(--text-main); letter-spacing: -0.5px; }
         .logo svg { width: 36px; height: 36px; }
 
         /* ── Dropdown Menu System ── */
         .user-zone { position: relative; display: flex; align-items: center; gap: 12px; }
-        
         .menu-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1rem; color: var(--text-main); transition: 0.2s; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .menu-btn:hover { background: #f3f4f6; }
 
-        /* The Dropdown Panel */
         .dropdown-panel { position: absolute; top: calc(100% + 12px); right: 0; width: 300px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 15px 50px rgba(0,0,0,0.1); padding: 16px; display: flex; flex-direction: column; gap: 8px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: 0.25s cubic-bezier(0.32, 0.72, 0, 1); z-index: 1000; }
         .dropdown-panel.active { opacity: 1; visibility: visible; transform: translateY(0); }
         
@@ -60,8 +54,12 @@
         .btn-signup:hover { background: var(--primary-hover); }
         
         .logged-in-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; margin-bottom: 5px; display: none; }
-        .user-name { font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-        .balance-text { color: var(--accent-blue); font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; }
+        
+        /* Avatar & User Name */
+        .user-name { font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; }
+        
+        .balance-text { color: var(--accent-blue); font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; background: #eff6ff; padding: 6px 10px; border-radius: 8px; width: fit-content; }
 
         .logout-btn { color: var(--error) !important; display: none; }
         .logout-btn:hover { background: #fee2e2 !important; color: #dc2626 !important; }
@@ -78,8 +76,6 @@
 
         /* ── Tools Grid ── */
         .tools-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 32px; margin-bottom: 100px; }
-        
-        /* 🎨 تعديل البطاقات لتناسب إزالة النصوص (أصبحت أكثر إحكاماً) */
         .tool-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 40px; cursor: pointer; transition: 0.3s; text-align: left; display: flex; flex-direction: column; justify-content: center; min-height: 240px; }
         .tool-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.06); border-color: #d1d5db; }
         .tool-card .ico { font-size: 2.8rem; margin-bottom: 24px; display: block; color: var(--text-main); }
@@ -117,14 +113,16 @@
             </button>
 
             <div class="dropdown-panel" id="mainMenuDropdown">
-                
                 <div class="auth-buttons" id="guestMenu">
                     <a href="/login" class="btn-login">Login</a>
                     <a href="/signup" class="btn-signup">Sign up</a>
                 </div>
 
                 <div class="logged-in-box" id="userMenu">
-                    <div class="user-name"><i class="fas fa-user-circle"></i> <span id="menuUserName">My Account</span></div>
+                    <div class="user-name">
+                        <img id="menuAvatar" class="user-avatar" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="User"> 
+                        <span id="menuUserName">My Account</span>
+                    </div>
                     <div class="balance-text"><i class="fas fa-coins"></i> <span id="menuCredits">...</span> Credits</div>
                 </div>
 
@@ -136,6 +134,7 @@
                 
                 <hr class="menu-divider">
 
+                <a href="/history"><i class="fas fa-folder-open"></i> My Files (History)</a>
                 <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
                 
                 <button class="menu-item logout-btn" id="logoutBtn">
@@ -197,6 +196,11 @@
 
 <script>
     const BE = 'https://api.glotix.ai';
+    const SUPABASE_URL = "https://ckjkkxrlgisjdolwddfg.supabase.co"; // من إعداداتك
+    const SUPABASE_KEY = "sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW"; // من إعداداتك
+    
+    // تهيئة عميل Supabase محلياً للصفحة الرئيسية
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     async function checkServer() {
         try {
@@ -228,20 +232,27 @@
         }
     });
 
-    function updateMenuAuthUI() {
-        const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
+    // 🚀 تحديث واجهة المستخدم بالبيانات
+    function updateDropdownUI(user) {
         const guestMenu = document.getElementById('guestMenu');
         const userMenu = document.getElementById('userMenu');
         const logoutBtn = document.getElementById('logoutBtn');
         const menuUserName = document.getElementById('menuUserName');
         const menuCredits = document.getElementById('menuCredits');
+        const menuAvatar = document.getElementById('menuAvatar');
 
-        if (cachedUser && cachedUser.id) {
+        if (user && user.id) {
             guestMenu.style.display = 'none';
             userMenu.style.display = 'block';
             logoutBtn.style.display = 'flex';
-            menuUserName.textContent = cachedUser.name || 'My Account';
-            menuCredits.textContent = cachedUser.credits !== undefined ? cachedUser.credits : '...';
+            
+            menuUserName.textContent = user.name || 'My Account';
+            menuCredits.textContent = user.credits !== undefined ? user.credits : '...';
+            
+            // وضع الصورة الشخصية إذا كانت موجودة
+            if (user.avatar) {
+                menuAvatar.src = user.avatar;
+            }
         } else {
             guestMenu.style.display = 'flex';
             userMenu.style.display = 'none';
@@ -249,7 +260,49 @@
         }
     }
 
-    document.getElementById('logoutBtn').addEventListener('click', () => {
+    // 🚀 جلب الرصيد الحقيقي من السيرفر فور فتح الصفحة
+    async function fetchLiveAuth() {
+        // قراءة مبدئية من الكاش لسرعة العرض
+        const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
+        updateDropdownUI(cachedUser);
+
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('sl_user_cache');
+                updateDropdownUI(null);
+                return;
+            }
+
+            localStorage.setItem('token', session.access_token);
+            
+            // طلب الرصيد المحدث من السيرفر
+            const res = await fetch(`${BE}/api/user/credits`, {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+            
+            if (res.ok) {
+                const d = await res.json();
+                const userData = {
+                    id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+                    avatar: session.user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
+                    credits: d.success ? d.credits : '...'
+                };
+                
+                // حفظ البيانات الجديدة وتحديث الواجهة
+                localStorage.setItem('sl_user_cache', JSON.stringify(userData));
+                updateDropdownUI(userData);
+            }
+        } catch(e) {
+            console.error("Auth sync error:", e);
+        }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await supabaseClient.auth.signOut();
         localStorage.removeItem('token');
         localStorage.removeItem('sl_user_cache');
         window.location.reload();
@@ -257,7 +310,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         checkServer();
-        updateMenuAuthUI();
+        fetchLiveAuth(); // جلب الرصيد والصورة فوراً
         setInterval(checkServer, 30000);
     });
 </script>
