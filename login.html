@@ -7,8 +7,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
 
     <style>
@@ -80,6 +79,7 @@
         
         @media (max-width: 420px) { .login-container { padding: 24px; border-radius: 16px; } }
     </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -171,7 +171,10 @@
     function getSupabase() {
         if (supabaseClient) return supabaseClient;
         const key = getSupabaseKey();
-        if (!key) throw new Error('Supabase key not configured');
+        if (!key) {
+            showToast('Configuration error: Supabase key not loaded. Please refresh.', 'error');
+            throw new Error('Supabase key not configured');
+        }
         supabaseClient = window.supabase.createClient(SUPABASE_URL, key);
         return supabaseClient;
     }
