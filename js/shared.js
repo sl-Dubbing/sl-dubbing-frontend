@@ -2,7 +2,8 @@
 
 const API_BASE = window.APP_CONFIG?.API_BASE || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
+SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY
+
 
 window.API_BASE = API_BASE;
 
