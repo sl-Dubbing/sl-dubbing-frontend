@@ -1,124 +1,245 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign Up | Glotix</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sign In | Glotix</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root {
-      --bg-page: #fafafa;
-      --bg-card: #ffffff;
-      --border-color: #e5e7eb;
-      --border-focus: #0f0f10;
-      --text-main: #0f0f10;
-      --text-muted: #6b7280;
-      --primary: #0f0f10;
-      --primary-hover: #27272a;
-      --accent-blue: #007aff;
-      --error: #ef4444;
-      --success: #10b981;
-      --radius-md: 12px;
+    :root{
+      --bg-page:#fafafa;--bg-card:#fff;--border:#e5e7eb;--focus:#0f0f10;
+      --text:#0f0f10;--muted:#6b7280;--primary:#0f0f10;--accent:#007aff;
+      --error:#ef4444;--success:#10b981;--radius:12px;
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-    body { background-color: var(--bg-page); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-    .login-container { width: 100%; max-width: 420px; padding: 40px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.04); }
-    .logo { display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 900; text-decoration: none; color: var(--text-main); margin-bottom: 30px; }
-    .title { text-align: center; font-size: 1.5rem; font-weight: 800; margin-bottom: 24px; }
-    .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; align-items: center; }
-    .btn-google { width: 100%; height: 48px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-    .btn-google:hover { background: #f9fafb; border-color: #d1d5db; }
-    .btn-google img { width: 20px; }
-    .divider { height: 1px; background-color: var(--border-color); margin: 24px 0; position: relative; }
-    .divider::after { content: "OR"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-card); padding: 0 12px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
-    .form-group { margin-bottom: 18px; }
-    label { font-size: 0.9rem; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 8px; }
-    input { width: 100%; height: 48px; padding: 0 16px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 12px; font-size: 1rem; }
-    input:focus { border-color: var(--border-focus); background: var(--bg-card); box-shadow: 0 0 0 3px rgba(15,15,16,0.05); }
-    .submit-btn { width: 100%; height: 48px; background: var(--primary); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; }
-    .submit-btn:hover { background: var(--primary-hover); }
-    .footer-text { text-align: center; margin-top: 24px; font-size: 0.95rem; color: var(--text-muted); }
-    .footer-text a { font-weight: 600; text-decoration: none; color: var(--text-main); }
-    .footer-text a:hover { color: var(--accent-blue); }
-    #toasts { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; align-items: center; }
-    .toast { background: var(--primary); color: white; padding: 12px 24px; border-radius: var(--radius-md); font-weight: 500; font-size: 0.95rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
-    .toast.error { background: var(--error); }
-    .toast.success { background: var(--success); }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,sans-serif}
+    html,body{height:100%}
+    body{background:var(--bg-page);display:flex;align-items:center;justify-content:center;padding:20px;color:var(--text)}
+    .card{width:100%;max-width:420px;background:var(--bg-card);padding:36px;border-radius:24px;border:1px solid var(--border);box-shadow:0 10px 40px rgba(0,0,0,0.04)}
+    .logo{font-weight:900;font-size:1.4rem;text-align:center;margin-bottom:18px}
+    .title{text-align:center;font-size:1.4rem;font-weight:800;margin-bottom:18px}
+    .oauth{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
+    .btn-google{height:48px;border-radius:12px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;background:var(--bg-card);font-weight:600}
+    .divider{height:1px;background:var(--border);margin:18px 0;position:relative}
+    .divider::after{content:"أو";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--bg-card);padding:0 10px;color:var(--muted);font-weight:700}
+    label{display:block;margin-bottom:8px;font-weight:700;color:var(--text)}
+    input{width:100%;height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:var(--bg-page)}
+    input:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 4px rgba(15,15,16,0.04);background:var(--bg-card)}
+    .submit{width:100%;height:48px;border-radius:12px;border:none;background:var(--primary);color:#fff;font-weight:800;cursor:pointer;margin-top:8px}
+    .footer{text-align:center;margin-top:16px;color:var(--muted)}
+    #toasts{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:10px;z-index:9999}
+    .toast{padding:10px 18px;border-radius:12px;color:#fff;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.12)}
+    .toast.error{background:var(--error)}.toast.success{background:var(--success)}.toast.info{background:var(--primary)}
+    /* عناصر لعرض المستخدم بعد تسجيل الدخول (مثال) */
+    .profile{display:flex;gap:12px;align-items:center}
+    .profile img{width:40px;height:40px;border-radius:999px;object-fit:cover}
   </style>
 </head>
 <body>
-<div class="login-container">
-  <a class="logo" href="/">Glotix</a>
-  <h1 class="title">Create your account</h1>
+  <div class="card">
+    <div class="logo">Glotix</div>
+    <div class="title">تسجيل الدخول أو إنشاء حساب</div>
 
-  <div class="oauth-group">
-    <button type="button" class="btn-google" id="googleBtn">
-      <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google Logo" />
-      Continue with Google
-    </button>
+    <div class="oauth">
+      <button id="googleBtn" class="btn-google" type="button">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" style="width:20px;height:20px"/>
+        المتابعة عبر Google
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <form id="loginForm">
+      <div style="margin-bottom:12px">
+        <label for="email">البريد الإلكتروني</label>
+        <input id="email" type="email" autocomplete="email" required />
+      </div>
+      <div style="margin-bottom:6px">
+        <label for="password">كلمة المرور</label>
+        <input id="password" type="password" minlength="6" required />
+      </div>
+      <button class="submit" id="submitBtn" type="submit">تسجيل الدخول</button>
+    </form>
+
+    <p class="footer">لا تملك حسابًا؟ <a href="/signup">إنشاء حساب</a></p>
+
+    <!-- مثال لعرض بيانات المستخدم بعد تسجيل الدخول -->
+    <div id="userBox" style="margin-top:18px;display:none">
+      <div class="profile">
+        <img id="userAvatar" src="" alt="avatar"/>
+        <div>
+          <div id="userName" style="font-weight:800"></div>
+          <div id="userEmail" style="color:var(--muted);font-size:0.9rem"></div>
+        </div>
+      </div>
+      <div style="margin-top:10px;color:var(--muted)">رصيدك: <span id="userCredits">...</span></div>
+    </div>
   </div>
 
-  <div class="divider"></div>
+  <div id="toasts"></div>
 
-  <form id="signupForm">
-    <div class="form-group">
-      <label for="email">Email Address</label>
-      <input type="email" id="email" required autocomplete="email">
-    </div>
-    <div class="form-group">
-      <label for="password">Password</label>
-      <input type="password" id="password" required minlength="6">
-    </div>
-    <button type="submit" class="submit-btn">Sign up</button>
-  </form>
+  <script src="js/config.js"></script>
+  <script>
+    (function(){
+      // تهيئة Supabase
+      const supa = window.supabase.createClient(window.APP_CONFIG.SUPABASE_URL, window.APP_CONFIG.SUPABASE_KEY);
 
-  <p class="footer-text">Already have an account? <a href="/login">Sign in</a></p>
-</div>
-<div id="toasts"></div>
+      // دالة Toast بسيطة
+      function showToast(msg, type='info'){
+        const c = document.getElementById('toasts');
+        const t = document.createElement('div');
+        t.className = 'toast ' + (type || 'info');
+        t.innerText = msg;
+        c.appendChild(t);
+        setTimeout(()=> t.remove(), 3500);
+      }
 
-<script src="js/config.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const supa = window.supabase.createClient(
-    window.APP_CONFIG.SUPABASE_URL,
-    window.APP_CONFIG.SUPABASE_KEY
-  );
+      // دالة لتحديث DOM و localStorage بعد الحصول على الجلسة
+      async function handleSession(session){
+        if(!session) return;
+        const accessToken = session.access_token || session.accessToken;
+        // جلب بيانات المستخدم من Supabase
+        const { data: userData, error: userErr } = await supa.auth.getUser();
+        if(userErr) console.warn('getUser error', userErr);
 
-  const showToast = (msg, type='info') => {
-    const container = document.getElementById('toasts');
-    const t = document.createElement('div');
-    t.className = `toast ${type}`;
-    t.innerText = msg;
-    container.appendChild(t);
-    setTimeout(() => t.remove(), 3000);
-  };
+        const user = userData?.user || session.user || null;
+        if(!user){
+          console.warn('No user object found in session');
+          return;
+        }
 
-  // تسجيل باستخدام Google
-  document.getElementById('googleBtn').addEventListener('click', async () => {
-    await supa.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin + '/' }
-    });
-  });
+        // استخراج الاسم والصورة مع fallbacks
+        const meta = user.user_metadata || {};
+        let name = meta.full_name || meta.name || user.email?.split('@')[0] || 'User';
+        let avatar = meta.avatar_url || meta.picture || '';
+        if(!avatar && Array.isArray(user.identities) && user.identities.length){
+          const id0 = user.identities[0];
+          if(id0?.identity_data?.picture) avatar = id0.identity_data.picture;
+          if(!name && id0?.identity_data?.name) name = id0.identity_data.name;
+        }
+        if(!avatar && user.email){
+          avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0f0f10&color=fff&size=64`;
+        }
 
-  // تسجيل بالبريد وكلمة المرور
-  document.getElementById('signupForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
+        // جلب الرصيد من API خارجي
+        let credits = '...';
+        try {
+          const res = await fetch(window.APP_CONFIG.API_BASE + '/api/user/credits', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          if(res.ok){
+            const d = await res.json();
+            if(d && d.success) credits = d.credits;
+            else console.warn('Credits API returned success=false', d);
+          } else {
+            console.warn('Credits API status', res.status);
+          }
+        } catch(err){
+          console.warn('Failed to fetch credits', err);
+        }
 
-    const { data, error } = await supa.auth.signUp({ email, password });
+        // تخزين الكاش محليًا
+        const userCache = { id: user.id, email: user.email, name, avatar, credits };
+        localStorage.setItem('sl_user_cache', JSON.stringify(userCache));
+        localStorage.setItem('token', accessToken);
 
-    if (error) {
-      console.error(error);
-      showToast(error.message, 'error');
-    } else {
-      showToast('Account created! Check your email to confirm.', 'success');
-      setTimeout(() => window.location.replace('/login'), 1500);
-    }
-  });
-});
-</script>
+        // تحديث الواجهة
+        document.getElementById('userName').innerText = name;
+        document.getElementById('userEmail').innerText = user.email || '';
+        document.getElementById('userAvatar').src = avatar;
+        document.getElementById('userCredits').innerText = credits;
+        document.getElementById('userBox').style.display = 'block';
+
+        showToast('تم تسجيل الدخول. مرحبًا ' + name, 'success');
+      }
+
+      // 1) التقاط الجلسة بعد الرجوع من OAuth (يحفظ الجلسة داخليًا)
+      (async function tryGetFromUrl(){
+        try {
+          const { data, error } = await supa.auth.getSessionFromUrl({ storeSession: true });
+          if(error && !error.message.includes('No session')) console.warn('getSessionFromUrl error', error);
+          if(data?.session){
+            // عالج الجلسة فورًا
+            handleSession(data.session);
+            // لا تعيد التوجيه هنا لأننا نريد أن تبقى الصفحة لعرض البيانات
+          }
+        } catch(e){
+          console.warn('getSessionFromUrl threw', e);
+        }
+      })();
+
+      // 2) استمع لتغيّر حالة المصادقة (مهم جداً لعمليات OAuth)
+      supa.auth.onAuthStateChange((event, session) => {
+        console.log('Auth event', event, session);
+        if(session?.access_token){
+          handleSession(session);
+        } else if(event === 'SIGNED_OUT'){
+          localStorage.removeItem('sl_user_cache');
+          localStorage.removeItem('token');
+          document.getElementById('userBox').style.display = 'none';
+        }
+      });
+
+      // 3) إذا في جلسة حالية مخزنة مسبقًا عالجها فورًا
+      (async function checkExisting(){
+        const { data: { session } } = await supa.auth.getSession();
+        if(session) handleSession(session);
+      })();
+
+      // 4) زر Google
+      const googleBtn = document.getElementById('googleBtn');
+      if(googleBtn){
+        googleBtn.addEventListener('click', async () => {
+          try {
+            await supa.auth.signInWithOAuth({
+              provider: 'google',
+              options: { redirectTo: window.location.origin + '/' } // تأكد أن هذا URL مضاف في Dashboard
+            });
+            // بعد استدعاء signInWithOAuth سيتم إعادة توجيه المستخدم إلى Google ثم يعود إلى redirectTo
+          } catch(err){
+            console.error('OAuth error', err);
+            showToast('فشل بدء OAuth', 'error');
+          }
+        });
+      }
+
+      // 5) تسجيل الدخول بالبريد وكلمة المرور
+      const loginForm = document.getElementById('loginForm');
+      const submitBtn = document.getElementById('submitBtn');
+      if(loginForm){
+        loginForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          submitBtn.disabled = true;
+          submitBtn.innerText = 'جاري تسجيل الدخول...';
+          const email = document.getElementById('email').value.trim();
+          const password = document.getElementById('password').value;
+          try {
+            const { data, error } = await supa.auth.signInWithPassword({ email, password });
+            if(error){
+              console.error('signInWithPassword error', error);
+              showToast(error.message || 'فشل تسجيل الدخول', 'error');
+              submitBtn.disabled = false;
+              submitBtn.innerText = 'تسجيل الدخول';
+              return;
+            }
+            if(data?.session){
+              // عالج الجلسة (handleSession سيخزن الكاش ويعرض الواجهة)
+              await handleSession(data.session);
+              // لا تعيد التوجيه فورًا إن أردت عرض الملف الشخصي هنا
+              // window.location.replace('/');
+            } else {
+              showToast('تم تسجيل الدخول، جاري المعالجة...', 'info');
+            }
+          } catch(err){
+            console.error('Login exception', err);
+            showToast('حدث خطأ غير متوقع', 'error');
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'تسجيل الدخول';
+          }
+        });
+      }
+
+    })();
+  </script>
 </body>
 </html>
