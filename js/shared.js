@@ -1,4 +1,4 @@
-// js/shared.js - V14 (Centralized Dropdown & Auth)
+// js/shared.js - V15 (Centralized Dropdown, Auth & UI)
 
 const API_BASE = window.APP_CONFIG?.API_BASE || 'https://web-production-14a1.up.railway.app';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -100,7 +100,7 @@ window.checkAuth = async function() {
     }
 };
 
-// ── 4. Setup Event Listeners ──
+// ── 4. Global Event Listeners ──
 document.addEventListener('DOMContentLoaded', () => {
     // Dropdown Toggle Logic
     const menuBtn = document.getElementById('menuBtn');
@@ -146,10 +146,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-    }, 500); // تأخير بسيط لضمان تحميل Supabase
+    }, 500); 
 });
 
-// Utils
+// ── 5. Utils ──
 window.showToast = function(msg, type) {
     const t = document.getElementById('toasts');
     if (!t) return;
