@@ -1,4 +1,4 @@
-// js/shared.js - V22 (Final)
+// js/shared.js - V23 (Implicit Auth Fixed)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -10,7 +10,10 @@ let supabaseClient = null;
 function getSupabase() {
     if (supabaseClient) return supabaseClient;
     if (window.supabase) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // ✅ التعديل هنا: إضافة Implicit Flow ليتعرف على الرابط القادم من Google
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: { flowType: 'implicit' }
+        });
     }
     return supabaseClient;
 }
