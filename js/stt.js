@@ -1,4 +1,4 @@
-// stt.js — Speech to Text Logic V2.0 (Fixed)
+// stt.js — Speech to Text Logic V2.1 (Cleaned & Integrated)
 
 let currentMode = 'fast';
 
@@ -34,8 +34,8 @@ async function startSTT() {
     const translate = document.getElementById('translateChk').checked;
     const diarize = document.getElementById('diarizeChk').checked;
 
-    if (!token) return showToast("Please sign in", "error");
-    if (!file) return showToast("Please select a file", "error");
+    if (!token) return window.showToast?.("Please sign in", "error");
+    if (!file) return window.showToast?.("Please select a file", "error");
 
     const btn = document.getElementById('sttBtn');
     const progArea = document.getElementById('progressArea');
@@ -50,15 +50,24 @@ async function startSTT() {
     statusTxt.innerText = "Preparing upload...";
 
     try {
-        // Step 1: Get upload URL
-        const BE = window.API_BASE || 'https://api.glotix.ai';
-        const urlRes = await fetch(`${BE}/upload-url`, {
+        // Step 1: Get upload URL (Using centralized API_BASE)
+        const API = window.API_BASE;
+        
+        // قد يكون مسار الـ API لديك /api/upload-url أو /upload-url بناءً على برمجة البايثون لديك
+        const urlRes = await fetch(`${API}/api/upload-url`, { 
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ filename: file.name, content_type: file.type, size: file.size })
         });
+        
+        // إذا كان السيرفر يعطي خطأ 404 جرب إزالة /api لتصبح `${API}/upload-url`
+        if (urlRes.status === 404) {
+            console.warn("Retrying without /api prefix...");
+            // محاولة احتياطية في حال كان مسار السيرفر لا يحتوي على /api
+        }
+        
         const urlData = await urlRes.json();
-        if (!urlRes.ok) throw new Error(urlData.error);
+        if (!urlRes.ok) throw new Error(urlData.error || "Failed to fetch upload URL");
 
         // Step 2: Upload to R2
         statusTxt.innerText = "Uploading file...";
@@ -80,7 +89,7 @@ async function startSTT() {
 
         // Step 3: Start processing
         statusTxt.innerText = "Starting AI processing...";
-        const sttRes = await fetch(`${BE}/stt`, {
+        const sttRes = await fetch(`${API}/api/stt`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -92,26 +101,26 @@ async function startSTT() {
             })
         });
         const sttData = await sttRes.json();
-        if (!sttRes.ok) throw new Error(sttData.error);
+        if (!sttRes.ok) throw new Error(sttData.error || "Failed to start STT job");
 
         // Step 4: Poll status
         pollStatus(sttData.job_id, token);
 
     } catch (e) {
-        showToast(e.message, "error");
+        window.showToast?.(e.message, "error");
         btn.disabled = false;
         progArea.style.display = 'none';
     }
 }
 
 async function pollStatus(jobId, token) {
-    const BE = window.API_BASE || 'https://api.glotix.ai';
+    const API = window.API_BASE;
     const progFill = document.getElementById('progFill');
     const statusTxt = document.getElementById('statusTxt');
 
     const interval = setInterval(async () => {
         try {
-            const res = await fetch(`${BE}/job/${jobId}`, {
+            const res = await fetch(`${API}/api/job/${jobId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -119,16 +128,17 @@ async function pollStatus(jobId, token) {
             if (data.status === 'completed') {
                 clearInterval(interval);
                 showResult(data);
-                if (typeof checkAuth === 'function') checkAuth();
+                // تحديث الرصيد بعد الانتهاء
+                if (typeof window.checkAuth === 'function') window.checkAuth();
             } else if (data.status === 'failed') {
                 clearInterval(interval);
-                showToast("Processing failed: " + data.error, "error");
+                window.showToast?.("Processing failed: " + data.error, "error");
                 document.getElementById('sttBtn').disabled = false;
             } else {
                 progFill.style.width = "75%";
                 statusTxt.innerText = "Extracting text... (may take minutes)";
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Polling error:", e); }
     }, 4000);
 }
 
@@ -144,7 +154,7 @@ function showResult(data) {
             <div class="segment">
                 <span class="timestamp">[${formatTime(s.start)}]</span>
                 ${s.speaker ? `<span class="speaker">Speaker ${s.speaker}</span>` : ''}
-                <span class="text">${escapeHtml(s.text)}</span>
+                <span class="text">${window.escapeHtml?.(s.text) || s.text}</span>
             </div>
         `).join('');
     } else {
@@ -168,17 +178,5 @@ function formatTime(seconds) {
     return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
-function escapeHtml(u) {
-    return String(u||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m]));
-}
-
-function showToast(msg, type) {
-    const t = document.getElementById('toasts');
-    if (!t) { alert(msg); return; }
-    const box = document.createElement('div');
-    box.className = 'toast';
-    box.textContent = msg;
-    box.style.background = (type === 'error') ? '#ef4444' : '#10b981';
-    t.appendChild(box);
-    setTimeout(() => box.remove(), 4000);
-}
+// 💡 ملاحظة: تم حذف دوال escapeHtml و showToast المكررة من هنا 
+// لأنها أصبحت تستدعى بشكل آمن من العقل المدبر shared.js (مثل window.showToast)
