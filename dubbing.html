@@ -127,6 +127,7 @@
             .switch-container { justify-content: space-between; }
         }
     </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -176,22 +177,18 @@
         </div>
     </header>
 
-    <!-- 1. Upload Box -->
-<div class="upload-box" id="dropZone" onclick="document.getElementById('mediaFile').click()">
-    <input type="file" id="mediaFile" style="display:none;" accept="video/*,audio/*">
-    <i class="fas fa-cloud-upload-alt" style="font-size:3.5rem; color:#3b82f6; margin-bottom:15px;"></i>
-    <div style="font-weight:bold; font-size:1.3rem;">Drag & Drop or Click to Upload</div>
-    <p style="color:#6b7280; font-size:0.9rem; margin-top:8px;">Supports MP4, MOV, MP3, WAV (Max 500MB)</p>
-</div>
-
-<!-- 2. Preview Area (hidden initially) -->
-<div id="previewArea" style="display:none; width:100%; margin-bottom:25px; border-radius:24px; overflow:hidden; background:#000;">
-    <video id="videoPreview" controls style="width:100%; display:block; max-height:280px;"></video>
-    <div id="audioPreviewLabel" style="display:none; padding:50px; text-align:center; background:#f1f5f9;">
-        <i class="fas fa-music fa-3x" style="color:#3b82f6;"></i>
-        <h4 id="audioFileName" style="margin-top:15px;"></h4>
+    <div id="previewArea">
+        <video id="videoPreview" controls></video>
+        <div id="audioPreviewLabel">
+            <i class="fas fa-music fa-3x" style="color: #3b82f6;"></i>
+            <h4 id="audioFileName" style="margin-top: 15px;"></h4>
+        </div>
     </div>
-</div>
+    
+    <div class="upload-box" id="dropZone" onclick="document.getElementById('mediaFile').click()">
+        <input type="file" id="mediaFile" style="display:none;" accept="video/*,audio/*">
+        <i class="fas fa-cloud-upload-alt" style="font-size:3.5rem; color:#3b82f6; margin-bottom:15px;"></i>
+        <div style="font-weight:bold; font-size:1.3rem; color: #111827;">Drag & Drop or Click to Upload</div>
         <p style="color:#6b7280; font-size:0.9rem; margin-top: 8px;">Supports MP4, MOV, MP3, WAV (Max 500MB)</p>
     </div>
 
