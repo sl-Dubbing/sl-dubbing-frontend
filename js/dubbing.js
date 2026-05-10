@@ -46,7 +46,7 @@ async function uploadToR2(url, file, contentType) {
             if (e.lengthComputable) {
                 const pct = Math.round((e.loaded / e.total) * 100);
                 const overallProgress = 10 + (pct * 0.4); 
-                updateProgress("📤 جاري رفع الملف للمخزن السحابي...", overallProgress);
+                updateProgress("📤 Uploading to cloud storage...", overallProgress);
             }
         };
         
@@ -79,7 +79,7 @@ async function startDubbing() {
     cinemaResults = {};
 
     try {
-        updateProgress("⚡ جاري تهيئة رابط الرفع...", 5);
+        updateProgress("⚡ Initializing upload URL...", 5);
         
         // 💡 استخراج نوع الملف الدقيق لمنع رفض Cloudflare
         const strictContentType = file.type || 'application/octet-stream';
@@ -94,15 +94,15 @@ async function startDubbing() {
             })
         });
         
-        if (!urlRes.ok) throw new Error("فشل السيرفر في توليد رابط الرفع");
+        if (!urlRes.ok) throw new Error("Server failed to generate upload URL");
         const urlData = await urlRes.json();
         
-        updateProgress("📤 جاري بدء الرفع...", 10);
+        updateProgress("📤 Starting upload...", 10);
 
         // 2. الرفع المباشر لـ Cloudflare R2
         await uploadToR2(urlData.upload_url, file, strictContentType);
 
-        updateProgress("⚙️ اكتمل الرفع، بدأت المعالجة بذكائك الاصطناعي...", 50);
+        updateProgress("⚙️ Upload complete, starting AI processing...", 50);
 
         // 3. إرسال طلبات الدبلجة لكل لغة
         const langCodes = Array.from(window.selectedLangs);
@@ -123,7 +123,8 @@ async function startDubbing() {
                 body: JSON.stringify({
                     file_key: urlData.file_key,
                     lang: langCode,
-                    with_lipsync: document.getElementById('lipsyncToggle').checked,
+                    voice_config: window.getVoiceConfig ? window.getVoiceConfig() : { source: 'original' },
+                    
                     video_output: document.getElementById('videoToggle').checked
                 })
             }).then(res => res.json()).then(async (data) => {
@@ -142,13 +143,13 @@ async function startDubbing() {
 
                 completed++;
                 const pct = 50 + (completed / langCodes.length * 50);
-                updateProgress(completed === langCodes.length ? "✅ تم الانتهاء من جميع اللغات!" : "⏳ جاري معالجة اللغات...", pct);
+                updateProgress(completed === langCodes.length ? "✅ All languages completed!" : "⏳ Processing languages...", pct);
             });
         }
 
     } catch (e) {
         console.error("Dubbing Error:", e);
-        alert("حدث خطأ تقني: " + e.message);
+        alert("Technical error: " + e.message);
         document.getElementById('dubBtn').style.display = 'block';
     }
 }
@@ -182,7 +183,7 @@ function switchCinemaLang(langCode) {
             <div class="audio-player-wrapper">
                 <div class="audio-player-header">
                     <span class="flag">${data.flag}</span>
-                    <span>النسخة المدبلجة - ${data.name}</span>
+                    <span>Dubbed Version - ${data.name}</span>
                 </div>
                 <div id="waveform" class="audio-waveform"></div>
                 <div class="audio-controls">
@@ -232,7 +233,7 @@ async function waitForJob(id, token) {
         const res = await fetch(`${window.API_BASE}/api/job/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         if (data.status === 'completed') return data;
-        if (data.status === 'failed') throw new Error("فشلت معالجة الفيديو في السيرفر");
+        if (data.status === 'failed') throw new Error("Video processing failed on server");
         await new Promise(r => setTimeout(r, 4000));
     }
 }
