@@ -32,7 +32,7 @@
         });
 
         if (langCount) {
-            langCount.textContent = `${filtered.length} لغة` + (filter ? ' (تصفية)' : '');
+            langCount.textContent = `${filtered.length} languages` + (filter ? ' (تصفية)' : '');
         }
 
         container.innerHTML = filtered.map(l => `
@@ -44,7 +44,7 @@
                     <div class="lang-en">${l.name_en}</div>
                 </div>
             </div>
-        `).join('') || '<div style="text-align:center;padding:30px;color:#9aa1ac;">لا نتائج</div>';
+        `).join('') || '<div style="text-align:center;padding:30px;color:#9aa1ac;">No results</div>';
 
         container.querySelectorAll('.lang-item').forEach(el => {
             el.addEventListener('click', () => toggleLanguage(el.dataset.code));
@@ -55,12 +55,12 @@
         if (selected.has(code)) {
             if (selected.size > 1) selected.delete(code);
             else { 
-                window.showToast?.('يجب اختيار لغة واحدة على الأقل', '#f59e0b'); 
+                window.showToast?.('Select at least one language', '#f59e0b'); 
                 return; 
             }
         } else {
             if (selected.size >= 10) { 
-                window.showToast?.('الحد الأقصى 10 لغات', '#ef4444'); 
+                window.showToast?.('Maximum 10 languages', '#ef4444'); 
                 return; 
             }
             selected.add(code);
@@ -73,7 +73,7 @@
 
     function removeLanguage(code) {
         if (selected.size <= 1) { 
-            window.showToast?.('يجب الإبقاء على لغة', '#f59e0b'); 
+            window.showToast?.('Keep at least one language', '#f59e0b'); 
             return; 
         }
         selected.delete(code);
@@ -87,7 +87,7 @@
         const display = document.getElementById('selectedLangsDisplay');
         if (!display) return;
         if (selected.size === 0) {
-            display.innerHTML = '<div class="selected-langs-empty">لم يتم اختيار لغة بعد</div>';
+            display.innerHTML = '<div class="selected-langs-empty">No language selected yet</div>';
             return;
         }
         if (!window.LANGUAGES) return;
@@ -106,7 +106,7 @@
         const el = document.getElementById('miniLangs');
         if (!el || !window.LANGUAGES) return;
         if (selected.size === 0) { 
-            el.textContent = 'لم تُختر بعد'; 
+            el.textContent = 'Not selected yet'; 
             return; 
         }
         const names = [...selected].slice(0, 3).map(c => window.LANGUAGES.find(l => l.code === c)?.name_ar || c);
