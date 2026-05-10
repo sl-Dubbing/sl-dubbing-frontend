@@ -192,8 +192,8 @@
     async function signInWithGoogle() {
         try {
             const supa = getSupabase();
-            // Redirect to dubbing after Google login
-            const redirectTo = window.location.origin + '/dubbing';
+            // العودة للصفحة الرئيسية بدلاً من الدبلجة
+            const redirectTo = window.location.origin + '/';
             const { data, error } = await supa.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo }
