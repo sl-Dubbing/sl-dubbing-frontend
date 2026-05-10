@@ -94,6 +94,7 @@
         .buy-btn { width: 100%; padding: 16px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: 700; font-size: 1.05rem; cursor: pointer; text-decoration: none; text-align: center; transition: 0.2s; }
         .buy-btn:hover { background: var(--primary-hover); }
     </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -308,6 +309,14 @@
         // 🚀 إزالة علامة # من الرابط إذا وجدت
         setTimeout(() => {
             if (window.location.hash) {
+                window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+            }
+        }, 300);
+    });
+</script>
+</body>
+</html>
+indow.location.hash) {
                 window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
             }
         }, 300);
