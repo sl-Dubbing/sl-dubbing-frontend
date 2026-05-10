@@ -12,7 +12,7 @@
     <script src="js/config.js"></script>
 
     <style>
-        /* ── Glotix Light Theme (Matched with index.html) ── */
+        /* ── Glotix Light Theme ── */
         :root {
             --bg-page: #fafafa;
             --bg-card: #ffffff;
@@ -32,26 +32,21 @@
         html, body { height: 100%; }
         body { background-color: var(--bg-page); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         
-        /* Main Login Card */
         .login-container { width: 100%; max-width: 420px; padding: 40px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.04); }
         
-        /* Logo */
         .logo { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.6rem; font-weight: 900; text-decoration: none; color: var(--text-main); letter-spacing: -0.5px; margin-bottom: 30px; }
         .logo svg { width: 36px; height: 36px; }
 
         .title { text-align: center; font-size: 1.5rem; font-weight: 800; margin-bottom: 24px; color: var(--text-main); }
         
-        /* Google Button */
         .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; align-items: center; }
         .btn-google { width: 100%; height: 48px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .btn-google:hover { background: #f9fafb; border-color: #d1d5db; }
         .btn-google img { width: 20px; }
         
-        /* Divider */
         .divider { height: 1px; background-color: var(--border-color); margin: 24px 0; position: relative; }
         .divider::after { content: "OR"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-card); padding: 0 12px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
         
-        /* Forms */
         .form-group { margin-bottom: 18px; }
         .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         label { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
@@ -70,7 +65,6 @@
         .remember-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; border-radius: 4px; }
         .remember-row label { cursor: pointer; color: var(--text-muted); }
         
-        /* Submit Button */
         .submit-btn { width: 100%; height: 48px; background: var(--primary); color: #ffffff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .submit-btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
@@ -79,7 +73,6 @@
         .footer-text a { font-weight: 600; text-decoration: none; color: var(--text-main); transition: 0.2s; }
         .footer-text a:hover { color: var(--accent-blue); }
         
-        /* Toast notification */
         .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 12px 24px; border-radius: var(--radius-md); z-index: 9999; font-weight: 500; font-size: 0.95rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15); animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1); }
         .toast.error { background: var(--error); }
         .toast.success { background: var(--success); }
@@ -115,17 +108,17 @@
             <div class="label-row">
                 <label for="email">Email Address</label>
             </div>
-            <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email" aria-required="true" aria-describedby="emailError">
-            <div class="error-msg" id="emailError" role="alert" aria-live="polite">Please enter a valid email address.</div>
+            <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email">
+            <div class="error-msg" id="emailError">Please enter a valid email address.</div>
         </div>
 
         <div class="form-group">
             <div class="label-row">
                 <label for="password">Password</label>
-                <a href="/forgot" class="forgot-link" id="forgotLink" rel="noopener noreferrer">Forgot password?</a>
+                <a href="/forgot" class="forgot-link" id="forgotLink">Forgot password?</a>
             </div>
-            <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" aria-required="true" aria-describedby="passwordError" minlength="6">
-            <div class="error-msg" id="passwordError" role="alert" aria-live="polite">Password must be at least 6 characters.</div>
+            <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" minlength="6">
+            <div class="error-msg" id="passwordError">Password must be at least 6 characters.</div>
         </div>
 
         <div class="remember-row">
@@ -133,13 +126,13 @@
             <label for="rememberMe">Remember me</label>
         </div>
 
-        <button type="submit" class="submit-btn" id="submitBtn" aria-label="Sign in">Sign in</button>
+        <button type="submit" class="submit-btn" id="submitBtn">Sign in</button>
     </form>
 
-    <p class="footer-text">Don't have an account? <a href="/signup" rel="noopener noreferrer">Sign up</a></p>
+    <p class="footer-text">Don't have an account? <a href="/signup">Sign up</a></p>
 </div>
 
-<div id="toasts" aria-live="polite" aria-atomic="true"></div>
+<div id="toasts"></div>
 
 <script>
 (function() {
@@ -148,19 +141,12 @@
     const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
     
     function getSupabaseKey() {
-        if (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_KEY) {
-            return window.APP_CONFIG.SUPABASE_KEY;
-        }
-        if (window.__SUPABASE_KEY__) {
-            return window.__SUPABASE_KEY__;
-        }
+        if (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_KEY) return window.APP_CONFIG.SUPABASE_KEY;
+        if (window.__SUPABASE_KEY__) return window.__SUPABASE_KEY__;
         return '';
     }
 
-    // Validation helpers
-    function isValidEmail(email) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    }
+    function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
 
     function showToast(msg, type) {
         const container = document.getElementById('toasts');
@@ -175,73 +161,46 @@
     function setFieldError(fieldId, show) {
         const field = document.getElementById(fieldId);
         const error = document.getElementById(fieldId + 'Error');
-        if (show) {
-            field.classList.add('error');
-            error.classList.add('visible');
-        } else {
-            field.classList.remove('error');
-            error.classList.remove('visible');
-        }
+        if (show) { field.classList.add('error'); error.classList.add('visible'); } 
+        else { field.classList.remove('error'); error.classList.remove('visible'); }
     }
 
-    function clearErrors() {
-        setFieldError('email', false);
-        setFieldError('password', false);
-    }
+    function clearErrors() { setFieldError('email', false); setFieldError('password', false); }
 
-    // Initialize Supabase
     let supabaseClient = null;
     function getSupabase() {
         if (supabaseClient) return supabaseClient;
-        
         const key = getSupabaseKey();
-        
-        if (!key) {
-            showToast('Supabase key not configured. Check config.js', 'error');
-            throw new Error('Supabase key not configured');
-        }
-        if (!window.supabase) {
-            showToast('Failed to load Supabase SDK. Please refresh.', 'error');
-            throw new Error('Supabase SDK not loaded');
-        }
+        if (!key) throw new Error('Supabase key not configured');
         supabaseClient = window.supabase.createClient(SUPABASE_URL, key);
         return supabaseClient;
     }
 
-    // Check existing session
     async function checkSession() {
         try {
             const supa = getSupabase();
             const { data, error } = await supa.auth.getSession();
-            if (error) throw error;
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
-                // Clean redirect to studio
-                window.location.href = '/dubbing';
+                // التوجيه للرئيسية بدلاً من الدبلجة
+                window.location.href = '/'; 
             }
-        } catch (e) {
-            console.error('Session check failed:', e);
-        }
+        } catch (e) {}
     }
 
-    // Google sign in
     async function signInWithGoogle() {
         try {
             const supa = getSupabase();
-            const redirectTo = window.location.origin + '/dubbing';
+            // العودة للصفحة الرئيسية بدلاً من الدبلجة
+            const redirectTo = window.location.origin + '/';
             const { data, error } = await supa.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo }
             });
-            if (error) throw error;
             if (data?.url) window.location.href = data.url;
-        } catch (e) {
-            console.error('Google sign-in failed:', e);
-            showToast('Google sign in failed: ' + e.message, 'error');
-        }
+        } catch (e) { showToast('Google sign in failed.', 'error'); }
     }
 
-    // Email/Password sign in
     async function signInWithEmail(e) {
         e.preventDefault();
         clearErrors();
@@ -252,16 +211,8 @@
         const btn = document.getElementById('submitBtn');
 
         let hasError = false;
-
-        if (!email || !isValidEmail(email)) {
-            setFieldError('email', true);
-            hasError = true;
-        }
-        if (!password || password.length < 6) {
-            setFieldError('password', true);
-            hasError = true;
-        }
-
+        if (!email || !isValidEmail(email)) { setFieldError('email', true); hasError = true; }
+        if (!password || password.length < 6) { setFieldError('password', true); hasError = true; }
         if (hasError) return;
 
         btn.textContent = 'Verifying...';
@@ -270,34 +221,26 @@
         try {
             const supa = getSupabase();
             const { data, error } = await supa.auth.signInWithPassword({ 
-                email, 
-                password,
-                options: { remember: rememberMe }
+                email, password, options: { remember: rememberMe }
             });
 
             if (error) {
-                showToast(error.message.includes('Invalid login') ? 'Invalid email or password' : error.message, 'error');
-                btn.textContent = 'Sign in';
-                btn.disabled = false;
+                showToast('Invalid email or password', 'error');
+                btn.textContent = 'Sign in'; btn.disabled = false;
                 return;
             }
 
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
                 showToast('Signed in successfully!', 'success');
-                
-                // Redirect to dubbing instead of index.html
-                const targetPage = sessionStorage.getItem('returnUrl') || '/dubbing';
+                // التوجيه للرئيسية بدلاً من الدبلجة
+                const targetPage = sessionStorage.getItem('returnUrl') || '/';
                 sessionStorage.removeItem('returnUrl');
-                
                 setTimeout(() => { window.location.href = targetPage; }, 500);
             }
-
         } catch (err) {
-            console.error('Sign-in error:', err);
-            showToast('An error occurred during sign in.', 'error');
-            btn.textContent = 'Sign in';
-            btn.disabled = false;
+            showToast('An error occurred.', 'error');
+            btn.textContent = 'Sign in'; btn.disabled = false;
         }
     }
 
