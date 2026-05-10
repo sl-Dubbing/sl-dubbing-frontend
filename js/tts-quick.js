@@ -6,7 +6,7 @@ async function quickTTS(text, options = {}) {
     const headers = { 'Content-Type': 'application/json' };
     
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    if (!text?.trim()) throw new Error('النص فارغ');
+    if (!text?.trim()) throw new Error('Text is empty');
 
     const t0 = performance.now();
     
@@ -77,9 +77,9 @@ async function quickTTS(text, options = {}) {
                     remainingCredits
                 });
 
-            } catch (e) { reject(new Error('خطأ في معالجة البث المباشر')); }
+            } catch (e) { reject(new Error('Streaming processing error')); }
         });
-        mediaSource.addEventListener('error', () => reject(new Error('خطأ في المشغل')));
+        mediaSource.addEventListener('error', () => reject(new Error('Player error')));
     });
 }
 
