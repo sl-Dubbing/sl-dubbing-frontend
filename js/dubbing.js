@@ -1,9 +1,9 @@
-// js/dubbing.js — الإصدار السينمائي المتقدم (V11.0 - Final)
+// js/dubbing.js — Advanced Cinema Edition (V12.0 - Fixed UI & Bugs)
 let cinemaResults = {};
 let activeWavesurfer = null;
 
 // =====================================
-// 1. معاينة الملف المرفوع (Preview)
+// 1. Preview Media
 // =====================================
 document.getElementById('mediaFile')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -28,44 +28,42 @@ document.getElementById('mediaFile')?.addEventListener('change', function(e) {
 });
 
 // =====================================
-// 2. دالة الرفع المباشر لـ Cloudflare R2
+// 2. Upload to Cloudflare R2
 // =====================================
 async function uploadToR2(url, file, contentType) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', url, true);
-        
-        // 🚨 إجبار المتصفح على استخدام نفس نوع الملف الذي وقعنا به الرابط
         xhr.setRequestHeader('Content-Type', contentType);
         
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable) {
                 const pct = Math.round((e.loaded / e.total) * 100);
                 const overallProgress = 10 + (pct * 0.4); 
-                updateProgress("📤 جاري رفع الملف للمخزن السحابي...", overallProgress);
+                updateProgress("📤 Uploading file to cloud...", overallProgress);
             }
         };
         
         xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`فشل الرفع (Status: ${xhr.status})`));
+            else reject(new Error(`Upload failed (Status: ${xhr.status})`));
         };
         
-        xhr.onerror = () => reject(new Error("حدث خطأ في اتصال الشبكة أثناء الرفع"));
+        xhr.onerror = () => reject(new Error("Network error during upload"));
         xhr.send(file);
     });
 }
 
 // =====================================
-// 3. بدء عملية الدبلجة (Main Controller)
+// 3. Main Dubbing Controller
 // =====================================
 async function startDubbing() {
     const file = document.getElementById('mediaFile')?.files[0];
     const token = localStorage.getItem('token');
     
-    if (!token) return alert("يرجى تسجيل الدخول أولاً");
-    if (!file) return alert("يرجى اختيار ملف!");
-    if (!window.selectedLangs || window.selectedLangs.size === 0) return alert("اختر لغة واحدة على الأقل!");
+    if (!token) return window.showToast?.("Please sign in first", "error");
+    if (!file) return window.showToast?.("Please select a file!", "error");
+    if (!window.selectedLangs || window.selectedLangs.size === 0) return window.showToast?.("Select at least one language!", "error");
 
     document.getElementById('dubBtn').style.display = 'none';
     document.getElementById('progressArea').style.display = 'block';
@@ -75,13 +73,13 @@ async function startDubbing() {
     cinemaResults = {};
 
     try {
-        updateProgress("⚡ جاري تهيئة رابط الرفع...", 5);
+        updateProgress("⚡ Initializing upload link...", 5);
         
-        // 💡 استخراج نوع الملف الدقيق لمنع رفض Cloudflare
         const strictContentType = file.type || 'application/octet-stream';
+        const API = window.API_BASE; // Centralized API from shared.js
 
-        // 1. الحصول على رابط الرفع من Railway
-        const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
+        // 1. Get upload URL
+        const urlRes = await fetch(`${API}/api/upload-url`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -90,17 +88,17 @@ async function startDubbing() {
             })
         });
         
-        if (!urlRes.ok) throw new Error("فشل السيرفر في توليد رابط الرفع");
+        if (!urlRes.ok) throw new Error("Server failed to generate upload link");
         const urlData = await urlRes.json();
         
-        updateProgress("📤 جاري بدء الرفع...", 10);
+        updateProgress("📤 Starting upload...", 10);
 
-        // 2. الرفع المباشر لـ Cloudflare R2
+        // 2. Upload to R2
         await uploadToR2(urlData.upload_url, file, strictContentType);
 
-        updateProgress("⚙️ اكتمل الرفع، بدأت المعالجة بذكائك الاصطناعي...", 50);
+        updateProgress("⚙️ Upload complete, AI processing started...", 50);
 
-        // 3. إرسال طلبات الدبلجة لكل لغة
+        // 3. Send dubbing requests
         const langCodes = Array.from(window.selectedLangs);
         let completed = 0;
 
@@ -110,47 +108,62 @@ async function startDubbing() {
             const item = document.createElement('div');
             item.className = 'side-lang-card';
             item.id = `side-${langCode}`;
-            item.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${langInfo.name_ar}</span>`;
+            // ✅ تم الإصلاح: عرض اسم اللغة بالإنجليزية
+            item.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${langInfo.name_en}</span>`;
             sidebar.appendChild(item);
 
-            fetch(`${window.API_BASE}/api/dub`, {
+            // ✅ تم الإصلاح: تجنب انهيار السكريبت إذا كان زر Lipsync محذوفاً من الواجهة
+            const lipsyncChecked = document.getElementById('lipsyncToggle')?.checked || false;
+            const videoChecked = document.getElementById('videoToggle')?.checked ?? true;
+
+            fetch(`${API}/api/dub`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     file_key: urlData.file_key,
                     lang: langCode,
-                    with_lipsync: document.getElementById('lipsyncToggle').checked,
-                    video_output: document.getElementById('videoToggle').checked
+                    with_lipsync: lipsyncChecked,
+                    video_output: videoChecked
                 })
             }).then(res => res.json()).then(async (data) => {
                 const job = await waitForJob(data.job_id, token);
                 
                 cinemaResults[langCode] = { 
                     url: job.output_url, 
-                    name: langInfo.name_ar, 
+                    name: langInfo.name_en, // ✅ English Name
                     flag: langInfo.flag 
                 };
 
-                item.innerHTML = `<span>${langInfo.flag}</span> <span>${langInfo.name_ar}</span> <i class="fas fa-check-circle" style="color:var(--accent-green); margin-right:auto;"></i>`;
+                item.innerHTML = `<span>${langInfo.flag}</span> <span>${langInfo.name_en}</span> <i class="fas fa-check-circle" style="color:var(--accent-green); margin-right:auto;"></i>`;
                 item.onclick = () => switchCinemaLang(langCode);
 
                 if (Object.keys(cinemaResults).length === 1) switchCinemaLang(langCode);
 
                 completed++;
                 const pct = 50 + (completed / langCodes.length * 50);
-                updateProgress(completed === langCodes.length ? "✅ تم الانتهاء من جميع اللغات!" : "⏳ جاري معالجة اللغات...", pct);
+                updateProgress(completed === langCodes.length ? "✅ All languages completed!" : "⏳ Processing languages...", pct);
+                
+                // تحديث الرصيد تلقائياً بعد الانتهاء
+                if (completed === langCodes.length && typeof window.checkAuth === 'function') {
+                    window.checkAuth(); 
+                }
+
+            }).catch(err => {
+                item.innerHTML = `<span>${langInfo.flag}</span> <span>${langInfo.name_en}</span> <i class="fas fa-times-circle" style="color:var(--error); margin-right:auto;"></i>`;
+                console.error("Dubbing error for " + langCode, err);
             });
         }
 
     } catch (e) {
         console.error("Dubbing Error:", e);
-        alert("حدث خطأ تقني: " + e.message);
+        window.showToast?.("Technical error: " + e.message, "error");
         document.getElementById('dubBtn').style.display = 'block';
+        document.getElementById('progressArea').style.display = 'none';
     }
 }
 
 // =====================================
-// 4. مشغل السينما الذكي (Video vs Audio)
+// 4. Smart Cinema Player
 // =====================================
 function switchCinemaLang(langCode) {
     const data = cinemaResults[langCode];
@@ -178,7 +191,7 @@ function switchCinemaLang(langCode) {
             <div class="audio-player-wrapper">
                 <div class="audio-player-header">
                     <span class="flag">${data.flag}</span>
-                    <span>النسخة المدبلجة - ${data.name}</span>
+                    <span>Dubbed Version - ${data.name}</span>
                 </div>
                 <div id="waveform" class="audio-waveform"></div>
                 <div class="audio-controls">
@@ -221,14 +234,14 @@ function switchCinemaLang(langCode) {
 }
 
 // =====================================
-// 5. أدوات مساعدة (Wait & Format)
+// 5. Utils (Wait & Format)
 // =====================================
 async function waitForJob(id, token) {
     while(true) {
         const res = await fetch(`${window.API_BASE}/api/job/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         if (data.status === 'completed') return data;
-        if (data.status === 'failed') throw new Error("فشلت معالجة الفيديو في السيرفر");
+        if (data.status === 'failed') throw new Error("Server processing failed");
         await new Promise(r => setTimeout(r, 4000));
     }
 }
@@ -248,4 +261,5 @@ function formatTime(s) {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
 }
 
-document.getElementById('dubBtn').onclick = startDubbing;
+const dubBtn = document.getElementById('dubBtn');
+if (dubBtn) dubBtn.onclick = startDubbing;
