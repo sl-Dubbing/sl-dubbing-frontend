@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Glotix | Dubbing Studio</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
-    <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
     
-
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         /* ── Core Theme Variables ── */
         :root {
@@ -45,19 +45,16 @@
         .dropdown-panel a:hover, .dropdown-panel button.menu-item:hover { background: #f3f4f6; color: var(--accent-blue); }
         .menu-divider { border: none; border-top: 1px solid var(--border-color); margin: 8px 0; }
         
-        /* Auth Styles inside Dropdown */
+        /* Auth UI */
         .auth-buttons { display: flex; gap: 10px; margin-bottom: 5px; }
         .btn-login, .btn-signup { flex: 1; padding: 12px; border-radius: 10px; text-align: center; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: 0.2s; cursor: pointer; }
         .btn-login { background: var(--bg-page); border: 1px solid var(--border-color); color: var(--text-main); }
-        .btn-login:hover { background: #e5e7eb; }
         .btn-signup { background: var(--primary); color: white; border: 1px solid var(--primary); }
-        .btn-signup:hover { background: var(--primary-hover); }
         .logged-in-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; margin-bottom: 5px; display: none; }
         .user-name { font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
         .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; }
         .balance-text { color: var(--accent-blue); font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; background: #eff6ff; padding: 6px 10px; border-radius: 8px; width: fit-content; }
         .logout-btn { color: var(--error) !important; display: none; }
-        .logout-btn:hover { background: #fee2e2 !important; color: #dc2626 !important; }
 
         /* ── Upload & Studio Area ── */
         .upload-box { border: 2px dashed var(--border-color); border-radius: var(--radius-lg); padding: 60px 20px; text-align: center; cursor: pointer; transition: 0.3s; background: var(--bg-card); margin-bottom: 25px; }
@@ -69,23 +66,16 @@
 
         /* ── Controls Row ── */
         .controls-row { display: flex; gap: 15px; margin-bottom: 25px; align-items: center; flex-wrap: wrap; }
-        
         .lang-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 12px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.95rem; position: relative; transition: 0.2s; color: var(--text-main); flex: 1; min-width: 200px; justify-content: space-between; }
-        .lang-btn:hover { border-color: var(--accent-blue); }
         .lang-btn.active { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
+        .badge { background: var(--accent-blue); color: #fff; border-radius: 50%; min-width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
         
-        .badge { background: var(--accent-blue); color: #fff; border-radius: 50%; min-width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; margin-left: auto; }
-        
-        .lang-dropdown { position: absolute; top: calc(100% + 10px); left: 0; width: 100%; min-width: 280px; background: var(--bg-card) !important; border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 15px; cursor: default; text-align: left;}
+        .lang-dropdown { position: absolute; top: calc(100% + 10px); left: 0; width: 100%; min-width: 280px; background: var(--bg-card) !important; border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 15px; cursor: default; }
         .lang-btn.active .lang-dropdown { display: block; }
-        
-        .lang-search { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 15px; outline: none; box-sizing: border-box; font-size: 0.95rem; }
-        .lang-search:focus { border-color: var(--accent-blue); }
+        .lang-search { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 15px; outline: none; }
         .lang-list { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
-        .selected-langs-display { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
 
-        /* Switches */
-        .toggles-group { display: flex; gap: 12px; flex: 2; justify-content: flex-end; }
+        /* Switches & Buttons */
         .switch-container { display: flex; align-items: center; gap: 12px; background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 12px; font-size: 0.95rem; font-weight: 600; }
         .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -94,37 +84,22 @@
         input:checked + .slider { background-color: var(--accent-green); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        .start-btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 18px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .start-btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 18px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .start-btn:hover { background: var(--primary-hover); transform: translateY(-2px); }
-
-        /* ── Progress Box ── */
-        .progress-box { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; margin-top: 25px; display: none; }
-        .progress-bar-bg { height: 8px; background: #f3f4f6; border-radius: 4px; overflow: hidden; margin-top: 15px; }
-        .progress-bar-fill { height: 100%; width: 0%; background: var(--accent-blue); transition: 0.4s; }
 
         /* ── Cinema Results ── */
         .cinema-results { display: flex; gap: 20px; background: #0a0a0a; padding: 20px; border-radius: var(--radius-lg); margin-top: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
         .cinema-player { flex: 3; position: relative; background: #000; border-radius: 16px; overflow: hidden; min-height: 400px; display: flex; align-items: center; justify-content: center; }
         .cinema-player video { width: 100%; height: 100%; object-fit: contain; }
-        
         .cinema-sidebar { flex: 1; background: #131313; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 220px; max-height: 450px; overflow-y: auto; }
-        .side-lang-card { padding: 14px 16px; border-radius: 10px; background: #1c1c1c; color: #888; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; font-size: 0.95rem; font-weight: 500; }
-        .side-lang-card:hover { background: #252525; color: #ccc; }
-        .side-lang-card.active { background: #ffffff; color: #000; font-weight: 700; transform: scale(1.02); }
-
-        /* Download Btn */
+        .side-lang-card { padding: 14px 16px; border-radius: 10px; background: #1c1c1c; color: #888; cursor: pointer; font-size: 0.95rem; }
+        .side-lang-card.active { background: #ffffff; color: #000; font-weight: 700; }
         .dl-corner { position: absolute; top: 15px; right: 15px; z-index: 100; display: none; }
-        .dl-icon-btn { background: rgba(255,255,255,0.9); color: #000; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem; transition: 0.2s; backdrop-filter: blur(5px); }
-        .dl-icon-btn:hover { background: #fff; transform: scale(1.05); }
-
-        /* Remove old overlay & aside */
-        .overlay, .sidebar { display: none !important; }
+        .dl-icon-btn { background: rgba(255,255,255,0.9); color: #000; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
 
         @media (max-width: 800px) {
             .cinema-results { flex-direction: column; }
             .controls-row { flex-direction: column; align-items: stretch; }
-            .toggles-group { justify-content: stretch; flex-direction: column; }
-            .switch-container { justify-content: space-between; }
         }
     </style>
 </head>
@@ -136,42 +111,29 @@
             <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M16 3C8.82 3 3 8.82 3 16C3 23.18 8.82 29 16 29C23.18 29 29 23.18 29 16V14H16V19H23.2C22.1 22.1 19.3 24 16 24C11.58 24 8 20.42 8 16C8 11.58 11.58 8 16 8C18.4 8 20.5 9.06 21.8 10.74L25.4 7.14C22.9 4.6 19.6 3 16 3Z" fill="#0f0f10"/>
                 <path d="M29 16C29 23.18 23.18 29 16 29V24C19.3 24 22.1 22.1 23.2 19H29V16Z" fill="#007aff"/>
-            </svg>
-            Glotix
+            </svg> Glotix
         </a>
-        
         <div class="user-zone">
-            <button class="menu-btn" id="menuBtn">
-                <i class="fas fa-bars"></i> Menu
-            </button>
-
+            <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i> Menu</button>
             <div class="dropdown-panel" id="mainMenuDropdown">
                 <div class="auth-buttons" id="guestMenu">
                     <a href="/login" class="btn-login">Login</a>
                     <a href="/signup" class="btn-signup">Sign up</a>
                 </div>
-
                 <div class="logged-in-box" id="userMenu">
                     <div class="user-name">
-                        <img id="menuAvatar" class="user-avatar" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="User"> 
+                        <img id="menuAvatar" class="user-avatar" src="https://www.gravatar.com/avatar/0?d=mp" alt="User"> 
                         <span id="menuUserName">My Account</span>
                     </div>
                     <div class="balance-text"><i class="fas fa-coins"></i> <span id="menuCredits">...</span> Credits</div>
                 </div>
-
                 <hr class="menu-divider">
-                
                 <a href="/dubbing"><i class="fas fa-film"></i> Dubbing Studio</a>
                 <a href="/tts"><i class="fas fa-microphone"></i> Text to Speech</a>
                 <a href="/stt"><i class="fas fa-file-alt"></i> Speech to Text</a>
-                
                 <hr class="menu-divider">
-
                 <a href="/history"><i class="fas fa-folder-open"></i> My Files (History)</a>
-                
-                <button class="menu-item logout-btn" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
+                <button class="menu-item logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
             </div>
         </div>
     </header>
@@ -188,7 +150,6 @@
         <input type="file" id="mediaFile" style="display:none;" accept="video/*,audio/*">
         <i class="fas fa-cloud-upload-alt" style="font-size:3.5rem; color:#3b82f6; margin-bottom:15px;"></i>
         <div style="font-weight:bold; font-size:1.3rem; color: #111827;">Drag & Drop or Click to Upload</div>
-        <p style="color:#6b7280; font-size:0.9rem; margin-top: 8px;">Supports MP4, MOV, MP3, WAV (Max 500MB)</p>
     </div>
 
     <div class="controls-row">
@@ -196,91 +157,63 @@
             <i class="fas fa-globe" style="color: var(--primary);"></i>
             <span>Select Languages</span>
             <span class="badge" id="langCountBadge" style="display: none;">0</span>
-            <i class="fas fa-chevron-down arrow"></i>
-            
+            <i class="fas fa-chevron-down"></i>
             <div class="lang-dropdown" onclick="event.stopPropagation()">
-                <div id="selectedLangsDisplay" class="selected-langs-display"></div>
+                <div id="selectedLangsDisplay" class="selected-langs-display" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;"></div>
                 <input type="text" id="langSearch" class="lang-search" placeholder="🔍 Search language...">
                 <div id="langList" class="lang-list"></div>
             </div>
         </div>
-
-        <div class="toggles-group">
-            <div class="switch-container">
-                <span>Video Output</span>
-                <label class="switch">
-                    <input type="checkbox" id="videoToggle" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
+        <div class="switch-container">
+            <span>Video Output</span>
+            <label class="switch">
+                <input type="checkbox" id="videoToggle" checked>
+                <span class="slider"></span>
+            </label>
         </div>
     </div>
 
-    <button id="dubBtn" class="start-btn" style="display:none;">
-        <i class="fas fa-magic" style="margin-right: 8px;"></i>
-        Start Dubbing
-    </button>
+    <button id="dubBtn" class="start-btn" style="display:none;"><i class="fas fa-magic"></i> Start Dubbing</button>
 
-    <div id="progressArea" class="progress-box">
-        <div style="font-weight: bold; color: #374151; display: flex; justify-content: space-between;">
+    <div id="progressArea" class="progress-box" style="display:none; background:#fff; padding:20px; border-radius:16px; margin-top:20px; border:1px solid #eee;">
+        <div style="font-weight: bold; display: flex; justify-content: space-between;">
             <span id="statusTxt">Initializing...</span>
             <span id="statusPct">0%</span>
         </div>
-        <div class="progress-bar-bg">
-            <div id="progFill" class="progress-bar-fill"></div>
-        </div>
+        <div class="progress-bar-bg"><div id="progFill" class="progress-bar-fill"></div></div>
     </div>
 
     <div id="resultsCard" style="display:none;">
         <div class="cinema-results">
             <div class="cinema-player">
-                <div id="dlArea" class="dl-corner">
-                    <a id="masterDl" href="#" target="_blank" class="dl-icon-btn" title="Download">
-                        <i class="fas fa-download"></i>
-                    </a>
-                </div>
+                <div id="dlArea" class="dl-corner"><a id="masterDl" href="#" target="_blank" class="dl-icon-btn"><i class="fas fa-download"></i></a></div>
                 <div id="mainPlayer" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction: column;">
-                    <i class="fas fa-spinner fa-spin fa-3x" style="color:#333; margin-bottom: 15px;"></i>
-                    <p style="color: #666; font-weight: bold;" id="processingTxt">Processing Languages...</p>
+                    <i class="fas fa-spinner fa-spin fa-3x" style="color:#fff;"></i>
                 </div>
             </div>
             <aside class="cinema-sidebar" id="cinemaLangs"></aside>
         </div>
     </div>
-
 </div>
 
 <div id="toasts"></div>
 
 <script>
-function toggleLangDropdown(event) {
-    event.stopPropagation();
-    const btn = document.getElementById('langTrigger');
-    btn.classList.toggle('active');
-}
-
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.lang-btn')) {
-        document.getElementById('langTrigger')?.classList.remove('active');
+    function toggleLangDropdown(event) {
+        event.stopPropagation();
+        document.getElementById('langTrigger').classList.toggle('active');
     }
-});
-
-function updateLangBadge() {
-    const badge = document.getElementById('langCountBadge');
-    const count = window.selectedLangs ? window.selectedLangs.size : 0;
-    if (badge) {
-        if (count > 0) {
+    document.addEventListener('click', () => document.getElementById('langTrigger')?.classList.remove('active'));
+    
+    function updateLangBadge() {
+        const badge = document.getElementById('langCountBadge');
+        const count = window.selectedLangs ? window.selectedLangs.size : 0;
+        if (badge) {
             badge.textContent = count;
-            badge.style.display = 'inline-flex';
-        } else {
-            badge.style.display = 'none';
+            badge.style.display = count > 0 ? 'inline-flex' : 'none';
         }
     }
-}
-
-window.addEventListener('load', () => {
     setInterval(updateLangBadge, 500);
-});
 </script>
 
 <script src="js/config.js"></script>
@@ -289,6 +222,5 @@ window.addEventListener('load', () => {
 <script src="js/languages.js"></script>
 <script src="js/lang-picker.js"></script>
 <script src="js/dubbing.js"></script>
-
 </body>
 </html>
