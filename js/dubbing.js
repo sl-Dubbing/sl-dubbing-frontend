@@ -283,12 +283,12 @@ window.addEventListener('load', () => {
 });
 </script>
 
-<script>window.__SKIP_MENU_BIND__ = true;</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/languages-data.js"></script>
 <script src="js/languages.js"></script>
-<script src="js/lang-picker.js"></script> 
+<script src="js/lang-picker.js"></script>
 <script src="js/dubbing.js"></script>
 
 </body>
