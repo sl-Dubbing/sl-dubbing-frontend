@@ -292,25 +292,19 @@ window.addEventListener('load', () => {
 <script src="js/dubbing.js"></script>
 
 <script>
+    const BE = 'https://web-production-14a1.up.railway.app';
     const SUPABASE_URL = "https://ckjkkxrlgisjdolwddfg.supabase.co"; 
     const SUPABASE_KEY = "sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW"; 
     
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // ── Dropdown Logic ──
     const menuBtn = document.getElementById('menuBtn');
     const dropdownMenu = document.getElementById('mainMenuDropdown');
+    menuBtn?.addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('active'); });
+    document.addEventListener('click', (e) => { if (dropdownMenu && !dropdownMenu.contains(e.target) && !menuBtn.contains(e.target)) { dropdownMenu.classList.remove('active'); } });
 
-    menuBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); 
-        dropdownMenu.classList.toggle('active');
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!dropdownMenu.contains(e.target) && !menuBtn.contains(e.target)) {
-            dropdownMenu.classList.remove('active');
-        }
-    });
-
+    // ── Update UI function ──
     function updateDropdownUI(user) {
         const guestMenu = document.getElementById('guestMenu');
         const userMenu = document.getElementById('userMenu');
@@ -320,41 +314,38 @@ window.addEventListener('load', () => {
         const menuAvatar = document.getElementById('menuAvatar');
 
         if (user && user.id) {
-            guestMenu.style.display = 'none';
-            userMenu.style.display = 'block';
-            logoutBtn.style.display = 'flex';
-            
-            menuUserName.textContent = user.name || 'My Account';
-            menuCredits.textContent = user.credits !== undefined ? user.credits : '...';
-            
-            if (user.avatar) {
-                menuAvatar.src = user.avatar;
-            }
+            if(guestMenu) guestMenu.style.display = 'none';
+            if(userMenu) userMenu.style.display = 'block';
+            if(logoutBtn) logoutBtn.style.display = 'flex';
+            if(menuUserName) menuUserName.textContent = user.name || 'My Account';
+            if(menuCredits) menuCredits.textContent = user.credits !== undefined ? user.credits : '...';
+            if (user.avatar && menuAvatar) menuAvatar.src = user.avatar;
         } else {
-            guestMenu.style.display = 'flex';
-            userMenu.style.display = 'none';
-            logoutBtn.style.display = 'none'; 
+            if(guestMenu) guestMenu.style.display = 'flex';
+            if(userMenu) userMenu.style.display = 'none';
+            if(logoutBtn) logoutBtn.style.display = 'none'; 
         }
     }
 
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
+    // ── Logout Logic ──
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
         await supabaseClient.auth.signOut();
         localStorage.removeItem('token');
         localStorage.removeItem('sl_user_cache');
-        window.location.replace('/'); // Clean redirect to root
+        window.location.replace('/');
     });
 
-    // ✅ الحل من كلود: قراءة الكاش لتجنب التعارض مع shared.js
+    // ✅ الحل النهائي: الاعتماد على كاش shared.js والمزامنة التلقائية
     document.addEventListener('DOMContentLoaded', () => {
-        // استخدام cache الموجود من shared.js
         const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
         if (cachedUser) updateDropdownUI(cachedUser);
 
-        // مزامنة عند تغيير الـ session
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session) {
-                const cached = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
-                if (cached) updateDropdownUI(cached);
+                setTimeout(() => {
+                    const cached = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
+                    if (cached) updateDropdownUI(cached);
+                }, 800);
             } else {
                 updateDropdownUI(null);
             }
