@@ -1,47 +1,47 @@
 window.LANG_MENU = [
     {
-        name: 'العربية', icon: '🌍', hasSub: true, items: [
-            { code: 'ar-sa', name: 'السعودية', flag: '🇸🇦' },
-            { code: 'ar-eg', name: 'مصر', flag: '🇪🇬' },
-            { code: 'ar-ae', name: 'الإمارات', flag: '🇦🇪' },
-            { code: 'ar-ma', name: 'المغرب', flag: '🇲🇦' },
-            { code: 'ar-dz', name: 'الجزائر', flag: '🇩🇿' },
-            { code: 'ar-iq', name: 'العراق', flag: '🇮🇶' },
-            { code: 'ar-lb', name: 'لبنان', flag: '🇱🇧' }
+        name: 'Arabic', icon: '🌍', hasSub: true, items: [
+            { code: 'ar-sa', name: 'Saudi', flag: '🇸🇦' },
+            { code: 'ar-eg', name: 'Egypt', flag: '🇪🇬' },
+            { code: 'ar-ae', name: 'UAE', flag: '🇦🇪' },
+            { code: 'ar-ma', name: 'Morocco', flag: '🇲🇦' },
+            { code: 'ar-dz', name: 'Algeria', flag: '🇩🇿' },
+            { code: 'ar-iq', name: 'Iraq', flag: '🇮🇶' },
+            { code: 'ar-lb', name: 'Lebanon', flag: '🇱🇧' }
         ]
     },
     {
-        name: 'الإنجليزية', icon: '🌐', hasSub: true, items: [
-            { code: 'en-us', name: 'أمريكا', flag: '🇺🇸' },
-            { code: 'en-gb', name: 'بريطانيا', flag: '🇬🇧' },
-            { code: 'en-au', name: 'أستراليا', flag: '🇦🇺' },
-            { code: 'en-ca', name: 'كندا', flag: '🇨🇦' }
+        name: 'English', icon: '🌐', hasSub: true, items: [
+            { code: 'en-us', name: 'USA', flag: '🇺🇸' },
+            { code: 'en-gb', name: 'UK', flag: '🇬🇧' },
+            { code: 'en-au', name: 'Australia', flag: '🇦🇺' },
+            { code: 'en-ca', name: 'Canada', flag: '🇨🇦' }
         ]
     },
     {
-        name: 'الإسبانية', icon: '🇪🇸', hasSub: true, items: [
-            { code: 'es-es', name: 'إسبانيا', flag: '🇪🇸' },
-            { code: 'es-mx', name: 'المكسيك', flag: '🇲🇽' }
+        name: 'Spanish', icon: '🇪🇸', hasSub: true, items: [
+            { code: 'es-es', name: 'Spain', flag: '🇪🇸' },
+            { code: 'es-mx', name: 'Mexico', flag: '🇲🇽' }
         ]
     },
     {
-        name: 'الفرنسية', icon: '🇫🇷', hasSub: true, items: [
-            { code: 'fr-fr', name: 'فرنسا', flag: '🇫🇷' },
-            { code: 'fr-ca', name: 'كندا', flag: '🇨🇦' }
+        name: 'French', icon: '🇫🇷', hasSub: true, items: [
+            { code: 'fr-fr', name: 'France', flag: '🇫🇷' },
+            { code: 'fr-ca', name: 'Canada', flag: '🇨🇦' }
         ]
     },
     {
-        name: 'البرتغالية', icon: '🇵🇹', hasSub: true, items: [
-            { code: 'pt-pt', name: 'البرتغال', flag: '🇵🇹' },
-            { code: 'pt-br', name: 'البرازيل', flag: '🇧🇷' }
+        name: 'Portuguese', icon: '🇵🇹', hasSub: true, items: [
+            { code: 'pt-pt', name: 'Portugal', flag: '🇵🇹' },
+            { code: 'pt-br', name: 'Brazil', flag: '🇧🇷' }
         ]
     },
-    { code: 'de-de', name: 'الألمانية', flag: '🇩🇪' },
-    { code: 'it-it', name: 'الإيطالية', flag: '🇮🇹' },
-    { code: 'ru-ru', name: 'الروسية', flag: '🇷🇺' },
-    { code: 'tr-tr', name: 'التركية', flag: '🇹🇷' },
-    { code: 'zh-cn', name: 'الصينية', flag: '🇨🇳' },
-    { code: 'ja-jp', name: 'اليابانية', flag: '🇯🇵' },
-    { code: 'ko-kr', name: 'الكورية', flag: '🇰🇷' },
-    { code: 'hi-in', name: 'الهندية', flag: '🇮🇳' }
+    { code: 'de-de', name: 'German', flag: '🇩🇪' },
+    { code: 'it-it', name: 'Italian', flag: '🇮🇹' },
+    { code: 'ru-ru', name: 'Russian', flag: '🇷🇺' },
+    { code: 'tr-tr', name: 'Turkish', flag: '🇹🇷' },
+    { code: 'zh-cn', name: 'Chinese', flag: '🇨🇳' },
+    { code: 'ja-jp', name: 'Japanese', flag: '🇯🇵' },
+    { code: 'ko-kr', name: 'Korean', flag: '🇰🇷' },
+    { code: 'hi-in', name: 'Hindi', flag: '🇮🇳' }
 ];
