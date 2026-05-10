@@ -61,7 +61,9 @@
             localStorage.setItem('sl_user_cache', JSON.stringify(userData));
 
             // توجيه للرئيسية
-            window.location.replace('/');
+            localStorage.setItem('sl_user_cache', JSON.stringify(userData));
+await new Promise(r => setTimeout(r, 200)); // انتظر قليلاً
+window.location.replace('/');
         }
     });
 
