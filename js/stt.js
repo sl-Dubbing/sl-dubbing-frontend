@@ -1,159 +1,184 @@
-// shared.js — V12.0 (تم الربط بالدومين الرسمي 🚀)
-// نعتمد على الدومين الموجود في config.js
-const API_BASE = window.API_BASE || 'https://api.glotix.ai'; 
-const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
-const USER_CACHE_KEY = 'sl_user_cache';
+// stt.js — Speech to Text Logic V2.0 (Fixed)
 
-window.API_BASE = API_BASE;
+let currentMode = 'fast';
 
-// =================================
-// 🔌 1. تهيئة Supabase
-// =================================
-let supabaseClient = null;
-async function getSupabase() {
-    if (supabaseClient) return supabaseClient;
-    if (!window.supabase) {
-        await new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-            s.onload = resolve; s.onerror = reject;
-            document.head.appendChild(s);
-        });
-    }
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    return supabaseClient;
-}
-
-// =================================
-// 🎨 2. رسم واجهة الUser
-// =================================
-function renderAuthUI(user) {
-    const authSection = document.getElementById('authSection');
-    const topBadge = document.getElementById('topAccountBadge');
-
-    if (!user) {
-        if (authSection) authSection.innerHTML = `<div style="text-align:center;padding:8px;"><a href="/login" class="btn-login-sidebar">Sign In</a></div>`;
-        if (topBadge) topBadge.innerHTML = `<a href="/login" style="color:inherit;text-decoration:none;"><i class="fas fa-sign-in-alt"></i> Login</a>`;
-        return;
-    }
-
-    const credits = (user.credits !== undefined) ? user.credits : "...";
-    const name = user.name || user.email?.split('@')[0] || 'User';
-
-    if (authSection) {
-        authSection.innerHTML = `
-            <div class="user-info-card">
-                <div class="user-name"><i class="fas fa-user-circle"></i> ${escapeHtml(name)}</div>
-                <div class="user-points"><i class="fas fa-coins"></i> ${credits} Credits</div>
-                <button id="logoutBtn" style="margin-top:10px;background:none;border:none;color:#ff3b30;cursor:pointer;font-size:0.82rem;font-weight:600;">Logout</button>
-            </div>`;
-        document.getElementById('logoutBtn')?.addEventListener('click', logout);
-    }
-    if (topBadge) {
-        topBadge.innerHTML = `<i class="fas fa-coins" style="color:#ff9500"></i> ${credits} Credits`;
-    }
-}
-
-// =================================
-// 🚀 3. جلب البيانات من السيرفر
-// =================================
-async function checkAuth() {
-    const cached = JSON.parse(localStorage.getItem(USER_CACHE_KEY) || 'null');
-    if (cached) renderAuthUI(cached);
-
-    try {
-        const supa = await getSupabase();
-        const { data: { session } } = await supa.auth.getSession();
-
-        if (!session) {
-            localStorage.removeItem('token');
-            localStorage.removeItem(USER_CACHE_KEY);
-            renderAuthUI(null);
-            return;
-        }
-
-        localStorage.setItem('token', session.access_token);
-
-        const res = await fetch(`${API_BASE}/api/user/credits`, {
-            headers: { 'Authorization': `Bearer ${session.access_token}` }
-        });
-
-        if (res.ok) {
-            const d = await res.json();
-            if (d?.success) {
-                const userData = {
-                    id: session.user.id,
-                    email: session.user.email,
-                    name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-                    credits: d.credits
-                };
-                localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userData));
-                renderAuthUI(userData);
-            }
-        }
-    } catch (e) {
-        console.warn('Auth Sync Failed:', e);
-    }
-}
-
-// =================================
-// 📱 4. منطق القائمة الجانبية
-// =================================
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-    if (sidebar.classList.contains('active')) closeSidebar();
-    else openSidebar();
-}
-
-function openSidebar() {
-    document.getElementById('sidebar')?.classList.add('active');
-    document.getElementById('overlay')?.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeSidebar() {
-    document.getElementById('sidebar')?.classList.remove('active');
-    document.getElementById('overlay')?.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-// =================================
-// 🚪 5. Logout
-// =================================
-async function logout() {
-    const supa = await getSupabase();
-    await supa.auth.signOut();
-    localStorage.clear();
-    location.href = '/'; // 👈 تم إزالة index.html ليكون الرابط نظيفاً
-}
-
-// =================================
-// 🛠️ 6. الربط والتشغيل
-// =================================
 document.addEventListener('DOMContentLoaded', () => {
-    checkAuth();
-    const menuBtn = document.getElementById('menuBtn') || document.getElementById('menuToggle') || document.querySelector('.menu-icon');
-    if (menuBtn) menuBtn.addEventListener('click', (e) => { e.preventDefault(); toggleSidebar(); });
-    const overlay = document.getElementById('overlay');
-    if (overlay) overlay.addEventListener('click', closeSidebar);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+    // Mode switcher
+    const modeOptions = document.querySelectorAll('.mode-option');
+    const diarizeToggle = document.getElementById('diarizeToggle');
+
+    modeOptions.forEach(opt => {
+        opt.addEventListener('click', () => {
+            modeOptions.forEach(x => x.classList.remove('active'));
+            opt.classList.add('active');
+            currentMode = opt.dataset.mode;
+            diarizeToggle.style.display = (currentMode === 'precise') ? 'flex' : 'none';
+        });
+    });
+
+    // Toggle coloring
+    document.querySelectorAll('.option-toggle input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            e.target.parentElement.classList.toggle('active', e.target.checked);
+        });
+    });
+
+    // Start button
+    document.getElementById('sttBtn').addEventListener('click', startSTT);
 });
 
-function escapeHtml(u) { return String(u||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m])); }
-function showToast(msg, color) {
+async function startSTT() {
+    const file = document.getElementById('mediaFile').files[0];
+    const token = localStorage.getItem('token');
+    const lang = document.getElementById('langSelect').value;
+    const translate = document.getElementById('translateChk').checked;
+    const diarize = document.getElementById('diarizeChk').checked;
+
+    if (!token) return showToast("Please sign in", "error");
+    if (!file) return showToast("Please select a file", "error");
+
+    const btn = document.getElementById('sttBtn');
+    const progArea = document.getElementById('progressArea');
+    const progFill = document.getElementById('progFill');
+    const statusTxt = document.getElementById('statusTxt');
+    const resultsCard = document.getElementById('resultsCard');
+
+    btn.disabled = true;
+    progArea.style.display = 'block';
+    resultsCard.style.display = 'none';
+    progFill.style.width = '5%';
+    statusTxt.innerText = "Preparing upload...";
+
+    try {
+        // Step 1: Get upload URL
+        const BE = window.API_BASE || 'https://api.glotix.ai';
+        const urlRes = await fetch(`${BE}/upload-url`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, content_type: file.type, size: file.size })
+        });
+        const urlData = await urlRes.json();
+        if (!urlRes.ok) throw new Error(urlData.error);
+
+        // Step 2: Upload to R2
+        statusTxt.innerText = "Uploading file...";
+        const xhr = new XMLHttpRequest();
+        await new Promise((resolve, reject) => {
+            xhr.open('PUT', urlData.upload_url);
+            xhr.setRequestHeader('Content-Type', file.type);
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    progFill.style.width = (5 + (pct * 0.4)) + "%";
+                    statusTxt.innerText = `Uploading (${pct}%)`;
+                }
+            };
+            xhr.onload = () => xhr.status === 200 ? resolve() : reject("Upload failed");
+            xhr.onerror = () => reject("Network error");
+            xhr.send(file);
+        });
+
+        // Step 3: Start processing
+        statusTxt.innerText = "Starting AI processing...";
+        const sttRes = await fetch(`${BE}/stt`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                file_key: urlData.file_key,
+                language: lang,
+                mode: currentMode,
+                diarize: diarize,
+                translate: translate
+            })
+        });
+        const sttData = await sttRes.json();
+        if (!sttRes.ok) throw new Error(sttData.error);
+
+        // Step 4: Poll status
+        pollStatus(sttData.job_id, token);
+
+    } catch (e) {
+        showToast(e.message, "error");
+        btn.disabled = false;
+        progArea.style.display = 'none';
+    }
+}
+
+async function pollStatus(jobId, token) {
+    const BE = window.API_BASE || 'https://api.glotix.ai';
+    const progFill = document.getElementById('progFill');
+    const statusTxt = document.getElementById('statusTxt');
+
+    const interval = setInterval(async () => {
+        try {
+            const res = await fetch(`${BE}/job/${jobId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+
+            if (data.status === 'completed') {
+                clearInterval(interval);
+                showResult(data);
+                if (typeof checkAuth === 'function') checkAuth();
+            } else if (data.status === 'failed') {
+                clearInterval(interval);
+                showToast("Processing failed: " + data.error, "error");
+                document.getElementById('sttBtn').disabled = false;
+            } else {
+                progFill.style.width = "75%";
+                statusTxt.innerText = "Extracting text... (may take minutes)";
+            }
+        } catch (e) { console.error(e); }
+    }, 4000);
+}
+
+function showResult(data) {
+    document.getElementById('progressArea').style.display = 'none';
+    document.getElementById('sttBtn').disabled = false;
+    document.getElementById('resultsCard').style.display = 'block';
+
+    const box = document.getElementById('transcriptBox');
+
+    if (data.segments) {
+        box.innerHTML = data.segments.map(s => `
+            <div class="segment">
+                <span class="timestamp">[${formatTime(s.start)}]</span>
+                ${s.speaker ? `<span class="speaker">Speaker ${s.speaker}</span>` : ''}
+                <span class="text">${escapeHtml(s.text)}</span>
+            </div>
+        `).join('');
+    } else {
+        box.innerText = data.transcript || data.output_text || "No text found.";
+    }
+
+    if(data.output_url) {
+        const dlBtn = document.createElement('a');
+        dlBtn.href = data.output_url;
+        dlBtn.className = 'btn';
+        dlBtn.style.marginTop = '15px';
+        dlBtn.innerHTML = '<i class="fas fa-download"></i> Download Subtitle';
+        box.parentElement.appendChild(dlBtn);
+    }
+}
+
+function formatTime(seconds) {
+    const s = Math.floor(seconds);
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function escapeHtml(u) {
+    return String(u||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m]));
+}
+
+function showToast(msg, type) {
     const t = document.getElementById('toasts');
     if (!t) { alert(msg); return; }
     const box = document.createElement('div');
     box.className = 'toast';
     box.textContent = msg;
-    box.style.background = (color === 'error') ? '#ff3b30' : '#34c759';
+    box.style.background = (type === 'error') ? '#ef4444' : '#10b981';
     t.appendChild(box);
     setTimeout(() => box.remove(), 4000);
 }
-
-window.toggleSidebar = toggleSidebar;
-window.closeSidebar = closeSidebar;
-window.checkAuth = checkAuth;
-window.logout = logout;
