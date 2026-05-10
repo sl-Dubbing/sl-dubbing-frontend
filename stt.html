@@ -241,68 +241,9 @@
   </main>
 </div>
 
-<script>
-    const BE = 'https://api.glotix.ai';
-    const SUPABASE_URL = "https://ckjkkxrlgisjdolwddfg.supabase.co"; 
-    const SUPABASE_KEY = "sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW"; 
-    
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<div id="toasts"></div>
 
-    // Dropdown Logic
-    const menuBtn = document.getElementById('menuBtn');
-    const dropdownMenu = document.getElementById('mainMenuDropdown');
-    menuBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('active'); });
-    document.addEventListener('click', (e) => { if (!dropdownMenu.contains(e.target) && !menuBtn.contains(e.target)) { dropdownMenu.classList.remove('active'); } });
-
-    // UI Auth Update
-    function updateDropdownUI(user) {
-        const guestMenu = document.getElementById('guestMenu');
-        const userMenu = document.getElementById('userMenu');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const menuUserName = document.getElementById('menuUserName');
-        const menuCredits = document.getElementById('menuCredits');
-        const menuAvatar = document.getElementById('menuAvatar');
-
-        if (user && user.id) {
-            guestMenu.style.display = 'none';
-            userMenu.style.display = 'block';
-            logoutBtn.style.display = 'flex';
-            menuUserName.textContent = user.name || 'My Account';
-            menuCredits.textContent = user.credits !== undefined ? user.credits : '...';
-            if (user.avatar) menuAvatar.src = user.avatar;
-        } else {
-            guestMenu.style.display = 'flex';
-            userMenu.style.display = 'none';
-            logoutBtn.style.display = 'none'; 
-        }
-    }
-
-    async function fetchLiveAuth() {
-        const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
-        updateDropdownUI(cachedUser);
-        try {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) { localStorage.removeItem('token'); localStorage.removeItem('sl_user_cache'); updateDropdownUI(null); return; }
-            localStorage.setItem('token', session.access_token);
-            const res = await fetch(`${BE}/api/user/credits`, { headers: { 'Authorization': `Bearer ${session.access_token}` } });
-            if (res.ok) {
-                const d = await res.json();
-                const userData = { id: session.user.id, email: session.user.email, name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0], avatar: session.user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y', credits: d.success ? d.credits : '...' };
-                localStorage.setItem('sl_user_cache', JSON.stringify(userData));
-                updateDropdownUI(userData);
-            }
-        } catch(e) { console.error("Auth sync error:", e); }
-    }
-
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await supabaseClient.auth.signOut();
-        localStorage.removeItem('token'); localStorage.removeItem('sl_user_cache');
-        window.location.reload();
-    });
-
-    document.addEventListener('DOMContentLoaded', () => { fetchLiveAuth(); });
-</script>
-
+<script>window.__SKIP_MENU_BIND__ = true;</script>
 <script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/stt.js"></script>
