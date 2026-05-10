@@ -135,7 +135,6 @@
                 <hr class="menu-divider">
 
                 <a href="/history"><i class="fas fa-folder-open"></i> My Files (History)</a>
-                <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
                 
                 <button class="menu-item logout-btn" id="logoutBtn">
                     <i class="fas fa-sign-out-alt"></i> Logout
@@ -196,10 +195,9 @@
 
 <script>
     const BE = 'https://api.glotix.ai';
-    const SUPABASE_URL = "https://ckjkkxrlgisjdolwddfg.supabase.co"; // من إعداداتك
-    const SUPABASE_KEY = "sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW"; // من إعداداتك
+    const SUPABASE_URL = "https://ckjkkxrlgisjdolwddfg.supabase.co"; 
+    const SUPABASE_KEY = "sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW"; 
     
-    // تهيئة عميل Supabase محلياً للصفحة الرئيسية
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     async function checkServer() {
@@ -232,7 +230,6 @@
         }
     });
 
-    // 🚀 تحديث واجهة المستخدم بالبيانات
     function updateDropdownUI(user) {
         const guestMenu = document.getElementById('guestMenu');
         const userMenu = document.getElementById('userMenu');
@@ -249,7 +246,6 @@
             menuUserName.textContent = user.name || 'My Account';
             menuCredits.textContent = user.credits !== undefined ? user.credits : '...';
             
-            // وضع الصورة الشخصية إذا كانت موجودة
             if (user.avatar) {
                 menuAvatar.src = user.avatar;
             }
@@ -260,9 +256,7 @@
         }
     }
 
-    // 🚀 جلب الرصيد الحقيقي من السيرفر فور فتح الصفحة
     async function fetchLiveAuth() {
-        // قراءة مبدئية من الكاش لسرعة العرض
         const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
         updateDropdownUI(cachedUser);
 
@@ -277,7 +271,6 @@
 
             localStorage.setItem('token', session.access_token);
             
-            // طلب الرصيد المحدث من السيرفر
             const res = await fetch(`${BE}/api/user/credits`, {
                 headers: { 'Authorization': `Bearer ${session.access_token}` }
             });
@@ -292,7 +285,6 @@
                     credits: d.success ? d.credits : '...'
                 };
                 
-                // حفظ البيانات الجديدة وتحديث الواجهة
                 localStorage.setItem('sl_user_cache', JSON.stringify(userData));
                 updateDropdownUI(userData);
             }
@@ -310,7 +302,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         checkServer();
-        fetchLiveAuth(); // جلب الرصيد والصورة فوراً
+        fetchLiveAuth(); 
         setInterval(checkServer, 30000);
     });
 </script>
