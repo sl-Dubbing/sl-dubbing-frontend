@@ -1,4 +1,4 @@
-// js/shared.js - V18 (Final with OAuth Hash Fix)
+// js/shared.js - V19 (Final with Robust Hash Handling)
 
 const API_BASE    = window.APP_CONFIG?.API_BASE    || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -109,19 +109,30 @@ window.checkAuth = async function() {
 // ── 4. Global Event Listeners ──
 document.addEventListener('DOMContentLoaded', () => {
 
-    // اكتشاف العودة من Google OAuth
+    // اكتشاف العودة من Google OAuth أو رابط الإيميل
     const hash = window.location.hash;
     
-    // الحل الصحيح: نترك Supabase يعالج الـ Hash أولاً لإنشاء الجلسة
+    // الحل المحدث ✅: التحقق المزدوج من إنشاء الجلسة قبل تنظيف الرابط
     if (hash.includes('access_token') || hash.includes('token_type')) {
-        setTimeout(() => {
-            window.history.replaceState(null, '', window.location.pathname);
-            window.checkAuth();
-        }, 1500);
+        setTimeout(async () => {
+            const supa = getSupabase();
+            if (supa) {
+                const { data } = await supa.auth.getSession();
+                if (data?.session) {
+                    window.history.replaceState(null, '', window.location.pathname);
+                    window.checkAuth();
+                    return;
+                }
+            }
+            // إذا لم تنجح بعد ثانية، جرب مرة أخرى كخطة بديلة
+            setTimeout(() => {
+                window.history.replaceState(null, '', window.location.pathname);
+                window.checkAuth();
+            }, 1500);
+        }, 1000);
         return;
     }
     
-    // تنظيف أي Hash آخر لا يخص التوكن
     if (hash) {
         window.history.replaceState(null, '', window.location.pathname);
     }
@@ -152,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start
     window.checkAuth();
     window.checkServer();
-    setInterval(window.checkServer, 300000);
+    setInterval(window.checkServer, 30000);
 
     // Auth State Changes
     setTimeout(() => {
