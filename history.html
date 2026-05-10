@@ -89,6 +89,7 @@
     
     .expiry-badge { font-size: 0.75rem; background: #fef3c7; color: #d97706; padding: 4px 10px; border-radius: 8px; font-weight: 700; }
   </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -329,6 +330,18 @@
         const name = prompt("New folder name:");
         if (name) {
             folders.add(name);
+            renderFolders();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchLiveAuth();
+        loadManager();
+    });
+</script>
+</body>
+</html>
+ folders.add(name);
             renderFolders();
         }
     }
