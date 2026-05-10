@@ -45,6 +45,7 @@
         .dropdown-panel a:hover, .dropdown-panel button.menu-item:hover { background: #f3f4f6; color: var(--accent-blue); }
         .menu-divider { border: none; border-top: 1px solid var(--border-color); margin: 8px 0; }
         
+        /* Auth Styles inside Dropdown */
         .auth-buttons { display: flex; gap: 10px; margin-bottom: 5px; }
         .btn-login, .btn-signup { flex: 1; padding: 12px; border-radius: 10px; text-align: center; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: 0.2s; cursor: pointer; }
         .btn-login { background: var(--bg-page); border: 1px solid var(--border-color); color: var(--text-main); }
@@ -212,7 +213,7 @@
                     <span class="slider"></span>
                 </label>
             </div>
-            </div>
+        </div>
     </div>
 
     <button id="dubBtn" class="start-btn" style="display:none;">
@@ -291,8 +292,6 @@ window.addEventListener('load', () => {
 <script src="js/dubbing.js"></script>
 
 <script>
-    // ✅ تم تحديث الرابط إلى Railway لتفادي مشاكل الاتصال (CORS) وعرض الرصيد
-    const BE = 'https://web-production-14a1.up.railway.app';
     const SUPABASE_URL = "https://ckjkkxrlgisjdolwddfg.supabase.co"; 
     const SUPABASE_KEY = "sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW"; 
     
@@ -338,52 +337,28 @@ window.addEventListener('load', () => {
         }
     }
 
-    async function fetchLiveAuth() {
-        const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
-        updateDropdownUI(cachedUser);
-
-        try {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('sl_user_cache');
-                updateDropdownUI(null);
-                return;
-            }
-
-            localStorage.setItem('token', session.access_token);
-            
-            const res = await fetch(`${BE}/api/user/credits`, {
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
-            });
-            
-            if (res.ok) {
-                const d = await res.json();
-                const userData = {
-                    id: session.user.id,
-                    email: session.user.email,
-                    name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-                    avatar: session.user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
-                    credits: d.success ? d.credits : '...'
-                };
-                
-                localStorage.setItem('sl_user_cache', JSON.stringify(userData));
-                updateDropdownUI(userData);
-            }
-        } catch(e) {
-            console.error("Auth sync error:", e);
-        }
-    }
-
     document.getElementById('logoutBtn').addEventListener('click', async () => {
         await supabaseClient.auth.signOut();
         localStorage.removeItem('token');
         localStorage.removeItem('sl_user_cache');
-        window.location.reload();
+        window.location.replace('/'); // Clean redirect to root
     });
 
+    // ✅ الحل من كلود: قراءة الكاش لتجنب التعارض مع shared.js
     document.addEventListener('DOMContentLoaded', () => {
-        fetchLiveAuth(); 
+        // استخدام cache الموجود من shared.js
+        const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
+        if (cachedUser) updateDropdownUI(cachedUser);
+
+        // مزامنة عند تغيير الـ session
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                const cached = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
+                if (cached) updateDropdownUI(cached);
+            } else {
+                updateDropdownUI(null);
+            }
+        });
     });
 </script>
 </body>
