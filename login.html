@@ -159,12 +159,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             // حفظ التوكن للتحقق السريع
             localStorage.setItem('token', data.session.access_token);
             
-            // جلب الرصيد وتحديث الكاش الموحد
-            let userCredits = 0;
+            // جلب الرصيد عبر الـ API بدلاً من قاعدة البيانات المباشرة ✅
+            let userCredits = '...';
             try {
-                const { data: profile } = await supa.from('users').select('credits').eq('id', data.user.id).single();
-                if (profile) userCredits = profile.credits;
-            } catch (err) {}
+                const res = await fetch('https://api.glotix.ai/api/user/credits', {
+                    headers: { 'Authorization': `Bearer ${data.session.access_token}` }
+                });
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d.success) userCredits = d.credits;
+                }
+            } catch(err) {
+                console.error('Failed to fetch credits from API', err);
+            }
 
             const meta = data.user.user_metadata || {};
             const userData = {
