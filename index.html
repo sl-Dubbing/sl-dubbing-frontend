@@ -304,6 +304,13 @@
         checkServer();
         fetchLiveAuth(); 
         setInterval(checkServer, 30000);
+
+        // 🚀 إزالة علامة # من الرابط إذا وجدت
+        setTimeout(() => {
+            if (window.location.hash) {
+                window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+            }
+        }, 300);
     });
 </script>
 </body>
