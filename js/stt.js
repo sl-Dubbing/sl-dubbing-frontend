@@ -1,174 +1,159 @@
-// js/stt.js — Speech to Text Logic V1.1 (Fixed API Paths)
+// shared.js — V12.0 (تم الربط بالدومين الرسمي 🚀)
+// نعتمد على الدومين الموجود في config.js
+const API_BASE = window.API_BASE || 'https://api.glotix.ai'; 
+const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
+const USER_CACHE_KEY = 'sl_user_cache';
 
-let currentMode = 'fast';
+window.API_BASE = API_BASE;
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. التعامل مع تبديل الأوضاع (سريع / دقيق)
-    const modeOptions = document.querySelectorAll('.mode-option');
-    const diarizeToggle = document.getElementById('diarizeToggle');
-
-    modeOptions.forEach(opt => {
-        opt.addEventListener('click', () => {
-            modeOptions.forEach(x => x.classList.remove('active'));
-            opt.classList.add('active');
-            currentMode = opt.dataset.mode;
-
-            // إظهار خيار كشف المتحدثين فقط في الوضع الدقيق
-            diarizeToggle.style.display = (currentMode === 'precise') ? 'flex' : 'none';
+// =================================
+// 🔌 1. تهيئة Supabase
+// =================================
+let supabaseClient = null;
+async function getSupabase() {
+    if (supabaseClient) return supabaseClient;
+    if (!window.supabase) {
+        await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+            s.onload = resolve; s.onerror = reject;
+            document.head.appendChild(s);
         });
-    });
+    }
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    return supabaseClient;
+}
 
-    // 2. تلوين الأزرار عند الضغط عليها (Toggles)
-    document.querySelectorAll('.option-toggle input').forEach(input => {
-        input.addEventListener('change', (e) => {
-            e.target.parentElement.classList.toggle('active', e.target.checked);
-        });
-    });
+// =================================
+// 🎨 2. رسم واجهة الUser
+// =================================
+function renderAuthUI(user) {
+    const authSection = document.getElementById('authSection');
+    const topBadge = document.getElementById('topAccountBadge');
 
-    // 3. زر البدء
-    document.getElementById('sttBtn').addEventListener('click', startSTT);
-});
+    if (!user) {
+        if (authSection) authSection.innerHTML = `<div style="text-align:center;padding:8px;"><a href="/login" class="btn-login-sidebar">Sign In</a></div>`;
+        if (topBadge) topBadge.innerHTML = `<a href="/login" style="color:inherit;text-decoration:none;"><i class="fas fa-sign-in-alt"></i> Login</a>`;
+        return;
+    }
 
-async function startSTT() {
-    const file = document.getElementById('mediaFile').files[0];
-    const token = localStorage.getItem('token');
-    const lang = document.getElementById('langSelect').value;
-    const translate = document.getElementById('translateChk').checked;
-    const diarize = document.getElementById('diarizeChk').checked;
+    const credits = (user.credits !== undefined) ? user.credits : "...";
+    const name = user.name || user.email?.split('@')[0] || 'User';
 
-    if (!token) return showToast("يرجى تسجيل الدخول", "error");
-    if (!file) return showToast("يرجى اختيار ملف أولاً", "error");
+    if (authSection) {
+        authSection.innerHTML = `
+            <div class="user-info-card">
+                <div class="user-name"><i class="fas fa-user-circle"></i> ${escapeHtml(name)}</div>
+                <div class="user-points"><i class="fas fa-coins"></i> ${credits} Credits</div>
+                <button id="logoutBtn" style="margin-top:10px;background:none;border:none;color:#ff3b30;cursor:pointer;font-size:0.82rem;font-weight:600;">Logout</button>
+            </div>`;
+        document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    }
+    if (topBadge) {
+        topBadge.innerHTML = `<i class="fas fa-coins" style="color:#ff9500"></i> ${credits} Credits`;
+    }
+}
 
-    const btn = document.getElementById('sttBtn');
-    const progArea = document.getElementById('progressArea');
-    const progFill = document.getElementById('progFill');
-    const statusTxt = document.getElementById('statusTxt');
-    const resultsCard = document.getElementById('resultsCard');
-    const transcriptBox = document.getElementById('transcriptBox');
-
-    btn.disabled = true;
-    progArea.style.display = 'block';
-    resultsCard.style.display = 'none';
-    progFill.style.width = '5%';
-    statusTxt.innerText = "⚡ تجهيز الرفع المباشر...";
+// =================================
+// 🚀 3. جلب البيانات من السيرفر
+// =================================
+async function checkAuth() {
+    const cached = JSON.parse(localStorage.getItem(USER_CACHE_KEY) || 'null');
+    if (cached) renderAuthUI(cached);
 
     try {
-        // الخطوة 1: الحصول على رابط الرفع (تم تصحيح المسار)
-        const urlRes = await fetch(`${window.API_BASE}/upload-url`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: file.name, content_type: file.type, size: file.size })
-        });
-        const urlData = await urlRes.json();
-        if (!urlRes.ok) throw new Error(urlData.error);
+        const supa = await getSupabase();
+        const { data: { session } } = await supa.auth.getSession();
 
-        // الخطوة 2: الرفع لـ R2
-        statusTxt.innerText = "📤 جاري رفع الملف...";
-        const xhr = new XMLHttpRequest();
-        await new Promise((resolve, reject) => {
-            xhr.open('PUT', urlData.upload_url);
-            xhr.setRequestHeader('Content-Type', file.type);
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const pct = Math.round((e.loaded / e.total) * 100);
-                    progFill.style.width = (5 + (pct * 0.4)) + "%";
-                    statusTxt.innerText = `📤 جاري الرفع (${pct}%)`;
-                }
-            };
-            xhr.onload = () => xhr.status === 200 ? resolve() : reject("فشل الرفع");
-            xhr.onerror = () => reject("خطأ شبكة");
-            xhr.send(file);
+        if (!session) {
+            localStorage.removeItem('token');
+            localStorage.removeItem(USER_CACHE_KEY);
+            renderAuthUI(null);
+            return;
+        }
+
+        localStorage.setItem('token', session.access_token);
+
+        const res = await fetch(`${API_BASE}/api/user/credits`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
 
-        // الخطوة 3: إرسال المهمة للسيرفر (تم تصحيح المسار)
-        statusTxt.innerText = "⚙️ بدء المعالجة بالذكاء الاصطناعي...";
-        const sttRes = await fetch(`${window.API_BASE}/stt`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                file_key: urlData.file_key,
-                language: lang,
-                mode: currentMode,
-                diarize: diarize,
-                translate: translate
-            })
-        });
-        const sttData = await sttRes.json();
-        if (!sttRes.ok) throw new Error(sttData.error);
-
-        // الخطوة 4: المتابعة (Polling)
-        pollStatus(sttData.job_id, token);
-
-    } catch (e) {
-        showToast(e.message, "error");
-        btn.disabled = false;
-        progArea.style.display = 'none';
-    }
-}
-
-async function pollStatus(jobId, token) {
-    const progFill = document.getElementById('progFill');
-    const statusTxt = document.getElementById('statusTxt');
-    
-    const interval = setInterval(async () => {
-        try {
-            // التصحيح هنا: تم إزالة /api
-            const res = await fetch(`${window.API_BASE}/job/${jobId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-
-            if (data.status === 'completed') {
-                clearInterval(interval);
-                showResult(data);
-                // تحديث الرصيد إذا كانت الدالة موجودة
-                if (typeof checkAuth === 'function') checkAuth(); 
-            } else if (data.status === 'failed') {
-                clearInterval(interval);
-                showToast("فشلت المعالجة: " + data.error, "error");
-                document.getElementById('sttBtn').disabled = false;
-            } else {
-                progFill.style.width = "75%";
-                statusTxt.innerText = "🎬 جاري استخراج النص... (قد يستغرق دقائق)";
+        if (res.ok) {
+            const d = await res.json();
+            if (d?.success) {
+                const userData = {
+                    id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+                    credits: d.credits
+                };
+                localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userData));
+                renderAuthUI(userData);
             }
-        } catch (e) { console.error(e); }
-    }, 4000);
-}
-
-function showResult(data) {
-    document.getElementById('progressArea').style.display = 'none';
-    document.getElementById('sttBtn').disabled = false;
-    document.getElementById('resultsCard').style.display = 'block';
-    
-    const box = document.getElementById('transcriptBox');
-    
-    // إذا كان هناك بيانات مفصلة (WhisperX)
-    if (data.segments) {
-        box.innerHTML = data.segments.map(s => `
-            <div class="segment">
-                <span class="timestamp">[${formatTime(s.start)}]</span>
-                ${s.speaker ? `<span class="speaker">المتحدث ${s.speaker}</span>` : ''}
-                <span class="text">${escapeHtml(s.text)}</span>
-            </div>
-        `).join('');
-    } else {
-        box.innerText = data.transcript || data.output_text || "لم يتم العثور على نص.";
-    }
-    
-    // إضافة زر لتحميل ملف الـ SRT إذا كان متوفراً
-    if(data.output_url) {
-        const dlBtn = document.createElement('a');
-        dlBtn.href = data.output_url;
-        dlBtn.className = 'btn';
-        dlBtn.style.marginTop = '15px';
-        dlBtn.innerHTML = '<i class="fas fa-download"></i> تحميل ملف الترجمة';
-        box.parentElement.appendChild(dlBtn);
+        }
+    } catch (e) {
+        console.warn('Auth Sync Failed:', e);
     }
 }
 
-function formatTime(seconds) {
-    const s = Math.floor(seconds);
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, '0')}`;
+// =================================
+// 📱 4. منطق القائمة الجانبية
+// =================================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    if (sidebar.classList.contains('active')) closeSidebar();
+    else openSidebar();
 }
+
+function openSidebar() {
+    document.getElementById('sidebar')?.classList.add('active');
+    document.getElementById('overlay')?.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSidebar() {
+    document.getElementById('sidebar')?.classList.remove('active');
+    document.getElementById('overlay')?.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// =================================
+// 🚪 5. Logout
+// =================================
+async function logout() {
+    const supa = await getSupabase();
+    await supa.auth.signOut();
+    localStorage.clear();
+    location.href = '/'; // 👈 تم إزالة index.html ليكون الرابط نظيفاً
+}
+
+// =================================
+// 🛠️ 6. الربط والتشغيل
+// =================================
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    const menuBtn = document.getElementById('menuBtn') || document.getElementById('menuToggle') || document.querySelector('.menu-icon');
+    if (menuBtn) menuBtn.addEventListener('click', (e) => { e.preventDefault(); toggleSidebar(); });
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+});
+
+function escapeHtml(u) { return String(u||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m])); }
+function showToast(msg, color) {
+    const t = document.getElementById('toasts');
+    if (!t) { alert(msg); return; }
+    const box = document.createElement('div');
+    box.className = 'toast';
+    box.textContent = msg;
+    box.style.background = (color === 'error') ? '#ff3b30' : '#34c759';
+    t.appendChild(box);
+    setTimeout(() => box.remove(), 4000);
+}
+
+window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;
+window.checkAuth = checkAuth;
+window.logout = logout;
