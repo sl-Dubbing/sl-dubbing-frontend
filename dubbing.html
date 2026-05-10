@@ -127,32 +127,11 @@
             .switch-container { justify-content: space-between; }
         }
     
-    /* ── Voice Clone & Samples ── */
-    .voice-section { margin-top: 30px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 30px; }
-    .voice-section h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-
-    .clone-options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 25px; }
-    @media (max-width: 700px) { .clone-options { grid-template-columns: 1fr; } }
-
-    .clone-card { border: 2px solid var(--border-color); border-radius: 16px; padding: 20px; cursor: pointer; transition: 0.2s; text-align: center; }
-    .clone-card:hover { border-color: #d1d5db; }
-    .clone-card.active { border-color: var(--accent-blue); background: #f0f7ff; }
-    .clone-card .icon { font-size: 2rem; margin-bottom: 10px; }
-    .clone-card .title { font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
-    .clone-card .desc { font-size: 0.85rem; color: var(--text-muted); }
-
-    .samples-list { display: flex; flex-wrap: wrap; gap: 12px; }
-    .sample-chip { display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: 0.2s; }
-    .sample-chip:hover { border-color: var(--accent-blue); }
-    .sample-chip.active { border-color: var(--accent-blue); background: #f0f7ff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
-    .sample-chip audio { width: 180px; height: 32px; }
-    .sample-chip .name { font-weight: 600; font-size: 0.95rem; }
-    .sample-chip .badge { font-size: 0.75rem; background: var(--accent-blue); color: white; padding: 2px 8px; border-radius: 6px; }
-
-    .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 20px; }
-    .lang-chip { padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; text-align: center; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
-    .lang-chip:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
-    .lang-chip.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+    /* ── Simple Voice Clone ── */
+    .voice-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-top: 15px; }
+    .voice-label { font-weight: 600; font-size: 0.95rem; color: var(--text-muted); }
+    .voice-select { padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-card); font-size: 0.95rem; cursor: pointer; min-width: 180px; }
+    .voice-select:focus { border-color: var(--accent-blue); outline: none; }
 </style>
 <base target="_blank">
 </head>
@@ -256,6 +235,21 @@
         Start Dubbing
     </button>
 
+
+    <!-- Simple Voice Clone -->
+    <div class="voice-row">
+        <span class="voice-label"><i class="fas fa-microphone"></i> Voice:</span>
+        <select id="voiceSource" class="voice-select" onchange="toggleSampleSelect()">
+            <option value="original">🎬 Original File Voice</option>
+            <option value="sample" selected>🎧 Sample Voice</option>
+        </select>
+        <select id="sampleSelect" class="voice-select">
+            <option value="muhammad.mp3">Muhammad</option>
+        </select>
+    </div>
+    <!-- End Simple Voice Clone -->
+
+
     <div id="progressArea" class="progress-box">
         <div style="font-weight: bold; color: #374151; display: flex; justify-content: space-between;">
             <span id="statusTxt">Initializing...</span>
@@ -284,51 +278,6 @@
     </div>
 
 </div>
-
-
-    <!-- Voice Clone Section -->
-    <div class="voice-section">
-        <h3><i class="fas fa-microphone-lines"></i> Voice Source</h3>
-
-        <div class="clone-options">
-            <div class="clone-card" id="cloneOriginal" onclick="selectCloneSource('original')">
-                <div class="icon">📁</div>
-                <div class="title">Original File</div>
-                <div class="desc">Clone voice from uploaded video/audio</div>
-            </div>
-            <div class="clone-card active" id="cloneSample" onclick="selectCloneSource('sample')">
-                <div class="icon">🎧</div>
-                <div class="title">Sample Voice</div>
-                <div class="desc">Use voice from samples folder</div>
-            </div>
-        </div>
-
-        <div id="samplesContainer">
-            <p style="color: var(--text-muted); margin-bottom: 12px; font-weight: 500;"><i class="fas fa-folder-open"></i> Available samples (auto-loaded from /samples):</p>
-            <div class="samples-list" id="samplesList">
-                <!-- Auto-populated by JS -->
-            </div>
-        </div>
-
-        <div style="margin-top: 25px;">
-            <p style="color: var(--text-muted); margin-bottom: 12px; font-weight: 500;"><i class="fas fa-globe"></i> Select target language:</p>
-            <div class="lang-grid" id="langGrid">
-                <div class="lang-chip active" data-lang="en" onclick="selectLang(this)">🇺🇸 English</div>
-                <div class="lang-chip" data-lang="es" onclick="selectLang(this)">🇪🇸 Spanish</div>
-                <div class="lang-chip" data-lang="fr" onclick="selectLang(this)">🇫🇷 French</div>
-                <div class="lang-chip" data-lang="de" onclick="selectLang(this)">🇩🇪 German</div>
-                <div class="lang-chip" data-lang="it" onclick="selectLang(this)">🇮🇹 Italian</div>
-                <div class="lang-chip" data-lang="pt" onclick="selectLang(this)">🇵🇹 Portuguese</div>
-                <div class="lang-chip" data-lang="ru" onclick="selectLang(this)">🇷🇺 Russian</div>
-                <div class="lang-chip" data-lang="tr" onclick="selectLang(this)">🇹🇷 Turkish</div>
-                <div class="lang-chip" data-lang="ar" onclick="selectLang(this)">🇸🇦 Arabic</div>
-                <div class="lang-chip" data-lang="zh" onclick="selectLang(this)">🇨🇳 Chinese</div>
-                <div class="lang-chip" data-lang="ja" onclick="selectLang(this)">🇯🇵 Japanese</div>
-                <div class="lang-chip" data-lang="ko" onclick="selectLang(this)">🇰🇷 Korean</div>
-            </div>
-        </div>
-    </div>
-    <!-- End Voice Clone -->
 
 <div id="toasts"></div>
 
@@ -466,65 +415,20 @@ window.addEventListener('load', () => {
 </script>
 
 <script>
-// ── Voice Clone System ──
-let cloneSource = 'sample'; // 'original' or 'sample'
-let selectedSample = null;
-let selectedLangCode = 'en';
-
-// Auto-load samples from /samples folder
-function loadSamples() {
-    const samplesList = document.getElementById('samplesList');
-    if (!samplesList) return;
-
-    // Scan samples folder - in production this reads directory
-    // For now, use known samples. Server endpoint can return JSON list.
-    const samples = [
-        { name: 'Muhammad', file: 'muhammad.mp3', default: true }
-    ];
-
-    samplesList.innerHTML = samples.map(s => `
-        <div class="sample-chip ${s.default ? 'active' : ''}" data-file="${s.file}" onclick="selectSample(this)">
-            <span class="name">${s.name}</span>
-            <span class="badge">Sample</span>
-            <audio controls src="samples/${s.file}"></audio>
-        </div>
-    `).join('');
-
-    if (samples.length > 0) selectedSample = samples[0].file;
+function toggleSampleSelect() {
+    const source = document.getElementById('voiceSource').value;
+    const sampleSelect = document.getElementById('sampleSelect');
+    sampleSelect.style.display = source === 'sample' ? 'block' : 'none';
 }
 
-function selectCloneSource(source) {
-    cloneSource = source;
-    document.querySelectorAll('.clone-card').forEach(c => c.classList.remove('active'));
-    document.getElementById('clone' + (source === 'original' ? 'Original' : 'Sample')).classList.add('active');
-
-    const container = document.getElementById('samplesContainer');
-    if (container) container.style.display = source === 'sample' ? 'block' : 'none';
-}
-
-function selectSample(chip) {
-    document.querySelectorAll('.sample-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    selectedSample = chip.dataset.file;
-}
-
-function selectLang(chip) {
-    document.querySelectorAll('.lang-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    selectedLangCode = chip.dataset.lang;
-}
-
-// Expose for dubbing.js / tts.js
 window.getVoiceConfig = function() {
     return {
-        source: cloneSource,
-        sample: selectedSample,
-        lang: selectedLangCode
+        source: document.getElementById('voiceSource').value,
+        sample: document.getElementById('sampleSelect')?.value
     };
 };
 
-// Initialize
-document.addEventListener('DOMContentLoaded', loadSamples);
+document.addEventListener('DOMContentLoaded', toggleSampleSelect);
 </script>
 </body>
 </html>
