@@ -1,8 +1,9 @@
+// js/tts.js — Fixed API Connection & UI Arrows
 document.addEventListener('DOMContentLoaded', () => {
-    let currentLangCode = 'ar-sa';
+    let currentLangCode = 'en-us';
     let currentAudio = null;
 
-    // --- بناء قائمة اللغات المنسدلة ---
+    // --- Dropdown Menu Build ---
     const menuEl = document.getElementById('langMenu');
     if (menuEl && window.LANG_MENU) {
         window.LANG_MENU.forEach(item => {
@@ -10,7 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
             li.style.padding = '10px 15px'; li.style.cursor = 'pointer';
             if (item.hasSub) {
                 li.className = 'has-submenu';
-                li.innerHTML = `<span>${item.icon} ${item.name}</span> <i class="fas fa-chevron-left"></i>`;
+                // ✅ تم إصلاح السهم ليتجه لليمين (English UI)
+                li.innerHTML = `<span>${item.icon} ${item.name}</span> <i class="fas fa-chevron-right" style="opacity: 0.5; font-size: 0.8rem;"></i>`;
                 const subUl = document.createElement('ul');
                 subUl.className = 'submenu';
                 item.items.forEach(sub => {
@@ -31,14 +33,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function selectLang(code, name, flag) {
         currentLangCode = code;
-        document.getElementById('langSelected').innerHTML = `<div><span>${flag}</span> <span style="margin-right:8px;">${name}</span></div> <i class="fas fa-chevron-down"></i>`;
+        document.getElementById('langSelected').innerHTML = `<div><span>${flag}</span> <span style="margin-left:8px;">${name}</span></div> <i class="fas fa-chevron-down"></i>`;
         document.getElementById('langDropdown').classList.remove('open');
     }
 
     document.getElementById('langSelected').onclick = (e) => { e.stopPropagation(); document.getElementById('langDropdown').classList.toggle('open'); };
     document.addEventListener('click', () => document.getElementById('langDropdown').classList.remove('open'));
 
-    // --- ✨ التدقيق الذكي (AI) ---
+    // --- ✨ AI Proofread (Using Official API) ---
     document.getElementById('ttsFixBtn').onclick = async () => {
         const text = document.getElementById('ttsInput').value.trim();
         if(!text) return;
@@ -47,21 +49,25 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         
         try {
-            const res = await fetch('https://duty-grow-pic-becomes.trycloudflare.com/improve-text', {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${window.API_BASE}/api/improve-text`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
                 body: JSON.stringify({ text: text, lang: currentLangCode.split('-')[0] })
             });
             const data = await res.json();
-            if(data.status === 'success') {
-                document.getElementById('ttsInput').value = data.fixed_text;
-                if(window.showToast) showToast('✨ Text improved and corrected', 'success');
+            if(data.status === 'success' || data.fixed_text) {
+                document.getElementById('ttsInput').value = data.fixed_text || data.text;
+                if(window.showToast) window.showToast('✨ Text improved', 'success');
             }
         } catch (e) { console.error(e); }
         finally { btn.innerHTML = oldIcon; }
     };
 
-    // --- النطق والتنزيل ---
+    // --- Audio Processing (Using tts-quick.js) ---
     async function processTTS(isDownload = false) {
         const input = document.getElementById('ttsInput');
         const textToRead = isDownload ? input.value.trim() : (input.value.substring(input.selectionStart).trim() || input.value.trim());
@@ -72,40 +78,39 @@ document.addEventListener('DOMContentLoaded', () => {
         const oldHtml = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         
-        const mode = document.querySelector('.mode-option.active').dataset.mode;
+        const speedVal = document.getElementById('speedSlider').value;
+        const rate = speedVal == 0 ? '+0%' : (speedVal > 0 ? `+${speedVal}%` : `${speedVal}%`);
 
         try {
-            const res = await fetch('https://duty-grow-pic-becomes.trycloudflare.com/text-to-speech', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    text: textToRead, lang: currentLangCode,
-                    voice_config: window.getVoiceConfig ? window.getVoiceConfig() : { source: 'original' }, 
-                    speed: document.getElementById('speedSlider').value,
-                    mode: mode
-                })
+            // ✅ الاعتماد على quickTTS للاتصال الآمن بالسيرفر
+            if (typeof window.quickTTS !== 'function') throw new Error("TTS Engine not loaded.");
+            
+            const result = await window.quickTTS(textToRead, {
+                lang: currentLangCode,
+                rate: rate
             });
-            const data = await res.json();
-            if(data.status === 'success') {
-                if(isDownload) {
-                    const a = document.createElement('a'); a.href = data.audio_url; a.download = 'voice.mp3'; a.click();
-                } else {
-                    if(currentAudio) currentAudio.pause();
-                    currentAudio = new Audio(data.audio_url);
-                    document.getElementById('ttsPlayBtn').style.display = 'none';
-                    document.getElementById('ttsStopBtn').style.display = 'flex';
-                    currentAudio.play();
-                    currentAudio.onended = () => { document.getElementById('ttsStopBtn').onclick(); };
-                }
+
+            if(isDownload) {
+                const a = document.createElement('a'); a.href = result.url; a.download = 'voice.mp3'; a.click();
+            } else {
+                if(currentAudio) currentAudio.pause();
+                currentAudio = result.audio;
+                document.getElementById('ttsPlayBtn').style.display = 'none';
+                document.getElementById('ttsStopBtn').style.display = 'flex';
+                currentAudio.play();
+                currentAudio.onended = () => { document.getElementById('ttsStopBtn').onclick(); };
             }
-        } finally { btn.innerHTML = oldHtml; }
+        } catch(e) {
+            window.showToast?.(e.message, 'error');
+        } finally { 
+            btn.innerHTML = oldHtml; 
+        }
     }
 
     document.getElementById('ttsPlayBtn').onclick = () => processTTS(false);
     document.getElementById('ttsDownloadBtn').onclick = () => processTTS(true);
     document.getElementById('ttsStopBtn').onclick = () => { if(currentAudio) currentAudio.pause(); document.getElementById('ttsStopBtn').style.display = 'none'; document.getElementById('ttsPlayBtn').style.display = 'flex'; };
 
-    // تبديل أوضاع الجودة
     document.querySelectorAll('.mode-option').forEach(opt => {
         opt.onclick = () => {
             document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
@@ -113,7 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
-    // عداد الحروف والسرعة
     document.getElementById('ttsInput').oninput = (e) => { document.getElementById('charCount').innerText = e.target.value.length; };
     document.getElementById('speedSlider').oninput = (e) => {
         const v = e.target.value;
