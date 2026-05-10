@@ -1,6 +1,7 @@
-// shared.js — V12.0 (تم الربط بالدومين الرسمي 🚀)
-// نعتمد على الدومين الموجود في config.js
-const API_BASE = window.API_BASE || 'https://api.glotix.ai'; 
+// shared.js — V13.0 (New Light Theme & Railway Backend)
+
+// 1. توجيه الـ API إلى Railway لتخطي مشكلة CORS وجلب الرصيد
+const API_BASE = window.API_BASE || 'https://web-production-14a1.up.railway.app'; 
 const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
 const USER_CACHE_KEY = 'sl_user_cache';
@@ -26,70 +27,50 @@ async function getSupabase() {
 }
 
 // =================================
-// 🎨 2. رسم واجهة المستخدم
-// =================================
-function renderAuthUI(user) {
-    const authSection = document.getElementById('authSection');
-    const topBadge = document.getElementById('topAccountBadge');
-
-    if (!user) {
-        if (authSection) authSection.innerHTML = `<div style="text-align:center;padding:8px;"><a href="/login" class="btn-login-sidebar">تسجيل الدخول</a></div>`;
-        if (topBadge) topBadge.innerHTML = `<a href="/login" style="color:inherit;text-decoration:none;"><i class="fas fa-sign-in-alt"></i> دخول</a>`;
-        return;
-    }
-
-    const credits = (user.credits !== undefined) ? user.credits : "...";
-    const name = user.name || user.email?.split('@')[0] || 'مستخدم';
-
-    if (authSection) {
-        authSection.innerHTML = `
-            <div class="user-info-card">
-                <div class="user-name"><i class="fas fa-user-circle"></i> ${escapeHtml(name)}</div>
-                <div class="user-points"><i class="fas fa-coins"></i> ${credits} نقطة</div>
-                <button id="logoutBtn" style="margin-top:10px;background:none;border:none;color:#ff3b30;cursor:pointer;font-size:0.82rem;font-weight:600;">تسجيل الخروج</button>
-            </div>`;
-        document.getElementById('logoutBtn')?.addEventListener('click', logout);
-    }
-    if (topBadge) {
-        topBadge.innerHTML = `<i class="fas fa-coins" style="color:#ff9500"></i> ${credits} نقطة`;
-    }
-}
-
-// =================================
-// 🚀 3. جلب البيانات من السيرفر
+// 🚀 2. جلب البيانات والمزامنة (Auth Sync)
 // =================================
 async function checkAuth() {
+    // 1. تحديث الواجهة فوراً من الكاش لتجربة مستخدم سريعة
     const cached = JSON.parse(localStorage.getItem(USER_CACHE_KEY) || 'null');
-    if (cached) renderAuthUI(cached);
+    if (cached && typeof window.updateDropdownUI === 'function') {
+        window.updateDropdownUI(cached);
+    }
 
     try {
         const supa = await getSupabase();
         const { data: { session } } = await supa.auth.getSession();
 
+        // إذا لم يكن مسجلاً للدخول
         if (!session) {
             localStorage.removeItem('token');
             localStorage.removeItem(USER_CACHE_KEY);
-            renderAuthUI(null);
+            if (typeof window.updateDropdownUI === 'function') window.updateDropdownUI(null);
             return;
         }
 
         localStorage.setItem('token', session.access_token);
 
+        // جلب الرصيد من السيرفر
         const res = await fetch(`${API_BASE}/api/user/credits`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
 
         if (res.ok) {
             const d = await res.json();
-            if (d?.success) {
-                const userData = {
-                    id: session.user.id,
-                    email: session.user.email,
-                    name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-                    credits: d.credits
-                };
-                localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userData));
-                renderAuthUI(userData);
+            // تحديث الكاش بالبيانات الجديدة (الرصيد الحي)
+            const userData = {
+                id: session.user.id,
+                email: session.user.email,
+                name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+                avatar: session.user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
+                credits: d.success ? d.credits : (d.credits !== undefined ? d.credits : '...')
+            };
+            
+            localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userData));
+            
+            // إرسال البيانات للقائمة المنسدلة الجديدة
+            if (typeof window.updateDropdownUI === 'function') {
+                window.updateDropdownUI(userData);
             }
         }
     } catch (e) {
@@ -98,64 +79,57 @@ async function checkAuth() {
 }
 
 // =================================
-// 📱 4. منطق القائمة الجانبية
-// =================================
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-    if (sidebar.classList.contains('active')) closeSidebar();
-    else openSidebar();
-}
-
-function openSidebar() {
-    document.getElementById('sidebar')?.classList.add('active');
-    document.getElementById('overlay')?.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeSidebar() {
-    document.getElementById('sidebar')?.classList.remove('active');
-    document.getElementById('overlay')?.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-// =================================
-// 🚪 5. تسجيل الخروج
+// 🚪 3. تسجيل الخروج
 // =================================
 async function logout() {
     const supa = await getSupabase();
     await supa.auth.signOut();
     localStorage.clear();
-    location.href = '/'; // 👈 تم إزالة index.html ليكون الرابط نظيفاً
+    location.replace('/'); // توجيه نظيف للرئيسية
 }
 
 // =================================
-// 🛠️ 6. الربط والتشغيل
+// 🛠️ 4. أدوات مساعدة (Utils)
 // =================================
-document.addEventListener('DOMContentLoaded', () => {
-    checkAuth();
-    if (!window.__SKIP_MENU_BIND__) {
-        const menuBtn = document.getElementById('menuBtn') || document.getElementById('menuToggle') || document.querySelector('.menu-icon');
-        if (menuBtn) menuBtn.addEventListener('click', (e) => { e.preventDefault(); toggleSidebar(); });
-    }
-    const overlay = document.getElementById('overlay');
-    if (overlay) overlay.addEventListener('click', closeSidebar);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
-});
+function escapeHtml(u) { 
+    return String(u||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m])); 
+}
 
-function escapeHtml(u) { return String(u||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m])); }
-function showToast(msg, color) {
+function showToast(msg, type) {
     const t = document.getElementById('toasts');
     if (!t) { alert(msg); return; }
     const box = document.createElement('div');
-    box.className = 'toast';
+    
+    // استخدام كلاسات الـ CSS الجديدة (success أو error)
+    box.className = 'toast ' + (type === 'error' ? 'error' : 'success');
     box.textContent = msg;
-    box.style.background = (color === 'error') ? '#ff3b30' : '#34c759';
     t.appendChild(box);
+    
     setTimeout(() => box.remove(), 4000);
 }
 
-window.toggleSidebar = toggleSidebar;
-window.closeSidebar = closeSidebar;
+// =================================
+// ⚡ 5. بدء التشغيل
+// =================================
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    
+    // مراقبة أي تغيير في الجلسة بالخلفية
+    getSupabase().then(supa => {
+        supa.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                checkAuth(); // إعادة جلب الرصيد عند تجديد الدخول
+            } else if (event === 'SIGNED_OUT') {
+                localStorage.removeItem('token');
+                localStorage.removeItem(USER_CACHE_KEY);
+                if (typeof window.updateDropdownUI === 'function') window.updateDropdownUI(null);
+            }
+        });
+    });
+});
+
+// تصدير الدوال للاستخدام في باقي الملفات
 window.checkAuth = checkAuth;
 window.logout = logout;
+window.escapeHtml = escapeHtml;
+window.showToast = showToast;
