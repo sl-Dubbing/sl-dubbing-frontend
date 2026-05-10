@@ -1,7 +1,8 @@
-// js/tts-quick.js — V1.1 (Centralized API Base & Streaming)
+// js/tts-quick.js — V1.2 (Centralized API Base, Streaming & UI Aligned)
 
 async function quickTTS(text, options = {}) {
-    const { lang = 'ar', edge_voice = '', translate = true, rate = '+0%', pitch = '+0Hz' } = options;
+    // تم تغيير اللغة الافتراضية إلى الإنجليزية لتطابق واجهة الموقع
+    const { lang = 'en-us', edge_voice = '', translate = true, rate = '+0%', pitch = '+0Hz' } = options;
     const token = localStorage.getItem('token');
     const headers = { 'Content-Type': 'application/json' };
     
@@ -10,8 +11,11 @@ async function quickTTS(text, options = {}) {
 
     const t0 = performance.now();
     
-    // استخدام window.API_BASE الموحد من shared.js (والذي ينتهي بـ /api)
-    const response = await fetch(`${window.API_BASE}/tts/quick`, {
+    // بناء رابط الـ API بذكاء لمنع مشكلة تكرار علامة السلاش (//)
+    let apiEndpoint = `${window.API_BASE}/api/tts/quick`;
+    apiEndpoint = apiEndpoint.replace(/([^:]\/)\/+/g, "$1"); // تنظيف الرابط
+
+    const response = await fetch(apiEndpoint, {
         method: 'POST', 
         headers,
         body: JSON.stringify({ text, lang, edge_voice, translate, rate, pitch })
@@ -25,8 +29,8 @@ async function quickTTS(text, options = {}) {
     const ttfb = performance.now() - t0;
     const remainingCredits = parseInt(response.headers.get('X-Remaining-Credits') || '0');
 
-    // تحديث الرصيد في الواجهة فوراً إذا كانت الدالة موجودة
-    if (typeof checkAuth === 'function') checkAuth();
+    // تحديث الرصيد في الواجهة فوراً إذا كانت الدالة موجودة (عبر shared.js)
+    if (typeof window.checkAuth === 'function') window.checkAuth();
 
     // إذا كان المتصفح لا يدعم بث MP3 المباشر (مثل بعض متصفحات iOS القديمة)
     if (typeof MediaSource === 'undefined' || !MediaSource.isTypeSupported('audio/mpeg')) {
