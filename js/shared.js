@@ -1,4 +1,4 @@
-// js/shared.js - V23 (Implicit Auth Fixed)
+// js/shared.js - V24 (Bulletproof Auth & Race Condition Fixed)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -10,7 +10,6 @@ let supabaseClient = null;
 function getSupabase() {
     if (supabaseClient) return supabaseClient;
     if (window.supabase) {
-        // ✅ التعديل هنا: إضافة Implicit Flow ليتعرف على الرابط القادم من Google
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             auth: { flowType: 'implicit' }
         });
@@ -71,9 +70,9 @@ window.checkAuth = async function() {
         const supa = getSupabase();
         if (!supa) return;
 
-        const { data: { session } } = await supa.auth.getSession();
+        const { data: { session }, error } = await supa.auth.getSession();
 
-        if (!session) {
+        if (!session || error) {
             localStorage.removeItem('token');
             localStorage.removeItem('sl_user_cache');
             window.updateDropdownUI(null);
@@ -82,27 +81,29 @@ window.checkAuth = async function() {
 
         localStorage.setItem('token', session.access_token);
 
-        const res = await fetch(`${API_BASE}/api/user/credits`, {
-            headers: { 'Authorization': `Bearer ${session.access_token}` }
-        });
-
-        if (res.ok) {
-            const d = await res.json();
-            const userData = {
-                id:      session.user.id,
-                email:   session.user.email,
-                name:    session.user.user_metadata?.full_name ||
-                         session.user.email?.split('@')[0] || 'User',
-                avatar:  session.user.user_metadata?.avatar_url ||
-                         session.user.user_metadata?.picture ||
-                         `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                             session.user.email?.split('@')[0] || 'U'
-                         )}&background=0f0f10&color=fff&size=64`,
-                credits: d.success ? d.credits : '...'
-            };
-            localStorage.setItem('sl_user_cache', JSON.stringify(userData));
-            window.updateDropdownUI(userData);
+        let userCredits = '...';
+        try {
+            const res = await fetch(`${API_BASE}/api/user/credits`, {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+            if (res.ok) {
+                const d = await res.json();
+                if (d.success) userCredits = d.credits;
+            }
+        } catch(e) {
+            console.warn("Credits fetch failed, ignoring.");
         }
+
+        const userData = {
+            id:      session.user.id,
+            email:   session.user.email,
+            name:    session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+            avatar:  session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.email?.split('@')[0] || 'U')}&background=0f0f10&color=fff&size=64`,
+            credits: userCredits
+        };
+        localStorage.setItem('sl_user_cache', JSON.stringify(userData));
+        window.updateDropdownUI(userData);
+
     } catch(e) {
         console.error('Auth sync error:', e);
     }
@@ -111,31 +112,20 @@ window.checkAuth = async function() {
 // ── 4. Global Event Listeners ──
 document.addEventListener('DOMContentLoaded', () => {
 
-    // PKCE Flow — code في الـ URL query string
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('code')) {
-        window.history.replaceState(null, '', window.location.pathname);
-        setTimeout(() => window.checkAuth(), 1000);
-        return;
-    }
-
-    // Implicit Flow — access_token في الـ hash
+    const supa = getSupabase();
     const hash = window.location.hash;
-    if (hash.includes('access_token')) {
-        const supa = getSupabase();
-        if (supa) {
-            supa.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_IN' && session) {
-                    window.history.replaceState(null, '', window.location.pathname);
-                    window.checkAuth();
-                }
-            });
-        }
-        return;
-    }
+    const search = window.location.search;
 
-    if (hash) {
+    // ✅ الحل الجذري: التقاط التوكن وتحديث الواجهة بالقوة دون انتظار الإشارات
+    if (hash.includes('access_token') || search.includes('code=')) {
         window.history.replaceState(null, '', window.location.pathname);
+        // نعطي Supabase ثانية واحدة لمعالجة الرابط، ثم نجلب الجلسة
+        setTimeout(() => {
+            window.checkAuth();
+        }, 800);
+    } else {
+        // تحميل عادي للصفحة
+        window.checkAuth();
     }
 
     // Dropdown Toggle
@@ -155,31 +145,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Logout
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-        const supa = getSupabase();
         if (supa) await supa.auth.signOut();
         localStorage.clear();
         window.location.replace('/');
     });
 
-    // Start
-    window.checkAuth();
+    // Start Server Check
     window.checkServer();
     setInterval(window.checkServer, 300000);
 
-    // Auth State Changes
-    setTimeout(() => {
-        const supa = getSupabase();
-        if (!supa) return;
+    // Global Auth Listener (كمنظومة أمان إضافية)
+    if (supa) {
         supa.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                window.checkAuth();
-            } else if (event === 'SIGNED_OUT') {
+            if (event === 'SIGNED_OUT') {
                 localStorage.removeItem('token');
                 localStorage.removeItem('sl_user_cache');
                 window.updateDropdownUI(null);
             }
         });
-    }, 300);
+    }
 });
 
 // ── 5. Utils ──
