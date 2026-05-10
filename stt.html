@@ -109,4 +109,202 @@
     .transcript-box .speaker { display: inline-block; background: #e0e7ff; color: #4f46e5; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; margin-right: 12px; }
     
     .download-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
-    .download-row .btn { flex: 1; min-width: 150px; background: var(--bg-page); border: 1px solid var(--border-color); padding: 12px
+    .download-row .btn { flex: 1; min-width: 150px; background: var(--bg-page); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center; text-decoration: none; color: var(--text-main); font-weight: 600; transition: 0.2s; }
+    .download-row .btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header class="top-bar">
+    <a class="logo" href="/">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 3C8.82 3 3 8.82 3 16C3 23.18 8.82 29 16 29C23.18 29 29 23.18 29 16V14H16V19H23.2C22.1 22.1 19.3 24 16 24C11.58 24 8 20.42 8 16C8 11.58 11.58 8 16 8C18.4 8 20.5 9.06 21.8 10.74L25.4 7.14C22.9 4.6 19.6 3 16 3Z" fill="#0f0f10"/>
+            <path d="M29 16C29 23.18 23.18 29 16 29V24C19.3 24 22.1 22.1 23.2 19H29V16Z" fill="#007aff"/>
+        </svg>
+        Glotix
+    </a>
+    
+    <div class="user-zone">
+        <button class="menu-btn" id="menuBtn">
+            <i class="fas fa-bars"></i> Menu
+        </button>
+
+        <div class="dropdown-panel" id="mainMenuDropdown">
+            <div class="auth-buttons" id="guestMenu">
+                <a href="/login" class="btn-login">Login</a>
+                <a href="/signup" class="btn-signup">Sign up</a>
+            </div>
+
+            <div class="logged-in-box" id="userMenu">
+                <div class="user-name">
+                    <img id="menuAvatar" class="user-avatar" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="User"> 
+                    <span id="menuUserName">My Account</span>
+                </div>
+                <div class="balance-text"><i class="fas fa-coins"></i> <span id="menuCredits">...</span> Credits</div>
+            </div>
+
+            <hr class="menu-divider">
+            <a href="/dubbing"><i class="fas fa-film"></i> Dubbing Studio</a>
+            <a href="/tts"><i class="fas fa-microphone"></i> Text to Speech</a>
+            <a href="/stt"><i class="fas fa-file-alt"></i> Speech to Text</a>
+            <hr class="menu-divider">
+            <a href="/history"><i class="fas fa-folder-open"></i> My Files (History)</a>
+            <button class="menu-item logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <header class="main-header">
+      <h1>Speech to Text</h1>
+      <p>Professional transcription in 99+ languages — with timestamps and speaker diarization.</p>
+    </header>
+
+    <div class="workspace-grid">
+      <div class="tools-container">
+        
+        <section class="card">
+          <h3><i class="fas fa-bolt"></i> 1. Select Mode</h3>
+          <div class="mode-switcher">
+            <button class="mode-option active" id="modeFast" data-mode="fast" type="button">
+              <div class="mode-title"><i class="fas fa-bolt"></i><span>Fast</span><span class="mode-badge badge-fast">⚡ Whisper Turbo</span></div>
+              <div class="mode-desc">10x faster than real-time</div>
+            </button>
+            <button class="mode-option" id="modePrecise" data-mode="precise" type="button">
+              <div class="mode-title"><i class="fas fa-gem"></i><span>Precise</span><span class="mode-badge badge-precise">🎯 WhisperX</span></div>
+              <div class="mode-desc">Word-level accuracy + Speaker Diarization</div>
+            </button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3><i class="fas fa-upload"></i> 2. Upload File</h3>
+          <div class="upload-wrapper">
+            <input type="file" id="mediaFile" accept="audio/*,video/*" style="display:none;" onchange="if(this.files[0]){var s=(this.files[0].size/1024/1024).toFixed(1);document.getElementById('fileTxt').innerHTML='✓ '+this.files[0].name+' ('+s+'MB)';document.getElementById('fileTxt').style.color='#10b981';}">
+            <button class="btn-secondary" id="chooseMediaBtn" type="button" onclick="document.getElementById('mediaFile').click()">
+              <i class="fas fa-file-audio" style="margin-right: 8px;"></i> Choose Audio or Video
+            </button>
+            <p id="fileTxt" class="file-info">No file selected yet</p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3><i class="fas fa-globe"></i> 3. Language & Settings</h3>
+          <select id="langSelect" class="styled-select">
+            <option value="auto" selected>🌍 Auto Detect</option>
+            <option value="ar">🇸🇦 Arabic</option>
+            <option value="en">🇺🇸 English</option>
+            <option value="fr">🇫🇷 French</option>
+            <option value="es">🇪🇸 Spanish</option>
+            <option value="tr">🇹🇷 Turkish</option>
+          </select>
+
+          <div class="options-row">
+            <label class="option-toggle" id="translateToggle">
+              <input type="checkbox" id="translateChk">
+              <i class="fas fa-language"></i>
+              <span>Translate to English</span>
+            </label>
+            <label class="option-toggle" id="diarizeToggle" style="display:none;">
+              <input type="checkbox" id="diarizeChk">
+              <i class="fas fa-users"></i>
+              <span>Speaker Diarization</span>
+            </label>
+          </div>
+        </section>
+
+        <button id="sttBtn" class="btn-primary-action" type="button">
+          <i class="fas fa-file-alt" style="margin-right: 8px;"></i> Start Transcription
+        </button>
+      </div>
+
+      <div class="results-container">
+        
+        <section class="card" id="progressArea" style="display:none;">
+          <h3><i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i> Processing...</h3>
+          <p id="statusTxt">Waiting in queue</p>
+          <div class="progress-bar"><div id="progFill" class="prog-fill"></div></div>
+        </section>
+
+        <section class="card" id="resultsCard" style="display:none;">
+          <h3 style="color: var(--success);"><i class="fas fa-check-circle" style="margin-right: 10px;"></i> Result</h3>
+          <div id="metaInfo" style="font-size:0.85rem;color:var(--text-muted);margin-bottom:15px;font-weight:500;"></div>
+          <div class="transcript-box" id="transcriptBox"></div>
+          <div class="download-row" id="downloadRow"></div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+    const BE = 'https://api.glotix.ai';
+    const SUPABASE_URL = "https://ckjkkxrlgisjdolwddfg.supabase.co"; 
+    const SUPABASE_KEY = "sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW"; 
+    
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Dropdown Logic
+    const menuBtn = document.getElementById('menuBtn');
+    const dropdownMenu = document.getElementById('mainMenuDropdown');
+    menuBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('active'); });
+    document.addEventListener('click', (e) => { if (!dropdownMenu.contains(e.target) && !menuBtn.contains(e.target)) { dropdownMenu.classList.remove('active'); } });
+
+    // UI Auth Update
+    function updateDropdownUI(user) {
+        const guestMenu = document.getElementById('guestMenu');
+        const userMenu = document.getElementById('userMenu');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const menuUserName = document.getElementById('menuUserName');
+        const menuCredits = document.getElementById('menuCredits');
+        const menuAvatar = document.getElementById('menuAvatar');
+
+        if (user && user.id) {
+            guestMenu.style.display = 'none';
+            userMenu.style.display = 'block';
+            logoutBtn.style.display = 'flex';
+            menuUserName.textContent = user.name || 'My Account';
+            menuCredits.textContent = user.credits !== undefined ? user.credits : '...';
+            if (user.avatar) menuAvatar.src = user.avatar;
+        } else {
+            guestMenu.style.display = 'flex';
+            userMenu.style.display = 'none';
+            logoutBtn.style.display = 'none'; 
+        }
+    }
+
+    async function fetchLiveAuth() {
+        const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
+        updateDropdownUI(cachedUser);
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) { localStorage.removeItem('token'); localStorage.removeItem('sl_user_cache'); updateDropdownUI(null); return; }
+            localStorage.setItem('token', session.access_token);
+            const res = await fetch(`${BE}/api/user/credits`, { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+            if (res.ok) {
+                const d = await res.json();
+                const userData = { id: session.user.id, email: session.user.email, name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0], avatar: session.user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y', credits: d.success ? d.credits : '...' };
+                localStorage.setItem('sl_user_cache', JSON.stringify(userData));
+                updateDropdownUI(userData);
+            }
+        } catch(e) { console.error("Auth sync error:", e); }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await supabaseClient.auth.signOut();
+        localStorage.removeItem('token'); localStorage.removeItem('sl_user_cache');
+        window.location.reload();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => { fetchLiveAuth(); });
+</script>
+
+<script src="js/config.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/stt.js"></script>
+</body>
+</html>
