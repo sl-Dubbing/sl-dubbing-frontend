@@ -1,6 +1,6 @@
-// js/shared.js - V19 (Final with Robust Hash Handling)
+// js/shared.js - V20 (Final & Polished)
 
-const API_BASE    = window.APP_CONFIG?.API_BASE    || 'https://api.glotix.ai';
+const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
 const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjU0OTUsImV4cCI6MjA5MzA0MTQ5NX0.F-4TbmO6_7plPm8NBr_6djCv6gtEPpWFw9J7m8vTs6M';
 
@@ -109,31 +109,23 @@ window.checkAuth = async function() {
 // ── 4. Global Event Listeners ──
 document.addEventListener('DOMContentLoaded', () => {
 
-    // اكتشاف العودة من Google OAuth أو رابط الإيميل
-    const hash = window.location.hash;
-    
-    // الحل المحدث ✅: التحقق المزدوج من إنشاء الجلسة قبل تنظيف الرابط
-    if (hash.includes('access_token') || hash.includes('token_type')) {
-        setTimeout(async () => {
-            const supa = getSupabase();
-            if (supa) {
-                const { data } = await supa.auth.getSession();
-                if (data?.session) {
+    // ✅ أول شيء — معالجة رابط تسجيل الدخول قبل أي كود آخر
+    const initialHash = window.location.hash;
+    if (initialHash.includes('access_token') || initialHash.includes('token_type')) {
+        const supa = getSupabase();
+        if (supa) {
+            supa.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN' && session) {
                     window.history.replaceState(null, '', window.location.pathname);
                     window.checkAuth();
-                    return;
                 }
-            }
-            // إذا لم تنجح بعد ثانية، جرب مرة أخرى كخطة بديلة
-            setTimeout(() => {
-                window.history.replaceState(null, '', window.location.pathname);
-                window.checkAuth();
-            }, 1500);
-        }, 1000);
-        return;
+            });
+        }
+        return; // ← مهم جداً — إيقاف التنفيذ هنا لعدم حدوث تعارض
     }
-    
-    if (hash) {
+
+    // تنظيف أي Hash آخر لا يخص التوكن
+    if (initialHash) {
         window.history.replaceState(null, '', window.location.pathname);
     }
 
@@ -163,7 +155,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start
     window.checkAuth();
     window.checkServer();
-    setInterval(window.checkServer, 300000);
+    
+    // ✅ تجنب خطأ 429 بجعل الفحص كل 5 دقائق
+    setInterval(window.checkServer, 300000); 
 
     // Auth State Changes
     setTimeout(() => {
