@@ -184,5 +184,6 @@ window.escapeHtml = function(u) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[m]));
 };
- // في نهاية ملف shared.js
+
+// ✅ أضف هذا السطر هنا
 window._supabaseClient = getSupabase();
