@@ -1,44 +1,141 @@
-/* البطاقات */
+/* components.css - مكونات إضافية (macOS Light Style) */
+
+/* ══════════════════════════════════════════
+   بطاقات الإحصائيات
+   ══════════════════════════════════════════ */
 .stat-card {
-    background: var(--bg-card);
+    background: var(--bg-vibrant-strong);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
     padding: 1.5rem;
-    border-radius: 20px;
-    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-default);
     transition: var(--transition);
+    box-shadow: var(--shadow-md);
 }
 
 .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
 }
 
-/* الأزرار */
+/* ══════════════════════════════════════════
+   أزرار التحكم - macOS Style
+   ══════════════════════════════════════════ */
 .control-btn {
-    background: var(--bg-hover);
-    border: none;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
     color: var(--text-primary);
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: var(--transition);
+    font-size: 0.85rem;
 }
 
-/* عناصر الترجمة */
+.control-btn:hover {
+    background: white;
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ══════════════════════════════════════════
+   عناصر الترجمة / الـ Subtitles
+   ══════════════════════════════════════════ */
 .subtitle-item {
-    background: var(--bg-dark);
-    padding: 1rem;
-    border-radius: 12px;
-    margin-bottom: 0.75rem;
+    background: var(--bg-tertiary);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
     border-right: 3px solid transparent;
     cursor: pointer;
     transition: var(--transition);
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.subtitle-item:hover {
+    background: var(--accent-soft);
+    color: var(--text-primary);
 }
 
 .subtitle-item.active {
-    background: rgba(99, 102, 241, 0.2);
-    border-right-color: var(--primary);
+    background: var(--accent-soft);
+    border-right-color: var(--accent);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* ══════════════════════════════════════════
+   أيقونات ملونة ناعمة (macOS Squircle Icons)
+   ══════════════════════════════════════════ */
+.icon-blue {
+    background: var(--icon-bg-blue);
+    color: white;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    box-shadow: 0 2px 6px rgba(0,122,255,0.3);
+    flex-shrink: 0;
+}
+
+.icon-purple {
+    background: var(--icon-bg-purple);
+    color: white;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    box-shadow: 0 2px 6px rgba(88,86,214,0.3);
+    flex-shrink: 0;
+}
+
+.icon-green {
+    background: var(--icon-bg-green);
+    color: white;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    box-shadow: 0 2px 6px rgba(48,209,88,0.3);
+    flex-shrink: 0;
+}
+
+.icon-orange {
+    background: var(--icon-bg-orange);
+    color: white;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    box-shadow: 0 2px 6px rgba(255,149,0,0.3);
+    flex-shrink: 0;
+}
+
+.icon-pink {
+    background: var(--icon-bg-pink);
+    color: white;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    box-shadow: 0 2px 6px rgba(255,45,85,0.3);
+    flex-shrink: 0;
 }
