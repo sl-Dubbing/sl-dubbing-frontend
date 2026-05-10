@@ -7,7 +7,8 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    
     <script src="js/config.js"></script>
 
     <style>
@@ -171,10 +172,7 @@
     function getSupabase() {
         if (supabaseClient) return supabaseClient;
         const key = getSupabaseKey();
-        if (!key) {
-            showToast('Configuration error: Supabase key not loaded. Please refresh.', 'error');
-            throw new Error('Supabase key not configured');
-        }
+        if (!key) throw new Error('Supabase key not configured');
         supabaseClient = window.supabase.createClient(SUPABASE_URL, key);
         return supabaseClient;
     }
@@ -185,8 +183,8 @@
             const { data, error } = await supa.auth.getSession();
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
-                // توجيه إجباري للرئيسية
-                window.location.replace('/'); 
+                // التوجيه للرئيسية بدلاً من الدبلجة
+                window.location.href = '/'; 
             }
         } catch (e) {}
     }
@@ -194,13 +192,13 @@
     async function signInWithGoogle() {
         try {
             const supa = getSupabase();
-            // التوجيه للرئيسية بدلاً من الدبلجة
+            // العودة للصفحة الرئيسية بدلاً من الدبلجة
             const redirectTo = window.location.origin + '/';
             const { data, error } = await supa.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo }
             });
-            if (data?.url) window.location.assign(data.url);
+            if (data?.url) window.location.href = data.url;
         } catch (e) { showToast('Google sign in failed.', 'error'); }
     }
 
@@ -236,9 +234,10 @@
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
                 showToast('Signed in successfully!', 'success');
-                // توجيه إجباري للرئيسية
+                // التوجيه للرئيسية بدلاً من الدبلجة
+                const targetPage = sessionStorage.getItem('returnUrl') || '/';
                 sessionStorage.removeItem('returnUrl');
-                setTimeout(() => { window.location.replace('/'); }, 500);
+                setTimeout(() => { window.location.href = targetPage; }, 500);
             }
         } catch (err) {
             showToast('An error occurred.', 'error');
