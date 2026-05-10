@@ -56,10 +56,12 @@
         .footer-text a { font-weight: 600; text-decoration: none; color: var(--text-main); transition: 0.2s; }
         .footer-text a:hover { color: var(--accent-blue); }
         
-        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 12px 24px; border-radius: var(--radius-md); z-index: 9999; font-weight: 500; font-size: 0.95rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15); animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1); }
+        /* Toast UI Styling */
+        #toasts { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .toast { background: var(--primary); color: white; padding: 12px 24px; border-radius: var(--radius-md); font-weight: 500; font-size: 0.95rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15); animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1); }
         .toast.error { background: var(--error); }
         .toast.success { background: var(--success); }
-        @keyframes slideUp { from { opacity: 0; transform: translate(-50%,20px); } to { opacity: 1; transform: translate(-50%,0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -104,84 +106,79 @@
 <div id="toasts"></div>
 
 <script src="js/config.js"></script>
-<script src="js/shared.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
-    const supa = window.supabase.createClient(window.APP_CONFIG.SUPABASE_URL, window.APP_CONFIG.SUPABASE_KEY);
+    // إنشاء Client مستقل خاص بصفحة تسجيل الدخول فقط
+    const supa = window.supabase.createClient(
+        window.APP_CONFIG.SUPABASE_URL, 
+        window.APP_CONFIG.SUPABASE_KEY
+    );
 
-    const toast = (msg, type) => {
-        if (typeof window.showToast === 'function') {
-            window.showToast(msg, type);
-        } else {
-            console.log(`${type}: ${msg}`);
-        }
+    // دالة محلية للإشعارات (بديلة عن الموجودة في shared.js)
+    const showLocalToast = (msg, type = 'info') => {
+        const container = document.getElementById('toasts');
+        const t = document.createElement('div');
+        t.className = `toast ${type}`;
+        t.innerText = msg;
+        container.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
     };
 
-    // التحقق من الجلسة الحالية
+    // التحقق من الجلسة
     const { data: { session } } = await supa.auth.getSession();
     if (session) {
         window.location.replace('/');
         return;
     }
 
-    // تسجيل الدخول بجوجل
+    // Google Login
     document.getElementById('googleBtn').addEventListener('click', async () => {
-        const { error } = await supa.auth.signInWithOAuth({
+        await supa.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo: window.location.origin + '/' }
         });
-        if (error) toast(error.message, 'error');
     });
 
-    // تسجيل الدخول بالإيميل والباسورد
+    // Email/Password Login
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
         const btn = document.getElementById('submitBtn');
         
-        btn.textContent = 'Verifying...';
+        btn.textContent = 'Signing in...';
         btn.disabled = true;
 
         const { data, error } = await supa.auth.signInWithPassword({ email, password });
 
         if (error) {
-            toast(error.message || 'Invalid email or password', 'error');
+            showLocalToast(error.message, 'error');
             btn.textContent = 'Sign in'; 
             btn.disabled = false;
         } else if (data?.session) {
-            // حفظ التوكن
+            // حفظ التوكن للتحقق السريع
             localStorage.setItem('token', data.session.access_token);
             
-            const userMeta = data.user.user_metadata || {};
-            let userCredits = '...';
-
-            // محاولة جلب الرصيد من جدول users
+            // جلب الرصيد وتحديث الكاش الموحد
+            let userCredits = 0;
             try {
-                const { data: profile } = await supa
-                    .from('users')
-                    .select('credits')
-                    .eq('id', data.user.id)
-                    .single();
-                
+                const { data: profile } = await supa.from('users').select('credits').eq('id', data.user.id).single();
                 if (profile) userCredits = profile.credits;
-            } catch (err) {
-                console.error('Credits fetch failed:', err);
-            }
+            } catch (err) {}
 
-            // تجميع البيانات في الكائن الموحد الذي يقرأه shared.js
+            const meta = data.user.user_metadata || {};
             const userData = {
                 id: data.user.id,
                 email: data.user.email,
-                name: userMeta.full_name || data.user.email.split('@')[0],
-                avatar: userMeta.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.email.split('@')[0])}&background=0f0f10&color=fff&size=64`,
+                name: meta.full_name || data.user.email.split('@')[0],
+                avatar: meta.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.email.split('@')[0])}&background=0f0f10&color=fff&size=64`,
                 credits: userCredits
             };
 
-            // الحفظ في المفتاح المطلوب ✅
+            // هذا المفتاح هو ما يقرأه shared.js في الصفحات الأخرى
             localStorage.setItem('sl_user_cache', JSON.stringify(userData));
 
-            toast('Signed in successfully!', 'success');
+            showLocalToast('Success! Redirecting...', 'success');
             setTimeout(() => window.location.replace('/'), 500);
         }
     });
