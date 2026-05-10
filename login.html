@@ -7,7 +7,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script src="js/config.js"></script>
 
@@ -193,12 +193,12 @@
         try {
             const supa = getSupabase();
             // العودة للصفحة الرئيسية بدلاً من الدبلجة
-            const redirectTo = window.location.origin + '/?auth=1';
+            const redirectTo = window.location.origin + '/';
             const { data, error } = await supa.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo }
             });
-            if (data?.url) window.location.href = data.url;
+            if (data?.url) window.location.replace(data.url);
         } catch (e) { showToast('Google sign in failed.', 'error'); }
     }
 
