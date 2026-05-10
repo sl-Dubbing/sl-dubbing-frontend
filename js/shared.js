@@ -183,6 +183,6 @@ window.escapeHtml = function(u) {
     return String(u || '').replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[m]));
-    // في نهاية ملف shared.js
-window._supabaseClient = getSupabase();
 };
+ // في نهاية ملف shared.js
+window._supabaseClient = getSupabase();
