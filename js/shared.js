@@ -86,13 +86,17 @@ window.checkAuth = async function() {
         
         if (res.ok) {
             const d = await res.json();
-            const userData = {
-                id: session.user.id,
-                email: session.user.email,
-                name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-                avatar: session.user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
-                credits: d.success ? d.credits : '...'
-            };
+           // في shared.js، دالة checkAuth، غيّر هذا:
+const userData = {
+    id: session.user.id,
+    email: session.user.email,
+    name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+    avatar: session.user.user_metadata?.avatar_url || 
+            session.user.user_metadata?.picture ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.email?.split('@')[0] || 'U')}&background=0f0f10&color=fff&size=64`,
+    
+    credits: d.success ? d.credits : '...'
+};
             localStorage.setItem('sl_user_cache', JSON.stringify(userData));
             window.updateDropdownUI(userData);
         }
