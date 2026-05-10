@@ -4,15 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In | Glotix</title>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script src="js/config.js"></script>
-
     <style>
-        /* ── Glotix Light Theme ── */
         :root {
             --bg-page: #fafafa;
             --bg-card: #ffffff;
@@ -33,10 +27,8 @@
         body { background-color: var(--bg-page); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         
         .login-container { width: 100%; max-width: 420px; padding: 40px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.04); }
-        
         .logo { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.6rem; font-weight: 900; text-decoration: none; color: var(--text-main); letter-spacing: -0.5px; margin-bottom: 30px; }
         .logo svg { width: 36px; height: 36px; }
-
         .title { text-align: center; font-size: 1.5rem; font-weight: 800; margin-bottom: 24px; color: var(--text-main); }
         
         .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; align-items: center; }
@@ -50,24 +42,15 @@
         .form-group { margin-bottom: 18px; }
         .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         label { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
-        
         .forgot-link { font-size: 0.85rem; color: var(--text-muted); text-decoration: none; transition: 0.2s; font-weight: 500; }
         .forgot-link:hover { color: var(--text-main); }
         
         input[type="email"], input[type="password"] { width: 100%; height: 48px; padding: 0 16px; background: var(--bg-page); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; font-size: 1rem; outline: none; transition: 0.2s; }
         input:focus { border-color: var(--border-focus); background: var(--bg-card); box-shadow: 0 0 0 3px rgba(15,15,16,0.05); }
-        input.error { border-color: var(--error); box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
-        
-        .error-msg { color: var(--error); font-size: 0.8rem; margin-top: 6px; display: none; font-weight: 500; }
-        .error-msg.visible { display: block; }
-        
-        .remember-row { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; cursor: pointer; user-select: none; }
-        .remember-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; border-radius: 4px; }
-        .remember-row label { cursor: pointer; color: var(--text-muted); }
         
         .submit-btn { width: 100%; height: 48px; background: var(--primary); color: #ffffff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .submit-btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         
         .footer-text { text-align: center; margin-top: 24px; font-size: 0.95rem; color: var(--text-muted); }
         .footer-text a { font-weight: 600; text-decoration: none; color: var(--text-main); transition: 0.2s; }
@@ -77,13 +60,11 @@
         .toast.error { background: var(--error); }
         .toast.success { background: var(--success); }
         @keyframes slideUp { from { opacity: 0; transform: translate(-50%,20px); } to { opacity: 1; transform: translate(-50%,0); } }
-        
-        @media (max-width: 420px) { .login-container { padding: 24px; border-radius: 16px; } }
     </style>
 </head>
 <body>
 
-<div class="login-container" role="main" aria-labelledby="pageTitle">
+<div class="login-container">
     <a class="logo" href="/">
         <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M16 3C8.82 3 3 8.82 3 16C3 23.18 8.82 29 16 29C23.18 29 29 23.18 29 16V14H16V19H23.2C22.1 22.1 19.3 24 16 24C11.58 24 8 20.42 8 16C8 11.58 11.58 8 16 8C18.4 8 20.5 9.06 21.8 10.74L25.4 7.14C22.9 4.6 19.6 3 16 3Z" fill="#0f0f10"/>
@@ -92,164 +73,77 @@
         Glotix
     </a>
     
-    <h1 id="pageTitle" class="title">Welcome back</h1>
+    <h1 class="title">Welcome back</h1>
 
     <div class="oauth-group">
-        <button type="button" class="btn-google" id="googleBtn" aria-label="Sign in with Google">
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google Logo" loading="lazy" />
+        <button type="button" class="btn-google" id="googleBtn">
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google Logo" />
             Continue with Google
         </button>
     </div>
 
-    <div class="divider" aria-hidden="true"></div>
+    <div class="divider"></div>
 
-    <form id="loginForm" novalidate>
+    <form id="loginForm">
         <div class="form-group">
-            <div class="label-row">
-                <label for="email">Email Address</label>
-            </div>
-            <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email">
-            <div class="error-msg" id="emailError">Please enter a valid email address.</div>
+            <div class="label-row"><label for="email">Email Address</label></div>
+            <input type="email" id="email" required autocomplete="email">
         </div>
-
         <div class="form-group">
             <div class="label-row">
                 <label for="password">Password</label>
-                <a href="/forgot" class="forgot-link" id="forgotLink">Forgot password?</a>
+                <a href="/forgot" class="forgot-link">Forgot password?</a>
             </div>
-            <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" minlength="6">
-            <div class="error-msg" id="passwordError">Password must be at least 6 characters.</div>
+            <input type="password" id="password" required minlength="6">
         </div>
-
-        <div class="remember-row">
-            <input type="checkbox" id="rememberMe" name="rememberMe" checked>
-            <label for="rememberMe">Remember me</label>
-        </div>
-
         <button type="submit" class="submit-btn" id="submitBtn">Sign in</button>
     </form>
-
     <p class="footer-text">Don't have an account? <a href="/signup">Sign up</a></p>
 </div>
 
 <div id="toasts"></div>
 
+<script src="js/config.js"></script>
+<script src="js/shared.js"></script>
 <script>
-(function() {
-    'use strict';
-
-    const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
+document.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('token')) {
+        window.location.replace('/');
+        return;
+    }
     
-    function getSupabaseKey() {
-        if (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_KEY) return window.APP_CONFIG.SUPABASE_KEY;
-        if (window.__SUPABASE_KEY__) return window.__SUPABASE_KEY__;
-        return '';
-    }
+    const supa = window.supabase.createClient(window.APP_CONFIG.SUPABASE_URL, window.APP_CONFIG.SUPABASE_KEY);
 
-    function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+    document.getElementById('googleBtn').addEventListener('click', async () => {
+        const { data, error } = await supa.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: window.location.origin + '/' }
+        });
+        if (data?.url) window.location.assign(data.url);
+    });
 
-    function showToast(msg, type) {
-        const container = document.getElementById('toasts');
-        if (!container) return;
-        const box = document.createElement('div');
-        box.className = 'toast ' + (type || '');
-        box.textContent = msg;
-        container.appendChild(box);
-        setTimeout(() => box.remove(), 4000);
-    }
-
-    function setFieldError(fieldId, show) {
-        const field = document.getElementById(fieldId);
-        const error = document.getElementById(fieldId + 'Error');
-        if (show) { field.classList.add('error'); error.classList.add('visible'); } 
-        else { field.classList.remove('error'); error.classList.remove('visible'); }
-    }
-
-    function clearErrors() { setFieldError('email', false); setFieldError('password', false); }
-
-    let supabaseClient = null;
-    function getSupabase() {
-        if (supabaseClient) return supabaseClient;
-        const key = getSupabaseKey();
-        if (!key) throw new Error('Supabase key not configured');
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, key);
-        return supabaseClient;
-    }
-
-    async function checkSession() {
-        try {
-            const supa = getSupabase();
-            const { data, error } = await supa.auth.getSession();
-            if (data?.session) {
-                localStorage.setItem('token', data.session.access_token);
-                // التوجيه للرئيسية بدلاً من الدبلجة
-                window.location.href = '/'; 
-            }
-        } catch (e) {}
-    }
-
-    async function signInWithGoogle() {
-        try {
-            const supa = getSupabase();
-            // العودة للصفحة الرئيسية بدلاً من الدبلجة
-            const redirectTo = window.location.origin + '/';
-            const { data, error } = await supa.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo }
-            });
-            if (data?.url) window.location.href = data.url;
-        } catch (e) { showToast('Google sign in failed.', 'error'); }
-    }
-
-    async function signInWithEmail(e) {
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        clearErrors();
-
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
-        const rememberMe = document.getElementById('rememberMe').checked;
         const btn = document.getElementById('submitBtn');
-
-        let hasError = false;
-        if (!email || !isValidEmail(email)) { setFieldError('email', true); hasError = true; }
-        if (!password || password.length < 6) { setFieldError('password', true); hasError = true; }
-        if (hasError) return;
-
+        
         btn.textContent = 'Verifying...';
         btn.disabled = true;
 
-        try {
-            const supa = getSupabase();
-            const { data, error } = await supa.auth.signInWithPassword({ 
-                email, password, options: { remember: rememberMe }
-            });
+        const { data, error } = await supa.auth.signInWithPassword({ email, password });
 
-            if (error) {
-                showToast('Invalid email or password', 'error');
-                btn.textContent = 'Sign in'; btn.disabled = false;
-                return;
-            }
-
-            if (data?.session) {
-                localStorage.setItem('token', data.session.access_token);
-                showToast('Signed in successfully!', 'success');
-                // التوجيه للرئيسية بدلاً من الدبلجة
-                const targetPage = sessionStorage.getItem('returnUrl') || '/';
-                sessionStorage.removeItem('returnUrl');
-                setTimeout(() => { window.location.href = targetPage; }, 500);
-            }
-        } catch (err) {
-            showToast('An error occurred.', 'error');
-            btn.textContent = 'Sign in'; btn.disabled = false;
+        if (error) {
+            window.showToast('Invalid email or password', 'error');
+            btn.textContent = 'Sign in'; 
+            btn.disabled = false;
+        } else if (data?.session) {
+            localStorage.setItem('token', data.session.access_token);
+            window.showToast('Signed in successfully!', 'success');
+            setTimeout(() => window.location.replace('/'), 500);
         }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        checkSession();
-        document.getElementById('googleBtn').addEventListener('click', signInWithGoogle);
-        document.getElementById('loginForm').addEventListener('submit', signInWithEmail);
     });
-})();
+});
 </script>
 </body>
 </html>
