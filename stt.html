@@ -112,6 +112,7 @@
     .download-row .btn { flex: 1; min-width: 150px; background: var(--bg-page); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center; text-decoration: none; color: var(--text-main); font-weight: 600; transition: 0.2s; }
     .download-row .btn:hover { background: #f3f4f6; border-color: #d1d5db; }
   </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -242,7 +243,7 @@
 </div>
 
 <script>
-    const BE = window.API_BASE || 'https://api.glotix.ai';
+    const BE = 'https://api.glotix.ai';
     const SUPABASE_URL = "https://ckjkkxrlgisjdolwddfg.supabase.co"; 
     const SUPABASE_KEY = "sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW"; 
     
@@ -301,6 +302,14 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => { fetchLiveAuth(); });
+</script>
+
+<script src="js/config.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/stt.js"></script>
+</body>
+</html>
+ment.addEventListener('DOMContentLoaded', () => { fetchLiveAuth(); });
 </script>
 
 <script src="js/config.js"></script>
