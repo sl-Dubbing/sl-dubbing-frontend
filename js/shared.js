@@ -1,4 +1,4 @@
-// js/shared.js - V17 (Final)
+// js/shared.js - V18 (Final with OAuth Hash Fix)
 
 const API_BASE    = window.APP_CONFIG?.API_BASE    || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -111,11 +111,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // اكتشاف العودة من Google OAuth
     const hash = window.location.hash;
+    
+    // الحل الصحيح: نترك Supabase يعالج الـ Hash أولاً لإنشاء الجلسة
     if (hash.includes('access_token') || hash.includes('token_type')) {
-        window.history.replaceState(null, '', window.location.pathname);
-        window.location.reload();
+        setTimeout(() => {
+            window.history.replaceState(null, '', window.location.pathname);
+            window.checkAuth();
+        }, 1500);
         return;
     }
+    
+    // تنظيف أي Hash آخر لا يخص التوكن
     if (hash) {
         window.history.replaceState(null, '', window.location.pathname);
     }
