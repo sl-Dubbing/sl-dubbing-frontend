@@ -127,24 +127,32 @@
             .switch-container { justify-content: space-between; }
         }
     
-    /* ── Samples Section ── */
-    .samples-section { margin-top: 30px; }
-    .samples-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .samples-header h3 { font-size: 1.2rem; font-weight: 800; }
-    .samples-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-    .sample-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; cursor: pointer; transition: 0.2s; }
-    .sample-card:hover { border-color: var(--accent-blue); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
-    .sample-card.active { border-color: var(--accent-blue); background: #f0f7ff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
-    .sample-lang { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 12px; }
-    .sample-audio { width: 100%; height: 40px; margin-bottom: 12px; }
-    .sample-actions { display: flex; gap: 8px; }
-    .sample-btn { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-page); cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
-    .sample-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
-    .sample-btn.primary { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
-    .sample-btn.primary:hover { background: #0066d4; }
-    .clone-toggle { display: flex; align-items: center; gap: 10px; margin: 20px 0; padding: 16px; background: #f0f7ff; border: 1px solid var(--accent-blue); border-radius: 12px; cursor: pointer; }
-    .clone-toggle input { width: 18px; height: 18px; accent-color: var(--accent-blue); }
-    .clone-toggle label { font-weight: 600; cursor: pointer; color: var(--accent-blue); }
+    /* ── Voice Clone & Samples ── */
+    .voice-section { margin-top: 30px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 30px; }
+    .voice-section h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+
+    .clone-options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 25px; }
+    @media (max-width: 700px) { .clone-options { grid-template-columns: 1fr; } }
+
+    .clone-card { border: 2px solid var(--border-color); border-radius: 16px; padding: 20px; cursor: pointer; transition: 0.2s; text-align: center; }
+    .clone-card:hover { border-color: #d1d5db; }
+    .clone-card.active { border-color: var(--accent-blue); background: #f0f7ff; }
+    .clone-card .icon { font-size: 2rem; margin-bottom: 10px; }
+    .clone-card .title { font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
+    .clone-card .desc { font-size: 0.85rem; color: var(--text-muted); }
+
+    .samples-list { display: flex; flex-wrap: wrap; gap: 12px; }
+    .sample-chip { display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: 0.2s; }
+    .sample-chip:hover { border-color: var(--accent-blue); }
+    .sample-chip.active { border-color: var(--accent-blue); background: #f0f7ff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
+    .sample-chip audio { width: 180px; height: 32px; }
+    .sample-chip .name { font-weight: 600; font-size: 0.95rem; }
+    .sample-chip .badge { font-size: 0.75rem; background: var(--accent-blue); color: white; padding: 2px 8px; border-radius: 6px; }
+
+    .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 20px; }
+    .lang-chip { padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; text-align: center; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
+    .lang-chip:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+    .lang-chip.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
 </style>
 <base target="_blank">
 </head>
@@ -278,117 +286,49 @@
 </div>
 
 
-    <!-- Samples Section -->
-    <div class="samples-section">
-        <div class="samples-header">
-            <h3><i class="fas fa-headphones"></i> Voice Samples</h3>
-            <span style="color: var(--text-muted); font-size: 0.9rem;">Click to preview & use</span>
+    <!-- Voice Clone Section -->
+    <div class="voice-section">
+        <h3><i class="fas fa-microphone-lines"></i> Voice Source</h3>
+
+        <div class="clone-options">
+            <div class="clone-card" id="cloneOriginal" onclick="selectCloneSource('original')">
+                <div class="icon">📁</div>
+                <div class="title">Original File</div>
+                <div class="desc">Clone voice from uploaded video/audio</div>
+            </div>
+            <div class="clone-card active" id="cloneSample" onclick="selectCloneSource('sample')">
+                <div class="icon">🎧</div>
+                <div class="title">Sample Voice</div>
+                <div class="desc">Use voice from samples folder</div>
+            </div>
         </div>
 
-        <div class="clone-toggle" onclick="document.getElementById('cloneVoice').click()">
-            <input type="checkbox" id="cloneVoice">
-            <label>🎤 Clone voice from original video/audio</label>
+        <div id="samplesContainer">
+            <p style="color: var(--text-muted); margin-bottom: 12px; font-weight: 500;"><i class="fas fa-folder-open"></i> Available samples (auto-loaded from /samples):</p>
+            <div class="samples-list" id="samplesList">
+                <!-- Auto-populated by JS -->
+            </div>
         </div>
 
-        <div class="samples-grid" id="samplesGrid">
-            <div class="sample-card" data-lang="en" onclick="selectSample(this, 'en')">
-                <div class="sample-lang"><span class="flag">🇺🇸</span> English</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('en')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('en', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
-            </div>
-            <div class="sample-card" data-lang="es" onclick="selectSample(this, 'es')">
-                <div class="sample-lang"><span class="flag">🇪🇸</span> Spanish</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('es')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('es', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
-            </div>
-            <div class="sample-card" data-lang="fr" onclick="selectSample(this, 'fr')">
-                <div class="sample-lang"><span class="flag">🇫🇷</span> French</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('fr')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('fr', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
-            </div>
-            <div class="sample-card" data-lang="de" onclick="selectSample(this, 'de')">
-                <div class="sample-lang"><span class="flag">🇩🇪</span> German</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('de')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('de', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
-            </div>
-            <div class="sample-card" data-lang="it" onclick="selectSample(this, 'it')">
-                <div class="sample-lang"><span class="flag">🇮🇹</span> Italian</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('it')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('it', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
-            </div>
-            <div class="sample-card" data-lang="pt" onclick="selectSample(this, 'pt')">
-                <div class="sample-lang"><span class="flag">🇵🇹</span> Portuguese</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('pt')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('pt', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
-            </div>
-            <div class="sample-card" data-lang="ru" onclick="selectSample(this, 'ru')">
-                <div class="sample-lang"><span class="flag">🇷🇺</span> Russian</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('ru')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('ru', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
-            </div>
-            <div class="sample-card" data-lang="tr" onclick="selectSample(this, 'tr')">
-                <div class="sample-lang"><span class="flag">🇹🇷</span> Turkish</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('tr')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('tr', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
-            </div>
-            <div class="sample-card" data-lang="ar" onclick="selectSample(this, 'ar')">
-                <div class="sample-lang"><span class="flag">🇸🇦</span> Arabic</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('ar')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('ar', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
-            </div>
-            <div class="sample-card" data-lang="zh" onclick="selectSample(this, 'zh')">
-                <div class="sample-lang"><span class="flag">🇨🇳</span> Chinese</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('zh')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('zh', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
-            </div>
-            <div class="sample-card" data-lang="ja" onclick="selectSample(this, 'ja')">
-                <div class="sample-lang"><span class="flag">🇯🇵</span> Japanese</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('ja')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('ja', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
-            </div>
-            <div class="sample-card" data-lang="ko" onclick="selectSample(this, 'ko')">
-                <div class="sample-lang"><span class="flag">🇰🇷</span> Korean</div>
-                <audio class="sample-audio" controls src="samples/muhammad.mp3"></audio>
-                <div class="sample-actions">
-                    <button class="sample-btn" onclick="event.stopPropagation(); previewSample('ko')"><i class="fas fa-play"></i> Preview</button>
-                    <button class="sample-btn primary" onclick="event.stopPropagation(); useSample('ko', 'dubbing')"><i class="fas fa-check"></i> Use</button>
-                </div>
+        <div style="margin-top: 25px;">
+            <p style="color: var(--text-muted); margin-bottom: 12px; font-weight: 500;"><i class="fas fa-globe"></i> Select target language:</p>
+            <div class="lang-grid" id="langGrid">
+                <div class="lang-chip active" data-lang="en" onclick="selectLang(this)">🇺🇸 English</div>
+                <div class="lang-chip" data-lang="es" onclick="selectLang(this)">🇪🇸 Spanish</div>
+                <div class="lang-chip" data-lang="fr" onclick="selectLang(this)">🇫🇷 French</div>
+                <div class="lang-chip" data-lang="de" onclick="selectLang(this)">🇩🇪 German</div>
+                <div class="lang-chip" data-lang="it" onclick="selectLang(this)">🇮🇹 Italian</div>
+                <div class="lang-chip" data-lang="pt" onclick="selectLang(this)">🇵🇹 Portuguese</div>
+                <div class="lang-chip" data-lang="ru" onclick="selectLang(this)">🇷🇺 Russian</div>
+                <div class="lang-chip" data-lang="tr" onclick="selectLang(this)">🇹🇷 Turkish</div>
+                <div class="lang-chip" data-lang="ar" onclick="selectLang(this)">🇸🇦 Arabic</div>
+                <div class="lang-chip" data-lang="zh" onclick="selectLang(this)">🇨🇳 Chinese</div>
+                <div class="lang-chip" data-lang="ja" onclick="selectLang(this)">🇯🇵 Japanese</div>
+                <div class="lang-chip" data-lang="ko" onclick="selectLang(this)">🇰🇷 Korean</div>
             </div>
         </div>
     </div>
+    <!-- End Voice Clone -->
 
 <div id="toasts"></div>
 
@@ -526,58 +466,65 @@ window.addEventListener('load', () => {
 </script>
 
 <script>
-// ── Samples Functions ──
-let selectedLang = null;
-let cloneVoiceEnabled = false;
+// ── Voice Clone System ──
+let cloneSource = 'sample'; // 'original' or 'sample'
+let selectedSample = null;
+let selectedLangCode = 'en';
 
-function selectSample(card, lang) {
-    document.querySelectorAll('.sample-card').forEach(c => c.classList.remove('active'));
-    card.classList.add('active');
-    selectedLang = lang;
+// Auto-load samples from /samples folder
+function loadSamples() {
+    const samplesList = document.getElementById('samplesList');
+    if (!samplesList) return;
+
+    // Scan samples folder - in production this reads directory
+    // For now, use known samples. Server endpoint can return JSON list.
+    const samples = [
+        { name: 'Muhammad', file: 'muhammad.mp3', default: true }
+    ];
+
+    samplesList.innerHTML = samples.map(s => `
+        <div class="sample-chip ${s.default ? 'active' : ''}" data-file="${s.file}" onclick="selectSample(this)">
+            <span class="name">${s.name}</span>
+            <span class="badge">Sample</span>
+            <audio controls src="samples/${s.file}"></audio>
+        </div>
+    `).join('');
+
+    if (samples.length > 0) selectedSample = samples[0].file;
 }
 
-function previewSample(lang) {
-    const audio = document.querySelector(`.sample-card[data-lang="${lang}"] audio`);
-    if (audio) {
-        audio.currentTime = 0;
-        audio.play();
-    }
+function selectCloneSource(source) {
+    cloneSource = source;
+    document.querySelectorAll('.clone-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('clone' + (source === 'original' ? 'Original' : 'Sample')).classList.add('active');
+
+    const container = document.getElementById('samplesContainer');
+    if (container) container.style.display = source === 'sample' ? 'block' : 'none';
 }
 
-function useSample(lang, type) {
-    selectedLang = lang;
-    cloneVoiceEnabled = document.getElementById('cloneVoice')?.checked || false;
-
-    // Set language in dropdown
-    const langBtn = document.getElementById('langTrigger');
-    if (langBtn) {
-        const span = langBtn.querySelector('span');
-        if (span) span.textContent = getLangName(lang);
-    }
-
-    // Store selection
-    localStorage.setItem('selected_sample_lang', lang);
-    localStorage.setItem('clone_voice', cloneVoiceEnabled);
-
-    showToast(`${getLangName(lang)} selected${cloneVoiceEnabled ? ' + Voice Clone' : ''}`, 'success');
+function selectSample(chip) {
+    document.querySelectorAll('.sample-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    selectedSample = chip.dataset.file;
 }
 
-function getLangName(code) {
-    const names = {en:'English',es:'Spanish',fr:'French',de:'German',it:'Italian',pt:'Portuguese',ru:'Russian',tr:'Turkish',ar:'Arabic',zh:'Chinese',ja:'Japanese',ko:'Korean'};
-    return names[code] || code;
+function selectLang(chip) {
+    document.querySelectorAll('.lang-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    selectedLangCode = chip.dataset.lang;
 }
 
-function showToast(msg, type) {
-    const container = document.getElementById('toasts');
-    if (!container) return;
-    const box = document.createElement('div');
-    box.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f0f10;color:white;padding:12px 24px;border-radius:12px;z-index:9999;font-weight:500;animation:slideUp 0.4s;';
-    if (type === 'success') box.style.background = '#10b981';
-    if (type === 'error') box.style.background = '#ef4444';
-    box.textContent = msg;
-    container.appendChild(box);
-    setTimeout(() => box.remove(), 3000);
-}
+// Expose for dubbing.js / tts.js
+window.getVoiceConfig = function() {
+    return {
+        source: cloneSource,
+        sample: selectedSample,
+        lang: selectedLangCode
+    };
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', loadSamples);
 </script>
 </body>
 </html>
