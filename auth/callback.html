@@ -28,49 +28,64 @@
         window.APP_CONFIG.SUPABASE_KEY
     );
 
-    // انتظر Supabase يعالج الـ hash ويحفظ الجلسة
+    async function saveAndRedirect(session) {
+        localStorage.setItem('token', session.access_token);
+
+        let credits = '...';
+        try {
+            const res = await fetch(window.APP_CONFIG.API_BASE + '/api/user/credits', {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+            if (res.ok) {
+                const d = await res.json();
+                if (d.success) credits = d.credits;
+            }
+        } catch(e) {}
+
+        const meta = session.user.user_metadata || {};
+        const userData = {
+            id:      session.user.id,
+            email:   session.user.email,
+            name:    meta.full_name || meta.name || session.user.email.split('@')[0],
+            avatar:  meta.avatar_url || meta.picture ||
+                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                         session.user.email.split('@')[0]
+                     )}&background=0f0f10&color=fff&size=64`,
+            credits: credits
+        };
+
+        localStorage.setItem('sl_user_cache', JSON.stringify(userData));
+        window.location.replace('/');
+    }
+
+    // طريقة 1: قراءة الجلسة من الـ hash مباشرة
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+        // Supabase يقرأ الـ hash تلقائياً عند إنشاء الـ client
+        const { data: { session } } = await supa.auth.getSession();
+        if (session) {
+            await saveAndRedirect(session);
+            return;
+        }
+    }
+
+    // طريقة 2: انتظار SIGNED_IN event
     supa.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
-            // حفظ التوكن
-            localStorage.setItem('token', session.access_token);
-
-            // جلب الرصيد
-            let credits = '...';
-            try {
-                const res = await fetch(window.APP_CONFIG.API_BASE + '/api/user/credits', {
-                    headers: { 'Authorization': `Bearer ${session.access_token}` }
-                });
-                if (res.ok) {
-                    const d = await res.json();
-                    if (d.success) credits = d.credits;
-                }
-            } catch(e) {}
-
-            // حفظ بيانات المستخدم
-            const meta = session.user.user_metadata || {};
-            const userData = {
-                id:      session.user.id,
-                email:   session.user.email,
-                name:    meta.full_name || meta.name || session.user.email.split('@')[0],
-                avatar:  meta.avatar_url || meta.picture ||
-                         `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                             session.user.email.split('@')[0]
-                         )}&background=0f0f10&color=fff&size=64`,
-                credits: credits
-            };
-            localStorage.setItem('sl_user_cache', JSON.stringify(userData));
-
-            // توجيه للرئيسية
-            localStorage.setItem('sl_user_cache', JSON.stringify(userData));
-await new Promise(r => setTimeout(r, 200)); // انتظر قليلاً
-window.location.replace('/');
+            await saveAndRedirect(session);
         }
     });
 
-    // fallback: إذا لم يُطلق الـ event بعد 5 ثوان
-    setTimeout(() => {
-        window.location.replace('/');
-    }, 5000);
+    // طريقة 3: إذا لم تنجح خلال 4 ثوان، تحقق مرة أخيرة
+    setTimeout(async () => {
+        const { data: { session } } = await supa.auth.getSession();
+        if (session) {
+            await saveAndRedirect(session);
+        } else {
+            window.location.replace('/');
+        }
+    }, 4000);
+
 })();
 </script>
 </body>
