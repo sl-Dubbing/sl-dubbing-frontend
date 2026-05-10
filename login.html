@@ -1,82 +1,110 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول | sl-Dubbing</title>
+    <title>Sign In | Glotix</title>
 
-    <!-- أيقونات -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- استدعاء مكتبة Supabase (v2) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     
-    <!-- ✅ مفتاح Supabase يجب أن يحمل أولاً -->
     <script src="js/config.js"></script>
 
     <style>
+        /* ── Glotix Light Theme (Matched with index.html) ── */
         :root {
-            --bg-dark: #000000;
-            --card-bg: rgba(255,255,255,0.03);
-            --border-color: rgba(255,255,255,0.06);
-            --border-focus: #ffffff;
-            --accent: #ffffff;
-            --accent-hover: #e6e6e6;
-            --text-main: #ffffff;
-            --text-muted: #bdbdbd;
-            --error: #ff3b30;
-            --success: #34c759;
-            --radius: 12px;
+            --bg-page: #fafafa;
+            --bg-card: #ffffff;
+            --border-color: #e5e7eb;
+            --border-focus: #0f0f10;
+            --text-main: #0f0f10;
+            --text-muted: #6b7280;
+            --primary: #0f0f10;
+            --primary-hover: #27272a;
+            --accent-blue: #007aff;
+            --error: #ef4444;
+            --success: #10b981;
+            --radius-md: 12px;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         html, body { height: 100%; }
-        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .login-container { width: 100%; max-width: 420px; padding: 36px; display: flex; flex-direction: column; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.7); backdrop-filter: blur(6px); }
-        .logo { text-align: center; font-size: 1.25rem; font-weight: 800; margin-bottom: 12px; color: var(--text-main); text-decoration: none; }
-        .logo span { font-weight: 900; margin-left: 6px; color: var(--text-muted); }
-        .title { text-align: center; font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; color: var(--text-main); }
-        .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; align-items: center; }
-        .btn-google { width: 100%; height: 46px; border-radius: 10px; border: 1px solid var(--border-color); background: #ffffff; color: #000000; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; }
-        .btn-google:hover { background: #e6e6e6; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
+        body { background-color: var(--bg-page); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        
+        /* Main Login Card */
+        .login-container { width: 100%; max-width: 420px; padding: 40px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.04); }
+        
+        /* Logo */
+        .logo { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.6rem; font-weight: 900; text-decoration: none; color: var(--text-main); letter-spacing: -0.5px; margin-bottom: 30px; }
+        .logo svg { width: 36px; height: 36px; }
+
+        .title { text-align: center; font-size: 1.5rem; font-weight: 800; margin-bottom: 24px; color: var(--text-main); }
+        
+        /* Google Button */
+        .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; align-items: center; }
+        .btn-google { width: 100%; height: 48px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .btn-google:hover { background: #f9fafb; border-color: #d1d5db; }
         .btn-google img { width: 20px; }
-        .divider { height: 1px; background-color: var(--border-color); margin: 20px 0; position: relative; }
-        .divider::after { content: "أو"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-dark); padding: 0 10px; color: var(--text-muted); font-size: 0.85rem; }
-        .form-group { margin-bottom: 16px; }
+        
+        /* Divider */
+        .divider { height: 1px; background-color: var(--border-color); margin: 24px 0; position: relative; }
+        .divider::after { content: "OR"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-card); padding: 0 12px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+        
+        /* Forms */
+        .form-group { margin-bottom: 18px; }
         .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        label { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
-        .forgot-link { font-size: 0.85rem; color: var(--accent); text-decoration: none; transition: 0.2s; }
-        .forgot-link:hover { color: var(--accent-hover); }
-        input[type="email"], input[type="password"] { width: 100%; height: 46px; padding: 0 14px; background: rgba(255,255,255,0.02); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 10px; font-size: 1rem; outline: none; transition: 0.18s; }
-        input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 4px rgba(255,255,255,0.06); }
-        input.error { border-color: var(--error); box-shadow: 0 0 0 4px rgba(255,59,48,0.15); }
-        .error-msg { color: var(--error); font-size: 0.78rem; margin-top: 4px; display: none; }
+        label { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
+        
+        .forgot-link { font-size: 0.85rem; color: var(--text-muted); text-decoration: none; transition: 0.2s; font-weight: 500; }
+        .forgot-link:hover { color: var(--text-main); }
+        
+        input[type="email"], input[type="password"] { width: 100%; height: 48px; padding: 0 16px; background: var(--bg-page); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; font-size: 1rem; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--border-focus); background: var(--bg-card); box-shadow: 0 0 0 3px rgba(15,15,16,0.05); }
+        input.error { border-color: var(--error); box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
+        
+        .error-msg { color: var(--error); font-size: 0.8rem; margin-top: 6px; display: none; font-weight: 500; }
         .error-msg.visible { display: block; }
-        .remember-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; cursor: pointer; user-select: none; }
-        .remember-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
-        .submit-btn { width: 100%; height: 46px; background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); color: #ffffff; border: 1px solid var(--border-color); border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 6px; transition: 0.18s; }
-        .submit-btn:hover { background: rgba(255,255,255,0.15); border-color: #ffffff; }
-        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .footer-text { text-align: center; margin-top: 18px; font-size: 0.9rem; color: var(--text-muted); }
-        .footer-text a { font-weight: 600; text-decoration: none; color: var(--accent); transition: 0.18s; }
-        .footer-text a:hover { color: var(--accent-hover); }
+        
+        .remember-row { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; cursor: pointer; user-select: none; }
+        .remember-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; border-radius: 4px; }
+        .remember-row label { cursor: pointer; color: var(--text-muted); }
+        
+        /* Submit Button */
+        .submit-btn { width: 100%; height: 48px; background: var(--primary); color: #ffffff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .submit-btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        
+        .footer-text { text-align: center; margin-top: 24px; font-size: 0.95rem; color: var(--text-muted); }
+        .footer-text a { font-weight: 600; text-decoration: none; color: var(--text-main); transition: 0.2s; }
+        .footer-text a:hover { color: var(--accent-blue); }
+        
         /* Toast notification */
-        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(28,28,30,0.92); backdrop-filter: blur(20px); color: white; padding: 11px 22px; border-radius: var(--radius); z-index: 9999; font-weight: 500; font-size: 0.88rem; box-shadow: 0 20px 48px rgba(0,0,0,0.12); animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1); }
-        .toast.error { background: rgba(255,59,48,0.92); }
-        .toast.success { background: rgba(48,209,88,0.92); }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 12px 24px; border-radius: var(--radius-md); z-index: 9999; font-weight: 500; font-size: 0.95rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15); animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1); }
+        .toast.error { background: var(--error); }
+        .toast.success { background: var(--success); }
         @keyframes slideUp { from { opacity: 0; transform: translate(-50%,20px); } to { opacity: 1; transform: translate(-50%,0); } }
-        @media (max-width: 420px) { .login-container { padding: 20px; } }
+        
+        @media (max-width: 420px) { .login-container { padding: 24px; border-radius: 16px; } }
     </style>
 </head>
 <body>
 
 <div class="login-container" role="main" aria-labelledby="pageTitle">
-    <a href="index.html" class="logo" aria-label="sl-Dubbing home">sl-Dubbing <span>||</span></a>
-    <h1 id="pageTitle" class="title">مرحباً بعودتك</h1>
+    <a class="logo" href="/">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 3C8.82 3 3 8.82 3 16C3 23.18 8.82 29 16 29C23.18 29 29 23.18 29 16V14H16V19H23.2C22.1 22.1 19.3 24 16 24C11.58 24 8 20.42 8 16C8 11.58 11.58 8 16 8C18.4 8 20.5 9.06 21.8 10.74L25.4 7.14C22.9 4.6 19.6 3 16 3Z" fill="#0f0f10"/>
+            <path d="M29 16C29 23.18 23.18 29 16 29V24C19.3 24 22.1 22.1 23.2 19H29V16Z" fill="#007aff"/>
+        </svg>
+        Glotix
+    </a>
+    
+    <h1 id="pageTitle" class="title">Welcome back</h1>
 
     <div class="oauth-group">
-        <button type="button" class="btn-google" id="googleBtn" aria-label="تسجيل الدخول عبر جوجل">
+        <button type="button" class="btn-google" id="googleBtn" aria-label="Sign in with Google">
             <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google Logo" loading="lazy" />
-            المتابعة باستخدام جوجل
+            Continue with Google
         </button>
     </div>
 
@@ -85,30 +113,30 @@
     <form id="loginForm" novalidate>
         <div class="form-group">
             <div class="label-row">
-                <label for="email">البريد الإلكتروني</label>
+                <label for="email">Email Address</label>
             </div>
             <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email" aria-required="true" aria-describedby="emailError">
-            <div class="error-msg" id="emailError" role="alert" aria-live="polite">يرجى إدخال بريد إلكتروني صحيح</div>
+            <div class="error-msg" id="emailError" role="alert" aria-live="polite">Please enter a valid email address.</div>
         </div>
 
         <div class="form-group">
             <div class="label-row">
-                <label for="password">كلمة المرور</label>
-                <a href="forgot.html" class="forgot-link" id="forgotLink" rel="noopener noreferrer">نسيت كلمة المرور؟</a>
+                <label for="password">Password</label>
+                <a href="/forgot" class="forgot-link" id="forgotLink" rel="noopener noreferrer">Forgot password?</a>
             </div>
-            <input type="password" id="password" name="password" required autocomplete="current-password" aria-required="true" aria-describedby="passwordError" minlength="6">
-            <div class="error-msg" id="passwordError" role="alert" aria-live="polite">كلمة المرور يجب أن تكون 6 أحرف على الأقل</div>
+            <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" aria-required="true" aria-describedby="passwordError" minlength="6">
+            <div class="error-msg" id="passwordError" role="alert" aria-live="polite">Password must be at least 6 characters.</div>
         </div>
 
         <div class="remember-row">
             <input type="checkbox" id="rememberMe" name="rememberMe" checked>
-            <label for="rememberMe">تذكرني</label>
+            <label for="rememberMe">Remember me</label>
         </div>
 
-        <button type="submit" class="submit-btn" id="submitBtn" aria-label="تسجيل الدخول">تسجيل الدخول</button>
+        <button type="submit" class="submit-btn" id="submitBtn" aria-label="Sign in">Sign in</button>
     </form>
 
-    <p class="footer-text">لا تملك حساباً؟ <a href="register.html" rel="noopener noreferrer">إنشاء حساب</a></p>
+    <p class="footer-text">Don't have an account? <a href="/signup" rel="noopener noreferrer">Sign up</a></p>
 </div>
 
 <div id="toasts" aria-live="polite" aria-atomic="true"></div>
@@ -119,7 +147,6 @@
 
     const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
     
-    // ✅ الإصلاح الجذري: دالة للحصول على المفتاح بأمان
     function getSupabaseKey() {
         if (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_KEY) {
             return window.APP_CONFIG.SUPABASE_KEY;
@@ -170,11 +197,11 @@
         const key = getSupabaseKey();
         
         if (!key) {
-            showToast('مفتاح Supabase غير مُعد. تأكد من ملف config.js', 'error');
+            showToast('Supabase key not configured. Check config.js', 'error');
             throw new Error('Supabase key not configured');
         }
         if (!window.supabase) {
-            showToast('فشل تحميل مكتبة Supabase. أعد تحميل الصفحة.', 'error');
+            showToast('Failed to load Supabase SDK. Please refresh.', 'error');
             throw new Error('Supabase SDK not loaded');
         }
         supabaseClient = window.supabase.createClient(SUPABASE_URL, key);
@@ -189,7 +216,8 @@
             if (error) throw error;
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
-                window.location.href = 'dubbing.html';
+                // Clean redirect to studio
+                window.location.href = '/dubbing';
             }
         } catch (e) {
             console.error('Session check failed:', e);
@@ -200,7 +228,7 @@
     async function signInWithGoogle() {
         try {
             const supa = getSupabase();
-            const redirectTo = window.location.origin + window.location.pathname.replace('login.html', 'dubbing.html');
+            const redirectTo = window.location.origin + '/dubbing';
             const { data, error } = await supa.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo }
@@ -209,7 +237,7 @@
             if (data?.url) window.location.href = data.url;
         } catch (e) {
             console.error('Google sign-in failed:', e);
-            showToast('فشل تسجيل الدخول عبر جوجل: ' + e.message, 'error');
+            showToast('Google sign in failed: ' + e.message, 'error');
         }
     }
 
@@ -236,7 +264,7 @@
 
         if (hasError) return;
 
-        btn.textContent = 'جاري التحقق...';
+        btn.textContent = 'Verifying...';
         btn.disabled = true;
 
         try {
@@ -248,18 +276,18 @@
             });
 
             if (error) {
-                showToast(error.message.includes('Invalid login') ? 'البريد أو كلمة المرور غير صحيحة' : error.message, 'error');
-                btn.textContent = 'تسجيل الدخول';
+                showToast(error.message.includes('Invalid login') ? 'Invalid email or password' : error.message, 'error');
+                btn.textContent = 'Sign in';
                 btn.disabled = false;
                 return;
             }
 
             if (data?.session) {
                 localStorage.setItem('token', data.session.access_token);
-                showToast('تم تسجيل الدخول بنجاح!', 'success');
+                showToast('Signed in successfully!', 'success');
                 
-                // تحديث الـ Return URL
-                const targetPage = sessionStorage.getItem('returnUrl') || 'dubbing.html';
+                // Redirect to dubbing instead of index.html
+                const targetPage = sessionStorage.getItem('returnUrl') || '/dubbing';
                 sessionStorage.removeItem('returnUrl');
                 
                 setTimeout(() => { window.location.href = targetPage; }, 500);
@@ -267,8 +295,8 @@
 
         } catch (err) {
             console.error('Sign-in error:', err);
-            showToast('حدث خطأ أثناء محاولة تسجيل الدخول', 'error');
-            btn.textContent = 'تسجيل الدخول';
+            showToast('An error occurred during sign in.', 'error');
+            btn.textContent = 'Sign in';
             btn.disabled = false;
         }
     }
