@@ -20,15 +20,18 @@
         .divider { height: 1px; background-color: var(--border-color); margin: 24px 0; position: relative; }
         .divider::after { content: "OR"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-card); padding: 0 12px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
         .form-group { margin-bottom: 18px; }
-        label { font-size: 0.9rem; font-weight: 600; }
-        input { width: 100%; height: 48px; padding: 0 16px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 12px; outline: none; }
+        label { font-size: 0.9rem; font-weight: 600; display: block; margin-bottom: 8px; }
+        input { width: 100%; height: 48px; padding: 0 16px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 12px; outline: none; transition: 0.2s; font-size: 1rem; }
         input:focus { border-color: var(--border-focus); background: var(--bg-card); }
-        .submit-btn { width: 100%; height: 48px; background: var(--primary); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
+        .submit-btn { width: 100%; height: 48px; background: var(--primary); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+        .submit-btn:hover { background: var(--primary-hover); }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .footer-text { text-align: center; margin-top: 24px; font-size: 0.95rem; color: var(--text-muted); }
+        .footer-text a { color: var(--text-main); font-weight: 700; text-decoration: none; }
         #toasts { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: var(--primary); color: white; padding: 12px 24px; border-radius: var(--radius-md); box-shadow: 0 10px 30px rgba(0,0,0,0.15); animation: slideUp 0.4s; }
+        .toast { background: var(--primary); color: white; padding: 12px 24px; border-radius: var(--radius-md); box-shadow: 0 10px 30px rgba(0,0,0,0.15); animation: slideUp 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
         .toast.error { background: var(--error); }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
     </style>
 </head>
 <body>
@@ -42,35 +45,88 @@
     </div>
     <div class="divider"></div>
     <form id="loginForm">
-        <div class="form-group"><label>Email Address</label><input type="email" id="email" required></div>
-        <div class="form-group"><label>Password</label><input type="password" id="password" required></div>
+        <div class="form-group"><label>Email Address</label><input type="email" id="email" required placeholder="name@company.com"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="password" required placeholder="••••••••"></div>
         <button type="submit" class="submit-btn" id="submitBtn">Sign in</button>
     </form>
     <p class="footer-text">Don't have an account? <a href="/signup">Sign up</a></p>
 </div>
 <div id="toasts"></div>
+
 <script src="js/config.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
-    const supa = window.supabase.createClient(window.APP_CONFIG.SUPABASE_URL, window.APP_CONFIG.SUPABASE_KEY);
+    // إعداد العميل مع Implicit Flow لضمان التقاط التوكن في الصفحة الرئيسية ✅
+    const supa = window.supabase.createClient(
+        window.APP_CONFIG.SUPABASE_URL, 
+        window.APP_CONFIG.SUPABASE_KEY,
+        { auth: { flowType: 'implicit' } }
+    );
     
+    const toast = (msg, isErr = true) => {
+        const t = document.getElementById('toasts');
+        const b = document.createElement('div');
+        b.className = `toast ${isErr ? 'error' : ''}`;
+        b.innerText = msg;
+        t.appendChild(b);
+        setTimeout(() => b.remove(), 3000);
+    };
+
+    // تسجيل الدخول بجوجل
     document.getElementById('googleBtn').addEventListener('click', async () => {
         await supa.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: window.location.origin + '/' } // التوجيه للرئيسية مباشرة ✅
+            options: { redirectTo: window.location.origin + '/' }
         });
     });
 
+    // تسجيل الدخول بالإيميل
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        const btn = document.getElementById('submitBtn');
+
+        btn.disabled = true;
+        btn.innerText = "Signing in...";
+
         const { data, error } = await supa.auth.signInWithPassword({ email, password });
+        
         if (error) {
-            const t = document.getElementById('toasts');
-            const b = document.createElement('div'); b.className = 'toast error'; b.innerText = error.message;
-            t.appendChild(b); setTimeout(() => b.remove(), 3000);
-        } else { window.location.replace('/'); }
+            toast(error.message);
+            btn.disabled = false;
+            btn.innerText = "Sign in";
+        } else if (data.session) {
+            // 1. حفظ التوكن الأساسي
+            localStorage.setItem('token', data.session.access_token);
+
+            // 2. محاولة جلب الرصيد فوراً لتحديث الكاش ✅
+            let credits = '...';
+            try {
+                const res = await fetch((window.APP_CONFIG.API_BASE || 'https://api.glotix.ai') + '/api/user/credits', {
+                    headers: { 'Authorization': `Bearer ${data.session.access_token}` }
+                });
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d.success) credits = d.credits;
+                }
+            } catch(e) { console.error("Credits fetch fail", e); }
+
+            // 3. تجهيز وحفظ كاش المستخدم الموحد لملف shared.js
+            const meta = data.user.user_metadata || {};
+            const userData = {
+                id: data.user.id,
+                email: data.user.email,
+                name: meta.full_name || email.split('@')[0],
+                avatar: meta.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(email[0])}&background=0f0f10&color=fff`,
+                credits: credits
+            };
+            
+            localStorage.setItem('sl_user_cache', JSON.stringify(userData));
+
+            // 4. التوجيه
+            window.location.replace('/');
+        }
     });
 });
 </script>
