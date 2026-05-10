@@ -1,76 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | Glotix</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --bg-page: #fafafa; --bg-card: #ffffff; --border-color: #e5e7eb; --border-focus: #0f0f10; --text-main: #0f0f10; --text-muted: #6b7280; --primary: #0f0f10; --primary-hover: #27272a; --accent-blue: #007aff; --error: #ef4444; --success: #10b981; --radius-md: 12px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: var(--bg-page); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .login-container { width: 100%; max-width: 420px; padding: 40px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.04); }
+        .logo { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.6rem; font-weight: 900; text-decoration: none; color: var(--text-main); letter-spacing: -0.5px; margin-bottom: 30px; }
+        .logo svg { width: 36px; height: 36px; }
+        .title { text-align: center; font-size: 1.5rem; font-weight: 800; margin-bottom: 24px; color: var(--text-main); }
+        .oauth-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; align-items: center; }
+        .btn-google { width: 100%; height: 48px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .btn-google img { width: 20px; }
+        .divider { height: 1px; background-color: var(--border-color); margin: 24px 0; position: relative; }
+        .divider::after { content: "OR"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-card); padding: 0 12px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+        .form-group { margin-bottom: 18px; }
+        label { font-size: 0.9rem; font-weight: 600; }
+        input { width: 100%; height: 48px; padding: 0 16px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 12px; outline: none; }
+        input:focus { border-color: var(--border-focus); background: var(--bg-card); }
+        .submit-btn { width: 100%; height: 48px; background: var(--primary); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
+        .footer-text { text-align: center; margin-top: 24px; font-size: 0.95rem; color: var(--text-muted); }
+        #toasts { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: var(--primary); color: white; padding: 12px 24px; border-radius: var(--radius-md); box-shadow: 0 10px 30px rgba(0,0,0,0.15); animation: slideUp 0.4s; }
+        .toast.error { background: var(--error); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <a class="logo" href="/"><svg viewBox="0 0 32 32" fill="none"><path d="M16 3C8.82 3 3 8.82 3 16C3 23.18 8.82 29 16 29C23.18 29 29 23.18 29 16V14H16V19H23.2C22.1 22.1 19.3 24 16 24C11.58 24 8 20.42 8 16C8 11.58 11.58 8 16 8C18.4 8 20.5 9.06 21.8 10.74L25.4 7.14C22.9 4.6 19.6 3 16 3Z" fill="#0f0f10"/><path d="M29 16C29 23.18 23.18 29 16 29V24C19.3 24 22.1 22.1 23.2 19H29V16Z" fill="#007aff"/></svg> Glotix</a>
+    <h1 class="title">Welcome back</h1>
+    <div class="oauth-group">
+        <button type="button" class="btn-google" id="googleBtn">
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google"> Continue with Google
+        </button>
+    </div>
+    <div class="divider"></div>
+    <form id="loginForm">
+        <div class="form-group"><label>Email Address</label><input type="email" id="email" required></div>
+        <div class="form-group"><label>Password</label><input type="password" id="password" required></div>
+        <button type="submit" class="submit-btn" id="submitBtn">Sign in</button>
+    </form>
+    <p class="footer-text">Don't have an account? <a href="/signup">Sign up</a></p>
+</div>
+<div id="toasts"></div>
+<script src="js/config.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
-    // تهيئة Supabase مع تحديد Implicit Flow ✅
-    const supa = window.supabase.createClient(
-        window.APP_CONFIG.SUPABASE_URL, 
-        window.APP_CONFIG.SUPABASE_KEY,
-        { auth: { flowType: 'implicit' } } 
-    );
-
-    const showLocalToast = (msg, type = 'info') => {
-        const container = document.getElementById('toasts');
-        const t = document.createElement('div');
-        t.className = `toast ${type}`;
-        t.innerText = msg;
-        container.appendChild(t);
-        setTimeout(() => t.remove(), 3000);
-    };
-
-    const { data: { session } } = await supa.auth.getSession();
-    if (session) {
-        window.location.replace('/');
-        return;
-    }
-
+    const supa = window.supabase.createClient(window.APP_CONFIG.SUPABASE_URL, window.APP_CONFIG.SUPABASE_KEY);
+    
     document.getElementById('googleBtn').addEventListener('click', async () => {
         await supa.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: window.location.origin + '/auth/callback' }
+            options: { redirectTo: window.location.origin + '/' } // التوجيه للرئيسية مباشرة ✅
         });
     });
 
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('email').value.trim();
+        const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        const btn = document.getElementById('submitBtn');
-        
-        btn.textContent = 'Signing in...';
-        btn.disabled = true;
-
         const { data, error } = await supa.auth.signInWithPassword({ email, password });
-
         if (error) {
-            showLocalToast(error.message, 'error');
-            btn.textContent = 'Sign in'; 
-            btn.disabled = false;
-        } else if (data?.session) {
-            localStorage.setItem('token', data.session.access_token);
-            
-            let userCredits = '...';
-            try {
-                const res = await fetch(window.APP_CONFIG.API_BASE + '/api/user/credits', {
-                    headers: { 'Authorization': `Bearer ${data.session.access_token}` }
-                });
-                if (res.ok) {
-                    const d = await res.json();
-                    if (d.success) userCredits = d.credits;
-                }
-            } catch(err) {}
-
-            const meta = data.user.user_metadata || {};
-            const userData = {
-                id: data.user.id,
-                email: data.user.email,
-                name: meta.full_name || data.user.email.split('@')[0],
-                avatar: meta.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.email.split('@')[0])}&background=0f0f10&color=fff&size=64`,
-                credits: userCredits
-            };
-
-            localStorage.setItem('sl_user_cache', JSON.stringify(userData));
-            showLocalToast('Success! Redirecting...', 'success');
-            setTimeout(() => window.location.replace('/'), 500);
-        }
+            const t = document.getElementById('toasts');
+            const b = document.createElement('div'); b.className = 'toast error'; b.innerText = error.message;
+            t.appendChild(b); setTimeout(() => b.remove(), 3000);
+        } else { window.location.replace('/'); }
     });
 });
 </script>
+</body>
+</html>
