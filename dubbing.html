@@ -127,11 +127,13 @@
             .switch-container { justify-content: space-between; }
         }
     
-    /* ── Simple Voice Clone ── */
-    .voice-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-top: 15px; }
-    .voice-label { font-weight: 600; font-size: 0.95rem; color: var(--text-muted); }
-    .voice-select { padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-card); font-size: 0.95rem; cursor: pointer; min-width: 180px; }
-    .voice-select:focus { border-color: var(--accent-blue); outline: none; }
+    /* ── Voice Dropdown ── */
+    .voice-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 15px 0; }
+    .voice-label { font-weight: 600; font-size: 0.95rem; color: var(--text-muted); white-space: nowrap; }
+    .voice-select { padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); font-size: 0.95rem; cursor: pointer; min-width: 220px; font-weight: 500; }
+    .voice-select:focus { border-color: var(--accent-blue); outline: none; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
+    .voice-select optgroup { font-weight: 700; color: var(--text-main); }
+    .voice-select option { font-weight: 500; padding: 8px; }
 </style>
 <base target="_blank">
 </head>
@@ -207,6 +209,22 @@
             
             <div class="lang-dropdown" onclick="event.stopPropagation()">
                 <div id="selectedLangsDisplay" class="selected-langs-display"></div>
+
+
+    <!-- Voice Dropdown -->
+    <div class="voice-row">
+        <span class="voice-label"><i class="fas fa-microphone"></i> Voice:</span>
+        <select id="voiceSource" class="voice-select">
+            <optgroup label="🎬 Clone from File">
+                <option value="original">Original File Voice</option>
+            </optgroup>
+            <optgroup label="🎧 Samples" id="samplesOptgroup">
+                <option value="sample:muhammad.mp3">Muhammad</option>
+            </optgroup>
+        </select>
+    </div>
+    <!-- End Voice Dropdown -->
+
                 <input type="text" id="langSearch" class="lang-search" placeholder="🔍 Search language...">
                 <div id="langList" class="lang-list"></div>
             </div>
@@ -234,21 +252,6 @@
         <i class="fas fa-magic" style="margin-right: 8px;"></i>
         Start Dubbing
     </button>
-
-
-    <!-- Simple Voice Clone -->
-    <div class="voice-row">
-        <span class="voice-label"><i class="fas fa-microphone"></i> Voice:</span>
-        <select id="voiceSource" class="voice-select" onchange="toggleSampleSelect()">
-            <option value="original">🎬 Original File Voice</option>
-            <option value="sample" selected>🎧 Sample Voice</option>
-        </select>
-        <select id="sampleSelect" class="voice-select">
-            <option value="muhammad.mp3">Muhammad</option>
-        </select>
-    </div>
-    <!-- End Simple Voice Clone -->
-
 
     <div id="progressArea" class="progress-box">
         <div style="font-weight: bold; color: #374151; display: flex; justify-content: space-between;">
@@ -415,20 +418,51 @@ window.addEventListener('load', () => {
 </script>
 
 <script>
-function toggleSampleSelect() {
-    const source = document.getElementById('voiceSource').value;
-    const sampleSelect = document.getElementById('sampleSelect');
-    sampleSelect.style.display = source === 'sample' ? 'block' : 'none';
+// Auto-load samples from /samples folder
+async function loadSamples() {
+    const optgroup = document.getElementById('samplesOptgroup');
+    if (!optgroup) return;
+
+    try {
+        // Try to fetch samples list from server endpoint or directory listing
+        const response = await fetch('samples/');
+        if (response.ok) {
+            const text = await response.text();
+            // Parse directory listing for .mp3, .wav files
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            const links = doc.querySelectorAll('a');
+
+            let samples = [];
+            links.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && (href.endsWith('.mp3') || href.endsWith('.wav') || href.endsWith('.ogg'))) {
+                    const name = href.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+                    samples.push({ file: href, name: name.charAt(0).toUpperCase() + name.slice(1) });
+                }
+            });
+
+            if (samples.length > 0) {
+                optgroup.innerHTML = samples.map(s => 
+                    `<option value="sample:${s.file}">${s.name}</option>`
+                ).join('');
+            }
+        }
+    } catch (e) {
+        // Fallback: keep default muhammad.mp3
+        console.log('Auto-load samples failed, using default');
+    }
 }
 
 window.getVoiceConfig = function() {
-    return {
-        source: document.getElementById('voiceSource').value,
-        sample: document.getElementById('sampleSelect')?.value
-    };
+    const val = document.getElementById('voiceSource').value;
+    if (val.startsWith('sample:')) {
+        return { source: 'sample', file: val.replace('sample:', '') };
+    }
+    return { source: val };
 };
 
-document.addEventListener('DOMContentLoaded', toggleSampleSelect);
+document.addEventListener('DOMContentLoaded', loadSamples);
 </script>
 </body>
 </html>
