@@ -1,4 +1,4 @@
-// js/shared.js - V24 (Bulletproof Auth & Race Condition Fixed)
+// js/shared.js - V25 (The True Fix - No URL Wipe)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -73,8 +73,6 @@ window.checkAuth = async function() {
         const { data: { session }, error } = await supa.auth.getSession();
 
         if (!session || error) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('sl_user_cache');
             window.updateDropdownUI(null);
             return;
         }
@@ -113,20 +111,25 @@ window.checkAuth = async function() {
 document.addEventListener('DOMContentLoaded', () => {
 
     const supa = getSupabase();
-    const hash = window.location.hash;
-    const search = window.location.search;
 
-    // ✅ الحل الجذري: التقاط التوكن وتحديث الواجهة بالقوة دون انتظار الإشارات
-    if (hash.includes('access_token') || search.includes('code=')) {
-        window.history.replaceState(null, '', window.location.pathname);
-        // نعطي Supabase ثانية واحدة لمعالجة الرابط، ثم نجلب الجلسة
-        setTimeout(() => {
-            window.checkAuth();
-        }, 800);
-    } else {
-        // تحميل عادي للصفحة
-        window.checkAuth();
+    if (supa) {
+        // نترك Supabase يقرأ الرابط براحته أولاً!
+        supa.auth.onAuthStateChange((event, session) => {
+            console.log("Supabase Auth Event:", event); // ✅ رسالة ستظهر لك في الكونسول لتأكيد الدخول
+            
+            if (event === 'SIGNED_IN') {
+                // بمجرد أن يؤكد Supabase الدخول، نقوم بتنظيف الرابط
+                window.history.replaceState(null, '', window.location.pathname);
+                window.checkAuth();
+            } else if (event === 'SIGNED_OUT') {
+                localStorage.clear();
+                window.updateDropdownUI(null);
+            }
+        });
     }
+
+    // جلب البيانات عند التحميل العادي
+    window.checkAuth();
 
     // Dropdown Toggle
     const menuBtn      = document.getElementById('menuBtn');
@@ -147,40 +150,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
         if (supa) await supa.auth.signOut();
         localStorage.clear();
-        window.location.replace('/');
+        window.location.reload();
     });
 
     // Start Server Check
     window.checkServer();
     setInterval(window.checkServer, 300000);
-
-    // Global Auth Listener (كمنظومة أمان إضافية)
-    if (supa) {
-        supa.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_OUT') {
-                localStorage.removeItem('token');
-                localStorage.removeItem('sl_user_cache');
-                window.updateDropdownUI(null);
-            }
-        });
-    }
 });
-
-// ── 5. Utils ──
-window.showToast = function(msg, type) {
-    const t = document.getElementById('toasts');
-    if (!t) return;
-    const box       = document.createElement('div');
-    box.className   = 'toast ' + (type === 'error' ? 'error' : 'success');
-    box.textContent = msg;
-    t.appendChild(box);
-    setTimeout(() => box.remove(), 4000);
-};
-
-window.escapeHtml = function(u) {
-    return String(u || '').replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-    }[m]));
-};
 
 window._supabaseClient = getSupabase();
