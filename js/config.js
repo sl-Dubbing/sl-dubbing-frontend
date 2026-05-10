@@ -1,7 +1,7 @@
 // js/config.js - الإعدادات العامة للمشروع (API & Database)
 
 // 1️⃣ رابط سيرفر البايثون (Backend) الذي تم ربطه بمنصة Railway
-window.API_BASE = "https://api.glotix.ai";
+window.API_BASE = "https://api.glotix.ai/api";
 
 // 2️⃣ إعدادات قاعدة بيانات Supabase
 // ملاحظة: هذا المفتاح (anon public key) مصمم ليكون في الواجهة الأمامية وهو آمن 
