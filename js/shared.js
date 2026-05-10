@@ -1,5 +1,6 @@
-// shared.js — V11.2 (الرصيد الحقيقي + إصلاح القائمة الجانبية)
-const API_BASE = 'https://web-production-14a1.up.railway.app';
+// shared.js — V12.0 (تم الربط بالدومين الرسمي 🚀)
+// نعتمد على الدومين الموجود في config.js
+const API_BASE = window.API_BASE || 'https://api.glotix.ai'; 
 const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
 const USER_CACHE_KEY = 'sl_user_cache';
@@ -25,15 +26,15 @@ async function getSupabase() {
 }
 
 // =================================
-// 🎨 2. رسم واجهة المستخدم (الرصيد والاسم)
+// 🎨 2. رسم واجهة المستخدم
 // =================================
 function renderAuthUI(user) {
     const authSection = document.getElementById('authSection');
     const topBadge = document.getElementById('topAccountBadge');
 
     if (!user) {
-        if (authSection) authSection.innerHTML = `<div style="text-align:center;padding:8px;"><a href="login.html" class="btn-login-sidebar">تسجيل الدخول</a></div>`;
-        if (topBadge) topBadge.innerHTML = `<a href="login.html" style="color:inherit;text-decoration:none;"><i class="fas fa-sign-in-alt"></i> دخول</a>`;
+        if (authSection) authSection.innerHTML = `<div style="text-align:center;padding:8px;"><a href="/login" class="btn-login-sidebar">تسجيل الدخول</a></div>`;
+        if (topBadge) topBadge.innerHTML = `<a href="/login" style="color:inherit;text-decoration:none;"><i class="fas fa-sign-in-alt"></i> دخول</a>`;
         return;
     }
 
@@ -55,7 +56,7 @@ function renderAuthUI(user) {
 }
 
 // =================================
-// 🚀 3. جلب البيانات من Railway (المحاسب)
+// 🚀 3. جلب البيانات من السيرفر
 // =================================
 async function checkAuth() {
     const cached = JSON.parse(localStorage.getItem(USER_CACHE_KEY) || 'null');
@@ -74,7 +75,6 @@ async function checkAuth() {
 
         localStorage.setItem('token', session.access_token);
 
-        // طلب الرصيد من المسار الصحيح في app.py
         const res = await fetch(`${API_BASE}/api/user/credits`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
@@ -98,7 +98,7 @@ async function checkAuth() {
 }
 
 // =================================
-// 📱 4. منطق القائمة الجانبية (Sidebar)
+// 📱 4. منطق القائمة الجانبية
 // =================================
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -110,7 +110,7 @@ function toggleSidebar() {
 function openSidebar() {
     document.getElementById('sidebar')?.classList.add('active');
     document.getElementById('overlay')?.classList.add('active');
-    document.body.style.overflow = 'hidden'; // منع التمرير عند فتح القائمة
+    document.body.style.overflow = 'hidden';
 }
 
 function closeSidebar() {
@@ -126,41 +126,21 @@ async function logout() {
     const supa = await getSupabase();
     await supa.auth.signOut();
     localStorage.clear();
-    location.href = 'index.html';
+    location.href = '/'; // 👈 تم إزالة index.html ليكون الرابط نظيفاً
 }
 
 // =================================
-// 🛠️ 6. الربط والتشغيل (Initialization)
+// 🛠️ 6. الربط والتشغيل
 // =================================
 document.addEventListener('DOMContentLoaded', () => {
-    // تحديث الرصيد والحالة
     checkAuth();
-
-    // البحث عن زر القائمة (بأي اسم متاح)
-    const menuBtn = document.getElementById('menuBtn') || 
-                    document.getElementById('menuToggle') || 
-                    document.querySelector('.menu-icon');
-
-    if (menuBtn) {
-        menuBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            toggleSidebar();
-        });
-    }
-
-    // ربط الغطاء الشفاف (Overlay) للإغلاق
+    const menuBtn = document.getElementById('menuBtn') || document.getElementById('menuToggle') || document.querySelector('.menu-icon');
+    if (menuBtn) menuBtn.addEventListener('click', (e) => { e.preventDefault(); toggleSidebar(); });
     const overlay = document.getElementById('overlay');
-    if (overlay) {
-        overlay.addEventListener('click', closeSidebar);
-    }
-
-    // إغلاق القائمة عند ضغط Escape
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeSidebar();
-    });
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
 });
 
-// الأدوات المساعدة
 function escapeHtml(u) { return String(u||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m])); }
 function showToast(msg, color) {
     const t = document.getElementById('toasts');
@@ -173,7 +153,6 @@ function showToast(msg, color) {
     setTimeout(() => box.remove(), 4000);
 }
 
-// تصدير الدوال للنافذة
 window.toggleSidebar = toggleSidebar;
 window.closeSidebar = closeSidebar;
 window.checkAuth = checkAuth;
