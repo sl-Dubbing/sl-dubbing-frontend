@@ -134,8 +134,10 @@ async function logout() {
 // =================================
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
-    const menuToggle = document.getElementById('menuToggle') || document.querySelector('.menu-icon');
-    if (menuToggle) menuToggle.addEventListener('click', (e) => { e.preventDefault(); toggleSidebar(); });
+    if (!window.__SKIP_MENU_BIND__) {
+        const menuBtn = document.getElementById('menuBtn') || document.getElementById('menuToggle') || document.querySelector('.menu-icon');
+        if (menuBtn) menuBtn.addEventListener('click', (e) => { e.preventDefault(); toggleSidebar(); });
+    }
     const overlay = document.getElementById('overlay');
     if (overlay) overlay.addEventListener('click', closeSidebar);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
