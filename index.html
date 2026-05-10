@@ -26,8 +26,8 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; overflow-x: hidden; line-height: 1.5; }
         
-        /* 🚀 التعديل الأهم: توسيع الصفحة لتملأ الشاشة وتغيير الهوامش */
-        .page { max-width: 1500px; margin: 0 auto; padding: 20px 5%; }
+        /* 🚀 التوسيع الأقصى: دفع الشعار لليسار والقائمة لليمين */
+        .page { max-width: 1700px; margin: 0 auto; padding: 20px 3%; }
 
         /* ── Header ── */
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0 50px; }
@@ -74,17 +74,17 @@
 
         /* ── Hero ── */
         .hero { text-align: center; padding: 40px 0 80px; }
-        .hero h1 { font-size: clamp(3rem, 6vw, 4.5rem); font-weight: 900; line-height: 1.1; margin-bottom: 24px; letter-spacing: -0.03em; }
-        .hero p { color: var(--text-muted); font-size: 1.25rem; max-width: 800px; margin: 0 auto; line-height: 1.6; }
+        .hero h1 { font-size: clamp(3rem, 6vw, 4.5rem); font-weight: 900; line-height: 1.1; margin-bottom: 10px; letter-spacing: -0.03em; }
 
         /* ── Tools Grid ── */
-        .tools-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 32px; margin-bottom: 100px; }
-        .tool-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 40px; cursor: pointer; transition: 0.3s; text-align: left; display: flex; flex-direction: column; justify-content: space-between; min-height: 300px; }
+        .tools-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 32px; margin-bottom: 100px; }
+        
+        /* 🎨 تعديل البطاقات لتناسب إزالة النصوص (أصبحت أكثر إحكاماً) */
+        .tool-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 40px; cursor: pointer; transition: 0.3s; text-align: left; display: flex; flex-direction: column; justify-content: center; min-height: 240px; }
         .tool-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.06); border-color: #d1d5db; }
-        .tool-card .ico { font-size: 2.5rem; margin-bottom: 24px; display: block; color: var(--text-main); }
-        .tool-card h3 { font-size: 1.5rem; font-weight: 800; margin-bottom: 16px; }
-        .tool-card p { color: var(--text-muted); font-size: 1.05rem; line-height: 1.6; margin-bottom: 30px; flex-grow: 1; }
-        .tool-card .go { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 8px; color: var(--accent-blue); }
+        .tool-card .ico { font-size: 2.8rem; margin-bottom: 24px; display: block; color: var(--text-main); }
+        .tool-card h3 { font-size: 1.6rem; font-weight: 800; margin-bottom: 24px; }
+        .tool-card .go { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; color: var(--accent-blue); margin-top: auto; }
 
         /* ── Pricing ── */
         .section-title { text-align: center; margin-bottom: 60px; }
@@ -151,26 +151,22 @@
 
     <section class="hero">
         <h1>Create Professional<br>Audio Content with AI</h1>
-        <p>State-of-the-art AI technology for Text-to-Speech, Video Dubbing, and highly accurate Audio Transcription in 25+ languages.</p>
     </section>
 
     <div class="tools-row">
         <div class="tool-card" onclick="location.href='/tts'">
             <span class="ico"><i class="fas fa-microphone-lines"></i></span>
             <h3>Text to Speech</h3>
-            <p>Convert any text into natural-sounding speech. Control pacing and tone with precision.</p>
             <span class="go">Try Now <i class="fas fa-arrow-right"></i></span>
         </div>
         <div class="tool-card" onclick="location.href='/dubbing'">
             <span class="ico"><i class="fas fa-video"></i></span>
             <h3>AI Video Dubbing</h3>
-            <p>Automatically dub your videos. Preserve original voices with perfect lip-sync & SRT matching.</p>
             <span class="go">Try Now <i class="fas fa-arrow-right"></i></span>
         </div>
         <div class="tool-card" onclick="location.href='/stt'">
             <span class="ico"><i class="fas fa-headphones"></i></span>
             <h3>Speech to Text</h3>
-            <p>Transcribe audio or video files into highly accurate text with speaker detection.</p>
             <span class="go">Try Now <i class="fas fa-arrow-right"></i></span>
         </div>
     </div>
