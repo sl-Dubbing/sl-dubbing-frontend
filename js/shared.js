@@ -1,6 +1,6 @@
-// js/shared.js - V16 (Final Clean Version)
+// js/shared.js - V17 (Final)
 
-const API_BASE = window.APP_CONFIG?.API_BASE || 'https://api.glotix.ai';
+const API_BASE    = window.APP_CONFIG?.API_BASE    || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
 const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjU0OTUsImV4cCI6MjA5MzA0MTQ5NX0.F-4TbmO6_7plPm8NBr_6djCv6gtEPpWFw9J7m8vTs6M';
 
@@ -16,26 +16,26 @@ function getSupabase() {
     return supabaseClient;
 }
 
-// ── 1. Update Dropdown UI (works on ALL pages) ──
+// ── 1. Update Dropdown UI ──
 window.updateDropdownUI = function(user) {
-    const guestMenu  = document.getElementById('guestMenu');
-    const userMenu   = document.getElementById('userMenu');
-    const logoutBtn  = document.getElementById('logoutBtn');
-    const userName   = document.getElementById('menuUserName');
-    const credits    = document.getElementById('menuCredits');
-    const avatar     = document.getElementById('menuAvatar');
+    const guestMenu = document.getElementById('guestMenu');
+    const userMenu  = document.getElementById('userMenu');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userName  = document.getElementById('menuUserName');
+    const credits   = document.getElementById('menuCredits');
+    const avatar    = document.getElementById('menuAvatar');
 
     if (user && user.id) {
-        if (guestMenu)  guestMenu.style.display  = 'none';
-        if (userMenu)   userMenu.style.display   = 'block';
-        if (logoutBtn)  logoutBtn.style.display  = 'flex';
-        if (userName)   userName.textContent     = user.name || 'My Account';
-        if (credits)    credits.textContent      = user.credits !== undefined ? user.credits : '...';
-        if (avatar && user.avatar) avatar.src    = user.avatar;
+        if (guestMenu) guestMenu.style.display = 'none';
+        if (userMenu)  userMenu.style.display  = 'block';
+        if (logoutBtn) logoutBtn.style.display = 'flex';
+        if (userName)  userName.textContent    = user.name || 'My Account';
+        if (credits)   credits.textContent     = user.credits !== undefined ? user.credits : '...';
+        if (avatar && user.avatar) avatar.src  = user.avatar;
     } else {
-        if (guestMenu)  guestMenu.style.display  = 'flex';
-        if (userMenu)   userMenu.style.display   = 'none';
-        if (logoutBtn)  logoutBtn.style.display  = 'none';
+        if (guestMenu) guestMenu.style.display = 'flex';
+        if (userMenu)  userMenu.style.display  = 'none';
+        if (logoutBtn) logoutBtn.style.display = 'none';
     }
 };
 
@@ -44,16 +44,15 @@ window.checkServer = async function() {
     const badge = document.getElementById('srv');
     const txt   = document.getElementById('srvTxt');
     if (!badge || !txt) return;
-
     try {
         const r    = await fetch(API_BASE + '/api/status');
         const data = await r.json();
         if (data.is_online) {
-            badge.className  = 'srv-badge on';
-            txt.textContent  = 'Connected to Cloud';
+            badge.className = 'srv-badge on';
+            txt.textContent = 'Connected to Cloud';
         } else {
-            badge.className  = 'srv-badge';
-            txt.textContent  = 'System Offline';
+            badge.className = 'srv-badge';
+            txt.textContent = 'System Offline';
         }
     } catch (e) {
         if (badge) badge.className = 'srv-badge';
@@ -63,7 +62,6 @@ window.checkServer = async function() {
 
 // ── 3. Full Auth Sync ──
 window.checkAuth = async function() {
-    // عرض الكاش فوراً
     const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
     if (cachedUser) window.updateDropdownUI(cachedUser);
 
@@ -87,13 +85,12 @@ window.checkAuth = async function() {
         });
 
         if (res.ok) {
-            const d = await res.json();
+            const d        = await res.json();
             const userData = {
                 id:      session.user.id,
                 email:   session.user.email,
                 name:    session.user.user_metadata?.full_name ||
-                         session.user.email?.split('@')[0] ||
-                         'User',
+                         session.user.email?.split('@')[0] || 'User',
                 avatar:  session.user.user_metadata?.avatar_url ||
                          session.user.user_metadata?.picture ||
                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -112,7 +109,7 @@ window.checkAuth = async function() {
 // ── 4. Global Event Listeners ──
 document.addEventListener('DOMContentLoaded', () => {
 
-    // اكتشاف العودة من Google OAuth وإعادة تحميل لاستيعاب الجلسة
+    // اكتشاف العودة من Google OAuth
     const hash = window.location.hash;
     if (hash.includes('access_token') || hash.includes('token_type')) {
         window.history.replaceState(null, '', window.location.pathname);
@@ -126,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dropdown Toggle
     const menuBtn      = document.getElementById('menuBtn');
     const dropdownMenu = document.getElementById('mainMenuDropdown');
-
     if (menuBtn && dropdownMenu) {
         menuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -147,12 +143,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.replace('/');
     });
 
-    // بدء العمليات
+    // Start
     window.checkAuth();
     window.checkServer();
     setInterval(window.checkServer, 30000);
 
-    // مراقبة تغييرات الجلسة
+    // Auth State Changes
     setTimeout(() => {
         const supa = getSupabase();
         if (!supa) return;
@@ -172,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.showToast = function(msg, type) {
     const t = document.getElementById('toasts');
     if (!t) return;
-    const box = document.createElement('div');
+    const box       = document.createElement('div');
     box.className   = 'toast ' + (type === 'error' ? 'error' : 'success');
     box.textContent = msg;
     t.appendChild(box);
@@ -185,5 +181,5 @@ window.escapeHtml = function(u) {
     }[m]));
 };
 
-// ✅ أضف هذا السطر هنا
+// ✅ خارج كل الدوال — يُنفَّذ مباشرة عند تحميل الملف
 window._supabaseClient = getSupabase();
