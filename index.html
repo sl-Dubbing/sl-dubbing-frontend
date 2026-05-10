@@ -302,23 +302,16 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-        // ✅ Detect OAuth return and reload once
-        if (window.location.hash.includes('access_token') || 
-            window.location.hash.includes('token_type') ||
-            window.location.search.includes('auth=1')) {
-            window.history.replaceState(null, '', '/');
-            window.location.reload();
-            return;
-        }
-
         checkServer();
         fetchLiveAuth(); 
         setInterval(checkServer, 30000);
 
-        // Clean normal hash without reload
-        if (window.location.hash) {
-            window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
-        }
+        // 🚀 إزالة علامة # من الرابط إذا وجدت
+        setTimeout(() => {
+            if (window.location.hash) {
+                window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+            }
+        }, 300);
     });
 </script>
 </body>
