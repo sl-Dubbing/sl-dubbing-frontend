@@ -1,6 +1,6 @@
 // js/shared.js - V15 (Centralized Dropdown, Auth & UI)
 
-const API_BASE = window.APP_CONFIG?.API_BASE || 'https://web-production-14a1.up.railway.app';
+const API_BASE = window.APP_CONFIG?.API_BASE || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
 const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
 
