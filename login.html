@@ -106,22 +106,31 @@
 <script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // توجيه المستخدم للرئيسية إذا كان مسجلاً للدخول بالفعل
-    if (localStorage.getItem('token')) {
+document.addEventListener('DOMContentLoaded', async () => {
+    const supa = window.supabase.createClient(window.APP_CONFIG.SUPABASE_URL, window.APP_CONFIG.SUPABASE_KEY);
+
+    const toast = (msg, type) => {
+        if (typeof window.showToast === 'function') {
+            window.showToast(msg, type);
+        } else {
+            console.log(`${type}: ${msg}`);
+        }
+    };
+
+    // التحقق من الجلسة الحالية
+    const { data: { session } } = await supa.auth.getSession();
+    if (session) {
         window.location.replace('/');
         return;
     }
-    
-    const supa = window.supabase.createClient(window.APP_CONFIG.SUPABASE_URL, window.APP_CONFIG.SUPABASE_KEY);
 
     // تسجيل الدخول بجوجل
     document.getElementById('googleBtn').addEventListener('click', async () => {
-        const { data, error } = await supa.auth.signInWithOAuth({
+        const { error } = await supa.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo: window.location.origin + '/' }
         });
-        if (data?.url) window.location.assign(data.url);
+        if (error) toast(error.message, 'error');
     });
 
     // تسجيل الدخول بالإيميل والباسورد
@@ -137,12 +146,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const { data, error } = await supa.auth.signInWithPassword({ email, password });
 
         if (error) {
-            window.showToast('Invalid email or password', 'error');
+            toast(error.message || 'Invalid email or password', 'error');
             btn.textContent = 'Sign in'; 
             btn.disabled = false;
         } else if (data?.session) {
+            // حفظ التوكن
             localStorage.setItem('token', data.session.access_token);
-            window.showToast('Signed in successfully!', 'success');
+            
+            const userMeta = data.user.user_metadata || {};
+            let userCredits = '...';
+
+            // محاولة جلب الرصيد من جدول users
+            try {
+                const { data: profile } = await supa
+                    .from('users')
+                    .select('credits')
+                    .eq('id', data.user.id)
+                    .single();
+                
+                if (profile) userCredits = profile.credits;
+            } catch (err) {
+                console.error('Credits fetch failed:', err);
+            }
+
+            // تجميع البيانات في الكائن الموحد الذي يقرأه shared.js
+            const userData = {
+                id: data.user.id,
+                email: data.user.email,
+                name: userMeta.full_name || data.user.email.split('@')[0],
+                avatar: userMeta.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.email.split('@')[0])}&background=0f0f10&color=fff&size=64`,
+                credits: userCredits
+            };
+
+            // الحفظ في المفتاح المطلوب ✅
+            localStorage.setItem('sl_user_cache', JSON.stringify(userData));
+
+            toast('Signed in successfully!', 'success');
             setTimeout(() => window.location.replace('/'), 500);
         }
     });
