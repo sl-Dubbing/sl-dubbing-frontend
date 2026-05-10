@@ -1,256 +1,159 @@
-// js/dubbing.js — الإصدار السينمائي المتقدم (V11.0 - Final)
-let cinemaResults = {};
-let activeWavesurfer = null;
+// shared.js — V12.0 (تم الربط بالدومين الرسمي 🚀)
+// نعتمد على الدومين الموجود في config.js
+const API_BASE = window.API_BASE || 'https://api.glotix.ai'; 
+const SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW';
+const USER_CACHE_KEY = 'sl_user_cache';
 
-// =====================================
-// 1. معاينة الملف المرفوع (Preview)
-// =====================================
-document.getElementById('mediaFile')?.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+window.API_BASE = API_BASE;
 
-    const url = URL.createObjectURL(file);
-    const dropZone = document.getElementById('dropZone');
-    const previewArea = document.getElementById('previewArea');
-    const dubBtn = document.getElementById('dubBtn');
-    const vPreview = document.getElementById('videoPreview');
-    const aPreview = document.getElementById('audioPreviewLabel');
-
-    if(dropZone) dropZone.style.display = 'none';
-    if(previewArea) previewArea.style.display = 'block';
-    if(dubBtn) dubBtn.style.display = 'block';
-
-    if (file.type.startsWith('video/')) {
-        vPreview.src = url;
-        vPreview.style.display = 'block';
-        aPreview.style.display = 'none';
-    } else {
-        vPreview.style.display = 'none';
-        aPreview.style.display = 'block';
-        document.getElementById('audioFileName').innerText = file.name;
+// =================================
+// 🔌 1. تهيئة Supabase
+// =================================
+let supabaseClient = null;
+async function getSupabase() {
+    if (supabaseClient) return supabaseClient;
+    if (!window.supabase) {
+        await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+            s.onload = resolve; s.onerror = reject;
+            document.head.appendChild(s);
+        });
     }
-});
-
-// =====================================
-// 2. دالة الرفع المباشر لـ Cloudflare R2
-// =====================================
-async function uploadToR2(url, file, contentType) {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', url, true);
-        
-        // 🚨 إجبار المتصفح على استخدام نفس نوع الملف الذي وقعنا به الرابط
-        xhr.setRequestHeader('Content-Type', contentType);
-        
-        xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-                const pct = Math.round((e.loaded / e.total) * 100);
-                const overallProgress = 10 + (pct * 0.4); 
-                updateProgress("📤 Uploading to cloud storage...", overallProgress);
-            }
-        };
-        
-        xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`فشل الرفع (Status: ${xhr.status})`));
-        };
-        
-        xhr.onerror = () => reject(new Error("حدث خطأ في اتصال الشبكة أثناء الرفع"));
-        xhr.send(file);
-    });
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    return supabaseClient;
 }
 
-// =====================================
-// 3. بدء عملية الدبلجة (Main Controller)
-// =====================================
-async function startDubbing() {
-    const file = document.getElementById('mediaFile')?.files[0];
-    const token = localStorage.getItem('token');
-    
-    if (!token) return alert("يرجى تسجيل الدخول أولاً");
-    if (!file) return alert("يرجى اختيار ملف!");
-    if (!window.selectedLangs || window.selectedLangs.size === 0) return alert("اختر لغة واحدة على الأقل!");
+// =================================
+// 🎨 2. رسم واجهة المستخدم
+// =================================
+function renderAuthUI(user) {
+    const authSection = document.getElementById('authSection');
+    const topBadge = document.getElementById('topAccountBadge');
 
-    document.getElementById('dubBtn').style.display = 'none';
-    document.getElementById('progressArea').style.display = 'block';
-    document.getElementById('resultsCard').style.display = 'block';
-    const sidebar = document.getElementById('cinemaLangs');
-    sidebar.innerHTML = '';
-    cinemaResults = {};
+    if (!user) {
+        if (authSection) authSection.innerHTML = `<div style="text-align:center;padding:8px;"><a href="/login" class="btn-login-sidebar">تسجيل الدخول</a></div>`;
+        if (topBadge) topBadge.innerHTML = `<a href="/login" style="color:inherit;text-decoration:none;"><i class="fas fa-sign-in-alt"></i> دخول</a>`;
+        return;
+    }
+
+    const credits = (user.credits !== undefined) ? user.credits : "...";
+    const name = user.name || user.email?.split('@')[0] || 'مستخدم';
+
+    if (authSection) {
+        authSection.innerHTML = `
+            <div class="user-info-card">
+                <div class="user-name"><i class="fas fa-user-circle"></i> ${escapeHtml(name)}</div>
+                <div class="user-points"><i class="fas fa-coins"></i> ${credits} نقطة</div>
+                <button id="logoutBtn" style="margin-top:10px;background:none;border:none;color:#ff3b30;cursor:pointer;font-size:0.82rem;font-weight:600;">تسجيل الخروج</button>
+            </div>`;
+        document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    }
+    if (topBadge) {
+        topBadge.innerHTML = `<i class="fas fa-coins" style="color:#ff9500"></i> ${credits} نقطة`;
+    }
+}
+
+// =================================
+// 🚀 3. جلب البيانات من السيرفر
+// =================================
+async function checkAuth() {
+    const cached = JSON.parse(localStorage.getItem(USER_CACHE_KEY) || 'null');
+    if (cached) renderAuthUI(cached);
 
     try {
-        updateProgress("⚡ Initializing upload URL...", 5);
-        
-        // 💡 استخراج نوع الملف الدقيق لمنع رفض Cloudflare
-        const strictContentType = file.type || 'application/octet-stream';
+        const supa = await getSupabase();
+        const { data: { session } } = await supa.auth.getSession();
 
-        // 1. الحصول على رابط الرفع من Railway
-        const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                filename: file.name, 
-                content_type: strictContentType 
-            })
-        });
-        
-        if (!urlRes.ok) throw new Error("Server failed to generate upload URL");
-        const urlData = await urlRes.json();
-        
-        updateProgress("📤 Starting upload...", 10);
-
-        // 2. الرفع المباشر لـ Cloudflare R2
-        await uploadToR2(urlData.upload_url, file, strictContentType);
-
-        updateProgress("⚙️ Upload complete, starting AI processing...", 50);
-
-        // 3. إرسال طلبات الدبلجة لكل لغة
-        const langCodes = Array.from(window.selectedLangs);
-        let completed = 0;
-
-        for (const langCode of langCodes) {
-            const langInfo = window.LANGUAGES.find(l => l.code === langCode);
-            
-            const item = document.createElement('div');
-            item.className = 'side-lang-card';
-            item.id = `side-${langCode}`;
-            item.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${langInfo.name_ar}</span>`;
-            sidebar.appendChild(item);
-
-            fetch(`${window.API_BASE}/api/dub`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    file_key: urlData.file_key,
-                    lang: langCode,
-                    voice_config: window.getVoiceConfig ? window.getVoiceConfig() : { source: 'original' },
-                    
-                    video_output: document.getElementById('videoToggle').checked
-                })
-            }).then(res => res.json()).then(async (data) => {
-                const job = await waitForJob(data.job_id, token);
-                
-                cinemaResults[langCode] = { 
-                    url: job.output_url, 
-                    name: langInfo.name_ar, 
-                    flag: langInfo.flag 
-                };
-
-                item.innerHTML = `<span>${langInfo.flag}</span> <span>${langInfo.name_ar}</span> <i class="fas fa-check-circle" style="color:var(--accent-green); margin-right:auto;"></i>`;
-                item.onclick = () => switchCinemaLang(langCode);
-
-                if (Object.keys(cinemaResults).length === 1) switchCinemaLang(langCode);
-
-                completed++;
-                const pct = 50 + (completed / langCodes.length * 50);
-                updateProgress(completed === langCodes.length ? "✅ All languages completed!" : "⏳ Processing languages...", pct);
-            });
+        if (!session) {
+            localStorage.removeItem('token');
+            localStorage.removeItem(USER_CACHE_KEY);
+            renderAuthUI(null);
+            return;
         }
 
+        localStorage.setItem('token', session.access_token);
+
+        const res = await fetch(`${API_BASE}/api/user/credits`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+        });
+
+        if (res.ok) {
+            const d = await res.json();
+            if (d?.success) {
+                const userData = {
+                    id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+                    credits: d.credits
+                };
+                localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userData));
+                renderAuthUI(userData);
+            }
+        }
     } catch (e) {
-        console.error("Dubbing Error:", e);
-        alert("Technical error: " + e.message);
-        document.getElementById('dubBtn').style.display = 'block';
+        console.warn('Auth Sync Failed:', e);
     }
 }
 
-// =====================================
-// 4. مشغل السينما الذكي (Video vs Audio)
-// =====================================
-function switchCinemaLang(langCode) {
-    const data = cinemaResults[langCode];
-    if (!data) return;
-
-    document.querySelectorAll('.side-lang-card').forEach(c => c.classList.remove('active'));
-    const sideCard = document.getElementById(`side-${langCode}`);
-    if (sideCard) sideCard.classList.add('active');
-
-    const playerContainer = document.getElementById('mainPlayer');
-    const dlArea = document.getElementById('dlArea');
-    const dlBtn = document.getElementById('masterDl');
-
-    if (activeWavesurfer) { activeWavesurfer.destroy(); activeWavesurfer = null; }
-
-    dlArea.style.display = 'block';
-    dlBtn.href = data.url;
-
-    const isVideo = data.url.toLowerCase().includes('.mp4');
-
-    if (isVideo) {
-        playerContainer.innerHTML = `<video controls autoplay src="${data.url}"></video>`;
-    } else {
-        playerContainer.innerHTML = `
-            <div class="audio-player-wrapper">
-                <div class="audio-player-header">
-                    <span class="flag">${data.flag}</span>
-                    <span>Dubbed Version - ${data.name}</span>
-                </div>
-                <div id="waveform" class="audio-waveform"></div>
-                <div class="audio-controls">
-                    <button class="play-btn" id="wavePlayBtn"><i class="fas fa-play"></i></button>
-                    <div class="audio-time" id="waveTime">00:00 / 00:00</div>
-                </div>
-            </div>
-        `;
-
-        activeWavesurfer = WaveSurfer.create({
-            container: '#waveform',
-            waveColor: '#4b5563',
-            progressColor: '#3b82f6',
-            cursorColor: '#fff',
-            barWidth: 3,
-            barRadius: 3,
-            responsive: true,
-            height: 80,
-        });
-
-        activeWavesurfer.load(data.url);
-        
-        activeWavesurfer.on('ready', () => {
-            activeWavesurfer.play();
-            document.getElementById('wavePlayBtn').innerHTML = '<i class="fas fa-pause"></i>';
-        });
-
-        activeWavesurfer.on('audioprocess', () => {
-            const current = formatTime(activeWavesurfer.getCurrentTime());
-            const total = formatTime(activeWavesurfer.getDuration());
-            document.getElementById('waveTime').innerText = `${current} / ${total}`;
-        });
-
-        document.getElementById('wavePlayBtn').onclick = () => {
-            activeWavesurfer.playPause();
-            const isPlaying = activeWavesurfer.isPlaying();
-            document.getElementById('wavePlayBtn').innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
-        };
-    }
+// =================================
+// 📱 4. منطق القائمة الجانبية
+// =================================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    if (sidebar.classList.contains('active')) closeSidebar();
+    else openSidebar();
 }
 
-// =====================================
-// 5. أدوات مساعدة (Wait & Format)
-// =====================================
-async function waitForJob(id, token) {
-    while(true) {
-        const res = await fetch(`${window.API_BASE}/api/job/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const data = await res.json();
-        if (data.status === 'completed') return data;
-        if (data.status === 'failed') throw new Error("Video processing failed on server");
-        await new Promise(r => setTimeout(r, 4000));
-    }
+function openSidebar() {
+    document.getElementById('sidebar')?.classList.add('active');
+    document.getElementById('overlay')?.classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 
-function updateProgress(txt, pct) {
-    const sTxt = document.getElementById('statusTxt');
-    const sPct = document.getElementById('statusPct');
-    const pFill = document.getElementById('progFill');
-    if (sTxt) sTxt.innerText = txt;
-    if (sPct) sPct.innerText = Math.round(pct) + "%";
-    if (pFill) pFill.style.width = pct + "%";
+function closeSidebar() {
+    document.getElementById('sidebar')?.classList.remove('active');
+    document.getElementById('overlay')?.classList.remove('active');
+    document.body.style.overflow = '';
 }
 
-function formatTime(s) {
-    const min = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+// =================================
+// 🚪 5. تسجيل الخروج
+// =================================
+async function logout() {
+    const supa = await getSupabase();
+    await supa.auth.signOut();
+    localStorage.clear();
+    location.href = '/'; // 👈 تم إزالة index.html ليكون الرابط نظيفاً
 }
 
-document.getElementById('dubBtn').onclick = startDubbing;
+// =================================
+// 🛠️ 6. الربط والتشغيل
+// =================================
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    const menuToggle = document.getElementById('menuToggle') || document.querySelector('.menu-icon');
+    if (menuToggle) menuToggle.addEventListener('click', (e) => { e.preventDefault(); toggleSidebar(); });
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+});
+
+function escapeHtml(u) { return String(u||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m])); }
+function showToast(msg, color) {
+    const t = document.getElementById('toasts');
+    if (!t) { alert(msg); return; }
+    const box = document.createElement('div');
+    box.className = 'toast';
+    box.textContent = msg;
+    box.style.background = (color === 'error') ? '#ff3b30' : '#34c759';
+    t.appendChild(box);
+    setTimeout(() => box.remove(), 4000);
+}
+
+window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;
+window.checkAuth = checkAuth;
+window.logout = logout;
