@@ -180,12 +180,5 @@
 <script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script>
-    // الإصلاح رقم 1 ✅ - معالجة التوكن بشكل صحيح وإعادة تحميل الصفحة
-    const hash = window.location.hash;
-    if (hash.includes('access_token')) {
-        window.history.replaceState(null, '', '/');
-        window.location.reload();
-    }
-</script>
 </body>
 </html>
