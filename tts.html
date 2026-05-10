@@ -214,7 +214,7 @@
 <div id="toasts"></div>
 
 <script>
-    const BE = window.API_BASE || 'https://api.glotix.ai';
+    const BE = 'https://api.glotix.ai';
     const SUPABASE_URL = "https://ckjkkxrlgisjdolwddfg.supabase.co"; 
     const SUPABASE_KEY = "sb_publishable_vS3koY6oKGMH16u1DdtLrg_PC83FaHW"; 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -274,6 +274,7 @@
     document.addEventListener('DOMContentLoaded', () => { fetchLiveAuth(); });
 </script>
 
+<script>window.__SKIP_MENU_BIND__ = true;</script>
 <script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/languages-data.js"></script>
