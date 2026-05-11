@@ -126,7 +126,7 @@ if (window._supabaseClient) {
     window._supabaseClient.auth.onAuthStateChange((event, session) => {
         console.log('Supabase Auth Event:', event);
 
-        if (event === 'SIGNED_IN') {
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
             window.history.replaceState(null, '', window.location.pathname);
             if (_domReady) {
                 // DOM جاهز — نفّذ مباشرة
