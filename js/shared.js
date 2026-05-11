@@ -1,4 +1,4 @@
-// js/shared.js - V25 (The True Fix - No URL Wipe)
+// js/shared.js - V26 (Final Fix)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -73,6 +73,8 @@ window.checkAuth = async function() {
         const { data: { session }, error } = await supa.auth.getSession();
 
         if (!session || error) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('sl_user_cache');
             window.updateDropdownUI(null);
             return;
         }
@@ -95,8 +97,14 @@ window.checkAuth = async function() {
         const userData = {
             id:      session.user.id,
             email:   session.user.email,
-            name:    session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-            avatar:  session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.email?.split('@')[0] || 'U')}&background=0f0f10&color=fff&size=64`,
+            name:    session.user.user_metadata?.full_name ||
+                     session.user.user_metadata?.name ||
+                     session.user.email?.split('@')[0] || 'User',
+            avatar:  session.user.user_metadata?.avatar_url ||
+                     session.user.user_metadata?.picture ||
+                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                         session.user.email?.split('@')[0] || 'U'
+                     )}&background=0f0f10&color=fff&size=64`,
             credits: userCredits
         };
         localStorage.setItem('sl_user_cache', JSON.stringify(userData));
@@ -107,28 +115,26 @@ window.checkAuth = async function() {
     }
 };
 
-// ── 4. Global Event Listeners ──
+// ── 4. سجّل onAuthStateChange فوراً قبل DOMContentLoaded ──
+window._supabaseClient = getSupabase();
+
+if (window._supabaseClient) {
+    window._supabaseClient.auth.onAuthStateChange((event, session) => {
+        console.log('Supabase Auth Event:', event);
+        if (event === 'SIGNED_IN') {
+            window.history.replaceState(null, '', window.location.pathname);
+            window.checkAuth();
+        } else if (event === 'SIGNED_OUT') {
+            localStorage.removeItem('token');
+            localStorage.removeItem('sl_user_cache');
+            window.updateDropdownUI(null);
+        }
+    });
+}
+
+// ── 5. Global Event Listeners ──
 document.addEventListener('DOMContentLoaded', () => {
 
-    const supa = getSupabase();
-
-    if (supa) {
-        // نترك Supabase يقرأ الرابط براحته أولاً!
-        supa.auth.onAuthStateChange((event, session) => {
-            console.log("Supabase Auth Event:", event); // ✅ رسالة ستظهر لك في الكونسول لتأكيد الدخول
-            
-            if (event === 'SIGNED_IN') {
-                // بمجرد أن يؤكد Supabase الدخول، نقوم بتنظيف الرابط
-                window.history.replaceState(null, '', window.location.pathname);
-                window.checkAuth();
-            } else if (event === 'SIGNED_OUT') {
-                localStorage.clear();
-                window.updateDropdownUI(null);
-            }
-        });
-    }
-
-    // جلب البيانات عند التحميل العادي
     window.checkAuth();
 
     // Dropdown Toggle
@@ -148,14 +154,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Logout
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+        const supa = getSupabase();
         if (supa) await supa.auth.signOut();
         localStorage.clear();
-        window.location.reload();
+        window.location.replace('/');
     });
 
-    // Start Server Check
+    // Server Status Check
     window.checkServer();
     setInterval(window.checkServer, 300000);
 });
 
-window._supabaseClient = getSupabase();
+// ── 6. Utils ──
+window.showToast = function(msg, type) {
+    const t = document.getElementById('toasts');
+    if (!t) return;
+    const box       = document.createElement('div');
+    box.className   = 'toast ' + (type === 'error' ? 'error' : 'success');
+    box.textContent = msg;
+    t.appendChild(box);
+    setTimeout(() => box.remove(), 4000);
+};
+
+window.escapeHtml = function(u) {
+    return String(u || '').replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[m]));
+};
