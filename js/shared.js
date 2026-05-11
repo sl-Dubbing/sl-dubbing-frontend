@@ -1,4 +1,4 @@
-// js/shared.js - V27 (DOM Timing Fix)
+// js/shared.js - V28
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -6,9 +6,8 @@ const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR
 
 window.API_BASE = API_BASE;
 
-// ── متغير لمعرفة هل DOM جاهز ──
 let _domReady = false;
-let _pendingSignIn = false;
+let _pendingAuth = false;
 
 let supabaseClient = null;
 function getSupabase() {
@@ -126,14 +125,16 @@ if (window._supabaseClient) {
     window._supabaseClient.auth.onAuthStateChange((event, session) => {
         console.log('Supabase Auth Event:', event);
 
+        // SIGNED_IN = Google OAuth أو Email login
+        // INITIAL_SESSION = عودة من Google OAuth مع token في الـ hash
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-            window.history.replaceState(null, '', window.location.pathname);
-            if (_domReady) {
-                // DOM جاهز — نفّذ مباشرة
-                window.checkAuth();
-            } else {
-                // DOM لم يجهز بعد — انتظر
-                _pendingSignIn = true;
+            if (session) {
+                window.history.replaceState(null, '', window.location.pathname);
+                if (_domReady) {
+                    window.checkAuth();
+                } else {
+                    _pendingAuth = true;
+                }
             }
         } else if (event === 'SIGNED_OUT') {
             localStorage.removeItem('token');
@@ -147,15 +148,13 @@ if (window._supabaseClient) {
 document.addEventListener('DOMContentLoaded', () => {
     _domReady = true;
 
-    // إذا كان هناك SIGNED_IN event انتظر تنفيذه الآن
-    if (_pendingSignIn) {
-        _pendingSignIn = false;
+    if (_pendingAuth) {
+        _pendingAuth = false;
         window.checkAuth();
-        return;
+        // لا نوقف التنفيذ — نكمل لتسجيل الأحداث
+    } else {
+        window.checkAuth();
     }
-
-    // تحميل عادي
-    window.checkAuth();
 
     // Dropdown Toggle
     const menuBtn      = document.getElementById('menuBtn');
