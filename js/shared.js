@@ -1,10 +1,14 @@
-// js/shared.js - V26 (Final Fix)
+// js/shared.js - V27 (DOM Timing Fix)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
 const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjU0OTUsImV4cCI6MjA5MzA0MTQ5NX0.F-4TbmO6_7plPm8NBr_6djCv6gtEPpWFw9J7m8vTs6M';
 
 window.API_BASE = API_BASE;
+
+// ── متغير لمعرفة هل DOM جاهز ──
+let _domReady = false;
+let _pendingSignIn = false;
 
 let supabaseClient = null;
 function getSupabase() {
@@ -91,7 +95,7 @@ window.checkAuth = async function() {
                 if (d.success) userCredits = d.credits;
             }
         } catch(e) {
-            console.warn("Credits fetch failed, ignoring.");
+            console.warn('Credits fetch failed, ignoring.');
         }
 
         const userData = {
@@ -115,26 +119,42 @@ window.checkAuth = async function() {
     }
 };
 
-// ── 4. سجّل onAuthStateChange فوراً قبل DOMContentLoaded ──
+// ── 4. سجّل onAuthStateChange فوراً ──
 window._supabaseClient = getSupabase();
 
 if (window._supabaseClient) {
     window._supabaseClient.auth.onAuthStateChange((event, session) => {
         console.log('Supabase Auth Event:', event);
+
         if (event === 'SIGNED_IN') {
             window.history.replaceState(null, '', window.location.pathname);
-            window.checkAuth();
+            if (_domReady) {
+                // DOM جاهز — نفّذ مباشرة
+                window.checkAuth();
+            } else {
+                // DOM لم يجهز بعد — انتظر
+                _pendingSignIn = true;
+            }
         } else if (event === 'SIGNED_OUT') {
             localStorage.removeItem('token');
             localStorage.removeItem('sl_user_cache');
-            window.updateDropdownUI(null);
+            if (_domReady) window.updateDropdownUI(null);
         }
     });
 }
 
 // ── 5. Global Event Listeners ──
 document.addEventListener('DOMContentLoaded', () => {
+    _domReady = true;
 
+    // إذا كان هناك SIGNED_IN event انتظر تنفيذه الآن
+    if (_pendingSignIn) {
+        _pendingSignIn = false;
+        window.checkAuth();
+        return;
+    }
+
+    // تحميل عادي
     window.checkAuth();
 
     // Dropdown Toggle
@@ -160,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.replace('/');
     });
 
-    // Server Status Check
+    // Server Status
     window.checkServer();
     setInterval(window.checkServer, 300000);
 });
