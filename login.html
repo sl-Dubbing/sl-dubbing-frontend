@@ -128,35 +128,50 @@
 <script src="js/config.js"></script>
 <script>
 // ── Supabase Setup ──
+// ⚠️ مهم: نستخدم اسم مختلف (supaClient) لتجنب التعارض مع window.supabase من CDN
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
 const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjU0OTUsImV4cCI6MjA5MzA0MTQ5NX0.F-4TbmO6_7plPm8NBr_6djCv6gtEPpWFw9J7m8vTs6M';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+// فحص توفر مكتبة Supabase
+if (typeof window.supabase === 'undefined') {
+    showError('Failed to load Supabase library. Please refresh the page.');
+}
+
+// إنشاء client باسم مختلف تماماً عن 'supabase'
+const supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     auth: { flowType: 'implicit' }
 });
 
 // ── Check if already logged in ──
-supabase.auth.getSession().then(({ data: { session } }) => {
+supaClient.auth.getSession().then(({ data: { session } }) => {
     if (session) {
         window.location.href = '/';
     }
+}).catch(() => {
+    // not logged in, stay on page
 });
 
 // ── Google OAuth ──
 async function signInWithGoogle() {
+    if (typeof window.supabase === 'undefined') {
+        showError('Authentication library not loaded. Please refresh.');
+        return;
+    }
     const btn = document.getElementById('googleBtn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Redirecting...';
 
-    const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo: window.location.origin
-        }
-    });
+    try {
+        const { error } = await supaClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
 
-    if (error) {
-        showError(error.message);
+        if (error) throw error;
+    } catch (err) {
+        showError(err.message || 'Google sign-in failed');
         btn.disabled = false;
         btn.innerHTML = '<i class="fab fa-google" style="color: #ea4335;"></i> Continue with Google';
     }
@@ -174,33 +189,40 @@ async function handleLogin(e) {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Signing in...';
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-    });
+    try {
+        const { data, error } = await supaClient.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
 
-    if (error) {
-        showError(error.message);
+        if (error) throw error;
+
+        if (data.session) {
+            localStorage.setItem('token', data.session.access_token);
+            window.location.href = '/';
+        }
+    } catch (err) {
+        showError(err.message || 'Login failed');
         btn.disabled = false;
         btn.textContent = 'Sign In';
-        return;
-    }
-
-    if (data.session) {
-        localStorage.setItem('token', data.session.access_token);
-        window.location.href = '/';
     }
 }
 
 // ── Error Handling ──
 function showError(msg) {
     const el = document.getElementById('errorMsg');
-    document.getElementById('errorText').textContent = msg;
-    el.classList.add('show');
+    const txt = document.getElementById('errorText');
+    if (el && txt) {
+        txt.textContent = msg;
+        el.classList.add('show');
+    } else {
+        alert(msg); // fallback
+    }
 }
 
 function hideError() {
-    document.getElementById('errorMsg').classList.remove('show');
+    const el = document.getElementById('errorMsg');
+    if (el) el.classList.remove('show');
 }
 </script>
 
