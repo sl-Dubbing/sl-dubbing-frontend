@@ -201,6 +201,33 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dubBtn) dubBtn.style.display = 'block';
         });
     }
+
+    // ── 7. معالجة Drag & Drop ──
+    if (dropZone) {
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--accent-blue)';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = 'var(--border-color)';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border-color)';
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+
+            // إعادة استخدام نفس منطق الـ change event
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            if (mediaFile) {
+                mediaFile.files = dt.files;
+                mediaFile.dispatchEvent(new Event('change'));
+            }
+        });
+    }
 });
 
 // ── 5. أدوات عامة ──
