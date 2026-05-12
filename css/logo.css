@@ -1,0 +1,33 @@
+/* ══════════════════════════════════════
+   css/logo.css — Glotix Logo Component
+   أضف في كل صفحة:
+   <link rel="stylesheet" href="css/logo.css">
+   ══════════════════════════════════════ */
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.6rem;
+    font-weight: 900;
+    text-decoration: none;
+    color: var(--text-main, #0f0f10);
+    letter-spacing: -0.5px;
+}
+
+.logo svg {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+/* حجم أصغر للصفحات الضيقة */
+@media (max-width: 480px) {
+    .logo {
+        font-size: 1.3rem;
+    }
+    .logo svg {
+        width: 28px;
+        height: 28px;
+    }
+}
