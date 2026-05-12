@@ -38,7 +38,6 @@
                 <div class="flag">${l.flag}</div>
                 <div class="lang-info">
                     <div class="lang-en" style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">${l.name_en}</div>
-                    <div class="lang-ar" style="font-size: 0.75rem; color: var(--text-muted);">${l.name_ar}</div>
                 </div>
             </div>
         `).join('') || '<div style="text-align:center;padding:30px;color:#9aa1ac;">No results found</div>';
