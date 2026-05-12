@@ -168,6 +168,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.checkServer();
     setInterval(window.checkServer, 300000); // فحص كل 5 دقائق
+
+    // ── 6. معالجة رفع ومعاينة الوسائط ──
+    const mediaFile     = document.getElementById('mediaFile');
+    const previewArea   = document.getElementById('previewArea');
+    const videoPreview  = document.getElementById('videoPreview');
+    const audioLabel    = document.getElementById('audioPreviewLabel');
+    const audioFileName = document.getElementById('audioFileName');
+    const dropZone      = document.getElementById('dropZone');
+    const dubBtn        = document.getElementById('dubBtn');
+
+    if (mediaFile) {
+        mediaFile.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const url = URL.createObjectURL(file);
+
+            if (previewArea) previewArea.style.display = 'block';   // إظهار منطقة المعاينة
+            if (dropZone)    dropZone.style.display    = 'none';    // إخفاء منطقة الرفع
+
+            if (file.type.startsWith('video/')) {
+                if (videoPreview) videoPreview.style.display = 'block';
+                if (audioLabel)   audioLabel.style.display   = 'none';
+                if (videoPreview) videoPreview.src           = url;
+            } else if (file.type.startsWith('audio/')) {
+                if (videoPreview) videoPreview.style.display = 'none';
+                if (audioLabel)   audioLabel.style.display   = 'block';
+                if (audioFileName) audioFileName.textContent = file.name;
+            }
+
+            if (dubBtn) dubBtn.style.display = 'block';
+        });
+    }
 });
 
 // ── 5. أدوات عامة ──
