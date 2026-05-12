@@ -258,7 +258,6 @@
         #dropZone:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
     </style>
-<base target="_blank">
 </head>
 <body>
 
@@ -510,26 +509,65 @@
         window.selectedSample = this.value;
     });
 
-    /* Load sample list from /samples/ folder via API or static list */
+    /* Load sample list — reads from /samples/manifest.json */
     let samplesLoaded = false;
     async function loadSamples() {
         if (samplesLoaded && sampleSelect.options.length > 1) return;
-        samplesLoaded = true;
+
         try {
-            const res = await fetch('/samples/manifest.json');
-            if (res.ok) { populateSamples(await res.json()); return; }
-        } catch(e) { console.warn('No manifest.json, using fallback'); }
-        populateSamples([
-            { name: 'Male Voice 1',   file: 'samples/male_1.wav' },
-            { name: 'Male Voice 2',   file: 'samples/male_2.wav' },
-            { name: 'Female Voice 1', file: 'samples/female_1.wav' },
-            { name: 'Female Voice 2', file: 'samples/female_2.wav' },
-        ]);
+            const res = await fetch('samples/manifest.json');
+            if (res.ok) {
+                const list = await res.json();
+                populateSamples(list);
+                samplesLoaded = true;
+                return;
+            }
+        } catch(e) { console.warn('[Samples] manifest.json not found'); }
+
+        // If manifest.json is missing, auto-detect from directory listing
+        try {
+            const res = await fetch('samples/');
+            if (res.ok) {
+                const text = await res.text();
+                // Parse HTML directory listing for audio files
+                const audioFiles = [];
+                const regex = /href="([^"]+\.(mp3|wav|m4a|ogg|flac))"/gi;
+                let match;
+                while ((match = regex.exec(text)) !== null) {
+                    const filename = match[1];
+                    const name = filename.replace(/\.(mp3|wav|m4a|ogg|flac)$/i, '')
+                                         .replace(/[_-]/g, ' ')
+                                         .replace(/\b\w/g, c => c.toUpperCase());
+                    audioFiles.push({ name: name, file: 'samples/' + filename });
+                }
+                if (audioFiles.length > 0) {
+                    populateSamples(audioFiles);
+                    samplesLoaded = true;
+                    return;
+                }
+            }
+        } catch(e) { console.warn('[Samples] directory listing failed'); }
+
+        // Final fallback: empty state
+        populateSamples([]);
+        samplesLoaded = true;
     }
-    window.resetSamples = function() { samplesLoaded = false; sampleSelect.innerHTML = '<option value="">— Select a voice sample —</option>'; window.selectedSample = ''; };
+
+    window.resetSamples = function() {
+        samplesLoaded = false;
+        sampleSelect.innerHTML = '<option value="">— Select a voice sample —</option>';
+        window.selectedSample = '';
+    };
 
     function populateSamples(list) {
         sampleSelect.innerHTML = '<option value="">— Select a voice sample —</option>';
+        if (!list || list.length === 0) {
+            const opt = document.createElement('option');
+            opt.textContent = 'No samples available';
+            opt.disabled = true;
+            sampleSelect.appendChild(opt);
+            return;
+        }
         list.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.file;
