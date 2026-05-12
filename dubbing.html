@@ -227,6 +227,36 @@
             .switch-container { justify-content: space-between; }
             .voice-select-wrap { min-width: unset; }
         }
+
+        /* ── Audio Player Styles (Cinema) ── */
+        .audio-player-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 40px; color: #fff; gap: 20px; }
+        .audio-player-header { display: flex; align-items: center; gap: 12px; font-size: 1.1rem; font-weight: 700; }
+        .audio-player-header .flag { font-size: 1.5rem; }
+        .audio-waveform { width: 100%; max-width: 600px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+        .audio-controls { display: flex; align-items: center; gap: 20px; }
+        .play-btn { width: 56px; height: 56px; border-radius: 50%; background: var(--accent-blue); color: white; border: none; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .play-btn:hover { background: #0056d6; transform: scale(1.05); }
+        .audio-time { font-family: monospace; font-size: 0.9rem; color: #aaa; }
+
+        /* ── Sample Picker Animation ── */
+        .sample-picker { transition: all 0.3s ease; }
+
+        /* ── Lang Picker Item Styles (defensive) ── */
+        .lang-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .lang-item:hover { background: #f3f4f6; }
+        .lang-item.selected { background: #eff6ff; border: 1px solid var(--accent-blue); }
+        .lang-item .checkbox { width: 18px; height: 18px; border: 2px solid var(--border-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+        .lang-item.selected .checkbox { background: var(--accent-blue); border-color: var(--accent-blue); color: white; }
+        .lang-item.popular { font-weight: 700; }
+        .lang-pill { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
+        .lang-pill .remove-icon { margin-left: 4px; color: #6b7280; }
+        .lang-pill .remove-icon:hover { color: var(--error); }
+        .selected-langs-empty { color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 20px; }
+
+        /* ── Accessibility Improvements ── */
+        #dropZone:focus { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+        #dropZone:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+
     </style>
 <base target="_blank">
 </head>
@@ -483,29 +513,20 @@
     /* Load sample list from /samples/ folder via API or static list */
     let samplesLoaded = false;
     async function loadSamples() {
-        if (samplesLoaded) return;
+        if (samplesLoaded && sampleSelect.options.length > 1) return;
         samplesLoaded = true;
-
         try {
-            // Try fetching a manifest from the server first
             const res = await fetch('/samples/manifest.json');
-            if (res.ok) {
-                const list = await res.json(); // expects [{ name, file }]
-                populateSamples(list);
-            } else {
-                throw new Error('no manifest');
-            }
-        } catch {
-            // Fallback: static list — update these with your actual filenames
-            const fallback = [
-                { name: 'Male Voice 1',   file: 'samples/male_1.wav' },
-                { name: 'Male Voice 2',   file: 'samples/male_2.wav' },
-                { name: 'Female Voice 1', file: 'samples/female_1.wav' },
-                { name: 'Female Voice 2', file: 'samples/female_2.wav' },
-            ];
-            populateSamples(fallback);
-        }
+            if (res.ok) { populateSamples(await res.json()); return; }
+        } catch(e) { console.warn('No manifest.json, using fallback'); }
+        populateSamples([
+            { name: 'Male Voice 1',   file: 'samples/male_1.wav' },
+            { name: 'Male Voice 2',   file: 'samples/male_2.wav' },
+            { name: 'Female Voice 1', file: 'samples/female_1.wav' },
+            { name: 'Female Voice 2', file: 'samples/female_2.wav' },
+        ]);
     }
+    window.resetSamples = function() { samplesLoaded = false; sampleSelect.innerHTML = '<option value="">— Select a voice sample —</option>'; window.selectedSample = ''; };
 
     function populateSamples(list) {
         sampleSelect.innerHTML = '<option value="">— Select a voice sample —</option>';
