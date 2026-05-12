@@ -1,244 +1,251 @@
-// js/shared.js - V23 (Failsafe Auth Sync)
+// js/dubbing.js — الإصدار السينمائي المتقدم (V11.0 - Final)
+let cinemaResults = {};
+let activeWavesurfer = null;
 
-const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
-const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjU0OTUsImV4cCI6MjA5MzA0MTQ5NX0.F-4TbmO6_7plPm8NBr_6djCv6gtEPpWFw9J7m8vTs6M';
+// =====================================
+// 1. معاينة الملف المرفوع (Preview)
+// =====================================
+document.getElementById('mediaFile')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-window.API_BASE = API_BASE;
+    const url = URL.createObjectURL(file);
 
-let supabaseClient = null;
-function getSupabase() {
-    if (supabaseClient) return supabaseClient;
-    if (window.supabase) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { flowType: 'implicit' } });
-    }
-    return supabaseClient;
-}
+    // Show preview, hide upload
+    document.getElementById('dropZone').style.display = 'none';
+    document.getElementById('previewArea').style.display = 'block';
+    document.getElementById('dubBtn').style.display = 'block';
 
-// ── 1. تحديث واجهة القائمة ──
-window.updateDropdownUI = function(user) {
-    const guestMenu = document.getElementById('guestMenu');
-    const userMenu  = document.getElementById('userMenu');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const userName  = document.getElementById('menuUserName');
-    const credits   = document.getElementById('menuCredits');
-    const avatar    = document.getElementById('menuAvatar');
-
-    if (user && user.id) {
-        if (guestMenu) guestMenu.style.display = 'none';
-        if (userMenu)  userMenu.style.display  = 'block';
-        if (logoutBtn) logoutBtn.style.display = 'flex';
-        if (userName)  userName.textContent    = user.name || 'My Account';
-        if (credits)   credits.textContent     = user.credits !== undefined ? user.credits : '...';
-        if (avatar && user.avatar) avatar.src  = user.avatar;
+    if (file.type.startsWith('video/')) {
+        document.getElementById('videoPreview').src = url;
+        document.getElementById('videoPreview').style.display = 'block';
+        document.getElementById('audioPreviewLabel').style.display = 'none';
     } else {
-        if (guestMenu) guestMenu.style.display = 'flex';
-        if (userMenu)  userMenu.style.display  = 'none';
-        if (logoutBtn) logoutBtn.style.display = 'none';
-    }
-};
-
-// ── 2. فحص حالة السيرفر ──
-window.checkServer = async function() {
-    const badge = document.getElementById('srv');
-    const txt   = document.getElementById('srvTxt');
-    if (!badge || !txt) return;
-    try {
-        const r    = await fetch(API_BASE + '/api/status');
-        const data = await r.json();
-        if (data.is_online) {
-            badge.className = 'srv-badge on';
-            txt.textContent = 'Connected to Cloud';
-        } else {
-            badge.className = 'srv-badge';
-            txt.textContent = 'System Offline';
-        }
-    } catch (e) {
-        if (badge) badge.className = 'srv-badge';
-        if (txt)   txt.textContent = 'Connection Error';
-    }
-};
-
-// ── 3. مزامنة بيانات المستخدم (تم تحسينها لتتجاهل أخطاء الرصيد) ──
-window.checkAuth = async function() {
-    const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
-    if (cachedUser) window.updateDropdownUI(cachedUser);
-
-    try {
-        const supa = getSupabase();
-        if (!supa) return;
-
-        const { data: { session }, error } = await supa.auth.getSession();
-
-        if (!session || error) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('sl_user_cache');
-            window.updateDropdownUI(null);
-            return;
-        }
-
-        localStorage.setItem('token', session.access_token);
-
-        let currentCredits = '...';
-        // محاولة جلب الرصيد، لكن إذا فشلت، لا توقف عرض بيانات المستخدم!
-        try {
-            const res = await fetch(`${API_BASE}/api/user/credits`, {
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
-            });
-            if (res.ok) {
-                const d = await res.json();
-                if (d.success) currentCredits = d.credits;
-            }
-        } catch (apiErr) {
-            console.warn('Credits API skipped or failed, using fallback.');
-        }
-
-        // تحديث الواجهة بصورة المستخدم واسمه دائماً
-        const meta = session.user.user_metadata || {};
-        const userData = {
-            id:      session.user.id,
-            email:   session.user.email,
-            name:    meta.full_name || session.user.email?.split('@')[0] || 'User',
-            avatar:  meta.avatar_url || meta.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.email?.split('@')[0] || 'U')}&background=0f0f10&color=fff&size=64`,
-            credits: currentCredits
-        };
-        
-        localStorage.setItem('sl_user_cache', JSON.stringify(userData));
-        window.updateDropdownUI(userData);
-
-    } catch(e) {
-        console.error('Auth sync error:', e);
-    }
-};
-
-// ── 4. مشغلات الأحداث عند تحميل الصفحة ──
-document.addEventListener('DOMContentLoaded', () => {
-
-    const supa = getSupabase();
-
-    // معالجة الرابط (تنظيفه وتحديث الجلسة)
-    const hash = window.location.hash;
-    const search = window.location.search;
-    
-    if (hash.includes('access_token') || search.includes('code=')) {
-        // إعطاء مهلة قصيرة لمكتبة Supabase لمعالجة الرابط داخلياً ثم تنظيفه
-        setTimeout(() => {
-            window.history.replaceState(null, '', window.location.pathname);
-            window.checkAuth();
-        }, 500);
-    } else {
-        // تحميل عادي
-        window.checkAuth();
-    }
-
-    // مراقبة تسجيل الخروج أو الدخول بشكل عام
-    if (supa) {
-        supa.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_OUT') {
-                localStorage.removeItem('token');
-                localStorage.removeItem('sl_user_cache');
-                window.updateDropdownUI(null);
-            } else if (event === 'SIGNED_IN') {
-                window.checkAuth();
-            }
-        });
-    }
-
-    // Dropdown Toggle
-    const menuBtn      = document.getElementById('menuBtn');
-    const dropdownMenu = document.getElementById('mainMenuDropdown');
-    if (menuBtn && dropdownMenu) {
-        menuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdownMenu.classList.toggle('active');
-        });
-        document.addEventListener('click', (e) => {
-            if (!dropdownMenu.contains(e.target) && !menuBtn.contains(e.target)) {
-                dropdownMenu.classList.remove('active');
-            }
-        });
-    }
-
-    // زر تسجيل الخروج
-    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-        if (supa) await supa.auth.signOut();
-        localStorage.clear();
-        window.location.reload();
-    });
-
-    window.checkServer();
-    setInterval(window.checkServer, 300000); // فحص كل 5 دقائق
-
-    // ── 6. معالجة رفع ومعاينة الوسائط ──
-    const mediaFile     = document.getElementById('mediaFile');
-    const previewArea   = document.getElementById('previewArea');
-    const videoPreview  = document.getElementById('videoPreview');
-    const audioLabel    = document.getElementById('audioPreviewLabel');
-    const audioFileName = document.getElementById('audioFileName');
-    const dropZone      = document.getElementById('dropZone');
-    const dubBtn        = document.getElementById('dubBtn');
-
-    if (mediaFile) {
-        mediaFile.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const url = URL.createObjectURL(file);
-
-            if (previewArea) previewArea.style.display = 'block';   // إظهار منطقة المعاينة
-            if (dropZone)    dropZone.style.display    = 'none';    // إخفاء منطقة الرفع
-
-            if (file.type.startsWith('video/')) {
-                if (videoPreview) videoPreview.style.display = 'block';
-                if (audioLabel)   audioLabel.style.display   = 'none';
-                if (videoPreview) videoPreview.src           = url;
-            } else if (file.type.startsWith('audio/')) {
-                if (videoPreview) videoPreview.style.display = 'none';
-                if (audioLabel)   audioLabel.style.display   = 'block';
-                if (audioFileName) audioFileName.textContent = file.name;
-            }
-
-            if (dubBtn) dubBtn.style.display = 'block';
-        });
-    }
-
-    // ── 7. معالجة Drag & Drop ──
-    if (dropZone) {
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.style.borderColor = 'var(--accent-blue)';
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.style.borderColor = 'var(--border-color)';
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.style.borderColor = 'var(--border-color)';
-            const file = e.dataTransfer.files[0];
-            if (!file) return;
-
-            // إعادة استخدام نفس منطق الـ change event
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            if (mediaFile) {
-                mediaFile.files = dt.files;
-                mediaFile.dispatchEvent(new Event('change'));
-            }
-        });
+        document.getElementById('videoPreview').style.display = 'none';
+        document.getElementById('audioPreviewLabel').style.display = 'block';
+        document.getElementById('audioFileName').innerText = file.name;
     }
 });
 
-// ── 5. أدوات عامة ──
-window.showToast = function(msg, type) {
-    const t = document.getElementById('toasts');
-    if (!t) return;
-    const box       = document.createElement('div');
-    box.className   = 'toast ' + (type === 'error' ? 'error' : 'success');
-    box.textContent = msg;
-    t.appendChild(box);
-    setTimeout(() => box.remove(), 4000);
-};
+// =====================================
+// 2. دالة الرفع المباشر لـ Cloudflare R2
+// =====================================
+async function uploadToR2(url, file, contentType) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', url, true);
+        
+        // 🚨 إجبار المتصفح على استخدام نفس نوع الملف الذي وقعنا به الرابط
+        xhr.setRequestHeader('Content-Type', contentType);
+        
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const pct = Math.round((e.loaded / e.total) * 100);
+                const overallProgress = 10 + (pct * 0.4); 
+                updateProgress("📤 جاري رفع الملف للمخزن السحابي...", overallProgress);
+            }
+        };
+        
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`فشل الرفع (Status: ${xhr.status})`));
+        };
+        
+        xhr.onerror = () => reject(new Error("حدث خطأ في اتصال الشبكة أثناء الرفع"));
+        xhr.send(file);
+    });
+}
 
-window._supabaseClient = getSupabase();
+// =====================================
+// 3. بدء عملية الدبلجة (Main Controller)
+// =====================================
+async function startDubbing() {
+    const file = document.getElementById('mediaFile')?.files[0];
+    const token = localStorage.getItem('token');
+    
+    if (!token) return alert("يرجى تسجيل الدخول أولاً");
+    if (!file) return alert("يرجى اختيار ملف!");
+    if (!window.selectedLangs || window.selectedLangs.size === 0) return alert("اختر لغة واحدة على الأقل!");
+
+    document.getElementById('dubBtn').style.display = 'none';
+    document.getElementById('progressArea').style.display = 'block';
+    document.getElementById('resultsCard').style.display = 'block';
+    const sidebar = document.getElementById('cinemaLangs');
+    sidebar.innerHTML = '';
+    cinemaResults = {};
+
+    try {
+        updateProgress("⚡ جاري تهيئة رابط الرفع...", 5);
+        
+        // 💡 استخراج نوع الملف الدقيق لمنع رفض Cloudflare
+        const strictContentType = file.type || 'application/octet-stream';
+
+        // 1. الحصول على رابط الرفع من Railway
+        const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                filename: file.name, 
+                content_type: strictContentType 
+            })
+        });
+        
+        if (!urlRes.ok) throw new Error("فشل السيرفر في توليد رابط الرفع");
+        const urlData = await urlRes.json();
+        
+        updateProgress("📤 جاري بدء الرفع...", 10);
+
+        // 2. الرفع المباشر لـ Cloudflare R2
+        await uploadToR2(urlData.upload_url, file, strictContentType);
+
+        updateProgress("⚙️ اكتمل الرفع، بدأت المعالجة بذكائك الاصطناعي...", 50);
+
+        // 3. إرسال طلبات الدبلجة لكل لغة
+        const langCodes = Array.from(window.selectedLangs);
+        let completed = 0;
+
+        for (const langCode of langCodes) {
+            const langInfo = window.LANGUAGES.find(l => l.code === langCode);
+            
+            const item = document.createElement('div');
+            item.className = 'side-lang-card';
+            item.id = `side-${langCode}`;
+            item.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${langInfo.name_ar}</span>`;
+            sidebar.appendChild(item);
+
+            fetch(`${window.API_BASE}/api/dub`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file_key: urlData.file_key,
+                    lang: langCode,
+                    with_lipsync: document.getElementById('lipsyncToggle').checked,
+                    video_output: document.getElementById('videoToggle').checked
+                })
+            }).then(res => res.json()).then(async (data) => {
+                const job = await waitForJob(data.job_id, token);
+                
+                cinemaResults[langCode] = { 
+                    url: job.output_url, 
+                    name: langInfo.name_ar, 
+                    flag: langInfo.flag 
+                };
+
+                item.innerHTML = `<span>${langInfo.flag}</span> <span>${langInfo.name_ar}</span> <i class="fas fa-check-circle" style="color:var(--accent-green); margin-right:auto;"></i>`;
+                item.onclick = () => switchCinemaLang(langCode);
+
+                if (Object.keys(cinemaResults).length === 1) switchCinemaLang(langCode);
+
+                completed++;
+                const pct = 50 + (completed / langCodes.length * 50);
+                updateProgress(completed === langCodes.length ? "✅ تم الانتهاء من جميع اللغات!" : "⏳ جاري معالجة اللغات...", pct);
+            });
+        }
+
+    } catch (e) {
+        console.error("Dubbing Error:", e);
+        alert("حدث خطأ تقني: " + e.message);
+        document.getElementById('dubBtn').style.display = 'block';
+    }
+}
+
+// =====================================
+// 4. مشغل السينما الذكي (Video vs Audio)
+// =====================================
+function switchCinemaLang(langCode) {
+    const data = cinemaResults[langCode];
+    if (!data) return;
+
+    document.querySelectorAll('.side-lang-card').forEach(c => c.classList.remove('active'));
+    const sideCard = document.getElementById(`side-${langCode}`);
+    if (sideCard) sideCard.classList.add('active');
+
+    const playerContainer = document.getElementById('mainPlayer');
+    const dlArea = document.getElementById('dlArea');
+    const dlBtn = document.getElementById('masterDl');
+
+    if (activeWavesurfer) { activeWavesurfer.destroy(); activeWavesurfer = null; }
+
+    dlArea.style.display = 'block';
+    dlBtn.href = data.url;
+
+    const isVideo = data.url.toLowerCase().includes('.mp4');
+
+    if (isVideo) {
+        playerContainer.innerHTML = `<video controls autoplay src="${data.url}"></video>`;
+    } else {
+        playerContainer.innerHTML = `
+            <div class="audio-player-wrapper">
+                <div class="audio-player-header">
+                    <span class="flag">${data.flag}</span>
+                    <span>النسخة المدبلجة - ${data.name}</span>
+                </div>
+                <div id="waveform" class="audio-waveform"></div>
+                <div class="audio-controls">
+                    <button class="play-btn" id="wavePlayBtn"><i class="fas fa-play"></i></button>
+                    <div class="audio-time" id="waveTime">00:00 / 00:00</div>
+                </div>
+            </div>
+        `;
+
+        activeWavesurfer = WaveSurfer.create({
+            container: '#waveform',
+            waveColor: '#4b5563',
+            progressColor: '#3b82f6',
+            cursorColor: '#fff',
+            barWidth: 3,
+            barRadius: 3,
+            responsive: true,
+            height: 80,
+        });
+
+        activeWavesurfer.load(data.url);
+        
+        activeWavesurfer.on('ready', () => {
+            activeWavesurfer.play();
+            document.getElementById('wavePlayBtn').innerHTML = '<i class="fas fa-pause"></i>';
+        });
+
+        activeWavesurfer.on('audioprocess', () => {
+            const current = formatTime(activeWavesurfer.getCurrentTime());
+            const total = formatTime(activeWavesurfer.getDuration());
+            document.getElementById('waveTime').innerText = `${current} / ${total}`;
+        });
+
+        document.getElementById('wavePlayBtn').onclick = () => {
+            activeWavesurfer.playPause();
+            const isPlaying = activeWavesurfer.isPlaying();
+            document.getElementById('wavePlayBtn').innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+        };
+    }
+}
+
+// =====================================
+// 5. أدوات مساعدة (Wait & Format)
+// =====================================
+async function waitForJob(id, token) {
+    while(true) {
+        const res = await fetch(`${window.API_BASE}/api/job/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        if (data.status === 'completed') return data;
+        if (data.status === 'failed') throw new Error("فشلت معالجة الفيديو في السيرفر");
+        await new Promise(r => setTimeout(r, 4000));
+    }
+}
+
+function updateProgress(txt, pct) {
+    const sTxt = document.getElementById('statusTxt');
+    const sPct = document.getElementById('statusPct');
+    const pFill = document.getElementById('progFill');
+    if (sTxt) sTxt.innerText = txt;
+    if (sPct) sPct.innerText = Math.round(pct) + "%";
+    if (pFill) pFill.style.width = pct + "%";
+}
+
+function formatTime(s) {
+    const min = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+}
+
+document.getElementById('dubBtn').onclick = startDubbing;
