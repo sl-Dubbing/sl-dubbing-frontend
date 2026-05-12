@@ -10,6 +10,8 @@ let _domReady = false;
 let _pendingAuth = false;
 
 let supabaseClient = null;
+let _previewUrl    = null;  // لتتبع blob URL وإلغائه لتفادي تسريب الذاكرة
+
 function getSupabase() {
     if (supabaseClient) return supabaseClient;
     if (window.supabase) {
@@ -182,9 +184,100 @@ document.addEventListener('DOMContentLoaded', () => {
     // Server Status
     window.checkServer();
     setInterval(window.checkServer, 300000);
+
+    // ═══════════════════════════════════════════════════════════════
+    // ── 6. Media Preview (معاينة الوسائط) ──
+    // ═══════════════════════════════════════════════════════════════
+    (function initMediaPreview() {
+        const mediaFile     = document.getElementById('mediaFile');
+        const previewArea   = document.getElementById('previewArea');
+        const videoPreview  = document.getElementById('videoPreview');
+        const audioLabel    = document.getElementById('audioPreviewLabel');
+        const audioFileName = document.getElementById('audioFileName');
+        const dropZone      = document.getElementById('dropZone');
+        const dubBtn        = document.getElementById('dubBtn');
+
+        if (!mediaFile) return; // skip if not on dubbing page
+
+        // ── دعم لوحة المفاتيح لمنطقة الإفلات ──
+        if (dropZone) {
+            dropZone.setAttribute('tabindex', '0');
+            dropZone.setAttribute('role', 'button');
+            dropZone.setAttribute('aria-label', 'Upload media file');
+            dropZone.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    mediaFile.click();
+                }
+            });
+        }
+
+        // ── معالج اختيار الملف ──
+        mediaFile.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            if (_previewUrl) { URL.revokeObjectURL(_previewUrl); _previewUrl = null; }
+
+            _previewUrl = URL.createObjectURL(file);
+
+            if (previewArea) previewArea.style.display = 'block';
+            if (dropZone)    dropZone.style.display    = 'none';
+
+            if (file.type.startsWith('video/') && videoPreview) {
+                videoPreview.src = _previewUrl;
+                videoPreview.style.display = 'block';
+                if (audioLabel) audioLabel.style.display = 'none';
+                videoPreview.onloadedmetadata = () => {
+                    if (_previewUrl) { URL.revokeObjectURL(_previewUrl); _previewUrl = null; }
+                };
+            } else if (file.type.startsWith('audio/')) {
+                if (videoPreview) videoPreview.style.display = 'none';
+                if (audioLabel)   audioLabel.style.display   = 'block';
+                if (audioFileName) audioFileName.textContent = file.name;
+            }
+
+            if (dubBtn) dubBtn.style.display = 'block';
+        });
+
+        // ── دالة إعادة تعيين المعاينة ──
+        window.resetMediaPreview = function() {
+            if (_previewUrl) { URL.revokeObjectURL(_previewUrl); _previewUrl = null; }
+            if (previewArea)  previewArea.style.display  = 'none';
+            if (dropZone)     dropZone.style.display     = 'block';
+            if (dubBtn)       dubBtn.style.display       = 'none';
+            if (videoPreview) { videoPreview.src = ''; videoPreview.style.display = 'none'; }
+            if (audioLabel)   audioLabel.style.display   = 'none';
+            mediaFile.value = '';
+        };
+
+        // ── Drag & Drop ──
+        if (dropZone) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
+            });
+
+            dropZone.addEventListener('dragenter', () => { dropZone.style.borderColor = 'var(--accent-blue)'; });
+            dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border-color)'; });
+
+            dropZone.addEventListener('drop', (e) => {
+                dropZone.style.borderColor = 'var(--border-color)';
+                const file = e.dataTransfer.files[0];
+                if (!file) return;
+
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                mediaFile.files = dt.files;
+                mediaFile.dispatchEvent(new Event('change'));
+            });
+        }
+    })();
 });
 
-// ── 6. Utils ──
+// ── 7. Utils ──
 window.showToast = function(msg, type) {
     const t = document.getElementById('toasts');
     if (!t) return;
@@ -200,3 +293,4 @@ window.escapeHtml = function(u) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[m]));
 };
+
