@@ -1,10 +1,6 @@
-// js/dubbing.js — V12.0 (Fixed)
+// js/dubbing.js — V12.1 (Auto Video Detection)
 let cinemaResults = {};
 let activeWavesurfer = null;
-
-// =============================================
-// القسم 1 (Preview) محذوف — موجود في shared.js
-// =============================================
 
 // =====================================
 // 2. دالة الرفع المباشر لـ Cloudflare R2
@@ -39,15 +35,15 @@ async function startDubbing() {
     if (!file)  return alert("يرجى اختيار ملف!");
     if (!window.selectedLangs || window.selectedLangs.size === 0) return alert("اختر لغة واحدة على الأقل!");
 
-    // قراءة وضع الصوت من القائمة المنسدلة
-    const voiceMode     = window.voiceMode    || 'original'; // 'original' | 'sample'
+    // قراءة وضع الصوت
+    const voiceMode      = window.voiceMode      || 'original'; 
     const selectedSample = window.selectedSample || '';
 
     if (voiceMode === 'sample' && !selectedSample) {
         return alert("يرجى اختيار عينة صوتية من القائمة!");
     }
 
-    document.getElementById('dubBtn').style.display    = 'none';
+    document.getElementById('dubBtn').style.display       = 'none';
     document.getElementById('progressArea').style.display = 'block';
     document.getElementById('resultsCard').style.display  = 'block';
 
@@ -59,6 +55,9 @@ async function startDubbing() {
         updateProgress("⚡ جاري تهيئة رابط الرفع...", 5);
 
         const strictContentType = file.type || 'application/octet-stream';
+        
+        // 👈 التعديل الذكي: فحص نوع الملف المرفوع تلقائياً
+        const isVideoUpload = strictContentType.startsWith('video/');
 
         // 1. الحصول على رابط الرفع
         const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
@@ -96,9 +95,9 @@ async function startDubbing() {
                 body: JSON.stringify({
                     file_key:     urlData.file_key,
                     lang:         langCode,
-                    voice_mode:   voiceMode,        // ← original | sample
-                    sample_file:  selectedSample,   // ← مسار العينة (فارغ إذا original)
-                    video_output: document.getElementById('videoToggle')?.checked !== undefined ? document.getElementById('videoToggle').checked : true
+                    voice_mode:   voiceMode,
+                    sample_file:  selectedSample,
+                    video_output: isVideoUpload // 👈 استخدام المتغير التلقائي بدلاً من الزر
                 })
             })
             .then(res => res.json())
