@@ -189,21 +189,6 @@
 <script src="js/tts-quick.js"></script>
 <script src="js/tts.js"></script>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const mBtn = document.getElementById('menuBtn');
-        const mDrop = document.getElementById('mainMenuDropdown');
-        if(mBtn && mDrop) {
-            mBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                mDrop.classList.toggle('active');
-            });
-            document.addEventListener('click', (e) => {
-                if(!mDrop.contains(e.target)) mDrop.classList.remove('active');
-            });
-        }
-    });
-</script>
 
 </body>
 </html>
