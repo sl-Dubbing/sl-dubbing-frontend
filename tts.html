@@ -8,90 +8,124 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ── التنسيقات الإضافية لتطابق صفحة الدبلجة ── */
-        .controls-wrapper { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-        
-        .dropdown-btn { 
-            background: #fff; border: 1px solid #e5e7eb; padding: 10px 16px; 
-            border-radius: 10px; cursor: pointer; display: flex; align-items: center; 
-            gap: 10px; font-weight: 500; font-size: 0.9rem; transition: 0.2s; position: relative;
+        /* ── Core Theme Variables ── */
+        :root {
+            --bg-page: #f9fafb;
+            --bg-card: #ffffff;
+            --border-color: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --primary: #111827;
+            --accent-blue: #2563eb;
+            --radius-lg: 20px;
         }
-        .dropdown-btn:hover { border-color: #d1d5db; background: #f9fafb; }
-        
-        /* نافذة اختيار الصوت (مطابقة للدبلجة) */
-        .voice-panel {
-            position: absolute; top: calc(100% + 8px); left: 0; width: 320px;
-            background: #fff; border: 1px solid #e5e7eb; border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); z-index: 1000; padding: 16px;
-            display: none; flex-direction: column; gap: 12px;
-        }
-        .voice-panel.active { display: flex; }
 
-        .premium-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
-        .v-avatar-card { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; width: 65px; }
-        .v-img-wrapper { 
-            width: 55px; height: 55px; border-radius: 50%; border: 2px solid transparent; 
-            padding: 2px; transition: 0.2s; position: relative;
-        }
-        .v-avatar-card:hover .v-img-wrapper { border-color: #d1d5db; }
-        .v-avatar-card.selected .v-img-wrapper { border-color: #2563eb; }
-        .v-img-wrapper img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .v-name { font-size: 0.75rem; font-weight: 600; color: #374151; text-align: center; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background: var(--bg-page); color: var(--text-main); line-height: 1.5; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
 
-        /* تعديلات المحرر */
-        .editor-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; }
+        /* ── Header Fixed ── */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 30px; }
+        .logo { display: flex; align-items: center; gap: 10px; font-size: 1.5rem; font-weight: 800; text-decoration: none; color: #000; }
+        .logo svg { width: 32px !important; height: 32px !important; flex-shrink: 0; } /* منع تضخم الشعار */
+
+        /* ── User Zone ── */
+        .user-zone { position: relative; }
+        .menu-btn { background: #fff; border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .dropdown-panel { position: absolute; top: 110%; right: 0; width: 280px; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: none; z-index: 2000; padding: 10px; }
+        .dropdown-panel.active { display: block; }
+        .dropdown-panel a { display: block; padding: 10px; text-decoration: none; color: #333; border-radius: 8px; }
+        .dropdown-panel a:hover { background: #f3f4f6; }
+
+        /* ── Studio Layout ── */
+        .studio-grid { display: grid; grid-template-columns: 1fr 340px; gap: 25px; align-items: start; }
+        @media (max-width: 900px) { .studio-grid { grid-template-columns: 1fr; } }
+
+        /* ── Editor Card ── */
+        .main-editor-card { background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; min-height: 500px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .editor-textarea { flex-grow: 1; padding: 25px; border: none; resize: none; font-size: 1.1rem; outline: none; line-height: 1.6; }
+        
+        /* ── Toolbar ── */
+        .editor-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #f9fafb; border-top: 1px solid var(--border-color); }
+        .controls-wrapper { display: flex; gap: 10px; align-items: center; }
+        
+        .dropdown-btn { background: #fff; border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500; position: relative; }
+        
+        /* القوائم المنسدلة مخفية افتراضياً */
+        .dropdown-menu, .voice-panel { 
+            position: absolute; bottom: 120%; left: 0; width: 260px; background: #fff; 
+            border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); 
+            display: none; z-index: 1000; padding: 8px; max-height: 300px; overflow-y: auto; 
+        }
+        .open .dropdown-menu, .voice-panel.active { display: block; }
+        .dropdown-menu li { list-style: none; padding: 10px; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
+        .dropdown-menu li:hover { background: #f3f4f6; }
+
+        /* ── Sidebar ── */
+        .settings-sidebar { display: flex; flex-direction: column; gap: 20px; }
+        .settings-group { background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; }
+        .settings-group h4 { margin-bottom: 15px; font-size: 1rem; color: var(--text-main); }
+        
+        .styled-slider { width: 100%; accent-color: var(--accent-blue); margin-bottom: 10px; }
+        .slider-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); }
+
+        .btn-play { background: var(--primary); color: #fff; border: none; padding: 12px 25px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .btn-play:hover { background: #374151; }
+
+        .v-avatar-card { cursor: pointer; text-align: center; width: 60px; }
+        .v-avatar-card img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; }
+        .v-avatar-card.selected img { border-color: var(--accent-blue); }
     </style>
 </head>
 <body>
+
 <div class="container">
     <header class="top-bar">
         <a class="logo" href="/">
             <svg viewBox="0 0 32 32" fill="none"><path d="M16 3C8.82 3 3 8.82 3 16C3 23.18 8.82 29 16 29C23.18 29 29 23.18 29 16V14H16V19H23.2C22.1 22.1 19.3 24 16 24C11.58 24 8 20.42 8 16C8 11.58 11.58 8 16 8C18.4 8 20.5 9.06 21.8 10.74L25.4 7.14C22.9 4.6 19.6 3 16 3Z" fill="#111827"/><path d="M29 16C29 23.18 23.18 29 16 29V24C19.3 24 22.1 22.1 23.2 19H29V16Z" fill="#2563eb"/></svg>
-            Glotix
+            <span>Glotix</span>
         </a>
         <div class="user-zone">
             <button class="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i> Menu</button>
             <div class="dropdown-panel" id="mainMenuDropdown">
-                </div>
+                <a href="/dubbing"><i class="fa-solid fa-film"></i> Dubbing Studio</a>
+                <a href="/tts"><i class="fa-solid fa-microphone"></i> Text to Speech</a>
+                <a href="/history"><i class="fa-solid fa-folder"></i> My Files</a>
+            </div>
         </div>
     </header>
 
     <main>
         <div class="studio-grid">
             <div class="main-editor-card">
-                <textarea id="ttsInput" class="editor-textarea" placeholder="Type or paste your text here to synthesize voice..."></textarea>
+                <textarea id="ttsInput" class="editor-textarea" placeholder="Type or paste your text here..."></textarea>
                 
                 <div class="editor-toolbar">
                     <div class="controls-wrapper">
                         <div class="custom-dropdown" id="langDropdown" style="position:relative;">
                             <div class="dropdown-btn" id="langSelected">
-                                <span id="currentFlagImg">🇺🇸</span> <span class="name">English (US)</span>
-                                <i class="fa-solid fa-chevron-down" style="font-size:0.7rem; color:#9ca3af;"></i>
+                                <span id="currentFlag">🇺🇸</span> <span class="name">English (US)</span>
+                                <i class="fa-solid fa-chevron-down"></i>
                             </div>
-                            <ul class="dropdown-menu" id="langMenu" style="bottom: auto; top: calc(100% + 8px);"></ul>
+                            <ul class="dropdown-menu" id="langMenu"></ul>
                         </div>
 
                         <div style="position:relative;">
                             <div class="dropdown-btn" id="voiceToggle">
-                                <i class="fa-solid fa-microphone-lines" style="color:#6b7280;"></i>
-                                <span id="currentVoiceName">Voice Clone</span>
-                                <i class="fa-solid fa-chevron-down" style="font-size:0.7rem; color:#9ca3af;"></i>
+                                <i class="fa-solid fa-microphone-lines"></i>
+                                <span id="currentVoiceName">Adam</span>
+                                <i class="fa-solid fa-chevron-down"></i>
                             </div>
                             <div class="voice-panel" id="voicePanel">
-                                <div style="font-size: 0.7rem; font-weight: 700; color: #9ca3af; letter-spacing: 0.5px;">PREMIUM VOICES</div>
-                                <div id="ttsVoicesGrid" class="premium-grid">
-                                    <div style="padding:10px; color:#9ca3af; font-size:0.8rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
-                                </div>
+                                <div style="display:flex; flex-wrap:wrap; gap:10px;" id="ttsVoicesGrid"></div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="toolbar-left">
-                        <span class="char-counter"><span id="charCount">0</span> chars</span>
-                        <button id="ttsFixBtn" class="btn-tool" title="AI Proofread"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
-                        <button id="ttsDownloadBtn" class="btn-tool" title="Download"><i class="fa-solid fa-download"></i></button>
-                        <button id="ttsPlayBtn" class="btn-tool" style="background:var(--primary); color:#fff; border:none; width:auto; padding:0 20px;">
-                            <i class="fa-solid fa-play" style="margin-right:8px;"></i> Play
+                    <div class="controls-wrapper">
+                        <button id="ttsDownloadBtn" class="dropdown-btn" title="Download"><i class="fa-solid fa-download"></i></button>
+                        <button id="ttsPlayBtn" class="btn-play">
+                            <i class="fa-solid fa-play"></i> Play
                         </button>
                     </div>
                 </div>
@@ -99,7 +133,7 @@
 
             <div class="settings-sidebar">
                 <div class="settings-group">
-                    <h4><i class="fa-solid fa-gauge-high"></i> Speed</h4>
+                    <h4><i class="fa-solid fa-gauge-high"></i> Voice Speed</h4>
                     <input type="range" id="speedSlider" class="styled-slider" min="-50" max="50" value="0">
                     <div class="slider-labels"><span>Slower</span><span id="speedVal">Normal</span><span>Faster</span></div>
                 </div>
@@ -109,10 +143,23 @@
 </div>
 
 <div id="toasts"></div>
+
 <script src="js/config.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/languages.js"></script>
 <script src="js/tts-quick.js"></script>
 <script src="js/tts.js"></script>
+
+<script>
+    // لإصلاح المنيو في الصفحة فوراً
+    document.getElementById('menuBtn').onclick = (e) => {
+        e.stopPropagation();
+        document.getElementById('mainMenuDropdown').classList.toggle('active');
+    };
+    document.addEventListener('click', () => {
+        document.getElementById('mainMenuDropdown').classList.remove('active');
+    });
+</script>
+
 </body>
 </html>
