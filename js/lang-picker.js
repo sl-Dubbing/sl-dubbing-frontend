@@ -1,4 +1,4 @@
-// js/lang-picker.js — Fixed for English UI
+// js/lang-picker.js — Fixed Flags for Windows (Image based - HeyGen Style)
 (function() {
     'use strict';
 
@@ -6,10 +6,22 @@
     let selected = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '["en-us"]'));
     window.selectedLangs = selected;
 
+    // ── دالة ذكية لتحويل كود اللغة إلى صورة علم دائري ──
+    function getFlagImg(code) {
+        let country = code.split('-')[1];
+        // إذا لم يكن هناك كود دولة (مثل ar)، نستخدم خريطة افتراضية
+        if (!country) {
+            const defaultMap = { 'ar':'sa', 'en':'us', 'fr':'fr', 'es':'es', 'pt':'pt', 'zh':'cn', 'de':'de', 'it':'it', 'ru':'ru', 'tr':'tr', 'ja':'jp', 'ko':'kr', 'hi':'in', 'nl':'nl', 'pl':'pl', 'sv':'se', 'id':'id', 'fa':'ir', 'ur':'pk' };
+            country = defaultMap[code.split('-')[0]] || 'xx';
+        }
+        // جلب العلم بصيغة SVG من مكتبة الأعلام الدائرية المفتوحة
+        return `<img src="https://hatscripts.github.io/circle-flags/flags/${country.toLowerCase()}.svg" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" alt="flag">`;
+    }
+
     function renderLanguages(filter) {
         filter = filter || '';
         const container = document.getElementById('langList');
-        const langCount = document.getElementById('langCount');
+        const langCount = document.getElementById('langCountBadge');
         if (!container || !window.LANGUAGES) return;
 
         const f = filter.toLowerCase().trim();
@@ -30,17 +42,17 @@
             return a.name_en.localeCompare(b.name_en, 'en');
         });
 
-        if (langCount) langCount.textContent = `${filtered.length} languages`;
+        if (langCount) langCount.textContent = filtered.length;
 
+        // بناء قائمة اللغات مع الأعلام الدائرية الجديدة
         container.innerHTML = filtered.map(l => `
             <div class="lang-item ${l.popular ? 'popular' : ''} ${selected.has(l.code) ? 'selected' : ''}" data-code="${l.code}">
-                <div class="checkbox"></div>
-                <div class="flag">${l.flag}</div>
-                <div class="lang-info">
-                    <div class="lang-en" style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">${l.name_en}</div>
+                ${getFlagImg(l.code)}
+                <div class="lang-info" style="flex-grow: 1;">
+                    <div class="lang-en" style="font-weight: 500; color: var(--text-main); font-size: 0.95rem;">${l.name_en}</div>
                 </div>
             </div>
-        `).join('') || '<div style="text-align:center;padding:30px;color:#9aa1ac;">No results found</div>';
+        `).join('') || '<div style="text-align:center;padding:30px;color:#9ca3af;font-size:0.9rem;">No results found</div>';
 
         container.querySelectorAll('.lang-item').forEach(el => {
             el.addEventListener('click', () => toggleLanguage(el.dataset.code));
@@ -58,7 +70,6 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected]));
         renderSelectedLangs();
         renderLanguages(document.getElementById('langSearch')?.value || '');
-        updateMiniSummary();
     }
 
     function removeLanguage(code) {
@@ -67,7 +78,6 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected]));
         renderSelectedLangs();
         renderLanguages(document.getElementById('langSearch')?.value || '');
-        updateMiniSummary();
     }
 
     function renderSelectedLangs() {
@@ -78,32 +88,32 @@
             return;
         }
         if (!window.LANGUAGES) return;
+        
+        // بناء اللغات المختارة (Pills) بالأعلام الدائرية وتصميم HeyGen
         const pills = [...selected].map(code => {
             const l = window.LANGUAGES.find(x => x.code === code);
             if (!l) return '';
-            return `<div class="lang-pill" data-code="${code}"><span>${l.flag}</span><span>${l.name_en}</span><span class="remove-icon">✕</span></div>`;
+            return `
+            <div class="lang-pill" data-code="${code}" style="display:inline-flex; align-items:center; gap:8px; background:#f3f4f6; border:1px solid #e5e7eb; padding:4px 10px 4px 6px; border-radius:20px; font-size:0.85rem; cursor:pointer; color:#374151; font-weight:500; transition:0.2s;">
+                ${getFlagImg(code)}
+                <span>${l.name_en}</span>
+                <span class="remove-icon" style="color:#9ca3af; margin-left:4px; font-size:0.8rem;">✕</span>
+            </div>`;
         }).join('');
-        display.innerHTML = `<div class="selected-langs-pills">${pills}</div>`;
+        
+        display.innerHTML = `<div class="selected-langs-pills" style="display:flex; flex-wrap:wrap; gap:8px;">${pills}</div>`;
+        
         display.querySelectorAll('.lang-pill').forEach(el => {
             el.addEventListener('click', () => removeLanguage(el.dataset.code));
+            el.addEventListener('mouseenter', () => el.style.background = '#e5e7eb');
+            el.addEventListener('mouseleave', () => el.style.background = '#f3f4f6');
         });
-    }
-
-    function updateMiniSummary() {
-        const el = document.getElementById('miniLangs');
-        if (!el || !window.LANGUAGES) return;
-        if (selected.size === 0) { el.textContent = 'None selected'; return; }
-        const names = [...selected].slice(0, 3).map(c => window.LANGUAGES.find(l => l.code === c)?.name_en || c);
-        let txt = names.join(', ');
-        if (selected.size > 3) txt += ` +${selected.size - 3}`;
-        el.textContent = txt;
     }
 
     function initLangPicker() {
         if (!window.LANGUAGES) { setTimeout(initLangPicker, 100); return; }
         renderLanguages();
         renderSelectedLangs();
-        updateMiniSummary();
         const search = document.getElementById('langSearch');
         if (search) search.addEventListener('input', (e) => renderLanguages(e.target.value));
     }
