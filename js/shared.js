@@ -1,4 +1,4 @@
-// js/shared.js - V33.2 (Final Full File with X-User-Id Fix)
+// js/shared.js - V33.4 (Final Fix: Timeout 15s + X-User-Id Fix)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -61,7 +61,7 @@ window.checkServer = async function() {
         const data = await r.json();
         if (data.is_online) {
             badge.className = 'srv-badge on';
-            txt.textContent = 'Connected to Cloud';
+            txt.textContent = data.db_connected ? 'Connected to Cloud' : 'Cloud Busy';
         } else {
             badge.className = 'srv-badge';
             txt.textContent = 'System Offline';
@@ -96,7 +96,7 @@ window.checkAuth = async function() {
 
         let userCredits = cachedUser ? cachedUser.credits : '...';
 
-        // --- 🛡️ Safe Fetching Block 🛡️ ---
+        // --- 🛡️ Safe Fetching Block (With 15s Timeout) 🛡️ ---
         if (!_isFetchingCredits) {
             _isFetchingCredits = true;
             try {
@@ -106,9 +106,10 @@ window.checkAuth = async function() {
                     method: 'GET',
                     headers: { 
                         'Authorization': `Bearer ${session.access_token}`,
-                        'X-User-Id': session.user.id  // 👈 هذا السطر يمنع خطأ 401 Unauthorized
+                        'X-User-Id': session.user.id  
                     },
-                    signal: AbortSignal.timeout(5000)
+                    // زيادة الوقت لـ 15 ثانية لحل مشكلة السيرفر البطيء
+                    signal: AbortSignal.timeout(15000)
                 });
 
                 if (res.ok) {
@@ -118,8 +119,9 @@ window.checkAuth = async function() {
                     }
                 }
             } catch(e) {
-                console.warn('Credits fetch skipped to prevent loop:', e.message);
+                console.warn('Credits fetch delayed/timeout:', e.message);
             } finally {
+                // محاولة التحديث كل 10 ثوانٍ في حال الفشل
                 setTimeout(() => { _isFetchingCredits = false; }, 10000);
             }
         }
@@ -192,34 +194,31 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(window.checkServer, 300000);
 
     // ═══════════════════════════════════════════════════════════════
-    // 6. Menu Dropdown Toggle (موحّد لكل الصفحات)
+    // 6. Menu Dropdown Toggle
     // ═══════════════════════════════════════════════════════════════
     (function initMenuDropdown() {
         const menuBtn = document.getElementById('menuBtn');
         const menuDropdown = document.getElementById('mainMenuDropdown');
         if (!menuBtn || !menuDropdown) return;
 
-        // فتح/إغلاق عند الضغط على زر القائمة
         menuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             menuDropdown.classList.toggle('active');
         });
 
-        // إغلاق عند الضغط خارج القائمة
         document.addEventListener('click', (e) => {
             if (!menuDropdown.contains(e.target) && !menuBtn.contains(e.target)) {
                 menuDropdown.classList.remove('active');
             }
         });
 
-        // إغلاق عند الضغط على Escape
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') menuDropdown.classList.remove('active');
         });
     })();
 
     // ═══════════════════════════════════════════════════════════════
-    // 7. Media Preview (للدبلجة والـ STT)
+    // 7. Media Preview
     // ═══════════════════════════════════════════════════════════════
     (function initMediaPreview() {
         const mediaFile     = document.getElementById('mediaFile');
@@ -228,8 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const audioLabel    = document.getElementById('audioPreviewLabel');
         const audioFileName = document.getElementById('audioFileName');
         const dropZone      = document.getElementById('dropZone');
-        const dubBtn        = document.getElementById('dubBtn'); // للدبلجة
-        const sttBtn        = document.getElementById('sttBtn'); // للـ STT
+        const dubBtn        = document.getElementById('dubBtn');
+        const sttBtn        = document.getElementById('sttBtn');
 
         if (!mediaFile) return;
 
@@ -256,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 videoPreview.style.display = 'block';
                 if (audioLabel) audioLabel.style.display = 'none';
                 videoPreview.onloadedmetadata = () => {
-                    if (_previewUrl) { URL.revokeObjectURL(_previewUrl); _previewUrl = null; }
+                    // لا تحذف الـ URL فوراً للسماح للمستخدم بالرؤية
                 };
             } else if (file.type.startsWith('audio/')) {
                 if (videoPreview) videoPreview.style.display = 'none';
@@ -278,23 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
             mediaFile.value = '';
             if (sttBtn) sttBtn.disabled = true;
         };
-
-        if (dropZone) {
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
-            });
-            dropZone.addEventListener('dragenter', () => { dropZone.style.borderColor = 'var(--accent-blue)'; });
-            dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border-color)'; });
-            dropZone.addEventListener('drop', (e) => {
-                dropZone.style.borderColor = 'var(--border-color)';
-                const file = e.dataTransfer.files[0];
-                if (!file) return;
-                const dt = new DataTransfer();
-                dt.items.add(file);
-                mediaFile.files = dt.files;
-                mediaFile.dispatchEvent(new Event('change'));
-            });
-        }
     })();
 });
 
