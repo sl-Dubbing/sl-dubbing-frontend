@@ -1,4 +1,4 @@
-// js/shared.js - V28
+// js/shared.js - V29 (Rate Limit & Menu Fix)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -10,7 +10,7 @@ let _domReady = false;
 let _pendingAuth = false;
 
 let supabaseClient = null;
-let _previewUrl    = null;  // لتتبع blob URL وإلغائه لتفادي تسريب الذاكرة
+let _previewUrl    = null; 
 
 function getSupabase() {
     if (supabaseClient) return supabaseClient;
@@ -66,7 +66,7 @@ window.checkServer = async function() {
     }
 };
 
-// ── 3. Full Auth Sync ──
+// ── 3. Full Auth Sync (Fixed Infinite Loop) ──
 window.checkAuth = async function() {
     const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
     if (cachedUser) window.updateDropdownUI(cachedUser);
@@ -87,16 +87,21 @@ window.checkAuth = async function() {
         localStorage.setItem('token', session.access_token);
 
         let userCredits = '...';
+        
+        // جلب الرصيد بدون حلقة مفرغة
         try {
             const res = await fetch(`${API_BASE}/api/user/credits`, {
+                method: 'GET',
                 headers: { 'Authorization': `Bearer ${session.access_token}` }
             });
             if (res.ok) {
                 const d = await res.json();
                 if (d.success) userCredits = d.credits;
+            } else {
+                console.warn('Credits fetch failed with status:', res.status);
             }
         } catch(e) {
-            console.warn('Credits fetch failed, ignoring.');
+            console.warn('Credits fetch error (Network/CORS). Ignoring to prevent loops.');
         }
 
         const userData = {
@@ -120,15 +125,13 @@ window.checkAuth = async function() {
     }
 };
 
-// ── 4. سجّل onAuthStateChange فوراً ──
+// ── 4. Supabase Auth Listener ──
 window._supabaseClient = getSupabase();
 
 if (window._supabaseClient) {
     window._supabaseClient.auth.onAuthStateChange((event, session) => {
         console.log('Supabase Auth Event:', event);
 
-        // SIGNED_IN = Google OAuth أو Email login
-        // INITIAL_SESSION = عودة من Google OAuth مع token في الـ hash
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
             if (session) {
                 window.history.replaceState(null, '', window.location.pathname);
@@ -153,19 +156,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (_pendingAuth) {
         _pendingAuth = false;
         window.checkAuth();
-        // لا نوقف التنفيذ — نكمل لتسجيل الأحداث
     } else {
         window.checkAuth();
     }
 
-    // Dropdown Toggle
+    // ── Dropdown Menu Logic ──
     const menuBtn      = document.getElementById('menuBtn');
     const dropdownMenu = document.getElementById('mainMenuDropdown');
+    
     if (menuBtn && dropdownMenu) {
         menuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
+            e.stopPropagation(); 
             dropdownMenu.classList.toggle('active');
         });
+        
         document.addEventListener('click', (e) => {
             if (!dropdownMenu.contains(e.target) && !menuBtn.contains(e.target)) {
                 dropdownMenu.classList.remove('active');
@@ -173,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Logout
+    // ── Logout ──
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
         const supa = getSupabase();
         if (supa) await supa.auth.signOut();
@@ -185,9 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.checkServer();
     setInterval(window.checkServer, 300000);
 
-    // ═══════════════════════════════════════════════════════════════
-    // ── 6. Media Preview (معاينة الوسائط) ──
-    // ═══════════════════════════════════════════════════════════════
+    // ── 6. Media Preview ──
     (function initMediaPreview() {
         const mediaFile     = document.getElementById('mediaFile');
         const previewArea   = document.getElementById('previewArea');
@@ -197,9 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const dropZone      = document.getElementById('dropZone');
         const dubBtn        = document.getElementById('dubBtn');
 
-        if (!mediaFile) return; // skip if not on dubbing page
+        if (!mediaFile) return; 
 
-        // ── دعم لوحة المفاتيح لمنطقة الإفلات ──
         if (dropZone) {
             dropZone.setAttribute('tabindex', '0');
             dropZone.setAttribute('role', 'button');
@@ -212,7 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // ── معالج اختيار الملف ──
         mediaFile.addEventListener('change', (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
@@ -240,7 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dubBtn) dubBtn.style.display = 'block';
         });
 
-        // ── دالة إعادة تعيين المعاينة ──
         window.resetMediaPreview = function() {
             if (_previewUrl) { URL.revokeObjectURL(_previewUrl); _previewUrl = null; }
             if (previewArea)  previewArea.style.display  = 'none';
@@ -251,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
             mediaFile.value = '';
         };
 
-        // ── Drag & Drop ──
         if (dropZone) {
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 dropZone.addEventListener(eventName, (e) => {
@@ -293,4 +291,3 @@ window.escapeHtml = function(u) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[m]));
 };
-
