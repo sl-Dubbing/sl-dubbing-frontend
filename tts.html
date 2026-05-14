@@ -8,18 +8,7 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ── Core Theme Variables ── */
-        :root {
-            --bg-page: #f9fafb;
-            --bg-card: #ffffff;
-            --border-color: #e5e7eb;
-            --text-main: #111827;
-            --text-muted: #6b7280;
-            --primary: #111827;
-            --accent-blue: #2563eb;
-            --radius-lg: 20px;
-        }
-
+        :root { --bg-page: #f9fafb; --bg-card: #ffffff; --border-color: #e5e7eb; --text-main: #111827; --text-muted: #6b7280; --primary: #111827; --accent-blue: #2563eb; --radius-lg: 20px; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
         body { background: var(--bg-page); color: var(--text-main); line-height: 1.5; min-height: 100vh; }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
@@ -31,8 +20,8 @@
         .user-zone { position: relative; }
         .menu-btn { background: #fff; border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; }
         .dropdown-panel { position: absolute; top: 110%; right: 0; width: 280px; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: none; z-index: 2000; padding: 10px; }
-        .dropdown-panel.active { display: block; }
-        .dropdown-panel a { display: block; padding: 10px; text-decoration: none; color: #333; border-radius: 8px; }
+        .dropdown-panel.active { display: block !important; }
+        .dropdown-panel a { display: block; padding: 10px; text-decoration: none; color: #333; border-radius: 8px; margin-bottom: 5px;}
         .dropdown-panel a:hover { background: #f3f4f6; }
 
         .studio-grid { display: grid; grid-template-columns: 1fr 340px; gap: 25px; align-items: start; }
@@ -46,11 +35,7 @@
         
         .dropdown-btn { background: #fff; border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500; position: relative; }
         
-        .dropdown-menu, .voice-panel { 
-            position: absolute; bottom: 120%; left: 0; width: 280px; background: #fff; 
-            border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); 
-            display: none; z-index: 1000; padding: 12px; max-height: 350px; overflow-y: auto; 
-        }
+        .dropdown-menu, .voice-panel { position: absolute; bottom: 120%; left: 0; width: 280px; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); display: none; z-index: 1000; padding: 12px; max-height: 350px; overflow-y: auto; }
         .open .dropdown-menu, .voice-panel.active { display: block; }
         .dropdown-menu li { list-style: none; padding: 10px; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
         .dropdown-menu li:hover { background: #f3f4f6; }
@@ -65,13 +50,9 @@
         .btn-play { background: var(--primary); color: #fff; border: none; padding: 12px 25px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
         .btn-play:hover { background: #374151; }
 
-        /* ── Voice Avatar Cards ── */
         .premium-grid { display: flex; flex-wrap: wrap; gap: 10px; }
         .v-avatar-card { cursor: pointer; text-align: center; width: 65px; transition: 0.2s; }
-        .v-img-wrapper { 
-            width: 50px; height: 50px; border-radius: 50%; border: 2px solid transparent; 
-            margin: 0 auto; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f3f4f6;
-        }
+        .v-img-wrapper { width: 50px; height: 50px; border-radius: 50%; border: 2px solid transparent; margin: 0 auto; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f3f4f6; }
         .v-avatar-card img { width: 100%; height: 100%; object-fit: cover; }
         .v-avatar-card.selected .v-img-wrapper { border-color: var(--accent-blue); background: #eff6ff; }
         .v-name { font-size: 0.7rem; font-weight: 700; margin-top: 5px; color: var(--text-muted); }
@@ -91,6 +72,8 @@
             <div class="dropdown-panel" id="mainMenuDropdown">
                 <a href="/dubbing"><i class="fa-solid fa-film"></i> Dubbing Studio</a>
                 <a href="/tts"><i class="fa-solid fa-microphone"></i> Text to Speech</a>
+                <a href="/stt"><i class="fa-solid fa-file-lines"></i> Speech to Text</a>
+                <hr style="margin:8px 0; border:none; border-top:1px solid #e5e7eb;">
                 <a href="/history"><i class="fa-solid fa-folder"></i> My Files</a>
             </div>
         </div>
@@ -99,7 +82,7 @@
     <main>
         <div class="studio-grid">
             <div class="main-editor-card">
-                <textarea id="ttsInput" class="editor-textarea" placeholder="Type or paste your text here..."></textarea>
+                <textarea id="ttsInput" class="editor-textarea" placeholder="Type or paste your text here to synthesize voice..."></textarea>
                 
                 <div class="editor-toolbar">
                     <div class="controls-wrapper">
@@ -114,16 +97,14 @@
                         <div style="position:relative;">
                             <div class="dropdown-btn" id="voiceToggle">
                                 <i class="fa-solid fa-microphone-lines"></i>
-                                <span id="currentVoiceName">Adam</span>
+                                <span id="currentVoiceName">Select Voice</span>
                                 <i class="fa-solid fa-chevron-down"></i>
                             </div>
                             <div class="voice-panel" id="voicePanel">
                                 <div style="font-size: 0.7rem; font-weight: 700; color: #9ca3af; margin-bottom: 8px; letter-spacing: 0.5px;">CHOOSE VOICE</div>
                                 <div class="premium-grid">
                                     <div class="v-avatar-card" id="cloneCard" onclick="triggerVoiceUpload()">
-                                        <div class="v-img-wrapper">
-                                            <i class="fa-solid fa-plus" id="cloneIcon"></i>
-                                        </div>
+                                        <div class="v-img-wrapper"><i class="fa-solid fa-plus" id="cloneIcon"></i></div>
                                         <div class="v-name" id="cloneLabel">Clone Voice</div>
                                         <input type="file" id="voiceUploadInput" hidden accept="audio/*">
                                     </div>
@@ -135,9 +116,7 @@
 
                     <div class="controls-wrapper">
                         <button id="ttsDownloadBtn" class="dropdown-btn" title="Download"><i class="fa-solid fa-download"></i></button>
-                        <button id="ttsPlayBtn" class="btn-play">
-                            <i class="fa-solid fa-play"></i> Play
-                        </button>
+                        <button id="ttsPlayBtn" class="btn-play"><i class="fa-solid fa-play"></i> Play</button>
                     </div>
                 </div>
             </div>
@@ -162,13 +141,18 @@
 <script src="js/tts.js"></script>
 
 <script>
-    // منيو الهيدر
-    document.getElementById('menuBtn').onclick = (e) => {
-        e.stopPropagation();
-        document.getElementById('mainMenuDropdown').classList.toggle('active');
-    };
-    document.addEventListener('click', () => {
-        document.getElementById('mainMenuDropdown').classList.remove('active');
+    document.addEventListener('DOMContentLoaded', () => {
+        const mBtn = document.getElementById('menuBtn');
+        const mDrop = document.getElementById('mainMenuDropdown');
+        if(mBtn && mDrop) {
+            mBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                mDrop.classList.toggle('active');
+            });
+            document.addEventListener('click', (e) => {
+                if(!mDrop.contains(e.target)) mDrop.classList.remove('active');
+            });
+        }
     });
 </script>
 
