@@ -1,4 +1,4 @@
-// js/shared.js - V30 (Fixed Rate Limit 429 & Infinity Loop)
+// js/shared.js - V31 (Fixed Rate Limit + Media Upload Restored)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -8,7 +8,7 @@ window.API_BASE = API_BASE;
 
 let _domReady = false;
 let _pendingAuth = false;
-let _isFetchingCredits = false; // 🛡️ متغير أمان لمنع التكرار
+let _isFetchingCredits = false;
 
 let supabaseClient = null;
 let _previewUrl    = null; 
@@ -67,7 +67,7 @@ window.checkServer = async function() {
     }
 };
 
-// ── 3. Full Auth Sync (Fixed Infinite Loop) ──
+// ── 3. Full Auth Sync ──
 window.checkAuth = async function() {
     const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
     if (cachedUser) window.updateDropdownUI(cachedUser);
@@ -86,10 +86,8 @@ window.checkAuth = async function() {
         }
 
         localStorage.setItem('token', session.access_token);
-
         let userCredits = '...';
         
-        // 🛡️ حماية صارمة ضد الـ Infinite Loop باستخدام متغير _isFetchingCredits
         if (!_isFetchingCredits) {
             _isFetchingCredits = true;
             try {
@@ -100,13 +98,10 @@ window.checkAuth = async function() {
                 if (res.ok) {
                     const d = await res.json();
                     if (d.success) userCredits = d.credits;
-                } else {
-                    console.warn('Credits fetch failed with status:', res.status);
                 }
             } catch(e) {
                 console.warn('Credits fetch error. Ignoring to prevent loops.');
             } finally {
-                // إغلاق القفل بعد ثانية واحدة لمنع تكرار الطلب السريع
                 setTimeout(() => { _isFetchingCredits = false; }, 1000);
             }
         }
@@ -137,16 +132,11 @@ window._supabaseClient = getSupabase();
 
 if (window._supabaseClient) {
     window._supabaseClient.auth.onAuthStateChange((event, session) => {
-        console.log('Supabase Auth Event:', event);
-
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
             if (session) {
                 window.history.replaceState(null, '', window.location.pathname);
-                if (_domReady) {
-                    window.checkAuth();
-                } else {
-                    _pendingAuth = true;
-                }
+                if (_domReady) window.checkAuth();
+                else _pendingAuth = true;
             }
         } else if (event === 'SIGNED_OUT') {
             localStorage.removeItem('token');
@@ -167,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.checkAuth();
     }
 
-    // ── Logout ──
+    // Logout
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
         const supa = getSupabase();
         if (supa) await supa.auth.signOut();
@@ -177,10 +167,84 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Server Status
     window.checkServer();
-    // تقليل معدل الفحص إلى كل 5 دقائق لتقليل الحمل على السيرفر
     setInterval(window.checkServer, 300000);
     
-    // (الجزء الخاص بـ Media Preview يبقى كما هو تماماً، لم أحذفه لتجنب أي مشاكل في صفحات أخرى)
+    // ═══════════════════════════════════════════════════════════════
+    // ── 6. Media Preview (تم استعادته لدعم صفحة الدبلجة والـ STT) ──
+    // ═══════════════════════════════════════════════════════════════
+    (function initMediaPreview() {
+        const mediaFile     = document.getElementById('mediaFile');
+        const previewArea   = document.getElementById('previewArea');
+        const videoPreview  = document.getElementById('videoPreview');
+        const audioLabel    = document.getElementById('audioPreviewLabel');
+        const audioFileName = document.getElementById('audioFileName');
+        const dropZone      = document.getElementById('dropZone');
+        const dubBtn        = document.getElementById('dubBtn'); // للدبلجة
+        const sttBtn        = document.getElementById('sttBtn'); // للـ STT
+
+        if (!mediaFile) return;
+
+        if (dropZone) {
+            dropZone.setAttribute('tabindex', '0');
+            dropZone.setAttribute('role', 'button');
+            dropZone.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); mediaFile.click(); }
+            });
+        }
+
+        mediaFile.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            if (_previewUrl) { URL.revokeObjectURL(_previewUrl); _previewUrl = null; }
+            _previewUrl = URL.createObjectURL(file);
+
+            if (previewArea) previewArea.style.display = 'block';
+            if (dropZone)    dropZone.style.display    = 'none';
+
+            if (file.type.startsWith('video/') && videoPreview) {
+                videoPreview.src = _previewUrl;
+                videoPreview.style.display = 'block';
+                if (audioLabel) audioLabel.style.display = 'none';
+                videoPreview.onloadedmetadata = () => { if (_previewUrl) { URL.revokeObjectURL(_previewUrl); _previewUrl = null; } };
+            } else if (file.type.startsWith('audio/')) {
+                if (videoPreview) videoPreview.style.display = 'none';
+                if (audioLabel)   audioLabel.style.display   = 'block';
+                if (audioFileName) audioFileName.textContent = file.name;
+            }
+
+            if (dubBtn) dubBtn.style.display = 'block';
+            if (sttBtn) sttBtn.disabled = false; // تفعيل الزر في STT
+        });
+
+        window.resetMediaPreview = function() {
+            if (_previewUrl) { URL.revokeObjectURL(_previewUrl); _previewUrl = null; }
+            if (previewArea)  previewArea.style.display  = 'none';
+            if (dropZone)     dropZone.style.display     = 'block';
+            if (dubBtn)       dubBtn.style.display       = 'none';
+            if (videoPreview) { videoPreview.src = ''; videoPreview.style.display = 'none'; }
+            if (audioLabel)   audioLabel.style.display   = 'none';
+            mediaFile.value = '';
+            if (sttBtn) sttBtn.disabled = true;
+        };
+
+        if (dropZone) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+            dropZone.addEventListener('dragenter', () => { dropZone.style.borderColor = 'var(--accent-blue)'; });
+            dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border-color)'; });
+            dropZone.addEventListener('drop', (e) => {
+                dropZone.style.borderColor = 'var(--border-color)';
+                const file = e.dataTransfer.files[0];
+                if (!file) return;
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                mediaFile.files = dt.files;
+                mediaFile.dispatchEvent(new Event('change'));
+            });
+        }
+    })();
 });
 
 // ── 7. Utils ──
