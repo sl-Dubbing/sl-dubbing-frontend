@@ -8,6 +8,34 @@ const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdol
 const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjU0OTUsImV4cCI6MjA5MzA0MTQ5NX0.F-4TbmO6_7plPm8NBr_6djCv6gtEPpWFw9J7m8vTs6M';
 
 window.API_BASE = API_BASE;
+
+/** استخراج `sub` من JWT (Supabase) — لاستخدامه في هيدر X-User-Id */
+window.parseJwtSub = function parseJwtSub(token) {
+    if (!token || typeof token !== 'string') return null;
+    try {
+        const parts = token.split('.');
+        if (parts.length < 2) return null;
+        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        const payload = JSON.parse(atob(b64));
+        return payload.sub ? String(payload.sub) : null;
+    } catch (e) {
+        return null;
+    }
+};
+
+/** هيدرات مطلوبة لمسارات الـ API المحمية (مثل /api/upload-url) */
+window.getApiAuthHeaders = function getApiAuthHeaders() {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    const userId = window.parseJwtSub(token);
+    if (!userId) return null;
+    return {
+        'Authorization': 'Bearer ' + token,
+        'X-User-Id': userId
+    };
+};
+
 let _domReady = false;
 let _isFetchingCredits = false;
 let supabaseClient = null;
