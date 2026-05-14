@@ -1,152 +1,167 @@
-// js/dubbing.js — V12.3 (Smart Error Catching & English UI)
+// js/dubbing.js — V12.4 (Ultimate CORS Fix & SVG Flags)
 let cinemaResults = {};
 let activeWavesurfer = null;
 
-// =====================================
-// 2. Upload to Cloudflare R2
-// =====================================
+// دالة مساعدة لجلب صور الأعلام بدلاً من الإيموجي (لحل مشكلة ويندوز)
+function getFlagImg(code) {
+    let country = code.split('-')[1];
+    if (!country) {
+        const map = { 'ar':'sa', 'en':'us', 'fr':'fr', 'es':'es', 'pt':'pt', 'de':'de', 'it':'it', 'ru':'ru', 'ja':'jp' };
+        country = map[code.split('-')[0]] || 'un';
+    }
+    return `<img src="https://hatscripts.github.io/circle-flags/flags/${country.toLowerCase()}.svg" style="width:18px; height:18px; border-radius:50%; vertical-align:middle;" alt="flag">`;
+}
+
+// تنظيف رابط الـ API
+const GET_API_URL = () => {
+    let base = window.API_BASE || 'https://api.glotix.ai';
+    return base.replace(/\/$/, ""); // إزالة السلاش في النهاية إن وجد
+};
+
 async function uploadToR2(url, file, contentType) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', url, true);
         xhr.setRequestHeader('Content-Type', contentType);
-
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable) {
                 const pct = Math.round((e.loaded / e.total) * 100);
-                updateProgress("Uploading...", 10 + (pct * 0.4));
+                updateProgress("Uploading File...", 10 + (pct * 0.4));
             }
         };
-
-        xhr.onload  = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`Upload failed (${xhr.status})`));
-        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error("Storage Upload Failed"));
+        xhr.onerror = () => reject(new Error("Network Error during upload"));
         xhr.send(file);
     });
 }
 
-// =====================================
-// 3. Main Dubbing Controller
-// =====================================
 async function startDubbing() {
-    const file  = document.getElementById('mediaFile')?.files[0];
+    const file = document.getElementById('mediaFile')?.files[0];
     const token = localStorage.getItem('token');
+    
+    if (!token) return window.showToast?.("Please sign in first", "error");
+    if (!file) return window.showToast?.("Please select a media file", "error");
+    if (!window.selectedLangs?.size) return window.showToast?.("Select target languages", "error");
 
-    if (!token) return window.showToast?.("Please login first", "error") || alert("Please login first");
-    if (!file)  return window.showToast?.("Please select a file", "error") || alert("Please select a file");
-    if (!window.selectedLangs || window.selectedLangs.size === 0) return window.showToast?.("Select at least one language", "error") || alert("Select at least one language");
-
-    const voiceMode      = window.voiceMode      || 'original'; 
-    const selectedSample = window.selectedSample || '';
-
-    if (voiceMode === 'sample' && !selectedSample) {
-        return window.showToast?.("Please select a premium voice", "error") || alert("Please select a premium voice");
-    }
-
-    document.getElementById('dubBtn').style.display       = 'none';
+    // إعداد واجهة الانتظار
+    document.getElementById('dubBtn').style.display = 'none';
     document.getElementById('progressArea').style.display = 'block';
-    document.getElementById('resultsCard').style.display  = 'block';
-
-    const sidebar = document.getElementById('cinemaLangs');
-    sidebar.innerHTML = '';
+    document.getElementById('resultsCard').style.display = 'block';
+    document.getElementById('cinemaLangs').innerHTML = '';
     cinemaResults = {};
 
     try {
         updateProgress("Initializing...", 5);
-
-        const strictContentType = file.type || 'application/octet-stream';
-        const isVideoUpload = strictContentType.startsWith('video/');
-
-        // 1. Get upload URL
-        const urlRes = await fetch(`${window.API_BASE}/api/upload-url`, {
+        
+        // 1. طلب رابط الرفع
+        const urlRes = await fetch(`${GET_API_URL()}/api/upload-url`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: file.name, content_type: strictContentType })
+            body: JSON.stringify({ filename: file.name, content_type: file.type })
         });
-
-        if (!urlRes.ok) throw new Error("Server failed to generate upload URL");
+        
+        if (!urlRes.ok) {
+            const errData = await urlRes.json().catch(() => ({}));
+            throw new Error(errData.error || "CORS/Connection Error to API");
+        }
+        
         const urlData = await urlRes.json();
+        
+        // 2. الرفع إلى R2
+        await uploadToR2(urlData.upload_url, file, file.type);
+        updateProgress("Sending processing requests...", 50);
 
-        updateProgress("Starting upload...", 10);
-
-        // 2. Upload to R2
-        await uploadToR2(urlData.upload_url, file, strictContentType);
-
-        updateProgress("Processing...", 50);
-
-        // 3. Send dubbing requests
-        const langCodes = Array.from(window.selectedLangs);
-        const completedSet = new Set();
-
-        for (const langCode of langCodes) {
+        // 3. إرسال طلبات الدبلجة لكل لغة مختارة
+        const langArray = Array.from(window.selectedLangs);
+        
+        for (const langCode of langArray) {
             const langInfo = window.LANGUAGES?.find(l => l.code === langCode);
-
             const item = document.createElement('div');
             item.className = 'side-lang-card';
-            item.id        = `side-${langCode}`;
+            item.id = `side-${langCode}`;
             item.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> <span style="margin-left:8px;">${langInfo?.name_en || langCode}</span>`;
-            sidebar.appendChild(item);
+            document.getElementById('cinemaLangs').appendChild(item);
 
-            fetch(`${window.API_BASE}/api/dub`, {
+            // إرسال طلب الدبلجة
+            fetch(`${GET_API_URL()}/api/dub`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    file_key:     urlData.file_key,
-                    lang:         langCode,
-                    voice_mode:   voiceMode,
-                    sample_file:  selectedSample,
-                    video_output: isVideoUpload 
+                    file_key: urlData.file_key, 
+                    lang: langCode,
+                    voice_mode: window.voiceMode || 'original',
+                    sample_file: window.selectedSample || '',
+                    video_output: file.type.startsWith('video/')
                 })
             })
             .then(async res => {
-                const data = await res.json();
-                if (!res.ok || !data.success) throw new Error(data.error || "Internal Server Error");
-                return data;
+                if (!res.ok) {
+                    const errorJson = await res.json().catch(() => ({}));
+                    throw new Error(errorJson.error || `HTTP ${res.status}`);
+                }
+                return res.json();
             })
-            .then(async (data) => {
-                // الانتظار حتى انتهاء المعالجة في الـ Worker
+            .then(async data => {
+                // الانتظار حتى اكتمال المهمة
                 const job = await waitForJob(data.job_id, token);
-
-                cinemaResults[langCode] = {
-                    url:  job.output_url,
-                    name: langInfo?.name_en || langCode,
-                    flag: langInfo?.flag    || '🌐'
+                
+                cinemaResults[langCode] = { 
+                    url: job.output_url, 
+                    name: langInfo?.name_en || langCode, 
+                    flag: langCode 
                 };
 
-                item.innerHTML = `<span>${langInfo?.flag || '🌐'}</span> <span style="margin-left:8px;">${langInfo?.name_en || langCode}</span> <i class="fa-solid fa-circle-check" style="color:var(--accent-green); margin-left:auto;"></i>`;
-                item.onclick   = () => switchCinemaLang(langCode);
-
+                // تحديث العنصر بالأعلام الدائرية (SVG)
+                item.innerHTML = `
+                    ${getFlagImg(langCode)} 
+                    <span style="margin-left:8px;">${langInfo?.name_en}</span> 
+                    <i class="fa-solid fa-circle-check" style="color:var(--accent-green); margin-left:auto;"></i>
+                `;
+                item.onclick = () => switchCinemaLang(langCode);
+                
                 if (Object.keys(cinemaResults).length === 1) switchCinemaLang(langCode);
-
-                completedSet.add(langCode);
-                const pct = 50 + (completedSet.size / langCodes.length * 50);
-                updateProgress(
-                    completedSet.size === langCodes.length ? "Completed!" : "Processing...",
-                    pct
-                );
+                
+                const completedCount = Object.keys(cinemaResults).length;
+                updateProgress("Dubbing in progress...", 50 + (completedCount / langArray.length * 50));
+                
+                if (completedCount === langArray.length) updateProgress("All Done!", 100);
             })
             .catch(err => {
-                item.innerHTML = `<span>${langInfo?.flag || '🌐'}</span> <span style="margin-left:8px;">${langInfo?.name_en || langCode}</span> <i class="fa-solid fa-circle-xmark" style="color:var(--error); margin-left:auto;"></i>`;
-                console.error(`Error dubbing ${langCode}:`, err);
-                
-                // عرض رسالة الخطأ للمستخدم
-                const errorMsg = err.message || "Processing failed";
-                window.showToast?.(`Error: ${errorMsg}`, 'error');
-                updateProgress("Error occurred", 0);
+                item.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color:var(--error);"></i> <span style="margin-left:8px;">${langCode} Error</span>`;
+                window.showToast?.(`Language ${langCode}: ${err.message}`, 'error');
             });
         }
-
     } catch (e) {
-        console.error("Dubbing Error:", e);
-        updateProgress("Error: " + e.message, 0);
-        document.getElementById('dubBtn').style.display = 'block';
-        document.getElementById('progressArea').style.display = 'none';
+        console.error("Critical Error:", e);
         window.showToast?.(e.message, 'error');
+        document.getElementById('dubBtn').style.display = 'block';
+        updateProgress("Process Interrupted", 0);
     }
 }
 
-// =====================================
-// 4. Cinema Player Switcher
-// =====================================
+async function waitForJob(id, token) {
+    let attempts = 0;
+    while (attempts < 150) { // حد أقصى 10 دقائق
+        try {
+            const res = await fetch(`${GET_API_URL()}/api/job/${id}`, { 
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
+            const d = await res.json();
+            
+            if (d.status === 'completed') return d;
+            if (d.status === 'failed') throw new Error(d.error || "Worker encountered an error");
+            
+        } catch (pollErr) {
+            console.warn("Polling error (might be temporary):", pollErr);
+        }
+        
+        attempts++;
+        await new Promise(r => setTimeout(r, 4000));
+    }
+    throw new Error("Job timed out");
+}
+
 function switchCinemaLang(langCode) {
     const data = cinemaResults[langCode];
     if (!data) return;
@@ -155,95 +170,55 @@ function switchCinemaLang(langCode) {
     document.getElementById(`side-${langCode}`)?.classList.add('active');
 
     const playerContainer = document.getElementById('mainPlayer');
-    const dlArea          = document.getElementById('dlArea');
-    const dlBtn           = document.getElementById('masterDl');
+    document.getElementById('dlArea').style.display = 'block';
+    document.getElementById('masterDl').href = data.url;
 
     if (activeWavesurfer) { activeWavesurfer.destroy(); activeWavesurfer = null; }
 
-    dlArea.style.display = 'block';
-    dlBtn.href = data.url;
-
     const isVideo = /\.(mp4|mov|webm)(\?|$)/i.test(data.url);
-
     if (isVideo) {
         playerContainer.innerHTML = `<video controls autoplay src="${data.url}" style="width:100%;height:100%;object-fit:contain;"></video>`;
     } else {
         playerContainer.innerHTML = `
             <div class="audio-player-wrapper">
                 <div class="audio-player-header">
-                    <span class="flag">${data.flag}</span>
-                    <span>Dubbed Version - ${data.name}</span>
+                    ${getFlagImg(langCode)} <span style="margin-left:10px;">${data.name} Edition</span>
                 </div>
                 <div id="waveform" class="audio-waveform"></div>
                 <div class="audio-controls">
                     <button class="play-btn" id="wavePlayBtn"><i class="fa-solid fa-play"></i></button>
                     <div class="audio-time" id="waveTime">00:00 / 00:00</div>
                 </div>
-            </div>
-        `;
+            </div>`;
 
         activeWavesurfer = WaveSurfer.create({
-            container:     '#waveform',
-            waveColor:     '#4b5563',
-            progressColor: '#3b82f6',
-            cursorColor:   '#fff',
-            barWidth: 3,
-            barRadius: 3,
-            responsive: true,
-            height: 80,
+            container: '#waveform', waveColor: '#4b5563', progressColor: '#3b82f6',
+            cursorColor: '#fff', barWidth: 3, barRadius: 3, responsive: true, height: 80,
         });
-
         activeWavesurfer.load(data.url);
-
         activeWavesurfer.on('ready', () => {
             activeWavesurfer.play();
             document.getElementById('wavePlayBtn').innerHTML = '<i class="fa-solid fa-pause"></i>';
         });
-
         activeWavesurfer.on('audioprocess', () => {
-            const cur   = formatTime(activeWavesurfer.getCurrentTime());
+            const cur = formatTime(activeWavesurfer.getCurrentTime());
             const total = formatTime(activeWavesurfer.getDuration());
-            const el    = document.getElementById('waveTime');
-            if (el) el.innerText = `${cur} / ${total}`;
+            document.getElementById('waveTime').innerText = `${cur} / ${total}`;
         });
-
         document.getElementById('wavePlayBtn').onclick = () => {
             activeWavesurfer.playPause();
-            document.getElementById('wavePlayBtn').innerHTML = activeWavesurfer.isPlaying()
-                ? '<i class="fa-solid fa-pause"></i>'
-                : '<i class="fa-solid fa-play"></i>';
+            document.getElementById('wavePlayBtn').innerHTML = activeWavesurfer.isPlaying() ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
         };
     }
 }
 
-// =====================================
-// 5. Utils
-// =====================================
-async function waitForJob(id, token) {
-    while (true) {
-        const res  = await fetch(`${window.API_BASE}/api/job/${id}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        
-        if (data.status === 'completed') return data;
-        
-        // التعديل السحري: التقاط رسالة الخطأ الحقيقية من قاعدة البيانات
-        if (data.status === 'failed') {
-            throw new Error(data.error || "Worker processing failed. Check backend logs.");
-        }
-        
-        await new Promise(r => setTimeout(r, 4000));
-    }
-}
-
 function updateProgress(txt, pct) {
-    const sTxt  = document.getElementById('statusTxt');
-    const sPct  = document.getElementById('statusPct');
+    const sTxt = document.getElementById('statusTxt');
+    const sPct = document.getElementById('statusPct');
     const pFill = document.getElementById('progFill');
-    if (sTxt)  sTxt.innerText      = txt;
-    if (sPct)  sPct.innerText      = Math.round(pct) + "%";
-    if (pFill) pFill.style.width   = pct + "%";
+    if (sTxt) sTxt.innerText = txt;
+    if (sPct) sPct.innerText = Math.round(pct) + "%";
+    if (pFill) pFill.style.width = pct + "%";
 }
 
 function formatTime(s) {
