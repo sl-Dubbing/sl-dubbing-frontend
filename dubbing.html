@@ -238,9 +238,9 @@
         </a>
 
         <div class="user-zone">
-            <button class="menu-btn" id="menuBtn">
-                <i class="fa-solid fa-bars"></i> Menu
-            </button>
+            <button class="menu-btn" id="menuBtn" onclick="document.getElementById('mainMenuDropdown').classList.toggle('active'); event.stopPropagation();">
+    <i class="fa-solid fa-bars"></i> Menu
+</button>
 
             <div class="dropdown-panel" id="mainMenuDropdown">
                 <div class="auth-buttons" id="guestMenu">
