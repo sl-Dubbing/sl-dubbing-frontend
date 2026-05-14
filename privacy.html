@@ -1,302 +1,250 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>سياسة الخصوصية – sl-Dubbing</title>
-<style>
-/* ================================================================
-   sl-Dubbing & Translation — style.css (shared)
-   ================================================================ */
-:root{
-  --bg:#0d0d1f;
-  --card:rgba(255,255,255,.06);
-  --border:rgba(167,139,250,.18);
-  --text:#e0e0ff;
-  --muted:#9ca3af;
-  --dim:#6b7280;
-  --purple:#7c3aed;
-  --blue:#2563eb;
-  --green:#10b981;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{
-  font-family:'Segoe UI',Tahoma,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  direction:rtl;
-  overflow-x:hidden
-}
-body::before{
-  content:'';
-  position:fixed;
-  inset:0;
-  background:
-    radial-gradient(ellipse at 20% 20%,rgba(124,58,237,.14) 0%,transparent 60%),
-    radial-gradient(ellipse at 80% 80%,rgba(37,99,235,.11) 0%,transparent 60%);
-  pointer-events:none;
-  z-index:0
-}
-.page{
-  position:relative;
-  z-index:1;
-  max-width:1100px;
-  margin:0 auto;
-  padding:20px 16px
-}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Privacy Policy | Glotix</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* ── Core Theme Variables (HeyGen Style) ── */
+        :root {
+            --bg-page: #f9fafb;
+            --bg-card: #ffffff;
+            --border-color: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --primary: #111827;
+            --primary-hover: #374151;
+            --accent-blue: #2563eb;
+            --accent-green: #10b981;
+            --error: #ef4444;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+        }
 
-/* ── Header ── */
-.top-bar{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:18px 0 30px;
-  flex-wrap:wrap;
-  gap:12px
-}
-.logo{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  font-size:1.25rem;
-  font-weight:900;
-  text-decoration:none
-}
-.logo span{
-  background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent
-}
-.logo img{
-  width:46px;
-  height:46px;
-  object-fit:contain;
-  filter:drop-shadow(0 0 8px rgba(167,139,250,.5))
-}
-.user-zone{
-  display:flex;
-  align-items:center;
-  gap:10px
-}
-.btn-login{
-  padding:10px 22px;
-  background:linear-gradient(135deg,#7c3aed,#2563eb);
-  border:none;
-  border-radius:10px;
-  color:white;
-  font-weight:700;
-  cursor:pointer;
-  text-decoration:none;
-  font-size:.9rem;
-  box-shadow:0 4px 14px rgba(124,58,237,.4);
-  transition:all .3s
-}
-.btn-login:hover{
-  transform:translateY(-2px);
-  box-shadow:0 7px 22px rgba(124,58,237,.6)
-}
-.btn-logout{
-  padding:8px 16px;
-  background:rgba(239,68,68,.2);
-  border:1px solid rgba(239,68,68,.3);
-  border-radius:8px;
-  color:#f87171;
-  cursor:pointer;
-  font-weight:600;
-  transition:all .3s
-}
-.avatar{
-  width:40px;
-  height:40px;
-  border-radius:50%;
-  background:linear-gradient(135deg,#a78bfa,#2563eb);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:700;
-  color:white
-}
-.username{color:#9ca3af;font-size:.9rem}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; overflow-x: hidden; line-height: 1.5; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px 3%; }
 
-/* ── Server badge ── */
-.srv-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:7px 15px;
-  background:rgba(248,113,113,.12);
-  border:1px solid rgba(248,113,113,.3);
-  border-radius:20px;
-  font-size:.78rem;
-  color:#f87171;
-  cursor:pointer;
-  margin-bottom:32px;
-  transition:all .3s
-}
-.srv-badge.on{
-  background:rgba(52,211,153,.12);
-  border-color:rgba(52,211,153,.3);
-  color:#34d399
-}
-.dot{
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:currentColor;
-  animation:blink 2s infinite
-}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+        /* ── Header (مطابق لباقي الصفحات) ── */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0 40px; }
+        .logo { display: flex; align-items: center; gap: 10px; font-size: 1.6rem; font-weight: 800; text-decoration: none; color: var(--text-main); letter-spacing: -0.5px; }
+        .logo svg { width: 32px; height: 32px; }
 
-/* ── Main layout ── */
-.priv{
-  max-width:760px;
-  margin:0 auto;
-  padding:40px 16px
-}
-.priv h1{
-  font-size:2rem;
-  font-weight:900;
-  background:linear-gradient(135deg,#a78bfa,#60a5fa);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  margin-bottom:6px
-}
-.priv .date{
-  color:#6b7280;
-  margin-bottom:30px;
-  font-size:.85rem
-}
-.priv h2{
-  color:#60a5fa;
-  font-size:1.1rem;
-  margin:28px 0 10px
-}
-.priv p{
-  color:#9ca3af;
-  line-height:1.8;
-  font-size:.92rem;
-  margin-bottom:1rem
-}
-.priv a{
-  color:#60a5fa;
-  text-decoration:none
-}
+        .user-zone { position: relative; display: flex; align-items: center; gap: 12px; }
+        .menu-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.95rem; color: var(--text-main); transition: 0.2s; }
+        .menu-btn:hover { background: #f3f4f6; }
 
-/* ── Footer ── */
-footer{
-  text-align:center;
-  padding:30px 0 20px;
-  border-top:1px solid rgba(255,255,255,.07);
-  color:#6b7280;
-  font-size:.82rem;
-  margin-top:50px
-}
-footer a{
-  color:#9ca3af;
-  text-decoration:none;
-  margin:0 8px
-}
-footer a:hover{color:#a78bfa}
+        .dropdown-panel { position: absolute; top: calc(100% + 12px); right: 0; width: 300px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); padding: 16px; display: flex; flex-direction: column; gap: 8px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: 0.2s; z-index: 1000; }
+        .dropdown-panel.active { opacity: 1; visibility: visible; transform: translateY(0); }
+        .dropdown-panel a, .dropdown-panel button.menu-item { text-decoration: none; color: var(--text-main); padding: 12px 14px; border-radius: 10px; font-weight: 500; display: flex; align-items: center; gap: 14px; transition: 0.2s; background: transparent; border: none; width: 100%; text-align: left; cursor: pointer; font-size: 0.95rem; }
+        .dropdown-panel a:hover, .dropdown-panel button.menu-item:hover { background: #f3f4f6; }
+        .menu-divider { border: none; border-top: 1px solid var(--border-color); margin: 8px 0; }
+        .auth-buttons { display: flex; gap: 10px; margin-bottom: 5px; }
+        .btn-login, .btn-signup { flex: 1; padding: 12px; border-radius: 10px; text-align: center; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: 0.2s; cursor: pointer; }
+        .btn-login { background: var(--bg-page); border: 1px solid var(--border-color); color: var(--text-main); }
+        .btn-signup { background: var(--primary); color: white; border: 1px solid var(--primary); }
+        .logged-in-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; margin-bottom: 5px; display: none; }
+        .user-name { font-weight: 600; font-size: 0.95rem; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; }
+        .balance-text { color: var(--text-muted); font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+        .logout-btn { color: var(--error) !important; display: none; }
 
-/* ── Toast (إشعارات مؤقتة) ── */
-.toast{
-  position:fixed;
-  bottom:28px;
-  left:50%;
-  transform:translateX(-50%) translateY(120px);
-  background:linear-gradient(135deg,#7c3aed,#2563eb);
-  color:#fff;
-  padding:14px 28px;
-  border-radius:12px;
-  font-weight:600;
-  box-shadow:0 10px 35px rgba(0,0,0,.4);
-  transition:transform .3s;
-  z-index:9999
-}
-.toast.show{
-  transform:translateX(-50%) translateY(0)
-}
+        /* ── Privacy Content ── */
+        .privacy-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 50px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
 
-/* ── Responsive ── */
-@media(max-width:720px){
-  .top-bar{flex-direction:column;align-items:flex-start}
-  .priv{padding:30px 12px}
-}
-</style>
+        .privacy-header { text-align: center; margin-bottom: 40px; padding-bottom: 30px; border-bottom: 1px solid var(--border-color); }
+        .privacy-header .icon-wrap { display: inline-flex; width: 64px; height: 64px; background: #eff6ff; border-radius: 16px; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .privacy-header .icon-wrap i { font-size: 1.8rem; color: var(--accent-blue); }
+        .privacy-header h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.5px; }
+        .privacy-header .updated { color: var(--text-muted); font-size: 0.9rem; }
+
+        .privacy-section { margin-bottom: 35px; }
+        .privacy-section:last-child { margin-bottom: 0; }
+        .privacy-section h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 14px; color: var(--text-main); display: flex; align-items: center; gap: 12px; }
+        .privacy-section h2 .num { background: var(--accent-blue); color: white; width: 28px; height: 28px; border-radius: 8px; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+        .privacy-section p { color: var(--text-muted); line-height: 1.7; font-size: 0.98rem; margin-bottom: 12px; }
+        .privacy-section ul { padding-left: 24px; margin-bottom: 12px; }
+        .privacy-section li { color: var(--text-muted); line-height: 1.7; font-size: 0.98rem; margin-bottom: 6px; }
+        .privacy-section a { color: var(--accent-blue); text-decoration: none; font-weight: 600; }
+        .privacy-section a:hover { text-decoration: underline; }
+        .privacy-section strong { color: var(--text-main); font-weight: 600; }
+
+        .highlight-box { background: #eff6ff; border-left: 4px solid var(--accent-blue); padding: 16px 20px; border-radius: 8px; margin: 16px 0; }
+        .highlight-box p { color: var(--text-main); margin-bottom: 0; }
+
+        /* ── Footer ── */
+        footer { text-align: center; padding: 40px 20px 30px; margin-top: 40px; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.85rem; }
+        footer a { color: var(--text-muted); text-decoration: none; margin: 0 12px; transition: 0.2s; }
+        footer a:hover { color: var(--accent-blue); }
+
+        @media (max-width: 700px) {
+            .privacy-card { padding: 30px 24px; }
+            .privacy-header h1 { font-size: 1.8rem; }
+            .privacy-section h2 { font-size: 1.1rem; }
+        }
+    </style>
 </head>
 <body>
-<div class="page">
 
-  <!-- ====== Header ====== -->
-  <div class="top-bar">
-    <a class="logo" href="index.html">
-      <img src="logo.gif" onerror="this.src='logo.png'" alt="logo">
-      <span>sl-Dubbing & Translation</span>
-    </a>
-    <div class="user-zone" id="hdr">
-      <a href="login.html" class="btn-login">تسجيل الدخول</a>
-    </div>
-  </div>
+<div class="container">
+    <!-- ── Standard Header ── -->
+    <header class="top-bar">
+        <a class="logo" href="/">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 3C8.82 3 3 8.82 3 16C3 23.18 8.82 29 16 29C23.18 29 29 23.18 29 16V14H16V19H23.2C22.1 22.1 19.3 24 16 24C11.58 24 8 20.42 8 16C8 11.58 11.58 8 16 8C18.4 8 20.5 9.06 21.8 10.74L25.4 7.14C22.9 4.6 19.6 3 16 3Z" fill="#111827"/>
+                <path d="M29 16C29 23.18 23.18 29 16 29V24C19.3 24 22.1 22.1 23.2 19H29V16Z" fill="#2563eb"/>
+            </svg>
+            Glotix
+        </a>
+        <div class="user-zone">
+            <button class="menu-btn" id="menuBtn">
+                <i class="fa-solid fa-bars"></i> Menu
+            </button>
+            <div class="dropdown-panel" id="mainMenuDropdown">
+                <div class="auth-buttons" id="guestMenu">
+                    <a href="/login" class="btn-login">Login</a>
+                    <a href="/signup" class="btn-signup">Sign up</a>
+                </div>
+                <div class="logged-in-box" id="userMenu">
+                    <div class="user-name">
+                        <img id="menuAvatar" class="user-avatar" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="User">
+                        <span id="menuUserName">My Account</span>
+                    </div>
+                    <div class="balance-text"><i class="fa-solid fa-coins" style="color:#f59e0b;"></i> <span id="menuCredits">...</span> Credits</div>
+                </div>
+                <hr class="menu-divider">
+                <a href="/dubbing"><i class="fa-regular fa-file-video"></i> Dubbing Studio</a>
+                <a href="/tts"><i class="fa-regular fa-comment-dots"></i> Text to Speech</a>
+                <a href="/stt"><i class="fa-regular fa-file-lines"></i> Speech to Text</a>
+                <hr class="menu-divider">
+                <a href="/history"><i class="fa-regular fa-folder-open"></i> My Files</a>
+                <button class="menu-item logout-btn" id="logoutBtn">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </div>
+    </header>
 
-  <!-- ====== Privacy Content ====== -->
-  <section class="priv">
-    <h1>سياسة الخصوصية</h1>
-    <p class="date">آخر تحديث: مارس 2026</p>
+    <main>
+        <div class="privacy-card">
+            <div class="privacy-header">
+                <div class="icon-wrap"><i class="fa-solid fa-shield-halved"></i></div>
+                <h1>Privacy Policy</h1>
+                <div class="updated">Last updated: May 2026</div>
+            </div>
 
-    <p>في منصة <strong>sl-Dubbing & Translation</strong>، نولي أهمية قصوى لخصوصية زوارنا ومستخدمينا.</p>
+            <div class="privacy-section">
+                <p>At <strong>Glotix</strong>, we take your privacy seriously. This Privacy Policy explains how we collect, use, and protect your information when you use our AI-powered dubbing, text-to-speech, and speech-to-text services.</p>
+            </div>
 
-    <h2>1. المعلومات التي نجمعها</h2>
-    <p>
-      نجمع المعلومات التي تقدمها مباشرة عند التسجيل أو استخدام الخدمات، كالبريد
-      الإلكتروني، ملفات SRT، والنصوص المُدخلة، لغرض المعالجة التقنية فقط.
-    </p>
+            <div class="privacy-section">
+                <h2><span class="num">1</span> Information We Collect</h2>
+                <p>We collect only the information necessary to provide our services:</p>
+                <ul>
+                    <li><strong>Account information:</strong> Email address, name, and profile picture from your sign-in provider (Google, GitHub, etc.).</li>
+                    <li><strong>Uploaded media:</strong> Audio and video files you upload for dubbing, transcription, or voice cloning.</li>
+                    <li><strong>Generated content:</strong> Translated audio, subtitles, and synthesized voices created by our AI.</li>
+                    <li><strong>Usage data:</strong> Anonymous analytics about feature usage to improve the platform.</li>
+                </ul>
+            </div>
 
-    <h2>2. إعلانات Google AdSense</h2>
-    <p>
-      نستخدم <a href="https://ads.google.com" target="_blank">Google AdSense</a> لعرض إعلانات.
-      تستخدم Google ملفات تعريف الارتباط لتخصيص الإعلانات. يمكنك إدارتها من
-      <a href="https://adssettings.google.com" target="_blank">إعدادات إعلانات Google</a>.
-    </p>
+            <div class="privacy-section">
+                <h2><span class="num">2</span> How We Use Your Data</h2>
+                <p>Your data is used exclusively for:</p>
+                <ul>
+                    <li>Processing your dubbing, TTS, and STT requests.</li>
+                    <li>Storing your generated files so you can access them later.</li>
+                    <li>Managing your account and credit balance.</li>
+                    <li>Improving our AI models (only with explicit opt-in consent).</li>
+                </ul>
+                <div class="highlight-box">
+                    <p><strong>We never sell your data to third parties.</strong> Your uploaded files are processed by our AI workers and stored privately in your account.</p>
+                </div>
+            </div>
 
-    <h2>3. المدفوعات عبر Lemon Squeezy</h2>
-    <p>
-      جميع عمليات الدفع تتم عبر بوابة <strong>Lemon Squeezy</strong> الآمنة.
-      لا نخزن أي بيانات بطاقة ائتمانية على خوادمنا – كل شيء يُعالج من قبل الطرف
-      الثالث المتخصص في المدفوعات.
-    </p>
+            <div class="privacy-section">
+                <h2><span class="num">3</span> Data Storage & Security</h2>
+                <p>Your files are stored on encrypted servers hosted by <strong>Cloudflare R2</strong> with industry-standard security:</p>
+                <ul>
+                    <li>All connections use HTTPS / TLS encryption.</li>
+                    <li>Files are accessible only through signed URLs tied to your account.</li>
+                    <li>Authentication is handled by <a href="https://supabase.com" target="_blank">Supabase</a> using OAuth 2.0.</li>
+                    <li>Generated files are automatically deleted after 7 days unless saved to your library.</li>
+                </ul>
+            </div>
 
-    <h2>4. حقوقك (GDPR / KVKK)</h2>
-    <p>
-      يحق لك في أي وقت طلب الاطلاع على بياناتك، تعديلها أو حذفها.
-      للتواصل بخصوص هذه الحقوق يُرجى مراسلة فريق الدعم عبر البريد الإلكتروني
-      الموجود أسفل الصفحة.
-    </p>
+            <div class="privacy-section">
+                <h2><span class="num">4</span> Third-Party Services</h2>
+                <p>Glotix uses the following trusted services to operate:</p>
+                <ul>
+                    <li><a href="https://supabase.com" target="_blank">Supabase</a> — Authentication and database.</li>
+                    <li><a href="https://www.cloudflare.com/products/r2/" target="_blank">Cloudflare R2</a> — File storage.</li>
+                    <li><a href="https://modal.com" target="_blank">Modal</a> — GPU compute for AI processing.</li>
+                    <li><a href="https://www.anthropic.com" target="_blank">Anthropic Claude</a> — AI translation engine.</li>
+                </ul>
+            </div>
 
-    <h2>5. التواصل معنا</h2>
-    <p>
-      البريد الإلكتروني:
-      <a href="mailto:support@sl-dubbing.com">support@sl-dubbing.com</a>
-    </p>
+            <div class="privacy-section">
+                <h2><span class="num">5</span> Payments</h2>
+                <p>If you purchase credits, payment is processed by secure third-party providers. <strong>We do not store credit card information</strong> — all sensitive payment data is handled directly by the payment processor.</p>
+            </div>
 
-    <p>
-      إذا كان لديك أي سؤال أو ملاحظة بخصوص سياسة الخصوصية، نرحب بتواصلك معنا.
-    </p>
-  </section>
+            <div class="privacy-section">
+                <h2><span class="num">6</span> Your Rights (GDPR / CCPA)</h2>
+                <p>You have the right to:</p>
+                <ul>
+                    <li><strong>Access</strong> all data we hold about you.</li>
+                    <li><strong>Correct</strong> inaccurate information in your account.</li>
+                    <li><strong>Delete</strong> your account and all associated data at any time.</li>
+                    <li><strong>Export</strong> your data in a portable format.</li>
+                    <li><strong>Withdraw consent</strong> for non-essential data processing.</li>
+                </ul>
+                <p>To exercise any of these rights, contact us at the email below.</p>
+            </div>
 
-  <!-- ====== Footer ====== -->
-  <footer>
-    <p>ALHASHMI © 2026 — جميع الحقوق محفوظة</p>
-    <p style="margin-top:8px">
-      <a href="index.html">← الرئيسية</a>
-      <a href="privacy.html">سياسة الخصوصية</a>
-      <a href="https://github.com/alhlilma-jpg" target="_blank">GitHub</a>
-    </p>
-  </footer>
+            <div class="privacy-section">
+                <h2><span class="num">7</span> Cookies</h2>
+                <p>Glotix uses only essential cookies required for authentication and session management. We do not use tracking cookies or third-party advertising cookies.</p>
+            </div>
+
+            <div class="privacy-section">
+                <h2><span class="num">8</span> Children's Privacy</h2>
+                <p>Glotix is not intended for users under 13 years of age. We do not knowingly collect data from children. If you believe a child has provided us with information, please contact us immediately.</p>
+            </div>
+
+            <div class="privacy-section">
+                <h2><span class="num">9</span> Changes to This Policy</h2>
+                <p>We may update this Privacy Policy from time to time. Significant changes will be announced via email or a notice on the site. Continued use of Glotix after changes constitutes acceptance of the new policy.</p>
+            </div>
+
+            <div class="privacy-section">
+                <h2><span class="num">10</span> Contact Us</h2>
+                <p>For questions, concerns, or data requests, please reach out to us:</p>
+                <ul>
+                    <li>Email: <a href="mailto:support@glotix.ai">support@glotix.ai</a></li>
+                    <li>Privacy inquiries: <a href="mailto:privacy@glotix.ai">privacy@glotix.ai</a></li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2026 Glotix. All rights reserved.</p>
+        <p style="margin-top:10px;">
+            <a href="/">Home</a>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
+        </p>
+    </footer>
 </div>
 
-<!-- Toast container (يُستَخدم من auth.js) -->
-<div class="toast" id="toast"></div>
+<div id="toasts"></div>
+
+<script src="js/config.js"></script>
+<script src="js/shared.js"></script>
 
 </body>
 </html>
