@@ -1,4 +1,4 @@
-// js/dubbing.js — V12.2 (English UI & Smart Output)
+// js/dubbing.js — V12.3 (Smart Error Catching & English UI)
 let cinemaResults = {};
 let activeWavesurfer = null;
 
@@ -83,7 +83,6 @@ async function startDubbing() {
             const item = document.createElement('div');
             item.className = 'side-lang-card';
             item.id        = `side-${langCode}`;
-            // استخدام الاسم الإنجليزي
             item.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> <span style="margin-left:8px;">${langInfo?.name_en || langCode}</span>`;
             sidebar.appendChild(item);
 
@@ -98,8 +97,13 @@ async function startDubbing() {
                     video_output: isVideoUpload 
                 })
             })
-            .then(res => res.json())
+            .then(async res => {
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || "Internal Server Error");
+                return data;
+            })
             .then(async (data) => {
+                // الانتظار حتى انتهاء المعالجة في الـ Worker
                 const job = await waitForJob(data.job_id, token);
 
                 cinemaResults[langCode] = {
@@ -108,7 +112,6 @@ async function startDubbing() {
                     flag: langInfo?.flag    || '🌐'
                 };
 
-                // تحديث العنصر عند النجاح (بالإنجليزي)
                 item.innerHTML = `<span>${langInfo?.flag || '🌐'}</span> <span style="margin-left:8px;">${langInfo?.name_en || langCode}</span> <i class="fa-solid fa-circle-check" style="color:var(--accent-green); margin-left:auto;"></i>`;
                 item.onclick   = () => switchCinemaLang(langCode);
 
@@ -122,9 +125,13 @@ async function startDubbing() {
                 );
             })
             .catch(err => {
-                // تحديث العنصر عند الفشل
                 item.innerHTML = `<span>${langInfo?.flag || '🌐'}</span> <span style="margin-left:8px;">${langInfo?.name_en || langCode}</span> <i class="fa-solid fa-circle-xmark" style="color:var(--error); margin-left:auto;"></i>`;
                 console.error(`Error dubbing ${langCode}:`, err);
+                
+                // عرض رسالة الخطأ للمستخدم
+                const errorMsg = err.message || "Processing failed";
+                window.showToast?.(`Error: ${errorMsg}`, 'error');
+                updateProgress("Error occurred", 0);
             });
         }
 
@@ -161,7 +168,6 @@ function switchCinemaLang(langCode) {
     if (isVideo) {
         playerContainer.innerHTML = `<video controls autoplay src="${data.url}" style="width:100%;height:100%;object-fit:contain;"></video>`;
     } else {
-        // نصوص مشغل الصوت بالإنجليزي
         playerContainer.innerHTML = `
             <div class="audio-player-wrapper">
                 <div class="audio-player-header">
@@ -219,8 +225,14 @@ async function waitForJob(id, token) {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
+        
         if (data.status === 'completed') return data;
-        if (data.status === 'failed')    throw new Error("Processing failed");
+        
+        // التعديل السحري: التقاط رسالة الخطأ الحقيقية من قاعدة البيانات
+        if (data.status === 'failed') {
+            throw new Error(data.error || "Worker processing failed. Check backend logs.");
+        }
+        
         await new Promise(r => setTimeout(r, 4000));
     }
 }
