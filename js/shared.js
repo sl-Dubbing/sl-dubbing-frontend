@@ -1,4 +1,4 @@
-// js/shared.js - V31 (Fixed Rate Limit + Media Upload Restored)
+// js/shared.js - V33 (Final: Safe Credits + Unified Menu Toggle)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -11,7 +11,7 @@ let _pendingAuth = false;
 let _isFetchingCredits = false;
 
 let supabaseClient = null;
-let _previewUrl    = null; 
+let _previewUrl    = null;
 
 function getSupabase() {
     if (supabaseClient) return supabaseClient;
@@ -22,8 +22,11 @@ function getSupabase() {
     }
     return supabaseClient;
 }
+window.getSupabase = getSupabase;
 
-// ── 1. Update Dropdown UI ──
+// ═══════════════════════════════════════════════════════════════
+// 1. Update Dropdown UI
+// ═══════════════════════════════════════════════════════════════
 window.updateDropdownUI = function(user) {
     const guestMenu = document.getElementById('guestMenu');
     const userMenu  = document.getElementById('userMenu');
@@ -46,7 +49,9 @@ window.updateDropdownUI = function(user) {
     }
 };
 
-// ── 2. Check Server Status ──
+// ═══════════════════════════════════════════════════════════════
+// 2. Check Server Status
+// ═══════════════════════════════════════════════════════════════
 window.checkServer = async function() {
     const badge = document.getElementById('srv');
     const txt   = document.getElementById('srvTxt');
@@ -67,7 +72,9 @@ window.checkServer = async function() {
     }
 };
 
-// ── 3. Full Auth Sync ──
+// ═══════════════════════════════════════════════════════════════
+// 3. Full Auth Sync (Safe Fetch)
+// ═══════════════════════════════════════════════════════════════
 window.checkAuth = async function() {
     const cachedUser = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
     if (cachedUser) window.updateDropdownUI(cachedUser);
@@ -86,23 +93,31 @@ window.checkAuth = async function() {
         }
 
         localStorage.setItem('token', session.access_token);
-        let userCredits = '...';
-        
+
+        let userCredits = cachedUser ? cachedUser.credits : '...';
+
+        // --- 🛡️ Safe Fetching Block 🛡️ ---
         if (!_isFetchingCredits) {
             _isFetchingCredits = true;
             try {
-                const res = await fetch(`${API_BASE}/api/user/credits`, {
+                const cleanApiBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+
+                const res = await fetch(`${cleanApiBase}/api/user/credits`, {
                     method: 'GET',
-                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                    headers: { 'Authorization': `Bearer ${session.access_token}` },
+                    signal: AbortSignal.timeout(5000)
                 });
+
                 if (res.ok) {
                     const d = await res.json();
-                    if (d.success) userCredits = d.credits;
+                    if (d.success) {
+                        userCredits = d.credits;
+                    }
                 }
             } catch(e) {
-                console.warn('Credits fetch error. Ignoring to prevent loops.');
+                console.warn('Credits fetch skipped to prevent loop:', e.message);
             } finally {
-                setTimeout(() => { _isFetchingCredits = false; }, 1000);
+                setTimeout(() => { _isFetchingCredits = false; }, 10000);
             }
         }
 
@@ -127,7 +142,9 @@ window.checkAuth = async function() {
     }
 };
 
-// ── 4. Supabase Auth Listener ──
+// ═══════════════════════════════════════════════════════════════
+// 4. Supabase Auth Listener
+// ═══════════════════════════════════════════════════════════════
 window._supabaseClient = getSupabase();
 
 if (window._supabaseClient) {
@@ -146,7 +163,9 @@ if (window._supabaseClient) {
     });
 }
 
-// ── 5. Global Event Listeners ──
+// ═══════════════════════════════════════════════════════════════
+// 5. Global Event Listeners (DOMContentLoaded)
+// ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
     _domReady = true;
 
@@ -157,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.checkAuth();
     }
 
-    // Logout
+    // ─── Logout ───
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
         const supa = getSupabase();
         if (supa) await supa.auth.signOut();
@@ -165,12 +184,39 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.replace('/');
     });
 
-    // Server Status
+    // ─── Server Status ───
     window.checkServer();
     setInterval(window.checkServer, 300000);
-    
+
     // ═══════════════════════════════════════════════════════════════
-    // ── 6. Media Preview (تم استعادته لدعم صفحة الدبلجة والـ STT) ──
+    // 6. Menu Dropdown Toggle (موحّد لكل الصفحات)
+    // ═══════════════════════════════════════════════════════════════
+    (function initMenuDropdown() {
+        const menuBtn = document.getElementById('menuBtn');
+        const menuDropdown = document.getElementById('mainMenuDropdown');
+        if (!menuBtn || !menuDropdown) return;
+
+        // فتح/إغلاق عند الضغط على زر القائمة
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menuDropdown.classList.toggle('active');
+        });
+
+        // إغلاق عند الضغط خارج القائمة
+        document.addEventListener('click', (e) => {
+            if (!menuDropdown.contains(e.target) && !menuBtn.contains(e.target)) {
+                menuDropdown.classList.remove('active');
+            }
+        });
+
+        // إغلاق عند الضغط على Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') menuDropdown.classList.remove('active');
+        });
+    })();
+
+    // ═══════════════════════════════════════════════════════════════
+    // 7. Media Preview (للدبلجة والـ STT)
     // ═══════════════════════════════════════════════════════════════
     (function initMediaPreview() {
         const mediaFile     = document.getElementById('mediaFile');
@@ -206,7 +252,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 videoPreview.src = _previewUrl;
                 videoPreview.style.display = 'block';
                 if (audioLabel) audioLabel.style.display = 'none';
-                videoPreview.onloadedmetadata = () => { if (_previewUrl) { URL.revokeObjectURL(_previewUrl); _previewUrl = null; } };
+                videoPreview.onloadedmetadata = () => {
+                    if (_previewUrl) { URL.revokeObjectURL(_previewUrl); _previewUrl = null; }
+                };
             } else if (file.type.startsWith('audio/')) {
                 if (videoPreview) videoPreview.style.display = 'none';
                 if (audioLabel)   audioLabel.style.display   = 'block';
@@ -214,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (dubBtn) dubBtn.style.display = 'block';
-            if (sttBtn) sttBtn.disabled = false; // تفعيل الزر في STT
+            if (sttBtn) sttBtn.disabled = false;
         });
 
         window.resetMediaPreview = function() {
@@ -247,7 +295,9 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
 });
 
-// ── 7. Utils ──
+// ═══════════════════════════════════════════════════════════════
+// 8. Utils
+// ═══════════════════════════════════════════════════════════════
 window.showToast = function(msg, type) {
     const t = document.getElementById('toasts');
     if (!t) return;
