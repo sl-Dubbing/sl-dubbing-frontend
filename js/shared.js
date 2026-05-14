@@ -1,4 +1,4 @@
-// js/shared.js - V33 (Final: Safe Credits + Unified Menu Toggle)
+// js/shared.js - V33 (Final: Safe Credits + Unified Menu Toggle + Fixed Auth Header)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -102,9 +102,13 @@ window.checkAuth = async function() {
             try {
                 const cleanApiBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
 
+                // التعديل الرئيسي هنا (إضافة X-User-Id لتجنب الخطأ 401)
                 const res = await fetch(`${cleanApiBase}/api/user/credits`, {
                     method: 'GET',
-                    headers: { 'Authorization': `Bearer ${session.access_token}` },
+                    headers: { 
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'X-User-Id': session.user.id
+                    },
                     signal: AbortSignal.timeout(5000)
                 });
 
