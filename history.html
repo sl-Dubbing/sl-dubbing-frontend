@@ -234,7 +234,7 @@
     // My Files — File Manager Logic (V2.0)
     // Uses Supabase directly + Glotix backend for renames/moves.
     // ═════════════════════════════════════════════════════════════
-    const API = window.API_BASE || 'https://api.glotix.ai';
+    const API = String(window.API_BASE || 'https://api.glotix.ai').replace(/\/$/, '').replace(/([^:]\/)\/+/g, '$1');
     let allFiles = [];
     let currentFolder = 'All Files';
     let currentFilter = 'all';

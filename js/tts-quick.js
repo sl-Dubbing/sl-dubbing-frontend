@@ -1,4 +1,18 @@
-// js/tts-quick.js — V1.2 (Centralized API Base, Streaming & UI Aligned)
+// js/tts-quick.js — V1.3 (X-User-Id + normalized API base)
+
+function getUserIdFromAccessToken(token) {
+    if (!token || typeof token !== 'string') return null;
+    try {
+        const parts = token.split('.');
+        if (parts.length < 2) return null;
+        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        const payload = JSON.parse(atob(b64));
+        return payload.sub || null;
+    } catch (e) {
+        return null;
+    }
+}
 
 async function quickTTS(text, options = {}) {
     // تم تغيير اللغة الافتراضية إلى الإنجليزية لتطابق واجهة الموقع
@@ -6,14 +20,18 @@ async function quickTTS(text, options = {}) {
     const token = localStorage.getItem('token');
     const headers = { 'Content-Type': 'application/json' };
     
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        const uid = getUserIdFromAccessToken(token);
+        if (uid) headers['X-User-Id'] = uid;
+    }
     if (!text?.trim()) throw new Error('Text is empty');
 
     const t0 = performance.now();
     
-    // بناء رابط الـ API بذكاء لمنع مشكلة تكرار علامة السلاش (//)
-    let apiEndpoint = `${window.API_BASE}/api/tts/quick`;
-    apiEndpoint = apiEndpoint.replace(/([^:]\/)\/+/g, "$1"); // تنظيف الرابط
+    const base = String(window.API_BASE || 'https://api.glotix.ai').replace(/\/$/, '');
+    let apiEndpoint = `${base}/api/tts/quick`;
+    apiEndpoint = apiEndpoint.replace(/([^:]\/)\/+/g, "$1");
 
     const response = await fetch(apiEndpoint, {
         method: 'POST', 

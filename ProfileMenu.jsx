@@ -1,11 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+function getUserIdFromAccessToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const payload = JSON.parse(atob(b64));
+    return payload.sub || null;
+  } catch {
+    return null;
+  }
+}
+
 export default function ProfileMenu({ apiBase }) {
   const [user, setUser] = useState(null);
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileRef = useRef();
+
+  const baseUrl = String(apiBase || '').replace(/\/$/, '');
 
   // ممانعة تكرار الكود: دالة موحدة لجلب خيارات الـ Fetch
   const getFetchOptions = (method = 'GET', body = null) => {
@@ -15,7 +31,11 @@ export default function ProfileMenu({ apiBase }) {
       credentials: 'include',
       headers: {}
     };
-    if (token) options.headers['Authorization'] = `Bearer ${token}`;
+    if (token) {
+      options.headers['Authorization'] = `Bearer ${token}`;
+      const uid = getUserIdFromAccessToken(token);
+      if (uid) options.headers['X-User-Id'] = uid;
+    }
     if (body && !(body instanceof FormData)) {
       options.headers['Content-Type'] = 'application/json';
     }
@@ -25,14 +45,14 @@ export default function ProfileMenu({ apiBase }) {
 
   useEffect(() => {
     // جلب بيانات المستخدم عند التحميل
-    fetch(`${apiBase}/api/user`, getFetchOptions())
+    fetch(`${baseUrl}/api/user`, getFetchOptions())
       .then(r => r.json())
       .then(d => { 
         if (d.success) setUser(d.user); 
         else if (d.error === "Unauthorized") setUser(null);
       })
       .catch(err => console.error("Auth check failed:", err));
-  }, [apiBase]);
+  }, [baseUrl]);
 
   function handleFileChange(e) {
     const f = e.target.files[0];
@@ -49,7 +69,7 @@ export default function ProfileMenu({ apiBase }) {
     fd.append('avatar', preview.file);
 
     try {
-      const res = await fetch(`${apiBase}/api/user/avatar`, getFetchOptions('POST', fd));
+      const res = await fetch(`${baseUrl}/api/user/avatar`, getFetchOptions('POST', fd));
       const data = await res.json();
       
       if (data.success) {
@@ -69,7 +89,7 @@ export default function ProfileMenu({ apiBase }) {
 
   async function sendEmailWithAvatar() {
     try {
-      const res = await fetch(`${apiBase}/api/user/send-avatar-email`, getFetchOptions('POST'));
+      const res = await fetch(`${baseUrl}/api/user/send-avatar-email`, getFetchOptions('POST'));
       const data = await res.json();
       if (data.success) alert('📧 تم إرسال الصورة إلى بريدك الإلكتروني');
       else alert('❌ فشل الإرسال: ' + (data.error || 'خطأ'));
@@ -80,7 +100,7 @@ export default function ProfileMenu({ apiBase }) {
 
   async function handleSignOut() {
     try {
-      await fetch(`${apiBase}/api/logout`, getFetchOptions('POST'));
+      await fetch(`${baseUrl}/api/logout`, getFetchOptions('POST'));
     } catch (e) {}
     localStorage.removeItem('token');
     window.location.reload();

@@ -1,4 +1,19 @@
-// js/tts.js — V2.6 (Complete Logic)
+// js/tts.js — V2.7 (X-User-Id for /api/tts/quick)
+
+function getUserIdFromAccessToken(token) {
+    if (!token || typeof token !== 'string') return null;
+    try {
+        const parts = token.split('.');
+        if (parts.length < 2) return null;
+        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        const payload = JSON.parse(atob(b64));
+        return payload.sub || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     let currentLangCode = 'en-us';
     let selectedVoiceId = null;
@@ -107,12 +122,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // استدعاء السيرفر (تأكد أن مسار الـ API_BASE في config.js هو https://api.glotix.ai)
-            const API = (window.API_BASE || 'https://api.glotix.ai').replace(/\/$/, "");
+            const API = (window.API_BASE || 'https://api.glotix.ai').replace(/\/$/, "").replace(/([^:]\/)\/+/g, "$1");
             const token = localStorage.getItem('token') || '';
-            
+            const userId = getUserIdFromAccessToken(token);
+            const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+            if (userId) headers['X-User-Id'] = userId;
+
             const res = await fetch(`${API}/api/tts/quick`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ 
                     text: text, 
                     lang: currentLangCode, 

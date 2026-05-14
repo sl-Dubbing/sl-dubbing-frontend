@@ -15,7 +15,7 @@ function getFlagImg(code) {
 // تنظيف رابط الـ API
 const GET_API_URL = () => {
     let base = window.API_BASE || 'https://api.glotix.ai';
-    return base.replace(/\/$/, ""); // إزالة السلاش في النهاية إن وجد
+    return String(base).replace(/\/$/, '').replace(/([^:]\/)\/+/g, '$1');
 };
 
 /** يستخرج sub من JWT (Supabase) لإرسال X-User-Id مع طلبات الرفع */
@@ -107,7 +107,11 @@ async function startDubbing() {
             // إرسال طلب الدبلجة
             fetch(`${GET_API_URL()}/api/dub`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'X-User-Id': userId
+                },
                 body: JSON.stringify({
                     file_key: urlData.file_key, 
                     lang: langCode,
@@ -125,7 +129,7 @@ async function startDubbing() {
             })
             .then(async data => {
                 // الانتظار حتى اكتمال المهمة
-                const job = await waitForJob(data.job_id, token);
+                const job = await waitForJob(data.job_id, token, userId);
                 
                 cinemaResults[langCode] = { 
                     url: job.output_url, 
@@ -161,13 +165,16 @@ async function startDubbing() {
     }
 }
 
-async function waitForJob(id, token) {
+async function waitForJob(id, token, userId) {
     let attempts = 0;
     while (attempts < 150) { // حد أقصى 10 دقائق
         try {
             const res = await fetch(`${GET_API_URL()}/api/job/${id}`, { 
                 method: 'GET',
-                headers: { 'Authorization': `Bearer ${token}` } 
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-User-Id': userId
+                }
             });
             const d = await res.json();
             

@@ -1,6 +1,25 @@
-// stt.js — Speech to Text Logic V2.1 (Cleaned & Integrated)
+// stt.js — Speech to Text Logic V2.2 (X-User-Id + API base normalization)
 
 let currentMode = 'fast';
+
+function getApiBase() {
+    const raw = window.API_BASE || 'https://api.glotix.ai';
+    return String(raw).replace(/\/$/, '').replace(/([^:]\/)\/+/g, '$1');
+}
+
+function getUserIdFromAccessToken(token) {
+    if (!token || typeof token !== 'string') return null;
+    try {
+        const parts = token.split('.');
+        if (parts.length < 2) return null;
+        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        const payload = JSON.parse(atob(b64));
+        return payload.sub || null;
+    } catch (e) {
+        return null;
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     // Mode switcher
@@ -37,6 +56,9 @@ async function startSTT() {
     if (!token) return window.showToast?.("Please sign in", "error");
     if (!file) return window.showToast?.("Please select a file", "error");
 
+    const userId = getUserIdFromAccessToken(token);
+    if (!userId) return window.showToast?.("Invalid session — please sign in again", "error");
+
     const btn = document.getElementById('sttBtn');
     const progArea = document.getElementById('progressArea');
     const progFill = document.getElementById('progFill');
@@ -50,13 +72,15 @@ async function startSTT() {
     statusTxt.innerText = "Preparing upload...";
 
     try {
-        // Step 1: Get upload URL (Using centralized API_BASE)
-        const API = window.API_BASE;
-        
-        // قد يكون مسار الـ API لديك /api/upload-url أو /upload-url بناءً على برمجة البايثون لديك
+        const API = getApiBase();
+
         const urlRes = await fetch(`${API}/api/upload-url`, { 
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'X-User-Id': userId
+            },
             body: JSON.stringify({ filename: file.name, content_type: file.type, size: file.size })
         });
         
@@ -91,7 +115,11 @@ async function startSTT() {
         statusTxt.innerText = "Starting AI processing...";
         const sttRes = await fetch(`${API}/api/stt`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'X-User-Id': userId
+            },
             body: JSON.stringify({
                 file_key: urlData.file_key,
                 language: lang,
@@ -104,7 +132,7 @@ async function startSTT() {
         if (!sttRes.ok) throw new Error(sttData.error || "Failed to start STT job");
 
         // Step 4: Poll status
-        pollStatus(sttData.job_id, token);
+        pollStatus(sttData.job_id, token, userId);
 
     } catch (e) {
         window.showToast?.(e.message, "error");
@@ -113,15 +141,18 @@ async function startSTT() {
     }
 }
 
-async function pollStatus(jobId, token) {
-    const API = window.API_BASE;
+async function pollStatus(jobId, token, userId) {
+    const API = getApiBase();
     const progFill = document.getElementById('progFill');
     const statusTxt = document.getElementById('statusTxt');
 
     const interval = setInterval(async () => {
         try {
             const res = await fetch(`${API}/api/job/${jobId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-User-Id': userId
+                }
             });
             const data = await res.json();
 
