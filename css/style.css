@@ -1,105 +1,49 @@
-/* layout.css - النسخة المصححة (متوافقة مع style.css) */
-
 /* ══════════════════════════════════════════
-   الشريط الجانبي - يعتمد على style.css
+   style.css — Glotix Main Stylesheet (HeyGen Vibe)
    ══════════════════════════════════════════ */
 
-/* Sidebar مأخوذ من style.css - لا نعيد تعريفه */
-/* فقط نضيف متغير العرض */
 :root {
-    --sidebar-width: var(--sidebar-w, 260px);
-    --transition-speed: 0.32s;
+    /* ── الألوان الأساسية ── */
+    --bg-page: #f9fafb;         /* لون خلفية الصفحة (رمادي فاتح جداً) */
+    --bg-card: #ffffff;         /* لون البطاقات (أبيض ناصع) */
+    --border-color: #e5e7eb;    /* لون الحدود (رمادي فاتح) */
+    
+    /* ── ألوان النصوص ── */
+    --text-main: #111827;       /* لون النص الأساسي (أسود مائل للرمادي) */
+    --text-muted: #6b7280;      /* لون النصوص الثانوية */
+    
+    /* ── الألوان التفاعلية ── */
+    --primary: #111827;         /* اللون الرئيسي للأزرار */
+    --primary-hover: #374151;   /* اللون الرئيسي عند تمرير الماوس */
+    --accent-blue: #2563eb;     /* اللون الأزرق اللامع */
+    --accent-green: #10b981;    /* لون النجاح (أخضر) */
+    --error: #ef4444;           /* لون الخطأ (أحمر) */
+    
+    /* ── القياسات ── */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --transition: 0.2s ease-in-out;
 }
 
-/* ══════════════════════════════════════════
-   المحتوى الرئيسي
-   ══════════════════════════════════════════ */
-.main-content {
-    padding: 80px 24px 40px;
+/* ── الإعدادات العامة ── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background: var(--bg-page);
+    color: var(--text-main);
     min-height: 100vh;
-    /* لا margin-right هنا - الـ sidebar في style.css يتحكم */
+    overflow-x: hidden;
+    line-height: 1.5;
 }
 
-/* ══════════════════════════════════════════
-   شبكة العمل (Workspace)
-   ══════════════════════════════════════════ */
-.workspace {
-    display: grid;
-    grid-template-columns: 1fr 350px;
-    gap: 20px;
-    margin-bottom: 2rem;
-}
-
-/* ══════════════════════════════════════════
-   زر القائمة (Menu Toggle) - macOS Style
-   ══════════════════════════════════════════ */
-.menu-toggle {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 7px 14px;
-    border-radius: var(--radius-sm);
-    background: var(--bg-vibrant-strong);
-    border: 1px solid var(--border-default);
-    color: var(--text-primary);
-    font-weight: 500;
-    font-size: 0.88rem;
-    transition: var(--transition);
-    box-shadow: var(--shadow-sm);
-}
-
-.menu-toggle:hover {
-    background: white;
-    transform: scale(1.02);
-}
-
-.menu-toggle:active {
-    transform: scale(0.98);
-}
-
-/* ══════════════════════════════════════════
-   القائمة المنسدلة للغات - macOS Style
-   ══════════════════════════════════════════ */
-.lang-dropdown {
-    width: 100%;
-    padding: 10px 14px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-    cursor: pointer;
-    outline: none;
-    appearance: none;
-    transition: var(--transition);
-    font-family: inherit;
-}
-
-.lang-dropdown:focus {
-    background: white;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
-}
-
-/* ══════════════════════════════════════════
-   الشاشات الصغيرة
-   ══════════════════════════════════════════ */
-@media (max-width: 1024px) {
-    .workspace {
-        grid-template-columns: 1fr;
-    }
-
-    .main-content {
-        padding: 76px 14px 30px;
-    }
-}
-
-@media (max-width: 768px) {
-    .workspace {
-        grid-template-columns: 1fr;
-        gap: 14px;
-    }
+/* ── إخفاء ملفات الـ Layout القديمة في حال تم استدعاؤها خطأ ── */
+/* يمنع التضارب مع الأكواد القديمة */
+.sidebar.collapsed, .menu-toggle .btn-circle {
+    display: none !important;
 }
