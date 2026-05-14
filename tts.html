@@ -30,7 +30,7 @@
         .logo { display: flex; align-items: center; gap: 10px; font-size: 1.5rem; font-weight: 800; text-decoration: none; color: var(--text-main); }
         .logo svg { width: 32px !important; height: 32px !important; flex-shrink: 0; }
 
-        /* ── Menu & Dropdown (مطابق لصفحة الدبلجة) ── */
+        /* ── Menu & Dropdown ── */
         .user-zone { position: relative; }
         .menu-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.95rem; }
         .dropdown-panel { position: absolute; top: calc(100% + 12px); right: 0; width: 300px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); display: none; z-index: 2000; padding: 16px; flex-direction: column; gap: 8px; }
@@ -100,9 +100,9 @@
             <span>Glotix</span>
         </a>
         <div class="user-zone">
-           <button class="menu-btn" id="menuBtn" onclick="document.getElementById('mainMenuDropdown').classList.toggle('active'); event.stopPropagation();">
-    <i class="fa-solid fa-bars"></i> Menu
-</button>
+            <button class="menu-btn" id="menuBtn">
+                <i class="fa-solid fa-bars"></i> Menu
+            </button>
             <div class="dropdown-panel" id="mainMenuDropdown">
                 <div class="auth-buttons" id="guestMenu">
                     <a href="/login" class="btn-login">Login</a>
