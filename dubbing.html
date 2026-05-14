@@ -10,58 +10,59 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* ── Core Theme Variables ── */
+        /* ── Core Theme Variables (HeyGen Style) ── */
         :root {
-            --bg-page: #fafafa;
+            --bg-page: #f9fafb;
             --bg-card: #ffffff;
             --border-color: #e5e7eb;
-            --text-main: #0f0f10;
+            --text-main: #111827;
             --text-muted: #6b7280;
-            --primary: #0f0f10;
-            --primary-hover: #27272a;
-            --accent-blue: #007aff;
+            --primary: #111827;
+            --primary-hover: #374151;
+            --accent-blue: #2563eb;
             --accent-green: #10b981;
             --error: #ef4444;
             --radius-md: 12px;
-            --radius-lg: 24px;
+            --radius-lg: 20px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; overflow-x: hidden; line-height: 1.5; }
         .container { max-width: 1000px; margin: 0 auto; padding: 20px 3%; }
 
-        /* ── Header & Dropdown ── */
+        /* ── Header ── */
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0 40px; }
-        .logo { display: flex; align-items: center; gap: 10px; font-size: 1.6rem; font-weight: 900; text-decoration: none; color: var(--text-main); letter-spacing: -0.5px; }
-        .logo svg { width: 36px; height: 36px; }
+        .logo { display: flex; align-items: center; gap: 10px; font-size: 1.6rem; font-weight: 800; text-decoration: none; color: var(--text-main); letter-spacing: -0.5px; }
+        .logo svg { width: 32px; height: 32px; }
 
         .user-zone { position: relative; display: flex; align-items: center; gap: 12px; }
-        .menu-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1rem; color: var(--text-main); transition: 0.2s; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .menu-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.95rem; color: var(--text-main); transition: 0.2s; }
         .menu-btn:hover { background: #f3f4f6; }
 
-        .dropdown-panel { position: absolute; top: calc(100% + 12px); right: 0; width: 300px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 15px 50px rgba(0,0,0,0.1); padding: 16px; display: flex; flex-direction: column; gap: 8px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: 0.25s cubic-bezier(0.32, 0.72, 0, 1); z-index: 1000; }
+        /* Dropdown menus basic styles */
+        .dropdown-panel { position: absolute; top: calc(100% + 12px); right: 0; width: 300px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); padding: 16px; display: flex; flex-direction: column; gap: 8px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: 0.2s; z-index: 1000; }
         .dropdown-panel.active { opacity: 1; visibility: visible; transform: translateY(0); }
-        .dropdown-panel a, .dropdown-panel button.menu-item { text-decoration: none; color: var(--text-main); padding: 12px 14px; border-radius: 10px; font-weight: 500; display: flex; align-items: center; gap: 14px; transition: 0.2s; background: transparent; border: none; width: 100%; text-align: left; cursor: pointer; font-size: 1rem; }
-        .dropdown-panel a:hover, .dropdown-panel button.menu-item:hover { background: #f3f4f6; color: var(--accent-blue); }
+        .dropdown-panel a, .dropdown-panel button.menu-item { text-decoration: none; color: var(--text-main); padding: 12px 14px; border-radius: 10px; font-weight: 500; display: flex; align-items: center; gap: 14px; transition: 0.2s; background: transparent; border: none; width: 100%; text-align: left; cursor: pointer; font-size: 0.95rem; }
+        .dropdown-panel a:hover, .dropdown-panel button.menu-item:hover { background: #f3f4f6; }
         .menu-divider { border: none; border-top: 1px solid var(--border-color); margin: 8px 0; }
 
         /* Auth Styles */
         .auth-buttons { display: flex; gap: 10px; margin-bottom: 5px; }
         .btn-login, .btn-signup { flex: 1; padding: 12px; border-radius: 10px; text-align: center; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: 0.2s; cursor: pointer; }
         .btn-login { background: var(--bg-page); border: 1px solid var(--border-color); color: var(--text-main); }
-        .btn-login:hover { background: #e5e7eb; }
         .btn-signup { background: var(--primary); color: white; border: 1px solid var(--primary); }
-        .btn-signup:hover { background: var(--primary-hover); }
         .logged-in-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; margin-bottom: 5px; display: none; }
-        .user-name { font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .user-name { font-weight: 600; font-size: 0.95rem; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
         .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; }
-        .balance-text { color: var(--accent-blue); font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; background: #eff6ff; padding: 6px 10px; border-radius: 8px; width: fit-content; }
+        .balance-text { color: var(--text-muted); font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
         .logout-btn { color: var(--error) !important; display: none; }
-        .logout-btn:hover { background: #fee2e2 !important; color: #dc2626 !important; }
 
-        /* ── Upload & Studio Area ── */
-        .upload-box { border: 2px dashed var(--border-color); border-radius: var(--radius-lg); padding: 60px 20px; text-align: center; cursor: pointer; transition: 0.3s; background: var(--bg-card); margin-bottom: 25px; }
+        /* ── Upload Area (HeyGen Style) ── */
+        .upload-box { background: var(--bg-card); border: 1px dashed #d1d5db; border-radius: var(--radius-lg); padding: 50px 20px; text-align: center; cursor: pointer; transition: 0.3s; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .upload-box:hover { border-color: var(--accent-blue); background: #f8fafc; }
+        .upload-icon { font-size: 3rem; color: #60a5fa; margin-bottom: 15px; }
+        .upload-title { font-weight: 600; font-size: 1.2rem; color: var(--text-main); }
+        .upload-subtitle { color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; }
 
         #previewArea { display: none; width: 100%; margin-bottom: 25px; border-radius: var(--radius-lg); overflow: hidden; background: #000; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         #videoPreview { width: 100%; display: block; max-height: 450px; }
@@ -70,146 +71,140 @@
         /* ── Controls Row ── */
         .controls-row { display: flex; gap: 15px; margin-bottom: 25px; align-items: center; flex-wrap: wrap; }
 
-        .lang-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 12px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.95rem; position: relative; transition: 0.2s; color: var(--text-main); flex: 1; min-width: 200px; justify-content: space-between; }
-        .lang-btn:hover { border-color: var(--accent-blue); }
-        .lang-btn.active { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
+        .dropdown-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: 500; font-size: 0.95rem; position: relative; transition: 0.2s; color: var(--text-main); flex: 1; min-width: 200px; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .dropdown-btn:hover { border-color: #d1d5db; }
+        .dropdown-btn.active { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        
+        /* HeyGen light icons inside buttons */
+        .dropdown-btn > i:first-child { font-size: 1.1rem; color: #4b5563; }
+        .dropdown-btn .fa-chevron-down { color: #9ca3af; font-size: 0.8rem; }
 
-        .badge { background: var(--accent-blue); color: #fff; border-radius: 50%; min-width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; margin-left: auto; }
+        .badge { background: var(--accent-blue); color: #fff; border-radius: 50%; min-width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; margin-left: auto; }
 
-        .lang-dropdown { position: absolute; top: calc(100% + 10px); left: 0; width: 100%; min-width: 280px; background: var(--bg-card) !important; border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 15px; cursor: default; text-align: left; }
+        /* ── Language Picker Dropdown (HeyGen Style) ── */
+        .lang-dropdown { position: absolute; top: calc(100% + 10px); left: 0; width: 100%; min-width: 300px; background: var(--bg-card) !important; border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); display: none; z-index: 100; padding: 12px; cursor: default; text-align: left; }
         .lang-btn.active .lang-dropdown { display: block; }
 
-        .lang-search { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 15px; outline: none; box-sizing: border-box; font-size: 0.95rem; }
-        .lang-search:focus { border-color: var(--accent-blue); }
-        .lang-list { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+        .lang-search { width: 100%; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 10px; outline: none; box-sizing: border-box; font-size: 0.9rem; background: #f9fafb; transition: 0.2s; }
+        .lang-search:focus { border-color: var(--accent-blue); background: #fff; }
+        
+        .lang-list { max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
         .selected-langs-display { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
 
-        /* ── Voice Clone Dropdown ── */
-        .voice-select-wrap {
-            position: relative;
-            flex: 1;
-            min-width: 200px;
+        /* Language Item Overrides for HeyGen Look */
+        .lang-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; border: none !important; }
+        .lang-item:hover { background: #f3f4f6; }
+        .lang-item.selected { background: #f3f4f6; }
+        .lang-item .checkbox { display: none !important; } /* Hide default checkbox */
+        .lang-item .flag { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border-radius: 50%; overflow: hidden; }
+        /* Add Checkmark to selected items */
+        .lang-item.selected::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            margin-left: auto;
+            color: #9ca3af;
+            background: #e5e7eb;
+            border-radius: 50%;
+            width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.6rem;
         }
-        .voice-select-btn {
-            width: 100%;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            padding: 12px 20px;
-            border-radius: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            color: var(--text-main);
-            transition: 0.2s;
-            justify-content: space-between;
-        }
-        .voice-select-btn:hover { border-color: var(--accent-blue); }
-        .voice-select-btn.open { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
-        .voice-select-btn .vs-label { display: flex; align-items: center; gap: 10px; }
 
-        .voice-dropdown-panel {
-            position: absolute;
-            top: calc(100% + 10px);
-            left: 0;
-            width: 100%;
-            min-width: 280px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
-            z-index: 200;
-            padding: 10px;
-            display: none;
-            flex-direction: column;
-            gap: 6px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
+        /* ── Voice Clone Dropdown ── */
+        .voice-dropdown-panel { position: absolute; top: calc(100% + 10px); left: 0; width: 100%; min-width: 320px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); z-index: 200; padding: 12px; display: none; flex-direction: column; gap: 8px; }
         .voice-dropdown-panel.open { display: flex; }
 
-        .voice-option {
+        .voice-option-basic { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .voice-option-basic:hover { background: #f3f4f6; }
+        .voice-option-basic.selected { background: #eff6ff; border-color: #bfdbfe; }
+        .voice-option-basic i { color: var(--accent-blue); font-size: 1.2rem; background: #fff; padding: 8px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* ── Premium Voices (Adam) Grid Layout ── */
+        .premium-voices-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 10px 5px;
+        }
+        .voice-avatar-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            width: 75px;
+        }
+        .voice-avatar-wrapper {
+            position: relative;
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            padding: 2px;
+            transition: 0.2s;
+        }
+        .voice-avatar-card:hover .voice-avatar-wrapper { border-color: #d1d5db; }
+        .voice-avatar-card.selected .voice-avatar-wrapper { border-color: var(--accent-blue); }
+        
+        .voice-avatar-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            background: #f3f4f6;
+        }
+        
+        .voice-play-overlay {
+            position: absolute;
+            top: 2px; left: 2px; right: 2px; bottom: 2px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            border-radius: 10px;
-            cursor: pointer;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            opacity: 0;
             transition: 0.2s;
-            border: 2px solid transparent;
         }
-        .voice-option:hover { background: #f3f4f6; }
-        .voice-option.selected { border-color: var(--accent-blue); background: #eff6ff; }
-        
-        .voice-option-avatar {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid var(--border-color);
-            background: var(--bg-page);
-        }
-        
-        .voice-option-icon {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1rem;
-            flex-shrink: 0;
-        }
-        .voice-option-icon.orig { background: #e0f2fe; color: #0284c7; }
+        .voice-avatar-wrapper:hover .voice-play-overlay { opacity: 1; }
+        .voice-play-overlay.playing { opacity: 1; background: rgba(37,99,235,0.6); }
 
-        .voice-option-text { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-        .voice-option-title { font-weight: 700; font-size: 0.95rem; color: var(--text-main); }
-        .voice-option-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; }
-
-        .voice-play-btn {
-            background: none;
-            border: none;
-            color: var(--accent-blue);
-            cursor: pointer;
-            padding: 8px;
-            font-size: 1.1rem;
-            transition: 0.2s;
-            border-radius: 50%;
+        .voice-name-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-main);
+            text-align: center;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
-        .voice-play-btn:hover {
-            background: #e0f2fe;
-            transform: scale(1.1);
-        }
+        .voice-avatar-card.selected .voice-name-label { font-weight: 700; color: var(--accent-blue); }
 
-        /* Switches */
-        .toggles-group { display: flex; gap: 12px; justify-content: flex-end; }
-        .switch-container { display: flex; align-items: center; gap: 12px; background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 12px; font-size: 0.95rem; font-weight: 600; }
-        .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e5e7eb; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--accent-green); }
-        input:checked + .slider:before { transform: translateX(20px); }
-
-        .start-btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 18px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-        .start-btn:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        /* Start Button */
+        .start-btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 16px; border-radius: 12px; font-size: 1.05rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .start-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
 
         /* ── Progress Box ── */
         .progress-box { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; margin-top: 25px; display: none; }
-        .progress-bar-bg { height: 8px; background: #f3f4f6; border-radius: 4px; overflow: hidden; margin-top: 15px; }
+        .progress-bar-bg { height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; margin-top: 15px; }
         .progress-bar-fill { height: 100%; width: 0%; background: var(--accent-blue); transition: 0.4s; }
 
         /* ── Cinema Results ── */
-        .cinema-results { display: flex; gap: 20px; background: #0a0a0a; padding: 20px; border-radius: var(--radius-lg); margin-top: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-        .cinema-player { flex: 3; position: relative; background: #000; border-radius: 16px; overflow: hidden; min-height: 400px; display: flex; align-items: center; justify-content: center; }
+        .cinema-results { display: flex; gap: 20px; background: #111827; padding: 20px; border-radius: var(--radius-lg); margin-top: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .cinema-player { flex: 3; position: relative; background: #000; border-radius: 12px; overflow: hidden; min-height: 400px; display: flex; align-items: center; justify-content: center; }
         .cinema-player video { width: 100%; height: 100%; object-fit: contain; }
 
-        .cinema-sidebar { flex: 1; background: #131313; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 220px; max-height: 450px; overflow-y: auto; }
-        .side-lang-card { padding: 14px 16px; border-radius: 10px; background: #1c1c1c; color: #888; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; font-size: 0.95rem; font-weight: 500; }
-        .side-lang-card:hover { background: #252525; color: #ccc; }
-        .side-lang-card.active { background: #ffffff; color: #000; font-weight: 700; transform: scale(1.02); }
+        .cinema-sidebar { flex: 1; background: #1f2937; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 220px; max-height: 450px; overflow-y: auto; }
+        .side-lang-card { padding: 12px 14px; border-radius: 8px; background: #374151; color: #9ca3af; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; font-size: 0.9rem; font-weight: 500; border: 1px solid transparent; }
+        .side-lang-card:hover { background: #4b5563; color: #e5e7eb; }
+        .side-lang-card.active { background: #ffffff; color: #111827; font-weight: 600; border-color: #fff; }
 
         /* Download Btn */
         .dl-corner { position: absolute; top: 15px; right: 15px; z-index: 100; display: none; }
-        .dl-icon-btn { background: rgba(255,255,255,0.9); color: #000; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem; transition: 0.2s; backdrop-filter: blur(5px); }
+        .dl-icon-btn { background: rgba(255,255,255,0.9); color: #111827; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem; transition: 0.2s; backdrop-filter: blur(5px); }
         .dl-icon-btn:hover { background: #fff; transform: scale(1.05); }
 
         .overlay, .sidebar { display: none !important; }
@@ -217,32 +212,16 @@
         @media (max-width: 800px) {
             .cinema-results { flex-direction: column; }
             .controls-row { flex-direction: column; align-items: stretch; }
-            .toggles-group { flex-direction: column; }
-            .switch-container { justify-content: space-between; }
-            .voice-select-wrap { min-width: unset; }
         }
 
         /* ── Audio Player Styles (Cinema) ── */
-        .audio-player-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 40px; color: #fff; gap: 20px; }
-        .audio-player-header { display: flex; align-items: center; gap: 12px; font-size: 1.1rem; font-weight: 700; }
-        .audio-player-header .flag { font-size: 1.5rem; }
-        .audio-waveform { width: 100%; max-width: 600px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+        .audio-player-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 40px; color: #fff; gap: 20px; width: 100%; }
+        .audio-player-header { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; font-weight: 500; }
+        .audio-waveform { width: 100%; max-width: 600px; height: 60px; background: rgba(255,255,255,0.05); border-radius: 8px; }
         .audio-controls { display: flex; align-items: center; gap: 20px; }
-        .play-btn { width: 56px; height: 56px; border-radius: 50%; background: var(--accent-blue); color: white; border: none; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .play-btn:hover { background: #0056d6; transform: scale(1.05); }
-        .audio-time { font-family: monospace; font-size: 0.9rem; color: #aaa; }
-
-        /* ── Lang Picker Item Styles ── */
-        .lang-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .lang-item:hover { background: #f3f4f6; }
-        .lang-item.selected { background: #eff6ff; border: 1px solid var(--accent-blue); }
-        .lang-item .checkbox { width: 18px; height: 18px; border: 2px solid var(--border-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
-        .lang-item.selected .checkbox { background: var(--accent-blue); border-color: var(--accent-blue); color: white; }
-        .lang-item.popular { font-weight: 700; }
-        .lang-pill { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
-        .lang-pill .remove-icon { margin-left: 4px; color: #6b7280; }
-        .lang-pill .remove-icon:hover { color: var(--error); }
-        .selected-langs-empty { color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 20px; }
+        .play-btn { width: 50px; height: 50px; border-radius: 50%; background: var(--accent-blue); color: white; border: none; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .play-btn:hover { background: #1d4ed8; transform: scale(1.05); }
+        .audio-time { font-family: monospace; font-size: 0.85rem; color: #9ca3af; }
 
     </style>
 </head>
@@ -252,15 +231,15 @@
     <header class="top-bar">
         <a class="logo" href="/">
             <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M16 3C8.82 3 3 8.82 3 16C3 23.18 8.82 29 16 29C23.18 29 29 23.18 29 16V14H16V19H23.2C22.1 22.1 19.3 24 16 24C11.58 24 8 20.42 8 16C8 11.58 11.58 8 16 8C18.4 8 20.5 9.06 21.8 10.74L25.4 7.14C22.9 4.6 19.6 3 16 3Z" fill="#0f0f10"/>
-                <path d="M29 16C29 23.18 23.18 29 16 29V24C19.3 24 22.1 22.1 23.2 19H29V16Z" fill="#007aff"/>
+                <path d="M16 3C8.82 3 3 8.82 3 16C3 23.18 8.82 29 16 29C23.18 29 29 23.18 29 16V14H16V19H23.2C22.1 22.1 19.3 24 16 24C11.58 24 8 20.42 8 16C8 11.58 11.58 8 16 8C18.4 8 20.5 9.06 21.8 10.74L25.4 7.14C22.9 4.6 19.6 3 16 3Z" fill="#111827"/>
+                <path d="M29 16C29 23.18 23.18 29 16 29V24C19.3 24 22.1 22.1 23.2 19H29V16Z" fill="#2563eb"/>
             </svg>
             Glotix
         </a>
 
         <div class="user-zone">
             <button class="menu-btn" id="menuBtn">
-                <i class="fas fa-bars"></i> Menu
+                <i class="fa-solid fa-bars"></i> Menu
             </button>
 
             <div class="dropdown-panel" id="mainMenuDropdown">
@@ -274,21 +253,21 @@
                         <img id="menuAvatar" class="user-avatar" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="User">
                         <span id="menuUserName">My Account</span>
                     </div>
-                    <div class="balance-text"><i class="fas fa-coins"></i> <span id="menuCredits">...</span> Credits</div>
+                    <div class="balance-text"><i class="fa-solid fa-coins" style="color:#f59e0b;"></i> <span id="menuCredits">...</span> Credits</div>
                 </div>
 
                 <hr class="menu-divider">
 
-                <a href="/dubbing"><i class="fas fa-film"></i> Dubbing Studio</a>
-                <a href="/tts"><i class="fas fa-microphone"></i> Text to Speech</a>
-                <a href="/stt"><i class="fas fa-file-alt"></i> Speech to Text</a>
+                <a href="/dubbing"><i class="fa-regular fa-file-video"></i> Dubbing Studio</a>
+                <a href="/tts"><i class="fa-regular fa-comment-dots"></i> Text to Speech</a>
+                <a href="/stt"><i class="fa-regular fa-file-lines"></i> Speech to Text</a>
 
                 <hr class="menu-divider">
 
-                <a href="/history"><i class="fas fa-folder-open"></i> My Files (History)</a>
+                <a href="/history"><i class="fa-regular fa-folder-open"></i> My Files</a>
 
                 <button class="menu-item logout-btn" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
                 </button>
             </div>
         </div>
@@ -297,71 +276,71 @@
     <div id="previewArea">
         <video id="videoPreview" controls></video>
         <div id="audioPreviewLabel">
-            <i class="fas fa-music fa-3x" style="color: #3b82f6;"></i>
-            <h4 id="audioFileName" style="margin-top: 15px;"></h4>
+            <i class="fa-solid fa-music fa-3x" style="color: #60a5fa;"></i>
+            <h4 id="audioFileName" style="margin-top: 15px; font-weight: 500;"></h4>
         </div>
     </div>
 
     <div class="upload-box" id="dropZone" onclick="document.getElementById('mediaFile').click()">
         <input type="file" id="mediaFile" style="display:none;" accept="video/*,audio/*">
-        <i class="fas fa-cloud-upload-alt" style="font-size:3.5rem; color:#3b82f6; margin-bottom:15px;"></i>
-        <div style="font-weight:bold; font-size:1.3rem; color: #111827;">Drag & Drop or Click to Upload</div>
-        <p style="color:#6b7280; font-size:0.9rem; margin-top: 8px;">Supports MP4, MOV, MP3, WAV (Max 500MB)</p>
+        <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+        <div class="upload-title">Drag & Drop or Click to Upload</div>
+        <p class="upload-subtitle">Supports MP4, MOV, MP3, WAV (Max 500MB)</p>
     </div>
 
     <div class="controls-row">
-        <div class="lang-btn" id="langTrigger" onclick="toggleLangDropdown(event)">
-            <i class="fas fa-globe" style="color: var(--primary);"></i>
-            <span>Select Languages</span>
-            <span class="badge" id="langCountBadge" style="display: none;">0</span>
-            <i class="fas fa-chevron-down arrow"></i>
+        <div class="dropdown-btn lang-btn" id="langTrigger" onclick="toggleLangDropdown(event)">
+            <span style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-language" style="font-size: 1.2rem; color: #6b7280;"></i>
+                <span>Select languages</span>
+            </span>
+            <span style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge" id="langCountBadge" style="display: none;">0</span>
+                <i class="fa-solid fa-chevron-down arrow"></i>
+            </span>
 
             <div class="lang-dropdown" onclick="event.stopPropagation()">
                 <div id="selectedLangsDisplay" class="selected-langs-display"></div>
-                <input type="text" id="langSearch" class="lang-search" placeholder="🔍 Search language...">
+                <input type="text" id="langSearch" class="lang-search" placeholder="Search language...">
                 <div id="langList" class="lang-list"></div>
             </div>
         </div>
 
-        <div class="voice-select-wrap" id="voiceSelectWrap">
-            <button class="voice-select-btn" id="voiceSelectBtn" type="button">
-                <span class="vs-label">
-                    <i class="fas fa-microphone-alt" style="color: var(--accent-blue);"></i>
-                    <span id="voiceSelectLabel">Original Voice Clone</span>
+        <div style="position: relative; flex: 1; min-width: 200px;" id="voiceSelectWrap">
+            <button class="dropdown-btn" id="voiceSelectBtn" type="button">
+                <span style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-microphone-lines" style="font-size: 1.1rem; color: #6b7280;"></i>
+                    <span id="voiceSelectLabel">Voice Clone</span>
                 </span>
-                <i class="fas fa-chevron-down" id="voiceSelectArrow" style="transition:0.2s;"></i>
+                <i class="fa-solid fa-chevron-down" id="voiceSelectArrow" style="transition:0.2s;"></i>
             </button>
 
             <div class="voice-dropdown-panel" id="voiceDropdownPanel">
-                <div class="voice-option selected" id="voiceOptOriginal" data-value="original" onclick="selectVoiceOption('original', '', this)">
-                    <div class="voice-option-icon orig">
-                        <i class="fas fa-clone"></i>
-                    </div>
-                    <div class="voice-option-text">
-                        <span class="voice-option-title">Original Voice Clone</span>
-                        <span class="voice-option-desc">Automatically extracts and clones the speaker's voice from the uploaded file.</span>
+                <div class="voice-option-basic selected" id="voiceOptOriginal" onclick="selectVoiceOption('original', '', this, '', 'Voice Clone')">
+                    <i class="fa-regular fa-copy"></i>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Voice Clone</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Clones voice directly from your upload.</span>
                     </div>
                 </div>
                 
-                <hr style="border:none; border-top:1px solid #eee; margin:5px 0;">
-                <div style="font-size: 0.8rem; font-weight: bold; color: #999; padding: 0 10px;">PREMIUM VOICES</div>
+                <div style="font-size: 0.75rem; font-weight: 700; color: #9ca3af; margin-top: 10px; margin-bottom: 5px; padding: 0 5px;">PREMIUM VOICES</div>
 
-                <div id="supabaseVoicesContainer">
-                    <div style="padding: 10px; text-align: center; color: #888; font-size: 0.9rem;">
-                        <i class="fas fa-spinner fa-spin"></i> Loading voices...
+                <div id="supabaseVoicesContainer" class="premium-voices-grid">
+                    <div style="padding: 10px; text-align: center; color: #9ca3af; font-size: 0.85rem; width: 100%;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Loading...
                     </div>
                 </div>
             </div>
         </div>
-
+    </div>
 
     <button id="dubBtn" class="start-btn" style="display:none;">
-        <i class="fas fa-magic" style="margin-right: 8px;"></i>
         Start Dubbing
     </button>
 
     <div id="progressArea" class="progress-box">
-        <div style="font-weight: bold; color: #374151; display: flex; justify-content: space-between;">
+        <div style="font-weight: 600; color: #374151; display: flex; justify-content: space-between; font-size: 0.95rem;">
             <span id="statusTxt">Initializing...</span>
             <span id="statusPct">0%</span>
         </div>
@@ -375,12 +354,12 @@
             <div class="cinema-player">
                 <div id="dlArea" class="dl-corner">
                     <a id="masterDl" href="#" target="_blank" class="dl-icon-btn" title="Download">
-                        <i class="fas fa-download"></i>
+                        <i class="fa-solid fa-download"></i>
                     </a>
                 </div>
                 <div id="mainPlayer" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction: column;">
-                    <i class="fas fa-spinner fa-spin fa-3x" style="color:#333; margin-bottom: 15px;"></i>
-                    <p style="color: #666; font-weight: bold;" id="processingTxt">Processing Languages...</p>
+                    <i class="fa-solid fa-circle-notch fa-spin fa-2x" style="color:#6b7280; margin-bottom: 15px;"></i>
+                    <p style="color: #9ca3af; font-weight: 500; font-size: 0.95rem;" id="processingTxt">Processing...</p>
                 </div>
             </div>
             <aside class="cinema-sidebar" id="cinemaLangs"></aside>
@@ -397,7 +376,7 @@
 
 <script>
     // ==========================================
-    // 1. Voice Dropdown & Supabase Integration
+    // 1. Voice Dropdown & Premium Grid Layout
     // ==========================================
     const voiceSelectBtn   = document.getElementById('voiceSelectBtn');
     const voicePanel       = document.getElementById('voiceDropdownPanel');
@@ -414,14 +393,14 @@
     voiceSelectBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         const isOpen = voicePanel.classList.toggle('open');
-        voiceSelectBtn.classList.toggle('open', isOpen);
+        voiceSelectBtn.classList.toggle('active', isOpen);
         voiceArrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
     });
 
     document.addEventListener('click', function(e) {
         if (!e.target.closest('#voiceSelectWrap')) {
             voicePanel.classList.remove('open');
-            voiceSelectBtn.classList.remove('open');
+            voiceSelectBtn.classList.remove('active');
             voiceArrow.style.transform = 'rotate(0deg)';
         }
     });
@@ -432,82 +411,83 @@
         window.selectedSample = sampleUrl;
         window.forceEngine = engine;
 
-        document.querySelectorAll('.voice-option').forEach(o => o.classList.remove('selected'));
+        // Reset selections
+        document.getElementById('voiceOptOriginal').classList.remove('selected');
+        document.querySelectorAll('.voice-avatar-card').forEach(o => o.classList.remove('selected'));
+        
         if(element) element.classList.add('selected');
 
-        voiceLabel.textContent = mode === 'original' ? 'Original Voice Clone' : name;
+        voiceLabel.textContent = mode === 'original' ? 'Voice Clone' : name;
 
         // Close panel
         voicePanel.classList.remove('open');
-        voiceSelectBtn.classList.remove('open');
+        voiceSelectBtn.classList.remove('active');
         voiceArrow.style.transform = 'rotate(0deg)';
     }
 
     // Play Voice Preview
-    function playVoicePreview(e, url) {
-        e.stopPropagation(); // Prevent selecting the voice when clicking play
+    function playVoicePreview(e, url, cardElement) {
+        e.stopPropagation(); // يمنع تحديد الصوت عند الضغط على زر التشغيل فقط
         
         // Reset all play icons
-        document.querySelectorAll('.voice-play-btn i').forEach(icon => {
-            icon.className = 'fas fa-play-circle';
+        document.querySelectorAll('.voice-play-overlay').forEach(overlay => {
+            overlay.classList.remove('playing');
+            overlay.innerHTML = '<i class="fa-solid fa-play"></i>';
         });
 
-        const icon = e.currentTarget.querySelector('i');
+        const overlay = cardElement.querySelector('.voice-play-overlay');
 
         if (previewPlayer.src === url && !previewPlayer.paused) {
             previewPlayer.pause();
-            icon.className = 'fas fa-play-circle';
         } else {
             previewPlayer.src = url;
             previewPlayer.play();
-            icon.className = 'fas fa-pause-circle';
+            overlay.classList.add('playing');
+            overlay.innerHTML = '<i class="fa-solid fa-pause"></i>';
             
             previewPlayer.onended = () => {
-                icon.className = 'fas fa-play-circle';
+                overlay.classList.remove('playing');
+                overlay.innerHTML = '<i class="fa-solid fa-play"></i>';
             };
         }
     }
 
-    // Fetch Voices from Supabase
+    // Fetch Voices from Supabase & Render as Grid
     async function loadSupabaseVoices() {
         try {
             const supa = window.getSupabase();
-            if (!supa) {
-                voicesContainer.innerHTML = '<div style="padding:10px; color:var(--error);">Supabase client not initialized</div>';
-                return;
-            }
+            if (!supa) return;
 
             const { data, error } = await supa.from('voices').select('*').order('created_at', { ascending: true });
 
-            if (error) throw error;
-
-            if (!data || data.length === 0) {
-                voicesContainer.innerHTML = '<div style="padding:10px; text-align:center; color:#888; font-size:0.9rem;">No premium voices available</div>';
+            if (error || !data || data.length === 0) {
+                voicesContainer.innerHTML = '<div style="padding:10px; color:#9ca3af; font-size:0.85rem; width:100%; text-align:center;">No voices available</div>';
                 return;
             }
 
             voicesContainer.innerHTML = data.map(voice => `
-                <div class="voice-option" onclick="selectVoiceOption('clone', '${voice.sample_url}', this, '${voice.engine || ''}', '${voice.name}')">
-                    <img src="${voice.avatar_url || 'https://ui-avatars.com/api/?name='+voice.name+'&background=0f0f10&color=fff'}" class="voice-option-avatar" alt="${voice.name}">
-                    <div class="voice-option-text">
-                        <span class="voice-option-title">${voice.name}</span>
-                        <span class="voice-option-desc">Studio Quality Voice</span>
+                <div class="voice-avatar-card ${window.selectedSample === voice.sample_url ? 'selected' : ''}" 
+                     onclick="selectVoiceOption('clone', '${voice.sample_url}', this, '${voice.engine || ''}', '${voice.name}')">
+                    
+                    <div class="voice-avatar-wrapper">
+                        <img src="${voice.avatar_url || 'https://ui-avatars.com/api/?name='+voice.name+'&background=f3f4f6&color=111827'}" alt="${voice.name}">
+                        
+                        <div class="voice-play-overlay" onclick="playVoicePreview(event, '${voice.sample_url}', this.parentElement.parentElement)">
+                            <i class="fa-solid fa-play"></i>
+                        </div>
                     </div>
-                    <button class="voice-play-btn" onclick="playVoicePreview(event, '${voice.sample_url}')" title="Listen to preview">
-                        <i class="fas fa-play-circle"></i>
-                    </button>
+                    
+                    <span class="voice-name-label">${voice.name}</span>
                 </div>
             `).join('');
 
         } catch (err) {
-            console.error("Error loading voices:", err);
-            voicesContainer.innerHTML = `<div style="padding:10px; text-align:center; color:var(--error); font-size:0.9rem;">Failed to load voices</div>`;
+            voicesContainer.innerHTML = '';
         }
     }
 
-    // Load voices when DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(loadSupabaseVoices, 500); // Slight delay to ensure Supabase is loaded
+        setTimeout(loadSupabaseVoices, 500); 
     });
 
     // ==========================================
