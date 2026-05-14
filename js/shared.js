@@ -1,4 +1,4 @@
-// js/shared.js - V33.5 (Unified Menu Fix + Supabase Defined)
+// js/shared.js - V33.6 (Global getSupabase + credits timeout 15s)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -9,17 +9,29 @@ let _domReady = false;
 let _isFetchingCredits = false;
 let supabaseClient = null;
 
-// 1. تعريف الدالة الأساسية (يجب أن تكون في الأعلى)
-function getSupabase() {
+/** عميل Supabase — معرّف على window من أول السطر حتى لا يفشل onclick للقائمة قبل اكتمال التحميل */
+window.getSupabase = function getSupabase() {
     if (supabaseClient) return supabaseClient;
-    if (window.supabase) {
+    if (typeof window.supabase !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             auth: { flowType: 'implicit' }
         });
     }
     return supabaseClient;
+};
+
+/** مهلة 15 ثانية مع تنظيف المؤقت في المتصفحات التي لا تدعم AbortSignal.timeout */
+function creditsFetchSignal(ms) {
+    if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+        return { signal: AbortSignal.timeout(ms), dispose: function () {} };
+    }
+    const c = new AbortController();
+    const t = setTimeout(function () { c.abort(); }, ms);
+    return {
+        signal: c.signal,
+        dispose: function () { clearTimeout(t); }
+    };
 }
-window.getSupabase = getSupabase;
 
 // 2. كود تشغيل القائمة (Menu) - معزول لضمان عدم تعطل الزر
 function initMenuDropdown() {
@@ -58,7 +70,7 @@ window.updateDropdownUI = function(user) {
 // 4. مزامنة المصادقة والرصيد
 window.checkAuth = async function() {
     try {
-        const supa = getSupabase(); // استدعاء آمن الآن
+        const supa = window.getSupabase();
         if (!supa) return;
 
         const { data: { session } } = await supa.auth.getSession();
@@ -69,17 +81,22 @@ window.checkAuth = async function() {
         if (!_isFetchingCredits) {
             _isFetchingCredits = true;
             try {
-                const res = await fetch(`${API_BASE}/api/user/credits`, {
-                    headers: { 
-                        'Authorization': `Bearer ${session.access_token}`,
-                        'X-User-Id': session.user.id 
-                    },
-                    signal: AbortSignal.timeout(15000)
-                });
-                const d = await res.json();
-                if (d.success) {
-                    const userData = { id: session.user.id, name: 'User', credits: d.credits };
-                    window.updateDropdownUI(userData);
+                const cts = creditsFetchSignal(15000);
+                try {
+                    const res = await fetch(`${API_BASE}/api/user/credits`, {
+                        headers: {
+                            'Authorization': `Bearer ${session.access_token}`,
+                            'X-User-Id': session.user.id
+                        },
+                        signal: cts.signal
+                    });
+                    const d = await res.json();
+                    if (d.success) {
+                        const userData = { id: session.user.id, name: 'User', credits: d.credits };
+                        window.updateDropdownUI(userData);
+                    }
+                } finally {
+                    cts.dispose();
                 }
             } catch(e) { console.warn("Credits fetch timeout"); }
             finally { setTimeout(() => { _isFetchingCredits = false; }, 10000); }

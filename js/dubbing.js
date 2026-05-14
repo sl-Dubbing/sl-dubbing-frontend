@@ -18,6 +18,21 @@ const GET_API_URL = () => {
     return base.replace(/\/$/, ""); // إزالة السلاش في النهاية إن وجد
 };
 
+/** يستخرج sub من JWT (Supabase) لإرسال X-User-Id مع طلبات الرفع */
+function getUserIdFromAccessToken(token) {
+    if (!token || typeof token !== 'string') return null;
+    try {
+        const parts = token.split('.');
+        if (parts.length < 2) return null;
+        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        const payload = JSON.parse(atob(b64));
+        return payload.sub || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 async function uploadToR2(url, file, contentType) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -53,10 +68,17 @@ async function startDubbing() {
     try {
         updateProgress("Initializing...", 5);
         
-        // 1. طلب رابط الرفع
+        const userId = getUserIdFromAccessToken(token);
+        if (!userId) return window.showToast?.("Invalid session — please sign in again", "error");
+
+        // 1. طلب رابط الرفع (X-User-Id مطلوب من السيرفر لتجنب 401)
         const urlRes = await fetch(`${GET_API_URL()}/api/upload-url`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'X-User-Id': userId
+            },
             body: JSON.stringify({ filename: file.name, content_type: file.type })
         });
         
