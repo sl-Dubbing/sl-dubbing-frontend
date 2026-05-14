@@ -1,6 +1,23 @@
-// js/dubbing.js — V12.4 (Ultimate CORS Fix & SVG Flags)
+// js/dubbing.js — V12.5 (file init + drag/drop fallback + upload logging)
 let cinemaResults = {};
 let activeWavesurfer = null;
+
+/** آخر ملف مختار (سحب/إفلات أو اختيار) — احتياط عندما لا يقبل المتصفح تعيين input.files */
+let selectedDubbingFile = null;
+
+function getDubbingFileInput() {
+    return document.getElementById('mediaFile');
+}
+
+function getUploadAuthHeaders() {
+    if (typeof window.getApiAuthHeaders !== 'function') {
+        console.warn('[dubbing] getApiAuthHeaders missing — ensure shared.js loads before dubbing.js');
+        return null;
+    }
+    const h = window.getApiAuthHeaders();
+    if (!h) console.warn('[dubbing] getApiAuthHeaders() returned null (no token or JWT sub)');
+    return h;
+}
 
 // دالة مساعدة لجلب صور الأعلام بدلاً من الإيموجي (لحل مشكلة ويندوز)
 function getFlagImg(code) {
@@ -18,45 +35,60 @@ const GET_API_URL = () => {
     return String(base).replace(/\/$/, '').replace(/([^:]\/)\/+/g, '$1');
 };
 
-/** يستخرج sub من JWT (Supabase) لإرسال X-User-Id مع طلبات الرفع */
-function getUserIdFromAccessToken(token) {
-    if (!token || typeof token !== 'string') return null;
-    try {
-        const parts = token.split('.');
-        if (parts.length < 2) return null;
-        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-        while (b64.length % 4) b64 += '=';
-        const payload = JSON.parse(atob(b64));
-        return payload.sub || null;
-    } catch (e) {
-        return null;
-    }
-}
-
 async function uploadToR2(url, file, contentType) {
+    console.log('[dubbing] R2 PUT start', { name: file?.name, size: file?.size, contentType });
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', url, true);
-        xhr.setRequestHeader('Content-Type', contentType);
+        xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable) {
                 const pct = Math.round((e.loaded / e.total) * 100);
+                if (pct % 10 === 0 || pct === 100) console.log('[dubbing] R2 upload progress', pct + '%');
                 updateProgress("Uploading File...", 10 + (pct * 0.4));
             }
         };
-        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error("Storage Upload Failed"));
-        xhr.onerror = () => reject(new Error("Network Error during upload"));
+        xhr.onload = () => {
+            console.log('[dubbing] R2 PUT response', { status: xhr.status, statusText: xhr.statusText });
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error('Storage Upload Failed: HTTP ' + xhr.status));
+        };
+        xhr.onerror = () => {
+            console.error('[dubbing] R2 PUT network error');
+            reject(new Error('Network Error during upload'));
+        };
         xhr.send(file);
     });
 }
 
 async function startDubbing() {
-    const file = document.getElementById('mediaFile')?.files[0];
+    const inputEl = getDubbingFileInput();
+    const file = selectedDubbingFile || (inputEl && inputEl.files && inputEl.files[0]);
+    const authHeaders = getUploadAuthHeaders();
     const token = localStorage.getItem('token');
-    
-    if (!token) return window.showToast?.("Please sign in first", "error");
-    if (!file) return window.showToast?.("Please select a media file", "error");
-    if (!window.selectedLangs?.size) return window.showToast?.("Select target languages", "error");
+
+    console.log('[dubbing] startDubbing', {
+        hasInput: !!inputEl,
+        fromMemory: !!selectedDubbingFile,
+        fromInput: !!(inputEl && inputEl.files && inputEl.files[0]),
+        fileName: file?.name,
+        hasAuthHeaders: !!authHeaders,
+        hasToken: !!token,
+        langCount: window.selectedLangs?.size || 0
+    });
+
+    if (!authHeaders || !token) {
+        console.warn('[dubbing] blocked: not signed in or headers incomplete');
+        return window.showToast?.('Please sign in first', 'error');
+    }
+    if (!file) {
+        console.warn('[dubbing] blocked: no file');
+        return window.showToast?.('Please select a media file', 'error');
+    }
+    if (!window.selectedLangs?.size) {
+        console.warn('[dubbing] blocked: no languages');
+        return window.showToast?.('Select target languages', 'error');
+    }
 
     // إعداد واجهة الانتظار
     document.getElementById('dubBtn').style.display = 'none';
@@ -67,28 +99,42 @@ async function startDubbing() {
 
     try {
         updateProgress("Initializing...", 5);
-        
-        const userId = getUserIdFromAccessToken(token);
-        if (!userId) return window.showToast?.("Invalid session — please sign in again", "error");
 
-        // 1. طلب رابط الرفع (X-User-Id مطلوب من السيرفر لتجنب 401)
-        const urlRes = await fetch(`${GET_API_URL()}/api/upload-url`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'X-User-Id': userId
-            },
-            body: JSON.stringify({ filename: file.name, content_type: file.type })
+        const uploadUrlEndpoint = `${GET_API_URL()}/api/upload-url`;
+        const uploadHeaders = Object.assign(
+            {},
+            authHeaders,
+            { 'Content-Type': 'application/json' }
+        );
+        console.log('[dubbing] POST /api/upload-url', {
+            url: uploadUrlEndpoint,
+            hasAuthorization: !!uploadHeaders['Authorization'],
+            hasXUserId: !!uploadHeaders['X-User-Id'],
+            xUserIdPreview: uploadHeaders['X-User-Id'] ? String(uploadHeaders['X-User-Id']).slice(0, 8) + '…' : null,
+            filename: file.name,
+            content_type: file.type || '(empty)'
         });
-        
+
+        // 1. طلب رابط الرفع (Authorization + X-User-Id من shared.js عبر getApiAuthHeaders)
+        const urlRes = await fetch(uploadUrlEndpoint, {
+            method: 'POST',
+            headers: uploadHeaders,
+            body: JSON.stringify({ filename: file.name, content_type: file.type || 'application/octet-stream' })
+        });
+
+        console.log('[dubbing] upload-url response', { ok: urlRes.ok, status: urlRes.status, statusText: urlRes.statusText });
+
         if (!urlRes.ok) {
-            const errData = await urlRes.json().catch(() => ({}));
-            throw new Error(errData.error || "CORS/Connection Error to API");
+            const errText = await urlRes.text().catch(() => '');
+            let errData = {};
+            try { errData = errText ? JSON.parse(errText) : {}; } catch (parseErr) { errData = { raw: errText }; }
+            console.error('[dubbing] upload-url error body', errData);
+            throw new Error(errData.error || ('upload-url failed: HTTP ' + urlRes.status));
         }
-        
+
         const urlData = await urlRes.json();
-        
+        console.log('[dubbing] upload-url OK', { file_key: urlData.file_key, hasUploadUrl: !!urlData.upload_url });
+
         // 2. الرفع إلى R2
         await uploadToR2(urlData.upload_url, file, file.type);
         updateProgress("Sending processing requests...", 50);
@@ -107,11 +153,7 @@ async function startDubbing() {
             // إرسال طلب الدبلجة
             fetch(`${GET_API_URL()}/api/dub`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                    'X-User-Id': userId
-                },
+                headers: Object.assign({}, authHeaders, { 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     file_key: urlData.file_key, 
                     lang: langCode,
@@ -129,7 +171,7 @@ async function startDubbing() {
             })
             .then(async data => {
                 // الانتظار حتى اكتمال المهمة
-                const job = await waitForJob(data.job_id, token, userId);
+                const job = await waitForJob(data.job_id, authHeaders);
                 
                 cinemaResults[langCode] = { 
                     url: job.output_url, 
@@ -158,23 +200,20 @@ async function startDubbing() {
             });
         }
     } catch (e) {
-        console.error("Critical Error:", e);
+        console.error('[dubbing] Critical Error:', e);
         window.showToast?.(e.message, 'error');
         document.getElementById('dubBtn').style.display = 'block';
         updateProgress("Process Interrupted", 0);
     }
 }
 
-async function waitForJob(id, token, userId) {
+async function waitForJob(id, authHeaders) {
     let attempts = 0;
     while (attempts < 150) { // حد أقصى 10 دقائق
         try {
             const res = await fetch(`${GET_API_URL()}/api/job/${id}`, { 
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'X-User-Id': userId
-                }
+                headers: authHeaders
             });
             const d = await res.json();
             
@@ -256,7 +295,155 @@ function formatTime(s) {
     return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+let _dubbingMediaObjectUrl = null;
+
+function revokeDubbingMediaPreviewUrl() {
+    if (_dubbingMediaObjectUrl) {
+        try { URL.revokeObjectURL(_dubbingMediaObjectUrl); } catch (e) {}
+        _dubbingMediaObjectUrl = null;
+    }
+}
+
+/** بعد اختيار ملف: معاينة + اسم الملف + إظهار زر البدء */
+function applyDubbingMediaSelection(file) {
+    const previewArea = document.getElementById('previewArea');
+    const videoEl = document.getElementById('videoPreview');
+    const audioLabel = document.getElementById('audioPreviewLabel');
+    const audioName = document.getElementById('audioFileName');
+    const dubBtn = document.getElementById('dubBtn');
+    const uploadBox = document.getElementById('dropZone');
+
+    if (!previewArea || !videoEl || !audioLabel) {
+        console.error('[dubbing] applyDubbingMediaSelection: missing DOM nodes', {
+            previewArea: !!previewArea,
+            videoPreview: !!videoEl,
+            audioPreviewLabel: !!audioLabel
+        });
+        return;
+    }
+
+    if (!file) {
+        selectedDubbingFile = null;
+        revokeDubbingMediaPreviewUrl();
+        videoEl.removeAttribute('src');
+        videoEl.load?.();
+        previewArea.style.display = 'none';
+        videoEl.style.display = 'none';
+        audioLabel.style.display = 'none';
+        if (dubBtn) dubBtn.style.display = 'none';
+        if (uploadBox) uploadBox.classList.remove('has-file');
+        return;
+    }
+
+    selectedDubbingFile = file;
+    console.log('[dubbing] file selected', { name: file.name, type: file.type, size: file.size });
+
+    revokeDubbingMediaPreviewUrl();
+    _dubbingMediaObjectUrl = URL.createObjectURL(file);
+
+    previewArea.style.display = 'block';
+    if (file.type.startsWith('video/')) {
+        videoEl.style.display = 'block';
+        audioLabel.style.display = 'none';
+        videoEl.src = _dubbingMediaObjectUrl;
+    } else {
+        videoEl.style.display = 'none';
+        videoEl.removeAttribute('src');
+        videoEl.load?.();
+        audioLabel.style.display = 'block';
+        if (audioName) {
+            const mb = (file.size / 1024 / 1024).toFixed(1);
+            audioName.textContent = file.name + ' (' + mb + ' MB)';
+        }
+    }
+
+    if (dubBtn) dubBtn.style.display = 'block';
+    if (uploadBox) uploadBox.classList.add('has-file');
+}
+
+function initDubbingMediaInput() {
+    const input = getDubbingFileInput();
+    const dropZone = document.getElementById('dropZone');
+
+    if (!input) {
+        console.error('[dubbing] initDubbingMediaInput: #mediaFile not found — file picker will not work');
+        return;
+    }
+    if (!dropZone) console.warn('[dubbing] initDubbingMediaInput: #dropZone not found — drag/drop disabled');
+
+    input.addEventListener('change', () => {
+        const file = input.files && input.files[0];
+        console.log('[dubbing] input change', { hasFile: !!file, name: file?.name });
+        applyDubbingMediaSelection(file || null);
+    });
+
+    if (dropZone) {
+        dropZone.addEventListener('click', (e) => {
+            if (e.target === input) return;
+            const inp = getDubbingFileInput();
+            if (!inp) {
+                console.error('[dubbing] dropZone click: #mediaFile missing');
+                return;
+            }
+            try {
+                inp.value = '';
+            } catch (clearErr) {
+                console.warn('[dubbing] could not clear input.value before picker', clearErr);
+            }
+            inp.click();
+        });
+
+        ['dragenter', 'dragover', 'dragleave'].forEach((ev) => {
+            dropZone.addEventListener(ev, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if (!file) {
+                console.warn('[dubbing] drop: no file in dataTransfer');
+                return;
+            }
+            console.log('[dubbing] drop', { name: file.name, type: file.type, size: file.size });
+            let assigned = false;
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+                assigned = true;
+            } catch (err) {
+                console.warn('[dubbing] assigning dropped file to input failed (using in-memory file)', err);
+            }
+            if (assigned) {
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            } else {
+                applyDubbingMediaSelection(file);
+            }
+        });
+    }
+
+    console.log('[dubbing] media input initialized', { input: !!input, dropZone: !!dropZone });
+}
+
+function whenDomReady(fn) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else {
+        fn();
+    }
+}
+
+whenDomReady(() => {
     const dubBtn = document.getElementById('dubBtn');
     if (dubBtn) dubBtn.onclick = startDubbing;
+    else console.warn('[dubbing] #dubBtn not found');
+    initDubbingMediaInput();
 });
