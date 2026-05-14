@@ -1,99 +1,126 @@
-// js/tts.js — V2.3 (Full Sync with Dubbing Style)
+// js/tts.js — V2.4 (Fix Selection & Voice Upload)
 document.addEventListener('DOMContentLoaded', () => {
+    // القيم الافتراضية
     let currentLangCode = 'en-us';
     let selectedVoiceId = null;
+    let customVoiceFile = null;
     let currentAudio = null;
 
     function getFlagImg(code) {
-        let country = code.split('-')[1];
-        if (!country) {
-            const map = { 'ar':'sa', 'en':'us', 'fr':'fr', 'es':'es', 'pt':'pt', 'de':'de', 'it':'it', 'ru':'ru', 'ja':'jp' };
-            country = map[code.split('-')[0]] || 'un';
-        }
+        let country = code.split('-')[1] || 'us';
         return `<img src="https://hatscripts.github.io/circle-flags/flags/${country.toLowerCase()}.svg" style="width:18px; height:18px; border-radius:50%;">`;
     }
 
-    // 1. القائمة المنسدلة للغات
-    const langToggle = document.getElementById('langSelected');
-    const langMenu = document.getElementById('langMenu');
-    if (langToggle) {
-        langToggle.onclick = (e) => { e.stopPropagation(); document.getElementById('langDropdown').classList.toggle('open'); };
-        if (window.LANGUAGES) {
-            langMenu.innerHTML = window.LANGUAGES.sort((a,b)=>b.popular-a.popular).map(l => `
-                <li onclick="selectTtsLang('${l.code}', '${l.name_en}')">${getFlagImg(l.code)} <span style="margin-left:10px;">${l.name_en}</span></li>
-            `).join('');
-        }
-    }
+    // ─── 1. إصلاح اختيار اللغة وتفعيلها عند البدء ───
     window.selectTtsLang = (code, name) => {
         currentLangCode = code;
-        document.getElementById('currentFlagImg').innerHTML = getFlagImg(code);
-        document.querySelector('#langSelected .name').textContent = name;
+        const flagContainer = document.getElementById('currentFlag');
+        const nameContainer = document.querySelector('#langSelected .name');
+        
+        if(flagContainer) flagContainer.innerHTML = getFlagImg(code);
+        if(nameContainer) nameContainer.textContent = name;
+        
         document.getElementById('langDropdown').classList.remove('open');
+        console.log("Selected Language:", currentLangCode);
     };
 
-    // 2. القائمة المنسدلة للأصوات (Premium Voices)
-    const voiceToggle = document.getElementById('voiceToggle');
-    const voicePanel = document.getElementById('voicePanel');
-    if (voiceToggle) {
-        voiceToggle.onclick = (e) => { e.stopPropagation(); voicePanel.classList.toggle('active'); };
+    // تعبئة القائمة باللغات عند التحميل
+    const langMenu = document.getElementById('langMenu');
+    if (langMenu && window.LANGUAGES) {
+        langMenu.innerHTML = window.LANGUAGES.sort((a,b)=>b.popular-a.popular).map(l => `
+            <li onclick="selectTtsLang('${l.code}', '${l.name_en}')">
+                ${getFlagImg(l.code)} <span style="margin-left:10px;">${l.name_en}</span>
+            </li>
+        `).join('');
+        
+        // تفعيل اللغة الافتراضية (English US)
+        selectTtsLang('en-us', 'English (US)');
     }
-    document.addEventListener('click', () => { 
-        voicePanel?.classList.remove('active'); 
-        document.getElementById('langDropdown')?.classList.remove('open');
-    });
 
+    // ─── 2. نظام رفع عينة صوتية مخصصة ───
+    const voiceInput = document.getElementById('voiceUploadInput');
+    window.triggerVoiceUpload = () => voiceInput.click();
+
+    voiceInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            customVoiceFile = file;
+            selectedVoiceId = 'custom_clone';
+            document.getElementById('currentVoiceName').textContent = "Custom Voice";
+            document.getElementById('cloneStatus').textContent = "Uploaded!";
+            document.getElementById('cloneOption').classList.add('selected');
+            document.getElementById('voicePanel').classList.remove('active');
+            window.showToast?.("Voice sample uploaded successfully", "success");
+        }
+    };
+
+    // ─── 3. جلب الأصوات المميزة ───
     async function loadPremiumVoices() {
         const grid = document.getElementById('ttsVoicesGrid');
         const supa = window.getSupabase?.();
-        if (!supa) return;
+        if (!supa || !grid) return;
 
-        const { data, error } = await supa.from('voices').select('*').order('created_at');
-        if (error || !data) return;
-
-        grid.innerHTML = data.map(v => `
-            <div class="v-avatar-card ${selectedVoiceId === v.id ? 'selected' : ''}" onclick="window.selectTtsVoice('${v.id}', '${v.name}')">
-                <div class="v-img-wrapper">
-                    <img src="${v.avatar_url}" alt="${v.name}">
+        const { data } = await supa.from('voices').select('*').order('created_at');
+        if (data) {
+            grid.innerHTML = data.map(v => `
+                <div class="v-avatar-card ${selectedVoiceId === v.id ? 'selected' : ''}" onclick="selectTtsVoice('${v.id}', '${v.name}')">
+                    <div class="v-img-wrapper"><img src="${v.avatar_url}"></div>
+                    <div class="v-name">${v.name}</div>
                 </div>
-                <div class="v-name">${v.name}</div>
-            </div>
-        `).join('');
+            `).join('');
+        }
     }
 
     window.selectTtsVoice = (id, name) => {
         selectedVoiceId = id;
+        customVoiceFile = null; // إلغاء العينة المرفوعة إذا اختار صوتاً جاهزاً
         document.getElementById('currentVoiceName').textContent = name;
-        voicePanel.classList.remove('active');
-        loadPremiumVoices(); // إعادة تحميل لتحديث التحديد (border)
+        document.getElementById('cloneOption').classList.remove('selected');
+        document.getElementById('cloneStatus').textContent = "Voice Clone";
+        document.getElementById('voicePanel').classList.remove('active');
+        loadPremiumVoices();
     };
+
+    // ─── 4. التحكم في القوائم المنسدلة ───
+    document.getElementById('langSelected').onclick = (e) => {
+        e.stopPropagation();
+        document.getElementById('langDropdown').classList.toggle('open');
+    };
+    document.getElementById('voiceToggle').onclick = (e) => {
+        e.stopPropagation();
+        document.getElementById('voicePanel').classList.toggle('active');
+    };
+    document.addEventListener('click', () => {
+        document.getElementById('langDropdown')?.classList.remove('open');
+        document.getElementById('voicePanel')?.classList.remove('active');
+    });
 
     loadPremiumVoices();
 
-    // 3. تحويل النص لصوت
+    // ─── 5. تشغيل الـ TTS ───
     const playBtn = document.getElementById('ttsPlayBtn');
-    if (playBtn) {
-        playBtn.onclick = async () => {
-            const text = document.getElementById('ttsInput').value.trim();
-            if (!text) return window.showToast?.("Please enter text", "error");
+    playBtn.onclick = async () => {
+        const text = document.getElementById('ttsInput').value.trim();
+        if (!text) return window.showToast?.("Please enter some text", "error");
 
-            const originalHtml = playBtn.innerHTML;
-            playBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+        const originalHtml = playBtn.innerHTML;
+        playBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Generating...';
 
-            try {
-                // إرسال الطلب للمحرك
-                const result = await window.quickTTS(text, { lang: currentLangCode });
-                if (currentAudio) currentAudio.pause();
-                currentAudio = result.audio;
-                currentAudio.play();
-            } catch (e) {
-                window.showToast?.(e.message, "error");
-            } finally {
-                playBtn.innerHTML = originalHtml;
-            }
-        };
-    }
+        try {
+            // هنا يتم إرسال الطلب لمحرك الذكاء الاصطناعي
+            const result = await window.quickTTS(text, { 
+                lang: currentLangCode,
+                voice_id: selectedVoiceId,
+                file: customVoiceFile // نرسل الملف المرفوع إذا وُجد
+            });
 
-    // عداد الحروف والسرعة
-    document.getElementById('ttsInput').oninput = (e) => document.getElementById('charCount').textContent = e.target.value.length;
-    document.getElementById('speedSlider').oninput = (e) => document.getElementById('speedVal').textContent = e.target.value == 0 ? 'Normal' : (e.target.value > 0 ? `+${e.target.value}%` : `${e.target.value}%`);
+            if (currentAudio) currentAudio.pause();
+            currentAudio = result.audio;
+            currentAudio.play();
+        } catch (e) {
+            window.showToast?.(e.message, "error");
+        } finally {
+            playBtn.innerHTML = originalHtml;
+        }
+    };
 });
