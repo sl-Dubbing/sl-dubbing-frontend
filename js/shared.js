@@ -1,4 +1,4 @@
-// js/shared.js - V33.6 (Global getSupabase + credits timeout 15s)
+// js/shared.js - V33.7 (Dropdown: avatar/name, guest auth hidden; credits + X-User-Id)
 
 const API_BASE     = window.APP_CONFIG?.API_BASE     || 'https://api.glotix.ai';
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
@@ -33,6 +33,20 @@ function creditsFetchSignal(ms) {
     };
 }
 
+const DEFAULT_MENU_AVATAR = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+
+/** استخراج الاسم وصورة العرض من مستخدم Supabase للقائمة */
+function menuProfileFromSupabaseUser(su) {
+    if (!su || !su.id) return null;
+    const meta = su.user_metadata || {};
+    const name = meta.full_name || meta.name || meta.preferred_username
+        || (su.email && String(su.email).split('@')[0])
+        || 'User';
+    const avatarUrl = meta.avatar_url || meta.picture
+        || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&size=128&background=334155&color=fff');
+    return { id: su.id, name: String(name), avatarUrl: String(avatarUrl), credits: '...' };
+}
+
 // 2. كود تشغيل القائمة (Menu) - معزول لضمان عدم تعطل الزر
 function initMenuDropdown() {
     const menuBtn = document.getElementById('menuBtn');
@@ -53,17 +67,32 @@ function initMenuDropdown() {
 
 // 3. تحديث واجهة المستخدم
 window.updateDropdownUI = function(user) {
-    const userMenu  = document.getElementById('userMenu');
-    const guestMenu = document.getElementById('guestMenu');
-    const credits   = document.getElementById('menuCredits');
-    
+    const userMenu     = document.getElementById('userMenu');
+    const guestMenu    = document.getElementById('guestMenu');
+    const credits      = document.getElementById('menuCredits');
+    const menuAvatar   = document.getElementById('menuAvatar');
+    const menuUserName = document.getElementById('menuUserName');
+
     if (user && user.id) {
         if (guestMenu) guestMenu.style.display = 'none';
         if (userMenu)  userMenu.style.display  = 'block';
-        if (credits)   credits.textContent     = user.credits || '...';
+        if (menuUserName) menuUserName.textContent = user.name || 'My Account';
+        if (menuAvatar) {
+            menuAvatar.src = user.avatarUrl || DEFAULT_MENU_AVATAR;
+            menuAvatar.alt = user.name || 'User';
+        }
+        if (credits && user.credits !== undefined && user.credits !== null) {
+            credits.textContent = user.credits === '...' ? '...' : String(user.credits);
+        }
     } else {
         if (guestMenu) guestMenu.style.display = 'flex';
         if (userMenu)  userMenu.style.display  = 'none';
+        if (credits) credits.textContent = '...';
+        if (menuAvatar) {
+            menuAvatar.src = DEFAULT_MENU_AVATAR;
+            menuAvatar.alt = 'User';
+        }
+        if (menuUserName) menuUserName.textContent = 'My Account';
     }
 };
 
@@ -77,23 +106,26 @@ window.checkAuth = async function() {
         if (!session) return window.updateDropdownUI(null);
 
         localStorage.setItem('token', session.access_token);
-        
+
+        const baseUser = menuProfileFromSupabaseUser(session.user);
+        if (baseUser) window.updateDropdownUI(baseUser);
+
         if (!_isFetchingCredits) {
             _isFetchingCredits = true;
             try {
                 const cts = creditsFetchSignal(15000);
                 try {
+                    const userId = String(session.user.id);
                     const res = await fetch(`${API_BASE}/api/user/credits`, {
                         headers: {
                             'Authorization': `Bearer ${session.access_token}`,
-                            'X-User-Id': session.user.id
+                            'X-User-Id': userId
                         },
                         signal: cts.signal
                     });
                     const d = await res.json();
-                    if (d.success) {
-                        const userData = { id: session.user.id, name: 'User', credits: d.credits };
-                        window.updateDropdownUI(userData);
+                    if (d.success && baseUser) {
+                        window.updateDropdownUI(Object.assign({}, baseUser, { credits: d.credits }));
                     }
                 } finally {
                     cts.dispose();
