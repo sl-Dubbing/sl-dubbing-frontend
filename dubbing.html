@@ -58,8 +58,9 @@
         .logout-btn { color: var(--error) !important; display: none; }
 
         /* ── Upload Area (HeyGen Style) ── */
-        .upload-box { background: var(--bg-card); border: 1px dashed #d1d5db; border-radius: var(--radius-lg); padding: 50px 20px; text-align: center; cursor: pointer; transition: 0.3s; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .upload-box { display: block; background: var(--bg-card); border: 1px dashed #d1d5db; border-radius: var(--radius-lg); padding: 50px 20px; text-align: center; cursor: pointer; transition: 0.3s; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .upload-box:hover { border-color: var(--accent-blue); background: #f8fafc; }
+        .upload-box.has-file { border-color: var(--accent-green); background: #ecfdf5; }
         .upload-icon { font-size: 3rem; color: #60a5fa; margin-bottom: 15px; }
         .upload-title { font-weight: 600; font-size: 1.2rem; color: var(--text-main); }
         .upload-subtitle { color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; }
@@ -281,12 +282,13 @@
         </div>
     </div>
 
-    <div class="upload-box" id="dropZone" onclick="document.getElementById('mediaFile').click()">
+    <label class="upload-box" id="dropZone" for="mediaFile">
         <input type="file" id="mediaFile" style="display:none;" accept="video/*,audio/*">
         <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
         <div class="upload-title">Drag & Drop or Click to Upload</div>
-        <p class="upload-subtitle">Supports MP4, MOV, MP3, WAV (Max 500MB)</p>
-    </div>
+        <p class="upload-subtitle" id="uploadConstraintsHint">Supports MP4, MOV, MP3, WAV (Max 500MB)</p>
+        <p class="upload-subtitle" id="selectedFileNameLine" style="display: none; margin-top: 8px; font-weight: 600; color: var(--text-main);"></p>
+    </label>
 
     <div class="controls-row">
         <div class="dropdown-btn lang-btn" id="langTrigger" onclick="toggleLangDropdown(event)">
