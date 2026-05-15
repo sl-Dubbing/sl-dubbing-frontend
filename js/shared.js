@@ -1,4 +1,4 @@
-// js/shared.js - V33.7 (Dropdown: avatar/name, guest auth hidden; credits + X-User-Id)
+// js/shared.js - V33.8 (Connection badge dismiss; credits parse; logout listener + visibility)
 
 /** قاعدة الـ API بدون سلاش زائد — يمنع // في المسارات ويُحسّن توافق الروابط */
 const API_BASE = String(window.APP_CONFIG?.API_BASE || 'https://api.glotix.ai')
@@ -92,6 +92,43 @@ function creditsFetchSignal(ms) {
 
 const DEFAULT_MENU_AVATAR = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
 
+/** يخفي شارة «Checking connection» (#srv / .srv-badge / #srvTxt) بعد نجاح الـ API */
+function dismissConnectionCheckingUi() {
+    const srv = document.getElementById('srv');
+    if (srv) {
+        srv.style.display = 'none';
+        return;
+    }
+    const txt = document.getElementById('srvTxt');
+    if (txt) {
+        const wrap = txt.closest('.srv-badge') || txt.parentElement;
+        if (wrap) wrap.style.display = 'none';
+        else txt.style.display = 'none';
+        return;
+    }
+    document.querySelectorAll('.srv-badge').forEach(function (el) {
+        el.style.display = 'none';
+    });
+}
+
+/** قراءة الرصيد من أشكال JSON شائعة للـ API (تجنب Object.assign مع credits: undefined) */
+function creditsFromApiPayload(d) {
+    if (!d || typeof d !== 'object') return null;
+    const nested = d.data && typeof d.data === 'object' ? d.data : null;
+    const v = d.credits !== undefined && d.credits !== null ? d.credits
+        : d.balance !== undefined && d.balance !== null ? d.balance
+            : d.credit_balance !== undefined && d.credit_balance !== null ? d.credit_balance
+                : nested && nested.credits !== undefined && nested.credits !== null ? nested.credits
+                    : nested && nested.balance !== undefined && nested.balance !== null ? nested.balance
+                        : null;
+    if (v === undefined || v === null) return null;
+    return v;
+}
+
+function apiPayloadLooksSuccessful(data) {
+    return !!(data && (data.success === true || data.success === 'true' || data.ok === true));
+}
+
 /** استخراج الاسم وصورة العرض من مستخدم Supabase للقائمة */
 function menuProfileFromSupabaseUser(su) {
     if (!su || !su.id) return null;
@@ -102,6 +139,40 @@ function menuProfileFromSupabaseUser(su) {
     const avatarUrl = meta.avatar_url || meta.picture
         || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&size=128&background=334155&color=fff');
     return { id: su.id, name: String(name), avatarUrl: String(avatarUrl), credits: '...' };
+}
+
+function initLogoutButton() {
+    const btn = document.getElementById('logoutBtn');
+    if (!btn || btn.dataset.slLogoutBound === '1') return;
+    btn.dataset.slLogoutBound = '1';
+    btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        void (async function () {
+            let supa = null;
+            try {
+                supa = typeof window.getSupabase === 'function' ? window.getSupabase() : null;
+            } catch (_) {}
+            try {
+                if (supa && supa.auth && typeof supa.auth.signOut === 'function') {
+                    await supa.auth.signOut();
+                }
+            } catch (_) {}
+            try {
+                localStorage.removeItem('token');
+                for (let i = sessionStorage.length - 1; i >= 0; i--) {
+                    const k = sessionStorage.key(i);
+                    if (k && k.indexOf('sl_user_inited_') === 0) sessionStorage.removeItem(k);
+                }
+            } catch (_) {}
+            if (typeof window.updateDropdownUI === 'function') window.updateDropdownUI(null);
+            try {
+                window.location.href = new URL('login.html', window.location.href).href;
+            } catch (_) {
+                window.location.reload();
+            }
+        })();
+    });
 }
 
 // 2. كود تشغيل القائمة (Menu) - معزول لضمان عدم تعطل الزر
@@ -129,10 +200,12 @@ window.updateDropdownUI = function(user) {
     const credits      = document.getElementById('menuCredits');
     const menuAvatar   = document.getElementById('menuAvatar');
     const menuUserName = document.getElementById('menuUserName');
+    const logoutBtn    = document.getElementById('logoutBtn');
 
     if (user && user.id) {
         if (guestMenu) guestMenu.style.display = 'none';
         if (userMenu)  userMenu.style.display  = 'block';
+        if (logoutBtn) logoutBtn.style.display = 'flex';
         if (menuUserName) menuUserName.textContent = user.name || 'My Account';
         if (menuAvatar) {
             menuAvatar.src = user.avatarUrl || DEFAULT_MENU_AVATAR;
@@ -144,6 +217,7 @@ window.updateDropdownUI = function(user) {
     } else {
         if (guestMenu) guestMenu.style.display = 'flex';
         if (userMenu)  userMenu.style.display  = 'none';
+        if (logoutBtn) logoutBtn.style.display = 'none';
         if (credits) credits.textContent = '...';
         if (menuAvatar) {
             menuAvatar.src = DEFAULT_MENU_AVATAR;
@@ -199,8 +273,13 @@ window.checkAuth = async function() {
                         return;
                     }
                     const d = await res.json();
-                    if (d.success && baseUser) {
-                        window.updateDropdownUI(Object.assign({}, baseUser, { credits: d.credits }));
+                    const cred = creditsFromApiPayload(d);
+                    const okPayload = apiPayloadLooksSuccessful(d) || (res.ok && cred !== null);
+                    if (baseUser && okPayload) {
+                        const merged = Object.assign({}, baseUser);
+                        if (cred !== null) merged.credits = cred;
+                        window.updateDropdownUI(merged);
+                        dismissConnectionCheckingUi();
                     }
                 } finally {
                     cts.dispose();
@@ -215,11 +294,49 @@ window.checkAuth = async function() {
     } catch(e) { console.error('Auth Sync Error:', e); }
 };
 
+/** فحص اتصال الـ API: طلب init بدون X-User-Id يعيد guest — نعرض Connected فوراً */
+window.checkConnection = async function checkConnection() {
+    const srv = document.getElementById('srv');
+    const srvTxt = document.getElementById('srvTxt');
+    function setConnected() {
+        if (srvTxt) srvTxt.textContent = 'Connected';
+        if (srv) srv.classList.add('on');
+    }
+    function setFailed(msg) {
+        if (srvTxt) srvTxt.textContent = msg || 'Cannot reach API';
+        if (srv) srv.classList.remove('on');
+    }
+    try {
+        const res = await fetch(`${API_BASE}/api/user/init`, {
+            method: 'POST',
+            headers: { Accept: 'application/json' }
+        });
+        let data = {};
+        try {
+            data = await res.json();
+        } catch (_) { /* empty body */ }
+        if (res.ok && apiPayloadLooksSuccessful(data) && data.guest === true) {
+            setConnected();
+            dismissConnectionCheckingUi();
+            return;
+        }
+        if (res.ok && apiPayloadLooksSuccessful(data)) {
+            setConnected();
+            dismissConnectionCheckingUi();
+            return;
+        }
+        setFailed(res.status ? 'API error (' + res.status + ')' : 'Unexpected response');
+    } catch (e) {
+        setFailed('Cannot reach API');
+    }
+};
+
 // 5. التشغيل عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', () => {
     // تشغيل القائمة أولاً لضمان عدم تعطلها
     initMenuDropdown();
+    initLogoutButton();
 
-    // ثم فحص المصادقة
+    void window.checkConnection();
     window.checkAuth();
 });
