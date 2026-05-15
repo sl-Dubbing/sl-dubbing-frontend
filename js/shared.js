@@ -4,10 +4,21 @@
 const API_BASE = String(window.APP_CONFIG?.API_BASE || 'https://api.glotix.ai')
     .replace(/\/$/, '')
     .replace(/([^:]\/)\/+/g, '$1');
-const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || 'https://ckjkkxrlgisjdolwddfg.supabase.co';
-const SUPABASE_KEY = window.APP_CONFIG?.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjU0OTUsImV4cCI6MjA5MzA0MTQ5NX0.F-4TbmO6_7plPm8NBr_6djCv6gtEPpWFw9J7m8vTs6M';
 
 window.API_BASE = API_BASE;
+
+/** فك base64url لجزء الـ JWT كـ UTF-8 (atob وحده لا يكفي لمحتوى JSON فيه أحرف غير ASCII) */
+function jwtPayloadJsonFromPart(b64) {
+    let b64norm = b64.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64norm.length % 4) b64norm += '=';
+    const binary = atob(b64norm);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    if (typeof TextDecoder !== 'undefined') {
+        return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    }
+    return binary;
+}
 
 /** استخراج `sub` من JWT (Supabase) — لاستخدامه في هيدر X-User-Id */
 window.parseJwtSub = function parseJwtSub(token) {
@@ -15,9 +26,7 @@ window.parseJwtSub = function parseJwtSub(token) {
     try {
         const parts = token.split('.');
         if (parts.length < 2) return null;
-        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-        while (b64.length % 4) b64 += '=';
-        const payload = JSON.parse(atob(b64));
+        const payload = JSON.parse(jwtPayloadJsonFromPart(parts[1]));
         return payload.sub ? String(payload.sub) : null;
     } catch (e) {
         return null;
@@ -36,15 +45,32 @@ window.getApiAuthHeaders = function getApiAuthHeaders() {
     };
 };
 
-let _domReady = false;
+window.clearSessionAndGuestUI = function clearSessionAndGuestUI(message) {
+    localStorage.removeItem('token');
+    window.updateDropdownUI(null);
+    if (message) window.showToast?.(message, 'error');
+};
+
 let _isFetchingCredits = false;
 let supabaseClient = null;
+
+function requireSupabaseConfig() {
+    const url = window.APP_CONFIG && window.APP_CONFIG.SUPABASE_URL;
+    const key = window.APP_CONFIG && window.APP_CONFIG.SUPABASE_KEY;
+    if (!url || !key) {
+        const err = new Error('[shared] APP_CONFIG must define SUPABASE_URL and SUPABASE_KEY');
+        console.error(err.message);
+        throw err;
+    }
+    return { url: String(url), key: String(key) };
+}
 
 /** عميل Supabase — معرّف على window من أول السطر حتى لا يفشل onclick للقائمة قبل اكتمال التحميل */
 window.getSupabase = function getSupabase() {
     if (supabaseClient) return supabaseClient;
     if (typeof window.supabase !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        const { url, key } = requireSupabaseConfig();
+        supabaseClient = window.supabase.createClient(url, key, {
             auth: { flowType: 'implicit' }
         });
     }
@@ -147,13 +173,31 @@ window.checkAuth = async function() {
                 const cts = creditsFetchSignal(15000);
                 try {
                     const userId = String(session.user.id);
+                    const authHeaders = {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'X-User-Id': userId
+                    };
+                    const initKey = 'sl_user_inited_' + userId;
+                    if (!sessionStorage.getItem(initKey)) {
+                        const initRes = await fetch(`${API_BASE}/api/user/init`, {
+                            method: 'POST',
+                            headers: authHeaders,
+                            signal: cts.signal
+                        });
+                        if (initRes.status === 401) {
+                            window.clearSessionAndGuestUI('Session expired — please sign in again');
+                            return;
+                        }
+                        if (initRes.ok) sessionStorage.setItem(initKey, '1');
+                    }
                     const res = await fetch(`${API_BASE}/api/user/credits`, {
-                        headers: {
-                            'Authorization': `Bearer ${session.access_token}`,
-                            'X-User-Id': userId
-                        },
+                        headers: authHeaders,
                         signal: cts.signal
                     });
+                    if (res.status === 401) {
+                        window.clearSessionAndGuestUI('Session expired — please sign in again');
+                        return;
+                    }
                     const d = await res.json();
                     if (d.success && baseUser) {
                         window.updateDropdownUI(Object.assign({}, baseUser, { credits: d.credits }));
@@ -161,19 +205,21 @@ window.checkAuth = async function() {
                 } finally {
                     cts.dispose();
                 }
-            } catch(e) { console.warn("Credits fetch timeout"); }
-            finally { setTimeout(() => { _isFetchingCredits = false; }, 10000); }
+            } catch (e) {
+                if (e && e.name === 'AbortError') console.warn('Credits fetch timeout or aborted');
+                else console.warn('Credits fetch error', e);
+            } finally {
+                _isFetchingCredits = false;
+            }
         }
     } catch(e) { console.error('Auth Sync Error:', e); }
 };
 
 // 5. التشغيل عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', () => {
-    _domReady = true;
-    
     // تشغيل القائمة أولاً لضمان عدم تعطلها
     initMenuDropdown();
-    
+
     // ثم فحص المصادقة
     window.checkAuth();
 });

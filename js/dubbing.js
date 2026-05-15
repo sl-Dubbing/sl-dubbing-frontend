@@ -1,6 +1,8 @@
 // js/dubbing.js — V12.5 (file init + drag/drop fallback + upload logging)
 let cinemaResults = {};
 let activeWavesurfer = null;
+let dubbingPollAbort = null;
+let dubbingProgressMonotonic = 50;
 
 /** آخر ملف مختار (سحب/إفلات أو اختيار) — احتياط عندما لا يقبل المتصفح تعيين input.files */
 let selectedDubbingFile = null;
@@ -34,6 +36,35 @@ const GET_API_URL = () => {
     let base = window.API_BASE || 'https://api.glotix.ai';
     return String(base).replace(/\/$/, '').replace(/([^:]\/)\/+/g, '$1');
 };
+
+function abortActiveDubbingPoll() {
+    if (dubbingPollAbort) {
+        dubbingPollAbort.abort();
+        dubbingPollAbort = null;
+    }
+}
+
+window.addEventListener('beforeunload', abortActiveDubbingPoll);
+
+function dubbingMaxUploadBytes() {
+    const mb = Number(window.APP_CONFIG && window.APP_CONFIG.MAX_UPLOAD_MB);
+    return (mb > 0 ? mb : 500) * 1024 * 1024;
+}
+
+function sleepWithAbort(ms, signal) {
+    return new Promise((resolve, reject) => {
+        if (signal && signal.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'));
+            return;
+        }
+        const t = setTimeout(resolve, ms);
+        const onAbort = () => {
+            clearTimeout(t);
+            reject(new DOMException('Aborted', 'AbortError'));
+        };
+        if (signal) signal.addEventListener('abort', onAbort, { once: true });
+    });
+}
 
 async function uploadToR2(url, file, contentType) {
     console.log('[dubbing] R2 PUT start', { name: file?.name, size: file?.size, contentType });
@@ -85,10 +116,20 @@ async function startDubbing() {
         console.warn('[dubbing] blocked: no file');
         return window.showToast?.('Please select a media file', 'error');
     }
+    const maxBytes = dubbingMaxUploadBytes();
+    if (file.size > maxBytes) {
+        const mb = Math.round(maxBytes / 1024 / 1024);
+        console.warn('[dubbing] blocked: file too large', file.size);
+        return window.showToast?.('File too large (max ' + mb + ' MB)', 'error');
+    }
     if (!window.selectedLangs?.size) {
         console.warn('[dubbing] blocked: no languages');
         return window.showToast?.('Select target languages', 'error');
     }
+
+    abortActiveDubbingPoll();
+    dubbingPollAbort = new AbortController();
+    const pollSignal = dubbingPollAbort.signal;
 
     // إعداد واجهة الانتظار
     document.getElementById('dubBtn').style.display = 'none';
@@ -96,6 +137,7 @@ async function startDubbing() {
     document.getElementById('resultsCard').style.display = 'block';
     document.getElementById('cinemaLangs').innerHTML = '';
     cinemaResults = {};
+    dubbingProgressMonotonic = 50;
 
     try {
         updateProgress("Initializing...", 5);
@@ -141,7 +183,7 @@ async function startDubbing() {
 
         // 3. إرسال طلبات الدبلجة لكل لغة مختارة
         const langArray = Array.from(window.selectedLangs);
-        
+
         for (const langCode of langArray) {
             const langInfo = window.LANGUAGES?.find(l => l.code === langCode);
             const item = document.createElement('div');
@@ -153,7 +195,7 @@ async function startDubbing() {
             // إرسال طلب الدبلجة
             fetch(`${GET_API_URL()}/api/dub`, {
                 method: 'POST',
-                headers: Object.assign({}, authHeaders, { 'Content-Type': 'application/json' }),
+                headers: Object.assign({}, getUploadAuthHeaders() || authHeaders, { 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     file_key: urlData.file_key, 
                     lang: langCode,
@@ -171,7 +213,7 @@ async function startDubbing() {
             })
             .then(async data => {
                 // الانتظار حتى اكتمال المهمة
-                const job = await waitForJob(data.job_id, authHeaders);
+                const job = await waitForJob(data.job_id, pollSignal);
                 
                 cinemaResults[langCode] = { 
                     url: job.output_url, 
@@ -190,16 +232,29 @@ async function startDubbing() {
                 if (Object.keys(cinemaResults).length === 1) switchCinemaLang(langCode);
                 
                 const completedCount = Object.keys(cinemaResults).length;
-                updateProgress("Dubbing in progress...", 50 + (completedCount / langArray.length * 50));
+                const nextPct = 50 + (completedCount / langArray.length * 50);
+                dubbingProgressMonotonic = Math.max(dubbingProgressMonotonic, nextPct);
+                updateProgress("Dubbing in progress...", dubbingProgressMonotonic);
                 
                 if (completedCount === langArray.length) updateProgress("All Done!", 100);
             })
             .catch(err => {
-                item.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color:var(--error);"></i> <span style="margin-left:8px;">${langCode} Error</span>`;
+                if (err && err.name === 'AbortError') return;
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-circle-xmark';
+                icon.style.color = 'var(--error)';
+                const span = document.createElement('span');
+                span.style.marginLeft = '8px';
+                span.textContent = langCode + ' Error';
+                item.replaceChildren(icon, span);
                 window.showToast?.(`Language ${langCode}: ${err.message}`, 'error');
             });
         }
     } catch (e) {
+        if (e && e.name === 'AbortError') {
+            console.warn('[dubbing] polling aborted');
+            return;
+        }
         console.error('[dubbing] Critical Error:', e);
         window.showToast?.(e.message, 'error');
         document.getElementById('dubBtn').style.display = 'block';
@@ -207,25 +262,43 @@ async function startDubbing() {
     }
 }
 
-async function waitForJob(id, authHeaders) {
+async function waitForJob(id, signal) {
     let attempts = 0;
     while (attempts < 150) { // حد أقصى 10 دقائق
-        try {
-            const res = await fetch(`${GET_API_URL()}/api/job/${id}`, { 
-                method: 'GET',
-                headers: authHeaders
-            });
-            const d = await res.json();
-            
-            if (d.status === 'completed') return d;
-            if (d.status === 'failed') throw new Error(d.error || "Worker encountered an error");
-            
-        } catch (pollErr) {
-            console.warn("Polling error (might be temporary):", pollErr);
+        if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+        const authHeaders = getUploadAuthHeaders();
+        if (!authHeaders) {
+            window.clearSessionAndGuestUI?.('Session expired — please sign in again');
+            throw new Error('Session expired — please sign in again');
         }
-        
+        let d;
+        try {
+            const res = await fetch(`${GET_API_URL()}/api/job/${id}`, {
+                method: 'GET',
+                headers: authHeaders,
+                signal: signal || undefined
+            });
+            if (res.status === 401) {
+                window.clearSessionAndGuestUI?.('Session expired — please sign in again');
+                throw new Error('SESSION_EXPIRED');
+            }
+            d = await res.json();
+        } catch (pollErr) {
+            if (pollErr && pollErr.name === 'AbortError') throw pollErr;
+            if (pollErr instanceof Error && pollErr.message === 'SESSION_EXPIRED') {
+                throw new Error('Session expired — please sign in again');
+            }
+            console.warn("Polling error (might be temporary):", pollErr);
+            attempts++;
+            await sleepWithAbort(4000, signal);
+            continue;
+        }
+
+        if (d.status === 'completed') return d;
+        if (d.status === 'failed') throw new Error(d.error || "Worker encountered an error");
+
         attempts++;
-        await new Promise(r => setTimeout(r, 4000));
+        await sleepWithAbort(4000, signal);
     }
     throw new Error("Job timed out");
 }

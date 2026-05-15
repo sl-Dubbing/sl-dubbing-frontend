@@ -1,19 +1,5 @@
 // js/tts-quick.js — V1.3 (X-User-Id + normalized API base)
 
-function getUserIdFromAccessToken(token) {
-    if (!token || typeof token !== 'string') return null;
-    try {
-        const parts = token.split('.');
-        if (parts.length < 2) return null;
-        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-        while (b64.length % 4) b64 += '=';
-        const payload = JSON.parse(atob(b64));
-        return payload.sub || null;
-    } catch (e) {
-        return null;
-    }
-}
-
 async function quickTTS(text, options = {}) {
     // تم تغيير اللغة الافتراضية إلى الإنجليزية لتطابق واجهة الموقع
     const { lang = 'en-us', edge_voice = '', translate = true, rate = '+0%', pitch = '+0Hz' } = options;
@@ -22,7 +8,7 @@ async function quickTTS(text, options = {}) {
     
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        const uid = getUserIdFromAccessToken(token);
+        const uid = typeof window.parseJwtSub === 'function' ? window.parseJwtSub(token) : null;
         if (uid) headers['X-User-Id'] = uid;
     }
     if (!text?.trim()) throw new Error('Text is empty');
@@ -33,11 +19,27 @@ async function quickTTS(text, options = {}) {
     let apiEndpoint = `${base}/api/tts/quick`;
     apiEndpoint = apiEndpoint.replace(/([^:]\/)\/+/g, "$1");
 
-    const response = await fetch(apiEndpoint, {
-        method: 'POST', 
-        headers,
-        body: JSON.stringify({ text, lang, edge_voice, translate, rate, pitch })
-    });
+    let fetchSignal;
+    let fetchTimer;
+    if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+        fetchSignal = AbortSignal.timeout(30000);
+    } else {
+        const c = new AbortController();
+        fetchTimer = setTimeout(function () { c.abort(); }, 30000);
+        fetchSignal = c.signal;
+    }
+
+    let response;
+    try {
+        response = await fetch(apiEndpoint, {
+            method: 'POST', 
+            headers,
+            body: JSON.stringify({ text, lang, edge_voice, translate, rate, pitch }),
+            signal: fetchSignal
+        });
+    } finally {
+        if (fetchTimer) clearTimeout(fetchTimer);
+    }
 
     if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -60,15 +62,29 @@ async function quickTTS(text, options = {}) {
     // تقنية البث المباشر (Real-time Streaming)
     const mediaSource = new MediaSource();
     const audio = new Audio(URL.createObjectURL(mediaSource));
-    const chunks = []; 
 
     return new Promise((resolve, reject) => {
-        mediaSource.addEventListener('sourceopen', async () => {
+        function cleanupAudioObjectUrl() {
+            try {
+                if (audio && audio.src && audio.src.indexOf('blob:') === 0) {
+                    URL.revokeObjectURL(audio.src);
+                }
+                audio.removeAttribute('src');
+                audio.load();
+            } catch (_) {}
+        }
+
+        mediaSource.addEventListener('error', function () {
+            cleanupAudioObjectUrl();
+            reject(new Error('Player error'));
+        });
+
+        mediaSource.addEventListener('sourceopen', async function () {
             try {
                 const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
                 const reader = response.body.getReader();
-                
-                const pushChunks = async () => {
+
+                const pushChunks = async function () {
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) {
@@ -77,31 +93,31 @@ async function quickTTS(text, options = {}) {
                             }
                             break;
                         }
-                        chunks.push(value); 
                         if (sourceBuffer.updating) {
-                            await new Promise(r => sourceBuffer.addEventListener('updateend', r, { once: true }));
+                            await new Promise(function (r) { sourceBuffer.addEventListener('updateend', r, { once: true }); });
                         }
                         if (mediaSource.readyState === 'open') {
                             sourceBuffer.appendBuffer(value);
                         }
                     }
-                    return URL.createObjectURL(new Blob(chunks, { type: 'audio/mpeg' }));
                 };
 
-                const blobPromise = pushChunks();
+                await pushChunks();
 
                 resolve({
                     audio: audio,
                     url: audio.src, 
-                    blobPromise: blobPromise, 
-                    ttfb,
+                    ttfb: ttfb,
                     totalTime: performance.now() - t0,
-                    remainingCredits
+                    remainingCredits: remainingCredits
                 });
 
-            } catch (e) { reject(new Error('Streaming processing error')); }
+            } catch (e) {
+                console.error('TTS stream error:', e);
+                cleanupAudioObjectUrl();
+                reject(new Error('Streaming processing error'));
+            }
         });
-        mediaSource.addEventListener('error', () => reject(new Error('Player error')));
     });
 }
 

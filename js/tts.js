@@ -1,17 +1,14 @@
 // js/tts.js — V2.7 (X-User-Id for /api/tts/quick)
 
-function getUserIdFromAccessToken(token) {
-    if (!token || typeof token !== 'string') return null;
-    try {
-        const parts = token.split('.');
-        if (parts.length < 2) return null;
-        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-        while (b64.length % 4) b64 += '=';
-        const payload = JSON.parse(atob(b64));
-        return payload.sub || null;
-    } catch (e) {
-        return null;
-    }
+function createTtsFlagImg(code) {
+    let country = code.split('-')[1] || 'us';
+    const img = document.createElement('img');
+    img.src = 'https://hatscripts.github.io/circle-flags/flags/' + country.toLowerCase() + '.svg';
+    img.style.width = '18px';
+    img.style.height = '18px';
+    img.style.borderRadius = '50%';
+    img.alt = '';
+    return img;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,25 +17,45 @@ document.addEventListener('DOMContentLoaded', () => {
     let customVoiceFile = null;
     let currentAudio = null;
 
-    function getFlagImg(code) {
-        let country = code.split('-')[1] || 'us';
-        return `<img src="https://hatscripts.github.io/circle-flags/flags/${country.toLowerCase()}.svg" style="width:18px; height:18px; border-radius:50%;">`;
+    function disposeCurrentAudio() {
+        if (!currentAudio) return;
+        try {
+            currentAudio.pause();
+        } catch (_) {}
+        const src = currentAudio.src;
+        if (src && src.indexOf('blob:') === 0) {
+            try { URL.revokeObjectURL(src); } catch (_) {}
+        }
+        currentAudio.removeAttribute('src');
+        try { currentAudio.load(); } catch (_) {}
+        currentAudio = null;
     }
 
     // ─── 1. إدارة اللغات ───
     window.selectTtsLang = (code, name) => {
         currentLangCode = code;
-        document.getElementById('currentFlag').innerHTML = getFlagImg(code);
+        const flagHost = document.getElementById('currentFlag');
+        if (flagHost) {
+            flagHost.replaceChildren();
+            flagHost.appendChild(createTtsFlagImg(code));
+        }
         document.querySelector('#langSelected .name').textContent = name;
         document.getElementById('langDropdown').classList.remove('open');
     };
 
-    if (document.getElementById('langMenu') && window.LANGUAGES) {
-        document.getElementById('langMenu').innerHTML = window.LANGUAGES.sort((a,b)=>b.popular-a.popular).map(l => `
-            <li onclick="selectTtsLang('${l.code}', '${l.name_en}')">
-                ${getFlagImg(l.code)} <span style="margin-left:10px;">${l.name_en}</span>
-            </li>
-        `).join('');
+    const langMenuEl = document.getElementById('langMenu');
+    if (langMenuEl && window.LANGUAGES) {
+        langMenuEl.replaceChildren();
+        [...window.LANGUAGES].sort((a, b) => b.popular - a.popular).forEach((l) => {
+            const li = document.createElement('li');
+            li.appendChild(createTtsFlagImg(l.code));
+            const span = document.createElement('span');
+            span.style.marginLeft = '10px';
+            span.textContent = l.name_en;
+            li.appendChild(span);
+            li.addEventListener('click', () => window.selectTtsLang(l.code, l.name_en));
+            langMenuEl.appendChild(li);
+        });
         selectTtsLang('en-us', 'English (US)');
     }
 
@@ -67,18 +84,49 @@ document.addEventListener('DOMContentLoaded', () => {
         const supa = window.getSupabase?.();
         if (!supa || !grid) return;
 
-        const { data } = await supa.from('voices').select('*').order('created_at');
+        let data = null;
+        let error = null;
+        try {
+            const res = await supa.from('voices').select('*').order('created_at');
+            data = res.data;
+            error = res.error;
+        } catch (err) {
+            console.error('[tts] voices query threw', err);
+            window.showToast?.(err && err.message ? err.message : 'Could not load voices', 'error');
+            return;
+        }
+
+        if (error) {
+            console.error('[tts] voices query failed', error);
+            window.showToast?.(error.message || 'Could not load voices', 'error');
+            return;
+        }
+
         if (data && data.length > 0) {
-            grid.innerHTML = data.map(v => `
-                <div class="v-avatar-card ${selectedVoiceId === v.id ? 'selected' : ''}" 
-                     onclick="selectTtsVoice('${v.id}', '${v.name}')">
-                    <div class="v-img-wrapper"><img src="${v.avatar_url}"></div>
-                    <div class="v-name">${v.name}</div>
-                </div>
-            `).join('');
-            
+            grid.replaceChildren();
+            data.forEach((v) => {
+                const card = document.createElement('div');
+                card.className = 'v-avatar-card' + (selectedVoiceId === v.id ? ' selected' : '');
+                card.addEventListener('click', () => window.selectTtsVoice(v.id, v.name));
+
+                const wrap = document.createElement('div');
+                wrap.className = 'v-img-wrapper';
+                const img = document.createElement('img');
+                img.alt = '';
+                img.src = v.avatar_url || '';
+                wrap.appendChild(img);
+                card.appendChild(wrap);
+
+                const nameEl = document.createElement('div');
+                nameEl.className = 'v-name';
+                nameEl.textContent = v.name != null ? String(v.name) : '';
+                card.appendChild(nameEl);
+
+                grid.appendChild(card);
+            });
+
             // اختيار أول صوت افتراضياً إذا لم يتم اختيار شيء
-            if(!selectedVoiceId && !customVoiceFile) selectTtsVoice(data[0].id, data[0].name);
+            if (!selectedVoiceId && !customVoiceFile) selectTtsVoice(data[0].id, data[0].name);
         }
     }
 
@@ -104,9 +152,17 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('voicePanel').classList.toggle('active');
         document.getElementById('langDropdown').classList.remove('open');
     };
-    document.addEventListener('click', () => {
-        document.getElementById('langDropdown')?.classList.remove('open');
-        document.getElementById('voicePanel')?.classList.remove('active');
+    document.addEventListener('click', (e) => {
+        const langDd = document.getElementById('langDropdown');
+        const voicePanel = document.getElementById('voicePanel');
+        const langSelected = document.getElementById('langSelected');
+        const voiceToggle = document.getElementById('voiceToggle');
+        if (langDd && !langDd.contains(e.target) && !(langSelected && langSelected.contains(e.target))) {
+            langDd.classList.remove('open');
+        }
+        if (voicePanel && !voicePanel.contains(e.target) && !(voiceToggle && voiceToggle.contains(e.target))) {
+            voicePanel.classList.remove('active');
+        }
     });
 
     loadPremiumVoices();
@@ -124,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // استدعاء السيرفر (تأكد أن مسار الـ API_BASE في config.js هو https://api.glotix.ai)
             const API = (window.API_BASE || 'https://api.glotix.ai').replace(/\/$/, "").replace(/([^:]\/)\/+/g, "$1");
             const token = localStorage.getItem('token') || '';
-            const userId = getUserIdFromAccessToken(token);
+            const userId = typeof window.parseJwtSub === 'function' ? window.parseJwtSub(token) : null;
             const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
             if (userId) headers['X-User-Id'] = userId;
 
@@ -141,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error(data.error || "Server failed to generate audio");
 
-            if (currentAudio) currentAudio.pause();
+            disposeCurrentAudio();
             currentAudio = new Audio(data.url);
             currentAudio.play();
 

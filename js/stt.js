@@ -1,24 +1,18 @@
 // stt.js — Speech to Text Logic V2.2 (X-User-Id + API base normalization)
 
 let currentMode = 'fast';
+let sttPollIntervalId = null;
+
+window.addEventListener('beforeunload', () => {
+    if (sttPollIntervalId) {
+        clearInterval(sttPollIntervalId);
+        sttPollIntervalId = null;
+    }
+});
 
 function getApiBase() {
     const raw = window.API_BASE || 'https://api.glotix.ai';
     return String(raw).replace(/\/$/, '').replace(/([^:]\/)\/+/g, '$1');
-}
-
-function getUserIdFromAccessToken(token) {
-    if (!token || typeof token !== 'string') return null;
-    try {
-        const parts = token.split('.');
-        if (parts.length < 2) return null;
-        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-        while (b64.length % 4) b64 += '=';
-        const payload = JSON.parse(atob(b64));
-        return payload.sub || null;
-    } catch (e) {
-        return null;
-    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -56,7 +50,7 @@ async function startSTT() {
     if (!token) return window.showToast?.("Please sign in", "error");
     if (!file) return window.showToast?.("Please select a file", "error");
 
-    const userId = getUserIdFromAccessToken(token);
+    const userId = typeof window.parseJwtSub === 'function' ? window.parseJwtSub(token) : null;
     if (!userId) return window.showToast?.("Invalid session — please sign in again", "error");
 
     const btn = document.getElementById('sttBtn');
@@ -83,14 +77,8 @@ async function startSTT() {
             },
             body: JSON.stringify({ filename: file.name, content_type: file.type, size: file.size })
         });
-        
-        // إذا كان السيرفر يعطي خطأ 404 جرب إزالة /api لتصبح `${API}/upload-url`
-        if (urlRes.status === 404) {
-            console.warn("Retrying without /api prefix...");
-            // محاولة احتياطية في حال كان مسار السيرفر لا يحتوي على /api
-        }
-        
-        const urlData = await urlRes.json();
+
+        const urlData = await urlRes.json().catch(() => ({}));
         if (!urlRes.ok) throw new Error(urlData.error || "Failed to fetch upload URL");
 
         // Step 2: Upload to R2
@@ -106,8 +94,8 @@ async function startSTT() {
                     statusTxt.innerText = `Uploading (${pct}%)`;
                 }
             };
-            xhr.onload = () => xhr.status === 200 ? resolve() : reject("Upload failed");
-            xhr.onerror = () => reject("Network error");
+            xhr.onload = () => (xhr.status === 200 ? resolve() : reject(new Error('Upload failed (HTTP ' + xhr.status + ')')));
+            xhr.onerror = () => reject(new Error("Network error"));
             xhr.send(file);
         });
 
@@ -128,42 +116,69 @@ async function startSTT() {
                 translate: translate
             })
         });
-        const sttData = await sttRes.json();
+        const sttData = await sttRes.json().catch(() => ({}));
         if (!sttRes.ok) throw new Error(sttData.error || "Failed to start STT job");
 
         // Step 4: Poll status
-        pollStatus(sttData.job_id, token, userId);
+        pollStatus(sttData.job_id);
 
     } catch (e) {
-        window.showToast?.(e.message, "error");
+        const msg = e && e.message ? e.message : String(e);
+        window.showToast?.(msg, "error");
         btn.disabled = false;
         progArea.style.display = 'none';
     }
 }
 
-async function pollStatus(jobId, token, userId) {
+async function pollStatus(jobId) {
     const API = getApiBase();
     const progFill = document.getElementById('progFill');
     const statusTxt = document.getElementById('statusTxt');
 
-    const interval = setInterval(async () => {
+    if (sttPollIntervalId) {
+        clearInterval(sttPollIntervalId);
+        sttPollIntervalId = null;
+    }
+
+    sttPollIntervalId = setInterval(async () => {
         try {
+            const token = localStorage.getItem('token');
+            const userId = typeof window.parseJwtSub === 'function' ? window.parseJwtSub(token) : null;
+            if (!token || !userId) {
+                if (sttPollIntervalId) clearInterval(sttPollIntervalId);
+                sttPollIntervalId = null;
+                window.showToast?.("Session expired — please sign in again", "error");
+                document.getElementById('sttBtn').disabled = false;
+                return;
+            }
+
             const res = await fetch(`${API}/api/job/${jobId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'X-User-Id': userId
                 }
             });
-            const data = await res.json();
+
+            if (res.status === 401) {
+                if (sttPollIntervalId) clearInterval(sttPollIntervalId);
+                sttPollIntervalId = null;
+                window.clearSessionAndGuestUI?.('Session expired — please sign in again');
+                document.getElementById('sttBtn').disabled = false;
+                return;
+            }
+
+            const data = await res.json().catch(() => ({}));
 
             if (data.status === 'completed') {
-                clearInterval(interval);
+                if (sttPollIntervalId) clearInterval(sttPollIntervalId);
+                sttPollIntervalId = null;
                 showResult(data);
                 // تحديث الرصيد بعد الانتهاء
                 if (typeof window.checkAuth === 'function') window.checkAuth();
             } else if (data.status === 'failed') {
-                clearInterval(interval);
-                window.showToast?.("Processing failed: " + data.error, "error");
+                if (sttPollIntervalId) clearInterval(sttPollIntervalId);
+                sttPollIntervalId = null;
+                window.showToast?.("Processing failed: " + (data.error || 'Unknown'), "error");
                 document.getElementById('sttBtn').disabled = false;
             } else {
                 progFill.style.width = "75%";
@@ -181,24 +196,46 @@ function showResult(data) {
     const box = document.getElementById('transcriptBox');
 
     if (data.segments) {
-        box.innerHTML = data.segments.map(s => `
-            <div class="segment">
-                <span class="timestamp">[${formatTime(s.start)}]</span>
-                ${s.speaker ? `<span class="speaker">Speaker ${s.speaker}</span>` : ''}
-                <span class="text">${window.escapeHtml?.(s.text) || s.text}</span>
-            </div>
-        `).join('');
+        box.replaceChildren();
+        for (let i = 0; i < data.segments.length; i++) {
+            const s = data.segments[i];
+            const div = document.createElement('div');
+            div.className = 'segment';
+
+            const ts = document.createElement('span');
+            ts.className = 'timestamp';
+            ts.textContent = '[' + formatTime(s.start) + ']';
+            div.appendChild(ts);
+
+            if (s.speaker != null && String(s.speaker) !== '') {
+                const sp = document.createElement('span');
+                sp.className = 'speaker';
+                sp.textContent = 'Speaker ' + String(s.speaker);
+                div.appendChild(sp);
+            }
+
+            const textEl = document.createElement('span');
+            textEl.className = 'text';
+            textEl.textContent = s.text != null ? String(s.text) : '';
+            div.appendChild(textEl);
+
+            box.appendChild(div);
+        }
     } else {
         box.innerText = data.transcript || data.output_text || "No text found.";
     }
 
-    if(data.output_url) {
-        const dlBtn = document.createElement('a');
+    if (data.output_url && /^https?:\/\//i.test(String(data.output_url))) {
+        let dlBtn = document.getElementById('sttSubtitleDlBtn');
+        if (!dlBtn) {
+            dlBtn = document.createElement('a');
+            dlBtn.id = 'sttSubtitleDlBtn';
+            dlBtn.className = 'btn';
+            dlBtn.style.marginTop = '15px';
+            dlBtn.innerHTML = '<i class="fas fa-download"></i> Download Subtitle';
+            box.parentElement.appendChild(dlBtn);
+        }
         dlBtn.href = data.output_url;
-        dlBtn.className = 'btn';
-        dlBtn.style.marginTop = '15px';
-        dlBtn.innerHTML = '<i class="fas fa-download"></i> Download Subtitle';
-        box.parentElement.appendChild(dlBtn);
     }
 }
 
