@@ -112,7 +112,11 @@ window.getSupabase = function getSupabase() {
     if (typeof window.supabase !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
         const { url, key } = requireSupabaseConfig();
         supabaseClient = window.supabase.createClient(url, key, {
-            auth: { flowType: 'implicit' }
+            auth: {
+                flowType: 'implicit',
+                detectSessionInUrl: true,
+                persistSession: true
+            }
         });
     }
     return supabaseClient;
@@ -315,6 +319,29 @@ window.updateDropdownUI = function(user) {
     }
 };
 
+/** انتظار قراءة Supabase لجلسة OAuth في الـ hash (implicit) قبل getSession */
+function waitForSupabaseSessionFromUrl(supa, timeoutMs) {
+    const hasOAuthHash = window.location.hash && window.location.hash.indexOf('access_token') !== -1;
+    if (!hasOAuthHash) return Promise.resolve(null);
+    return new Promise(function (resolve) {
+        let done = false;
+        function finish(session) {
+            if (done) return;
+            done = true;
+            try { sub.unsubscribe(); } catch (_) {}
+            clearTimeout(timer);
+            resolve(session || null);
+        }
+        const { data: { subscription: sub } } = supa.auth.onAuthStateChange(function (event, session) {
+            if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) finish(session);
+        });
+        supa.auth.getSession().then(function (r) {
+            if (r.data && r.data.session) finish(r.data.session);
+        }).catch(function () {});
+        const timer = setTimeout(function () { finish(null); }, timeoutMs || 5000);
+    });
+}
+
 // 4. مزامنة المصادقة والرصيد
 window.checkAuth = async function() {
     try {
@@ -326,13 +353,35 @@ window.checkAuth = async function() {
             return;
         }
 
-        const { data: { session } } = await supa.auth.getSession();
+        await waitForSupabaseSessionFromUrl(supa, 5000);
+
+        let { data: { session } } = await supa.auth.getSession();
+
+        // إن وُجد token يدوياً (login بالإيميل) لكن getSession تأخر — لا تعرض واجهة زائر
+        if (!session) {
+            const cachedToken = localStorage.getItem('token');
+            const cachedSub = cachedToken && typeof window.parseJwtSub === 'function'
+                ? window.parseJwtSub(cachedToken) : null;
+            if (cachedSub) {
+                session = {
+                    access_token: cachedToken,
+                    user: { id: cachedSub, user_metadata: {}, email: '' }
+                };
+            }
+        }
+
         if (!session) {
             window.updateDropdownUI(null);
             try {
                 window.ensureGuestMenuAuthLinks();
             } catch (_) {}
             return;
+        }
+
+        if (window.location.hash && window.location.hash.indexOf('access_token') !== -1) {
+            try {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+            } catch (_) {}
         }
 
         localStorage.setItem('token', session.access_token);
