@@ -183,65 +183,92 @@ async function startDubbing() {
         await uploadToR2(urlData.upload_url, file, file.type);
         updateProgress("Sending processing requests...", 50);
 
+        const fileKey = urlData.file_key;
+        if (!fileKey) {
+            throw new Error('Missing file_key from upload-url response');
+        }
+
         // 3. إرسال طلبات الدبلجة لكل لغة مختارة
         const langArray = Array.from(window.selectedLangs);
+        const dubEndpoint = `${GET_API_URL()}/api/dub`;
+        const dubHeaders = Object.assign({}, authHeaders, { 'Content-Type': 'application/json' });
+        const videoOutput = typeof file.type === 'string' && file.type.startsWith('video/');
+        const cinemaList = document.getElementById('cinemaLangs');
 
-        for (const langCode of langArray) {
+        console.log('[dubbing] starting dub requests', {
+            endpoint: dubEndpoint,
+            file_key: fileKey,
+            langs: langArray,
+            hasAuthorization: !!dubHeaders['Authorization'],
+            hasXUserId: !!dubHeaders['X-User-Id']
+        });
+
+        const dubOneLanguage = async (langCode) => {
             const langInfo = window.LANGUAGES?.find(l => l.code === langCode);
             const item = document.createElement('div');
             item.className = 'side-lang-card';
             item.id = `side-${langCode}`;
             item.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> <span style="margin-left:8px;">${langInfo?.name_en || langCode}</span>`;
-            document.getElementById('cinemaLangs').appendChild(item);
+            if (cinemaList) cinemaList.appendChild(item);
 
-            // إرسال طلب الدبلجة
-            fetch(`${GET_API_URL()}/api/dub`, {
-                method: 'POST',
-                headers: Object.assign({}, getUploadAuthHeaders() || authHeaders, { 'Content-Type': 'application/json' }),
-                body: JSON.stringify({
-                    file_key: urlData.file_key, 
+            try {
+                console.log('Sending to /api/dub...', { lang: langCode, file_key: fileKey });
+
+                const dubRes = await fetch(dubEndpoint, {
+                    method: 'POST',
+                    headers: dubHeaders,
+                    signal: pollSignal,
+                    body: JSON.stringify({
+                        file_key: fileKey,
+                        lang: langCode,
+                        voice_mode: window.voiceMode || 'original',
+                        sample_file: window.selectedSample || '',
+                        video_output: videoOutput
+                    })
+                });
+
+                console.log('[dubbing] /api/dub response', {
                     lang: langCode,
-                    voice_mode: window.voiceMode || 'original',
-                    sample_file: window.selectedSample || '',
-                    video_output: file.type.startsWith('video/')
-                })
-            })
-            .then(async res => {
-                if (!res.ok) {
-                    const errorJson = await res.json().catch(() => ({}));
-                    throw new Error(errorJson.error || `HTTP ${res.status}`);
+                    ok: dubRes.ok,
+                    status: dubRes.status,
+                    statusText: dubRes.statusText
+                });
+
+                const dubData = await dubRes.json().catch(() => ({}));
+                if (!dubRes.ok) {
+                    throw new Error(dubData.error || ('dub failed: HTTP ' + dubRes.status));
                 }
-                return res.json();
-            })
-            .then(async data => {
-                // الانتظار حتى اكتمال المهمة
-                const job = await waitForJob(data.job_id, pollSignal);
-                
-                cinemaResults[langCode] = { 
-                    url: job.output_url, 
-                    name: langInfo?.name_en || langCode, 
-                    flag: langCode 
+                if (!dubData.job_id) {
+                    throw new Error('Missing job_id from /api/dub response');
+                }
+
+                console.log('[dubbing] polling job', { lang: langCode, job_id: dubData.job_id });
+                const job = await waitForJob(dubData.job_id, pollSignal);
+
+                cinemaResults[langCode] = {
+                    url: job.output_url,
+                    name: langInfo?.name_en || langCode,
+                    flag: langCode
                 };
 
-                // تحديث العنصر بالأعلام الدائرية (SVG)
                 item.innerHTML = `
                     ${getFlagImg(langCode)} 
                     <span style="margin-left:8px;">${langInfo?.name_en}</span> 
                     <i class="fa-solid fa-circle-check" style="color:var(--accent-green); margin-left:auto;"></i>
                 `;
                 item.onclick = () => switchCinemaLang(langCode);
-                
+
                 if (Object.keys(cinemaResults).length === 1) switchCinemaLang(langCode);
-                
+
                 const completedCount = Object.keys(cinemaResults).length;
                 const nextPct = 50 + (completedCount / langArray.length * 50);
                 dubbingProgressMonotonic = Math.max(dubbingProgressMonotonic, nextPct);
                 updateProgress("Dubbing in progress...", dubbingProgressMonotonic);
-                
+
                 if (completedCount === langArray.length) updateProgress("All Done!", 100);
-            })
-            .catch(err => {
+            } catch (err) {
                 if (err && err.name === 'AbortError') return;
+                console.error('[dubbing] /api/dub or poll failed', { lang: langCode, error: err });
                 const icon = document.createElement('i');
                 icon.className = 'fa-solid fa-circle-xmark';
                 icon.style.color = 'var(--error)';
@@ -250,8 +277,10 @@ async function startDubbing() {
                 span.textContent = langCode + ' Error';
                 item.replaceChildren(icon, span);
                 window.showToast?.(`Language ${langCode}: ${err.message}`, 'error');
-            });
-        }
+            }
+        };
+
+        await Promise.all(langArray.map(dubOneLanguage));
     } catch (e) {
         if (e && e.name === 'AbortError') {
             console.warn('[dubbing] polling aborted');
