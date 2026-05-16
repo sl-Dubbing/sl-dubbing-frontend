@@ -1,4 +1,4 @@
-// js/shared.js - V33.8 (Connection badge dismiss; credits parse; logout listener + visibility)
+// js/shared.js - V33.9 (401 / fetch errors: guest reset + resilient menu links)
 
 /** قاعدة الـ API بدون سلاش زائد — يمنع // في المسارات ويُحسّن توافق الروابط */
 const API_BASE = String(window.APP_CONFIG?.API_BASE || 'https://api.glotix.ai')
@@ -45,10 +45,51 @@ window.getApiAuthHeaders = function getApiAuthHeaders() {
     };
 };
 
+/** مسح بيانات المصادقة محلياً + واجهة زائر؛ لا يرمي أخطاء */
 window.clearSessionAndGuestUI = function clearSessionAndGuestUI(message) {
-    localStorage.removeItem('token');
-    window.updateDropdownUI(null);
+    try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('sl_user_cache');
+    } catch (_) {}
+    try {
+        for (let i = sessionStorage.length - 1; i >= 0; i--) {
+            const k = sessionStorage.key(i);
+            if (k && k.indexOf('sl_user_inited_') === 0) sessionStorage.removeItem(k);
+        }
+    } catch (_) {}
+    void (async function () {
+        try {
+            if (typeof window.getSupabase !== 'function') return;
+            let supa = null;
+            try {
+                supa = window.getSupabase();
+            } catch (_) {}
+            if (supa && supa.auth && typeof supa.auth.signOut === 'function') {
+                await supa.auth.signOut();
+            }
+        } catch (_) {}
+    })();
+    try {
+        if (typeof window.ensureGuestMenuAuthLinks === 'function') window.ensureGuestMenuAuthLinks();
+    } catch (_) {}
+    try {
+        window.updateDropdownUI(null);
+    } catch (_) {}
     if (message) window.showToast?.(message, 'error');
+};
+
+/** روابط Login / Sign up → login.html (مسار صحيح من أي صفحة) حتى لو فشل الـ API */
+window.ensureGuestMenuAuthLinks = function ensureGuestMenuAuthLinks() {
+    let loginHref = 'login.html';
+    try {
+        loginHref = new URL('login.html', window.location.href).href;
+    } catch (_) {}
+    const guest = document.getElementById('guestMenu');
+    if (!guest) return;
+    const loginA = guest.querySelector('a.btn-login');
+    const signupA = guest.querySelector('a.btn-signup');
+    if (loginA) loginA.setAttribute('href', loginHref);
+    if (signupA) signupA.setAttribute('href', loginHref);
 };
 
 let _isFetchingCredits = false;
@@ -127,6 +168,53 @@ function creditsFromApiPayload(d) {
 
 function apiPayloadLooksSuccessful(data) {
     return !!(data && (data.success === true || data.success === 'true' || data.ok === true));
+}
+
+/** قراءة JSON من استجابة fetch دون أن يتعطل السكربت */
+async function fetchResponseJsonSafe(res) {
+    try {
+        return await res.json();
+    } catch (_) {
+        return {};
+    }
+}
+
+/**
+ * طلبات /api/user/init ثم /api/user/credits — 401 يُعالج داخلياً دون رمي.
+ * أخطاء الشبكة تُرسل للمتصل بـ catch.
+ */
+async function fetchUserInitAndCredits(session, baseUser, authHeaders, signal) {
+    const userId = String(session.user.id);
+    const initKey = 'sl_user_inited_' + userId;
+    if (!sessionStorage.getItem(initKey)) {
+        const initRes = await fetch(`${API_BASE}/api/user/init`, {
+            method: 'POST',
+            headers: authHeaders,
+            signal: signal
+        });
+        if (initRes.status === 401) {
+            window.clearSessionAndGuestUI('Session expired — please sign in again');
+            return;
+        }
+        if (initRes.ok) sessionStorage.setItem(initKey, '1');
+    }
+    const res = await fetch(`${API_BASE}/api/user/credits`, {
+        headers: authHeaders,
+        signal: signal
+    });
+    if (res.status === 401) {
+        window.clearSessionAndGuestUI('Session expired — please sign in again');
+        return;
+    }
+    const d = await fetchResponseJsonSafe(res);
+    const cred = creditsFromApiPayload(d);
+    const okPayload = apiPayloadLooksSuccessful(d) || (res.ok && cred !== null);
+    if (baseUser && okPayload) {
+        const merged = Object.assign({}, baseUser);
+        if (cred !== null) merged.credits = cred;
+        window.updateDropdownUI(merged);
+        dismissConnectionCheckingUi();
+    }
 }
 
 /** استخراج الاسم وصورة العرض من مستخدم Supabase للقائمة */
@@ -231,10 +319,21 @@ window.updateDropdownUI = function(user) {
 window.checkAuth = async function() {
     try {
         const supa = window.getSupabase();
-        if (!supa) return;
+        if (!supa) {
+            try {
+                window.ensureGuestMenuAuthLinks();
+            } catch (_) {}
+            return;
+        }
 
         const { data: { session } } = await supa.auth.getSession();
-        if (!session) return window.updateDropdownUI(null);
+        if (!session) {
+            window.updateDropdownUI(null);
+            try {
+                window.ensureGuestMenuAuthLinks();
+            } catch (_) {}
+            return;
+        }
 
         localStorage.setItem('token', session.access_token);
 
@@ -243,55 +342,37 @@ window.checkAuth = async function() {
 
         if (!_isFetchingCredits) {
             _isFetchingCredits = true;
+            const cts = creditsFetchSignal(15000);
             try {
-                const cts = creditsFetchSignal(15000);
+                const authHeaders = {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'X-User-Id': String(session.user.id)
+                };
                 try {
-                    const userId = String(session.user.id);
-                    const authHeaders = {
-                        'Authorization': `Bearer ${session.access_token}`,
-                        'X-User-Id': userId
-                    };
-                    const initKey = 'sl_user_inited_' + userId;
-                    if (!sessionStorage.getItem(initKey)) {
-                        const initRes = await fetch(`${API_BASE}/api/user/init`, {
-                            method: 'POST',
-                            headers: authHeaders,
-                            signal: cts.signal
-                        });
-                        if (initRes.status === 401) {
-                            window.clearSessionAndGuestUI('Session expired — please sign in again');
-                            return;
-                        }
-                        if (initRes.ok) sessionStorage.setItem(initKey, '1');
+                    await fetchUserInitAndCredits(session, baseUser, authHeaders, cts.signal);
+                } catch (e) {
+                    if (e && e.name === 'AbortError') {
+                        console.warn('Credits fetch timeout or aborted');
+                    } else {
+                        console.warn('Credits fetch error', e);
+                        try {
+                            window.clearSessionAndGuestUI(null);
+                        } catch (_) {}
                     }
-                    const res = await fetch(`${API_BASE}/api/user/credits`, {
-                        headers: authHeaders,
-                        signal: cts.signal
-                    });
-                    if (res.status === 401) {
-                        window.clearSessionAndGuestUI('Session expired — please sign in again');
-                        return;
-                    }
-                    const d = await res.json();
-                    const cred = creditsFromApiPayload(d);
-                    const okPayload = apiPayloadLooksSuccessful(d) || (res.ok && cred !== null);
-                    if (baseUser && okPayload) {
-                        const merged = Object.assign({}, baseUser);
-                        if (cred !== null) merged.credits = cred;
-                        window.updateDropdownUI(merged);
-                        dismissConnectionCheckingUi();
-                    }
-                } finally {
-                    cts.dispose();
                 }
-            } catch (e) {
-                if (e && e.name === 'AbortError') console.warn('Credits fetch timeout or aborted');
-                else console.warn('Credits fetch error', e);
             } finally {
+                try {
+                    cts.dispose();
+                } catch (_) {}
                 _isFetchingCredits = false;
             }
         }
-    } catch(e) { console.error('Auth Sync Error:', e); }
+    } catch (e) {
+        console.error('Auth Sync Error:', e);
+        try {
+            window.ensureGuestMenuAuthLinks();
+        } catch (_) {}
+    }
 };
 
 /** فحص اتصال الـ API: طلب init بدون X-User-Id يعيد guest — نعرض Connected فوراً */
@@ -336,7 +417,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // تشغيل القائمة أولاً لضمان عدم تعطلها
     initMenuDropdown();
     initLogoutButton();
+    try {
+        window.ensureGuestMenuAuthLinks();
+    } catch (_) {}
 
     void window.checkConnection();
-    window.checkAuth();
+    void window.checkAuth();
 });
