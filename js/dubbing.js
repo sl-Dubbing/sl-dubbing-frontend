@@ -1,5 +1,7 @@
-// js/dubbing.js — V12.5 (file init + drag/drop fallback + upload logging)
+// js/dubbing.js — V12.6 (single file-picker path via <label for>; guarded init; change uses event target)
 let cinemaResults = {};
+/** يمنع تكرار addEventListener إذا أُعيد تحميل السكربت أو استُدعيت التهيئة مرتين */
+let _dubbingMediaInputInitialized = false;
 let activeWavesurfer = null;
 let dubbingPollAbort = null;
 let dubbingProgressMonotonic = 50;
@@ -385,6 +387,7 @@ function applyDubbingMediaSelection(file) {
     const audioName = document.getElementById('audioFileName');
     const dubBtn = document.getElementById('dubBtn');
     const uploadBox = document.getElementById('dropZone');
+    const nameLine = document.getElementById('selectedFileNameLine');
 
     if (!previewArea || !videoEl || !audioLabel) {
         console.error('[dubbing] applyDubbingMediaSelection: missing DOM nodes', {
@@ -405,6 +408,10 @@ function applyDubbingMediaSelection(file) {
         audioLabel.style.display = 'none';
         if (dubBtn) dubBtn.style.display = 'none';
         if (uploadBox) uploadBox.classList.remove('has-file');
+        if (nameLine) {
+            nameLine.style.display = 'none';
+            nameLine.textContent = '';
+        }
         return;
     }
 
@@ -432,9 +439,18 @@ function applyDubbingMediaSelection(file) {
 
     if (dubBtn) dubBtn.style.display = 'block';
     if (uploadBox) uploadBox.classList.add('has-file');
+    if (nameLine) {
+        const mb = (file.size / 1024 / 1024).toFixed(1);
+        nameLine.textContent = file.name + ' (' + mb + ' MB)';
+        nameLine.style.display = 'block';
+    }
 }
 
 function initDubbingMediaInput() {
+    if (_dubbingMediaInputInitialized) {
+        console.warn('[dubbing] initDubbingMediaInput: already initialized — skipping duplicate listeners');
+        return;
+    }
     const input = getDubbingFileInput();
     const dropZone = document.getElementById('dropZone');
 
@@ -444,26 +460,34 @@ function initDubbingMediaInput() {
     }
     if (!dropZone) console.warn('[dubbing] initDubbingMediaInput: #dropZone not found — drag/drop disabled');
 
-    input.addEventListener('change', () => {
-        const file = input.files && input.files[0];
+    _dubbingMediaInputInitialized = true;
+
+    /** يقرأ الملف من هدف الحدث دائماً (صحيح حتى مع إعادة ربط الـ input) */
+    function onMediaFileChange(e) {
+        const inp = e.target;
+        if (!inp || inp.id !== 'mediaFile') return;
+        const file = inp.files && inp.files[0] ? inp.files[0] : null;
         console.log('[dubbing] input change', { hasFile: !!file, name: file?.name });
-        applyDubbingMediaSelection(file || null);
-    });
+        applyDubbingMediaSelection(file);
+    }
+    input.addEventListener('change', onMediaFileChange);
 
     if (dropZone) {
-        dropZone.addEventListener('click', (e) => {
+        /* منطقة الرفع = <label for="mediaFile">: لا نستدعي input.click() يدوياً (كان يسبب تكرار النافذة).
+         * مسح القيمة قبل فتح اللاقط يسمح بإعادة اختيار نفس الملف ويُطلق change دائماً. */
+        dropZone.addEventListener('mousedown', (e) => {
             if (e.target === input) return;
-            const inp = getDubbingFileInput();
-            if (!inp) {
-                console.error('[dubbing] dropZone click: #mediaFile missing');
-                return;
-            }
             try {
-                inp.value = '';
+                input.value = '';
             } catch (clearErr) {
                 console.warn('[dubbing] could not clear input.value before picker', clearErr);
             }
-            inp.click();
+        });
+
+        /* stopPropagation فقط: يقلل تداخل فقاعة الحدث مع مستمعات document في الصفحة.
+         * لا نستخدم preventDefault هنا لأنه يمنع ربط <label for="mediaFile"> بفتح نافذة الملفات. */
+        dropZone.addEventListener('click', (e) => {
+            e.stopPropagation();
         });
 
         ['dragenter', 'dragover', 'dragleave'].forEach((ev) => {
