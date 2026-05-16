@@ -138,17 +138,40 @@ if (typeof window.supabase === 'undefined') {
 
 // إنشاء client باسم مختلف تماماً عن 'supabase'
 const supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { flowType: 'implicit' }
+    auth: {
+        flowType: 'implicit',
+        detectSessionInUrl: true,
+        persistSession: true
+    }
 });
 
-// ── Check if already logged in ──
-supaClient.auth.getSession().then(({ data: { session } }) => {
-    if (session) {
-        window.location.href = '/';
+let _redirectingAfterAuth = false;
+function persistSessionAndGoHome(session) {
+    if (!session || _redirectingAfterAuth) return;
+    _redirectingAfterAuth = true;
+    localStorage.setItem('token', session.access_token);
+    if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
     }
-}).catch(() => {
-    // not logged in, stay on page
-});
+    window.location.href = '/';
+}
+
+// ── OAuth return: tokens in URL hash (Google → redirectTo login.html) ──
+if (window.location.hash && window.location.hash.includes('access_token')) {
+    supaClient.auth.getSession().then(({ data: { session } }) => {
+        if (session) persistSessionAndGoHome(session);
+    });
+    supaClient.auth.onAuthStateChange((event, session) => {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+            persistSessionAndGoHome(session);
+        }
+    });
+} else {
+    // ── Check if already logged in ──
+    supaClient.auth.getSession().then(({ data: { session } }) => {
+        if (session) persistSessionAndGoHome(session);
+    }).catch(() => {});
+}
 
 // ── Google OAuth ──
 async function signInWithGoogle() {
@@ -164,7 +187,7 @@ async function signInWithGoogle() {
         const { error } = await supaClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin
+                redirectTo: window.location.origin + '/login.html'
             }
         });
 
