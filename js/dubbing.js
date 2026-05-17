@@ -262,8 +262,8 @@ async function startDubbing() {
                     throw new Error('Missing job_id from /api/dub response');
                 }
 
-                console.log('[dubbing] SSE job', { lang: langCode, job_id: dubData.job_id });
-                const job = await watchJobViaSSE(dubData.job_id, workSignal);
+                console.log('[dubbing] tracking job', { lang: langCode, job_id: dubData.job_id });
+                const job = await watchJob(dubData.job_id, workSignal);
 
                 cinemaResults[langCode] = {
                     url: job.output_url,
@@ -316,6 +316,81 @@ async function startDubbing() {
         document.getElementById('dubBtn').style.display = 'block';
         updateProgress("Process Interrupted", 0);
     }
+}
+
+/** SSE first; on 404 (Gunicorn without SSE mount) fall back to GET /api/job/<id>. */
+async function watchJob(jobId, signal) {
+    try {
+        return await watchJobViaSSE(jobId, signal);
+    } catch (sseErr) {
+        console.warn('[dubbing] SSE failed, using poll /api/job/', { jobId, error: sseErr });
+        return watchJobViaPoll(jobId, signal);
+    }
+}
+
+/**
+ * Poll legacy job status (works on plain Gunicorn/Flask).
+ */
+function watchJobViaPoll(jobId, signal) {
+    return new Promise((resolve, reject) => {
+        const headers = getUploadAuthHeaders();
+        if (!headers) {
+            window.clearSessionAndGuestUI?.('Session expired — please sign in again');
+            reject(new Error('Session expired — please sign in again'));
+            return;
+        }
+
+        const url = `${GET_API_URL()}/api/job/${encodeURIComponent(jobId)}`;
+        let settled = false;
+        let timer = null;
+        const maxMs = 45 * 60 * 1000;
+        const started = Date.now();
+
+        const cleanup = () => {
+            if (timer) clearInterval(timer);
+            if (signal) signal.removeEventListener('abort', onAbort);
+        };
+
+        const finish = (fn, value) => {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            fn(value);
+        };
+
+        const onAbort = () => finish(reject, new DOMException('Aborted', 'AbortError'));
+
+        if (signal) {
+            if (signal.aborted) {
+                onAbort();
+                return;
+            }
+            signal.addEventListener('abort', onAbort, { once: true });
+        }
+
+        const tick = async () => {
+            if (settled) return;
+            if (Date.now() - started > maxMs) {
+                finish(reject, new Error('Dubbing timed out — please try again'));
+                return;
+            }
+            try {
+                const res = await fetch(url, { headers, signal });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || ('status poll failed: HTTP ' + res.status));
+                if (data.status === 'completed') {
+                    finish(resolve, { status: 'completed', output_url: data.output_url || '' });
+                } else if (data.status === 'failed') {
+                    finish(reject, new Error(data.error || 'Worker encountered an error'));
+                }
+            } catch (err) {
+                if (err && err.name === 'AbortError') finish(reject, err);
+            }
+        };
+
+        tick();
+        timer = setInterval(tick, 2500);
+    });
 }
 
 /**
@@ -392,9 +467,7 @@ function watchJobViaSSE(jobId, signal) {
             if (settled) return;
             console.error('[dubbing] SSE connection failed (404/429/CORS):', error);
             closeSource();
-            const msg = 'Failed to track dubbing status. Please try again later.';
-            window.showToast?.(msg, 'error');
-            finish(reject, new Error(msg));
+            finish(reject, new Error('SSE_UNAVAILABLE'));
         };
     });
 }
