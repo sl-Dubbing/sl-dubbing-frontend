@@ -318,18 +318,14 @@ async function startDubbing() {
     }
 }
 
-/** Track job via GET /api/job/<id> (reliable on Gunicorn). Optional SSE if ?sse=1 in URL. */
+/** SSE first; on 404 (Gunicorn without SSE mount) fall back to GET /api/job/<id>. */
 async function watchJob(jobId, signal) {
-    const trySse = typeof window !== 'undefined'
-        && new URLSearchParams(window.location.search).get('sse') === '1';
-    if (trySse) {
-        try {
-            return await watchJobViaSSE(jobId, signal);
-        } catch (sseErr) {
-            console.warn('[dubbing] SSE failed, using poll /api/job/', { jobId, error: sseErr });
-        }
+    try {
+        return await watchJobViaSSE(jobId, signal);
+    } catch (sseErr) {
+        console.warn('[dubbing] SSE failed, using poll /api/job/', { jobId, error: sseErr });
+        return watchJobViaPoll(jobId, signal);
     }
-    return watchJobViaPoll(jobId, signal);
 }
 
 /**
@@ -382,11 +378,9 @@ function watchJobViaPoll(jobId, signal) {
                 const res = await fetch(url, { headers, signal });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data.error || ('status poll failed: HTTP ' + res.status));
-                const st = (data.status || 'pending').toLowerCase();
-                console.log('[dubbing] poll /api/job', { jobId, status: st });
-                if (st === 'completed') {
+                if (data.status === 'completed') {
                     finish(resolve, { status: 'completed', output_url: data.output_url || '' });
-                } else if (st === 'failed') {
+                } else if (data.status === 'failed') {
                     finish(reject, new Error(data.error || 'Worker encountered an error'));
                 }
             } catch (err) {
