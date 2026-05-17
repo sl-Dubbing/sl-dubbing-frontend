@@ -305,9 +305,6 @@ async function startDubbing() {
  * EventSource cannot send Authorization headers — token is passed as access_token query param.
  */
 function watchJobViaSSE(jobId, signal) {
-    const SSE_RECONNECT_DELAY_MS = 2500;
-    const SSE_MAX_RECONNECTS = 40;
-
     return new Promise((resolve, reject) => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -322,14 +319,8 @@ function watchJobViaSSE(jobId, signal) {
 
         let settled = false;
         let eventSource = null;
-        let reconnectTimer = null;
-        let reconnectAttempts = 0;
 
         const closeSource = () => {
-            if (reconnectTimer) {
-                clearTimeout(reconnectTimer);
-                reconnectTimer = null;
-            }
             if (eventSource) {
                 eventSource.close();
                 eventSource = null;
@@ -356,61 +347,37 @@ function watchJobViaSSE(jobId, signal) {
             signal.addEventListener('abort', onAbort, { once: true });
         }
 
-        const scheduleReconnect = () => {
-            if (settled || (signal && signal.aborted)) return;
-            if (reconnectAttempts >= SSE_MAX_RECONNECTS) {
-                finish(reject, new Error('Lost connection to job status stream'));
-                return;
+        eventSource = new EventSource(sseUrl);
+
+        eventSource.addEventListener('completed', (ev) => {
+            try {
+                const data = JSON.parse(ev.data || '{}');
+                finish(resolve, {
+                    status: 'completed',
+                    output_url: data.output_url || ''
+                });
+            } catch (parseErr) {
+                finish(reject, parseErr);
             }
-            reconnectAttempts += 1;
-            reconnectTimer = setTimeout(() => {
-                reconnectTimer = null;
-                if (!settled && !(signal && signal.aborted)) {
-                    connect();
-                }
-            }, SSE_RECONNECT_DELAY_MS);
-        };
+        });
 
-        const connect = () => {
+        eventSource.addEventListener('failed', (ev) => {
+            try {
+                const data = JSON.parse(ev.data || '{}');
+                finish(reject, new Error(data.error || 'Worker encountered an error'));
+            } catch (_parseErr) {
+                finish(reject, new Error('Worker encountered an error'));
+            }
+        });
+
+        eventSource.onerror = (error) => {
+            if (settled) return;
+            console.error('[dubbing] SSE connection failed (404/429/CORS):', error);
             closeSource();
-            eventSource = new EventSource(sseUrl);
-
-            eventSource.addEventListener('completed', (ev) => {
-                try {
-                    const data = JSON.parse(ev.data || '{}');
-                    eventSource.close();
-                    eventSource = null;
-                    finish(resolve, {
-                        status: 'completed',
-                        output_url: data.output_url || ''
-                    });
-                } catch (parseErr) {
-                    finish(reject, parseErr);
-                }
-            });
-
-            eventSource.addEventListener('failed', (ev) => {
-                try {
-                    const data = JSON.parse(ev.data || '{}');
-                    eventSource.close();
-                    eventSource = null;
-                    finish(reject, new Error(data.error || 'Worker encountered an error'));
-                } catch (_parseErr) {
-                    finish(reject, new Error('Worker encountered an error'));
-                }
-            });
-
-            eventSource.onerror = () => {
-                if (settled) return;
-                if (eventSource.readyState === EventSource.CONNECTING) return;
-
-                eventSource.close();
-                eventSource = null;
-                scheduleReconnect();
-            };
+            const msg = 'Failed to track dubbing status. Please try again later.';
+            window.showToast?.(msg, 'error');
+            finish(reject, new Error(msg));
         };
-
-        connect();
     });
 }
 
