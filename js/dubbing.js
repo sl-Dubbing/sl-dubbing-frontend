@@ -47,11 +47,36 @@ function getFlagImg(code) {
     return `<img src="https://hatscripts.github.io/circle-flags/flags/${country.toLowerCase()}.svg" style="width:18px; height:18px; border-radius:50%; vertical-align:middle;" alt="flag">`;
 }
 
-// تنظيف رابط الـ API
-const GET_API_URL = () => {
-    let base = window.API_BASE || 'https://api.glotix.ai';
-    return String(base).replace(/\/$/, '').replace(/([^:]\/)\/+/g, '$1');
-};
+/** Same base as shared.js — `${API_BASE}/api/...` (no trailing slash, no double slashes). */
+function getApiBase() {
+    const raw = window.API_BASE || window.APP_CONFIG?.API_BASE || 'https://api.glotix.ai';
+    return String(raw).replace(/\/$/, '').replace(/([^:]\/)\/+/g, '$1');
+}
+
+const GET_API_URL = getApiBase;
+
+/** GET /api/dub/status/<job_id> — backend SSE stream (EventSource cannot send Authorization headers). */
+function buildDubStatusStreamUrl(jobId) {
+    const id = String(jobId || '').trim();
+    if (!id) throw new Error('Missing job id for status stream');
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('Session expired — please sign in again');
+    return (
+        `${getApiBase()}/api/dub/status/${encodeURIComponent(id)}` +
+        `?access_token=${encodeURIComponent(token)}`
+    );
+}
+
+function buildJobPollUrl(jobId) {
+    const id = String(jobId || '').trim();
+    if (!id) throw new Error('Missing job id for status poll');
+    return `${getApiBase()}/api/job/${encodeURIComponent(id)}`;
+}
+
+function extractJobIdFromDubResponse(body) {
+    if (!body || typeof body !== 'object') return '';
+    return String(body.job_id || body.id || '').trim();
+}
 
 /** Retry on 429 (Cloudflare / edge) so parallel dub starts do not all fail at once. */
 async function fetchWithRetry(url, options, { retries = 3, baseDelayMs = 500 } = {}) {
@@ -258,12 +283,20 @@ async function startDubbing() {
                 if (!dubRes.ok) {
                     throw new Error(dubData.error || ('dub failed: HTTP ' + dubRes.status));
                 }
-                if (!dubData.job_id) {
+                const jobId = extractJobIdFromDubResponse(dubData);
+                if (!jobId) {
                     throw new Error('Missing job_id from /api/dub response');
                 }
 
-                console.log('[dubbing] tracking job', { lang: langCode, job_id: dubData.job_id });
-                const job = await watchJob(dubData.job_id, workSignal);
+                console.log('[dubbing] tracking job', {
+                    lang: langCode,
+                    job_id: jobId,
+                    statusStream: `${getApiBase()}/api/dub/status/${jobId}`
+                });
+                const job = await watchJob(jobId, workSignal, () => {
+                    dubbingProgressMonotonic = Math.min(94, dubbingProgressMonotonic + 1);
+                    updateProgress('Dubbing in progress...', dubbingProgressMonotonic);
+                });
 
                 cinemaResults[langCode] = {
                     url: job.output_url,
@@ -318,20 +351,21 @@ async function startDubbing() {
     }
 }
 
-/** SSE first; on 404 (Gunicorn without SSE mount) fall back to GET /api/job/<id>. */
-async function watchJob(jobId, signal) {
+/** SSE at GET /api/dub/status/<id>; on mount/CORS failure fall back to GET /api/job/<id>. */
+async function watchJob(jobId, signal, onProgressTick) {
     try {
-        return await watchJobViaSSE(jobId, signal);
+        return await watchJobViaSSE(jobId, signal, onProgressTick);
     } catch (sseErr) {
-        console.warn('[dubbing] SSE failed, using poll /api/job/', { jobId, error: sseErr });
-        return watchJobViaPoll(jobId, signal);
+        const msg = sseErr && sseErr.message ? sseErr.message : String(sseErr);
+        console.warn('[dubbing] SSE unavailable, polling /api/job/', { jobId, reason: msg });
+        return watchJobViaPoll(jobId, signal, onProgressTick);
     }
 }
 
 /**
  * Poll legacy job status (works on plain Gunicorn/Flask).
  */
-function watchJobViaPoll(jobId, signal) {
+function watchJobViaPoll(jobId, signal, onProgressTick) {
     return new Promise((resolve, reject) => {
         const headers = getUploadAuthHeaders();
         if (!headers) {
@@ -340,7 +374,7 @@ function watchJobViaPoll(jobId, signal) {
             return;
         }
 
-        const url = `${GET_API_URL()}/api/job/${encodeURIComponent(jobId)}`;
+        const url = buildJobPollUrl(jobId);
         let settled = false;
         let timer = null;
         const maxMs = 45 * 60 * 1000;
@@ -382,6 +416,8 @@ function watchJobViaPoll(jobId, signal) {
                     finish(resolve, { status: 'completed', output_url: data.output_url || '' });
                 } else if (data.status === 'failed') {
                     finish(reject, new Error(data.error || 'Worker encountered an error'));
+                } else if (typeof onProgressTick === 'function') {
+                    onProgressTick();
                 }
             } catch (err) {
                 if (err && err.name === 'AbortError') finish(reject, err);
@@ -397,23 +433,28 @@ function watchJobViaPoll(jobId, signal) {
  * Subscribe to job status via Server-Sent Events (no HTTP polling).
  * EventSource cannot send Authorization headers — token is passed as access_token query param.
  */
-function watchJobViaSSE(jobId, signal) {
+function watchJobViaSSE(jobId, signal, onProgressTick) {
     return new Promise((resolve, reject) => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            window.clearSessionAndGuestUI?.('Session expired — please sign in again');
-            reject(new Error('Session expired — please sign in again'));
+        let sseUrl;
+        try {
+            sseUrl = buildDubStatusStreamUrl(jobId);
+        } catch (authErr) {
+            window.clearSessionAndGuestUI?.(authErr.message);
+            reject(authErr);
             return;
         }
 
-        const sseUrl =
-            `${GET_API_URL()}/api/dub/status/${encodeURIComponent(jobId)}` +
-            `?access_token=${encodeURIComponent(token)}`;
+        const sseUrlForLog = sseUrl.replace(/access_token=[^&]+/, 'access_token=***');
 
         let settled = false;
         let eventSource = null;
+        let connectTimer = null;
 
         const closeSource = () => {
+            if (connectTimer) {
+                clearTimeout(connectTimer);
+                connectTimer = null;
+            }
             if (eventSource) {
                 eventSource.close();
                 eventSource = null;
@@ -440,15 +481,35 @@ function watchJobViaSSE(jobId, signal) {
             signal.addEventListener('abort', onAbort, { once: true });
         }
 
+        const handleStatusPayload = (data) => {
+            const status = (data && data.status) || '';
+            if (status === 'completed') {
+                finish(resolve, {
+                    status: 'completed',
+                    output_url: (data && data.output_url) || ''
+                });
+                return true;
+            }
+            if (status === 'failed') {
+                finish(reject, new Error((data && data.error) || 'Worker encountered an error'));
+                return true;
+            }
+            return false;
+        };
+
         eventSource = new EventSource(sseUrl);
+
+        eventSource.onopen = () => {
+            console.log('[dubbing] SSE connected', { jobId, url: sseUrlForLog });
+            if (typeof onProgressTick === 'function') onProgressTick();
+        };
 
         eventSource.addEventListener('completed', (ev) => {
             try {
                 const data = JSON.parse(ev.data || '{}');
-                finish(resolve, {
-                    status: 'completed',
-                    output_url: data.output_url || ''
-                });
+                if (!handleStatusPayload(data)) {
+                    finish(resolve, { status: 'completed', output_url: data.output_url || '' });
+                }
             } catch (parseErr) {
                 finish(reject, parseErr);
             }
@@ -457,15 +518,43 @@ function watchJobViaSSE(jobId, signal) {
         eventSource.addEventListener('failed', (ev) => {
             try {
                 const data = JSON.parse(ev.data || '{}');
-                finish(reject, new Error(data.error || 'Worker encountered an error'));
+                handleStatusPayload(data);
             } catch (_parseErr) {
                 finish(reject, new Error('Worker encountered an error'));
             }
         });
 
-        eventSource.onerror = (error) => {
+        eventSource.onmessage = (ev) => {
+            try {
+                const data = JSON.parse(ev.data || '{}');
+                handleStatusPayload(data);
+            } catch (_parseErr) {
+                /* ignore non-JSON pings */
+            }
+        };
+
+        connectTimer = setTimeout(() => {
+            if (settled || !eventSource) return;
+            if (eventSource.readyState === EventSource.CONNECTING) {
+                console.warn('[dubbing] SSE still connecting, falling back to poll', {
+                    jobId,
+                    url: sseUrlForLog
+                });
+                closeSource();
+                finish(reject, new Error('SSE_UNAVAILABLE'));
+            }
+        }, 12000);
+
+        eventSource.onerror = () => {
             if (settled) return;
-            console.error('[dubbing] SSE connection failed (404/429/CORS):', error);
+            if (eventSource && eventSource.readyState === EventSource.CONNECTING) {
+                return;
+            }
+            console.error('[dubbing] SSE connection failed (404/CORS/mount)', {
+                jobId,
+                url: sseUrlForLog,
+                readyState: eventSource ? eventSource.readyState : null
+            });
             closeSource();
             finish(reject, new Error('SSE_UNAVAILABLE'));
         };
