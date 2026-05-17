@@ -68,6 +68,10 @@ function sleepWithAbort(ms, signal) {
     });
 }
 
+/** فترة الانتظار بين طلبات استعلام حالة الـ job (3–5 ثوانٍ موصى بها) */
+const JOB_POLL_INTERVAL_MS = 4000;
+const JOB_POLL_MAX_ATTEMPTS = 150;
+
 async function uploadToR2(url, file, contentType) {
     console.log('[dubbing] R2 PUT start', { name: file?.name, size: file?.size, contentType });
     return new Promise((resolve, reject) => {
@@ -294,14 +298,18 @@ async function startDubbing() {
 }
 
 async function waitForJob(id, signal) {
-    let attempts = 0;
-    while (attempts < 150) { // حد أقصى 10 دقائق
+    for (let attempt = 0; attempt < JOB_POLL_MAX_ATTEMPTS; attempt++) {
+        if (attempt > 0) {
+            await sleepWithAbort(JOB_POLL_INTERVAL_MS, signal);
+        }
         if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+
         const authHeaders = getUploadAuthHeaders();
         if (!authHeaders) {
             window.clearSessionAndGuestUI?.('Session expired — please sign in again');
             throw new Error('Session expired — please sign in again');
         }
+
         let d;
         try {
             const res = await fetch(`${GET_API_URL()}/api/job/${id}`, {
@@ -319,19 +327,14 @@ async function waitForJob(id, signal) {
             if (pollErr instanceof Error && pollErr.message === 'SESSION_EXPIRED') {
                 throw new Error('Session expired — please sign in again');
             }
-            console.warn("Polling error (might be temporary):", pollErr);
-            attempts++;
-            await sleepWithAbort(4000, signal);
+            console.warn('Polling error (might be temporary):', pollErr);
             continue;
         }
 
         if (d.status === 'completed') return d;
-        if (d.status === 'failed') throw new Error(d.error || "Worker encountered an error");
-
-        attempts++;
-        await sleepWithAbort(4000, signal);
+        if (d.status === 'failed') throw new Error(d.error || 'Worker encountered an error');
     }
-    throw new Error("Job timed out");
+    throw new Error('Job timed out');
 }
 
 function switchCinemaLang(langCode) {
