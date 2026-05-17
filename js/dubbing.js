@@ -399,8 +399,16 @@ async function startDubbing() {
     }
 }
 
-/** SSE at GET /api/dub/status/<id>; on mount/CORS failure fall back to GET /api/job/<id>. */
+/**
+ * Track job until completed. Default: poll GET /api/job (backend reconciles Supabase + R2).
+ * Set APP_CONFIG.DUB_USE_SSE=true to try SSE first (needs uvicorn + Redis).
+ */
 async function watchJob(jobId, signal, onProgressTick) {
+    const trySseFirst = window.APP_CONFIG && window.APP_CONFIG.DUB_USE_SSE === true;
+    if (!trySseFirst) {
+        console.log('[dubbing] polling /api/job/', { jobId });
+        return watchJobViaPoll(jobId, signal, onProgressTick);
+    }
     try {
         return await watchJobViaSSE(jobId, signal, onProgressTick);
     } catch (sseErr) {
@@ -487,9 +495,18 @@ function watchJobViaPoll(jobId, signal, onProgressTick) {
                 pollErrors = 0;
                 if (await resolveIfTerminal(data)) return;
 
-                if (tickCount % 3 === 0) {
+                if (tickCount % 2 === 0) {
                     const supaRow = await fetchJobStatusFromSupabase(jobId);
-                    if (supaRow && (await resolveIfTerminal(supaRow))) return;
+                    if (supaRow) {
+                        if (tickCount % 10 === 0) {
+                            console.log('[dubbing] Supabase job row', {
+                                jobId,
+                                status: supaRow.status,
+                                hasOutput: !!extractOutputUrl(supaRow)
+                            });
+                        }
+                        if (await resolveIfTerminal(supaRow)) return;
+                    }
                 }
 
                 if (tickCount === 1 || tickCount % 10 === 0) {
