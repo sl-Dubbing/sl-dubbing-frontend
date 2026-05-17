@@ -1,4 +1,4 @@
-// js/shared.js - V33.9 (401 / fetch errors: guest reset + resilient menu links)
+// js/shared.js - V34.0 (401 only clears session; timeout/5xx keeps user + credits placeholder)
 
 /** قاعدة الـ API بدون سلاش زائد — يمنع // في المسارات ويُحسّن توافق الروابط */
 const API_BASE = String(window.APP_CONFIG?.API_BASE || 'https://api.glotix.ai')
@@ -183,9 +183,23 @@ async function fetchResponseJsonSafe(res) {
     }
 }
 
+function isTransientServerStatus(status) {
+    return status === 500 || status === 502;
+}
+
+/** يبقي المستخدم مسجّلاً ويعرض placeholder للرصيد دون مسح التوكن */
+function applyCreditsPlaceholder(baseUser, placeholder) {
+    if (!baseUser) return;
+    window.updateDropdownUI(Object.assign({}, baseUser, { credits: placeholder }));
+}
+
+function logCreditsFetchIssue(label, detail) {
+    console.warn('[shared]', label, detail !== undefined && detail !== null ? detail : '');
+}
+
 /**
- * طلبات /api/user/init ثم /api/user/credits — 401 يُعالج داخلياً دون رمي.
- * أخطاء الشبكة تُرسل للمتصل بـ catch.
+ * طلبات /api/user/init ثم /api/user/credits — مسح الجلسة فقط عند 401.
+ * Timeout / 500 / 502: يبقى المستخدم مسجّلاً ويُعرض placeholder للرصيد.
  */
 async function fetchUserInitAndCredits(session, baseUser, authHeaders, signal) {
     const userId = String(session.user.id);
@@ -200,7 +214,11 @@ async function fetchUserInitAndCredits(session, baseUser, authHeaders, signal) {
             window.clearSessionAndGuestUI('Session expired — please sign in again');
             return;
         }
-        if (initRes.ok) sessionStorage.setItem(initKey, '1');
+        if (isTransientServerStatus(initRes.status)) {
+            logCreditsFetchIssue('/api/user/init HTTP', initRes.status);
+        } else if (initRes.ok) {
+            sessionStorage.setItem(initKey, '1');
+        }
     }
     const res = await fetch(`${API_BASE}/api/user/credits`, {
         headers: authHeaders,
@@ -208,6 +226,11 @@ async function fetchUserInitAndCredits(session, baseUser, authHeaders, signal) {
     });
     if (res.status === 401) {
         window.clearSessionAndGuestUI('Session expired — please sign in again');
+        return;
+    }
+    if (isTransientServerStatus(res.status)) {
+        logCreditsFetchIssue('/api/user/credits HTTP', res.status);
+        applyCreditsPlaceholder(baseUser, 'Error');
         return;
     }
     const d = await fetchResponseJsonSafe(res);
@@ -218,6 +241,11 @@ async function fetchUserInitAndCredits(session, baseUser, authHeaders, signal) {
         if (cred !== null) merged.credits = cred;
         window.updateDropdownUI(merged);
         dismissConnectionCheckingUi();
+        return;
+    }
+    if (baseUser && !res.ok) {
+        logCreditsFetchIssue('/api/user/credits HTTP', res.status);
+        applyCreditsPlaceholder(baseUser, 'Error');
     }
 }
 
@@ -400,13 +428,13 @@ window.checkAuth = async function() {
                 try {
                     await fetchUserInitAndCredits(session, baseUser, authHeaders, cts.signal);
                 } catch (e) {
-                    if (e && e.name === 'AbortError') {
-                        console.warn('Credits fetch timeout or aborted');
+                    const isTimeout = e && (e.name === 'AbortError' || e.name === 'TimeoutError');
+                    if (isTimeout) {
+                        logCreditsFetchIssue('credits fetch timeout', e);
+                        applyCreditsPlaceholder(baseUser, '...');
                     } else {
-                        console.warn('Credits fetch error', e);
-                        try {
-                            window.clearSessionAndGuestUI(null);
-                        } catch (_) {}
+                        logCreditsFetchIssue('credits fetch error', e);
+                        applyCreditsPlaceholder(baseUser, 'Error');
                     }
                 }
             } finally {
