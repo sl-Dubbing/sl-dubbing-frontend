@@ -118,7 +118,7 @@
             </form>
 
             <p class="signup-link">
-                Don't have an account? <a href="/signup">Sign up</a>
+                Don't have an account? <a href="#" id="signupLink">Sign up</a>
             </p>
         </div>
     </div>
@@ -139,7 +139,7 @@ if (typeof window.supabase === 'undefined') {
 // إنشاء client باسم مختلف تماماً عن 'supabase'
 const supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     auth: {
-        flowType: 'implicit',
+        flowType: 'pkce',
         detectSessionInUrl: true,
         persistSession: true
     }
@@ -187,7 +187,7 @@ async function signInWithGoogle() {
         const { error } = await supaClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin + '/login.html'
+                redirectTo: window.location.origin + '/auth/confirm.html'
             }
         });
 
@@ -246,6 +246,32 @@ function hideError() {
     const el = document.getElementById('errorMsg');
     if (el) el.classList.remove('show');
 }
+
+document.getElementById('signupLink')?.addEventListener('click', async function (e) {
+    e.preventDefault();
+    const email = document.getElementById('email')?.value?.trim();
+    const password = document.getElementById('password')?.value;
+    if (!email || !password || password.length < 6) {
+        showError('Enter email and password (min 6 characters) to create an account.');
+        return;
+    }
+    hideError();
+    try {
+        const { data, error } = await supaClient.auth.signUp({
+            email,
+            password,
+            options: { emailRedirectTo: window.location.origin + '/auth/confirm.html' }
+        });
+        if (error) throw error;
+        if (data.session) {
+            persistSessionAndGoHome(data.session);
+            return;
+        }
+        showError('Check your email to confirm your account, then sign in.');
+    } catch (err) {
+        showError(err.message || 'Sign up failed');
+    }
+});
 </script>
 
 </body>
