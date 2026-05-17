@@ -1,9 +1,9 @@
-// js/dubbing.js — V12.6 (single file-picker path via <label for>; guarded init; change uses event target)
+// js/dubbing.js — V12.7 (job status via EventSource/SSE only — no waitForJob, no setInterval)
 let cinemaResults = {};
 /** يمنع تكرار addEventListener إذا أُعيد تحميل السكربت أو استُدعيت التهيئة مرتين */
 let _dubbingMediaInputInitialized = false;
 let activeWavesurfer = null;
-let dubbingPollAbort = null;
+let dubbingWorkAbort = null;
 let dubbingProgressMonotonic = 50;
 
 /** آخر ملف مختار (سحب/إفلات أو اختيار) — احتياط عندما لا يقبل المتصفح تعيين input.files */
@@ -53,38 +53,19 @@ const GET_API_URL = () => {
     return String(base).replace(/\/$/, '').replace(/([^:]\/)\/+/g, '$1');
 };
 
-function abortActiveDubbingPoll() {
-    if (dubbingPollAbort) {
-        dubbingPollAbort.abort();
-        dubbingPollAbort = null;
+function abortActiveDubbingWork() {
+    if (dubbingWorkAbort) {
+        dubbingWorkAbort.abort();
+        dubbingWorkAbort = null;
     }
 }
 
-window.addEventListener('beforeunload', abortActiveDubbingPoll);
+window.addEventListener('beforeunload', abortActiveDubbingWork);
 
 function dubbingMaxUploadBytes() {
     const mb = Number(window.APP_CONFIG && window.APP_CONFIG.MAX_UPLOAD_MB);
     return (mb > 0 ? mb : 500) * 1024 * 1024;
 }
-
-function sleepWithAbort(ms, signal) {
-    return new Promise((resolve, reject) => {
-        if (signal && signal.aborted) {
-            reject(new DOMException('Aborted', 'AbortError'));
-            return;
-        }
-        const t = setTimeout(resolve, ms);
-        const onAbort = () => {
-            clearTimeout(t);
-            reject(new DOMException('Aborted', 'AbortError'));
-        };
-        if (signal) signal.addEventListener('abort', onAbort, { once: true });
-    });
-}
-
-/** فترة الانتظار بين طلبات استعلام حالة الـ job (3–5 ثوانٍ موصى بها) */
-const JOB_POLL_INTERVAL_MS = 4000;
-const JOB_POLL_MAX_ATTEMPTS = 150;
 
 async function uploadToR2(url, file, contentType) {
     console.log('[dubbing] R2 PUT start', { name: file?.name, size: file?.size, contentType });
@@ -154,9 +135,9 @@ async function startDubbing() {
         return window.showToast?.('Select target languages', 'error');
     }
 
-    abortActiveDubbingPoll();
-    dubbingPollAbort = new AbortController();
-    const pollSignal = dubbingPollAbort.signal;
+    abortActiveDubbingWork();
+    dubbingWorkAbort = new AbortController();
+    const workSignal = dubbingWorkAbort.signal;
 
     // إعداد واجهة الانتظار
     document.getElementById('dubBtn').style.display = 'none';
@@ -242,7 +223,7 @@ async function startDubbing() {
                 const dubRes = await fetch(dubEndpoint, {
                     method: 'POST',
                     headers: dubHeaders,
-                    signal: pollSignal,
+                    signal: workSignal,
                     body: JSON.stringify({
                         file_key: fileKey,
                         lang: langCode,
@@ -267,8 +248,8 @@ async function startDubbing() {
                     throw new Error('Missing job_id from /api/dub response');
                 }
 
-                console.log('[dubbing] polling job', { lang: langCode, job_id: dubData.job_id });
-                const job = await waitForJob(dubData.job_id, pollSignal);
+                console.log('[dubbing] SSE job', { lang: langCode, job_id: dubData.job_id });
+                const job = await watchJobViaSSE(dubData.job_id, workSignal);
 
                 cinemaResults[langCode] = {
                     url: job.output_url,
@@ -308,7 +289,7 @@ async function startDubbing() {
         await Promise.all(langArray.map(dubOneLanguage));
     } catch (e) {
         if (e && e.name === 'AbortError') {
-            console.warn('[dubbing] polling aborted');
+            console.warn('[dubbing] work aborted');
             return;
         }
         console.error('[dubbing] Critical Error:', e);
@@ -319,44 +300,118 @@ async function startDubbing() {
     }
 }
 
-async function waitForJob(id, signal) {
-    for (let attempt = 0; attempt < JOB_POLL_MAX_ATTEMPTS; attempt++) {
-        if (attempt > 0) {
-            await sleepWithAbort(JOB_POLL_INTERVAL_MS, signal);
-        }
-        if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+/**
+ * Subscribe to job status via Server-Sent Events (no HTTP polling).
+ * EventSource cannot send Authorization headers — token is passed as access_token query param.
+ */
+function watchJobViaSSE(jobId, signal) {
+    const SSE_RECONNECT_DELAY_MS = 2500;
+    const SSE_MAX_RECONNECTS = 40;
 
-        const authHeaders = getUploadAuthHeaders();
-        if (!authHeaders) {
+    return new Promise((resolve, reject) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
             window.clearSessionAndGuestUI?.('Session expired — please sign in again');
-            throw new Error('Session expired — please sign in again');
+            reject(new Error('Session expired — please sign in again'));
+            return;
         }
 
-        let d;
-        try {
-            const res = await fetch(`${GET_API_URL()}/api/job/${id}`, {
-                method: 'GET',
-                headers: authHeaders,
-                signal: signal || undefined
+        const sseUrl =
+            `${GET_API_URL()}/api/dub/status/${encodeURIComponent(jobId)}` +
+            `?access_token=${encodeURIComponent(token)}`;
+
+        let settled = false;
+        let eventSource = null;
+        let reconnectTimer = null;
+        let reconnectAttempts = 0;
+
+        const closeSource = () => {
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+        };
+
+        const finish = (fn, value) => {
+            if (settled) return;
+            settled = true;
+            closeSource();
+            if (signal) signal.removeEventListener('abort', onAbort);
+            fn(value);
+        };
+
+        const onAbort = () => {
+            finish(reject, new DOMException('Aborted', 'AbortError'));
+        };
+
+        if (signal) {
+            if (signal.aborted) {
+                onAbort();
+                return;
+            }
+            signal.addEventListener('abort', onAbort, { once: true });
+        }
+
+        const scheduleReconnect = () => {
+            if (settled || (signal && signal.aborted)) return;
+            if (reconnectAttempts >= SSE_MAX_RECONNECTS) {
+                finish(reject, new Error('Lost connection to job status stream'));
+                return;
+            }
+            reconnectAttempts += 1;
+            reconnectTimer = setTimeout(() => {
+                reconnectTimer = null;
+                if (!settled && !(signal && signal.aborted)) {
+                    connect();
+                }
+            }, SSE_RECONNECT_DELAY_MS);
+        };
+
+        const connect = () => {
+            closeSource();
+            eventSource = new EventSource(sseUrl);
+
+            eventSource.addEventListener('completed', (ev) => {
+                try {
+                    const data = JSON.parse(ev.data || '{}');
+                    eventSource.close();
+                    eventSource = null;
+                    finish(resolve, {
+                        status: 'completed',
+                        output_url: data.output_url || ''
+                    });
+                } catch (parseErr) {
+                    finish(reject, parseErr);
+                }
             });
-            if (res.status === 401) {
-                window.clearSessionAndGuestUI?.('Session expired — please sign in again');
-                throw new Error('SESSION_EXPIRED');
-            }
-            d = await res.json();
-        } catch (pollErr) {
-            if (pollErr && pollErr.name === 'AbortError') throw pollErr;
-            if (pollErr instanceof Error && pollErr.message === 'SESSION_EXPIRED') {
-                throw new Error('Session expired — please sign in again');
-            }
-            console.warn('Polling error (might be temporary):', pollErr);
-            continue;
-        }
 
-        if (d.status === 'completed') return d;
-        if (d.status === 'failed') throw new Error(d.error || 'Worker encountered an error');
-    }
-    throw new Error('Job timed out');
+            eventSource.addEventListener('failed', (ev) => {
+                try {
+                    const data = JSON.parse(ev.data || '{}');
+                    eventSource.close();
+                    eventSource = null;
+                    finish(reject, new Error(data.error || 'Worker encountered an error'));
+                } catch (_parseErr) {
+                    finish(reject, new Error('Worker encountered an error'));
+                }
+            });
+
+            eventSource.onerror = () => {
+                if (settled) return;
+                if (eventSource.readyState === EventSource.CONNECTING) return;
+
+                eventSource.close();
+                eventSource = null;
+                scheduleReconnect();
+            };
+        };
+
+        connect();
+    });
 }
 
 function switchCinemaLang(langCode) {
