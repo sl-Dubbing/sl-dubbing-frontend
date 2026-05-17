@@ -8,6 +8,20 @@ let dubbingProgressMonotonic = 50;
 
 /** آخر ملف مختار (سحب/إفلات أو اختيار) — احتياط عندما لا يقبل المتصفح تعيين input.files */
 let selectedDubbingFile = null;
+/** يمنع ضغطتين متتاليتين على زر البدء قبل إخفاء الزر */
+let _dubbingStartLocked = false;
+
+function lockDubBtn() {
+    _dubbingStartLocked = true;
+    const dubBtn = document.getElementById('dubBtn');
+    if (dubBtn) dubBtn.disabled = true;
+}
+
+function unlockDubBtn() {
+    _dubbingStartLocked = false;
+    const dubBtn = document.getElementById('dubBtn');
+    if (dubBtn) dubBtn.disabled = false;
+}
 
 function getDubbingFileInput() {
     return document.getElementById('mediaFile');
@@ -99,6 +113,9 @@ async function uploadToR2(url, file, contentType) {
 }
 
 async function startDubbing() {
+    if (_dubbingStartLocked) return;
+    lockDubBtn();
+
     const inputEl = getDubbingFileInput();
     const file = selectedDubbingFile || (inputEl && inputEl.files && inputEl.files[0]);
     const authHeaders = getUploadAuthHeaders();
@@ -116,20 +133,24 @@ async function startDubbing() {
 
     if (!authHeaders || !token) {
         console.warn('[dubbing] blocked: not signed in or headers incomplete');
+        unlockDubBtn();
         return window.showToast?.('Please sign in first', 'error');
     }
     if (!file) {
         console.warn('[dubbing] blocked: no file');
+        unlockDubBtn();
         return window.showToast?.('Please select a media file', 'error');
     }
     const maxBytes = dubbingMaxUploadBytes();
     if (file.size > maxBytes) {
         const mb = Math.round(maxBytes / 1024 / 1024);
         console.warn('[dubbing] blocked: file too large', file.size);
+        unlockDubBtn();
         return window.showToast?.('File too large (max ' + mb + ' MB)', 'error');
     }
     if (!window.selectedLangs?.size) {
         console.warn('[dubbing] blocked: no languages');
+        unlockDubBtn();
         return window.showToast?.('Select target languages', 'error');
     }
 
@@ -292,6 +313,7 @@ async function startDubbing() {
         }
         console.error('[dubbing] Critical Error:', e);
         window.showToast?.(e.message, 'error');
+        unlockDubBtn();
         document.getElementById('dubBtn').style.display = 'block';
         updateProgress("Process Interrupted", 0);
     }
@@ -438,7 +460,10 @@ function applyDubbingMediaSelection(file) {
         previewArea.style.display = 'none';
         videoEl.style.display = 'none';
         audioLabel.style.display = 'none';
-        if (dubBtn) dubBtn.style.display = 'none';
+        if (dubBtn) {
+            dubBtn.style.display = 'none';
+            unlockDubBtn();
+        }
         if (uploadBox) uploadBox.classList.remove('has-file');
         if (nameLine) {
             nameLine.style.display = 'none';
@@ -469,7 +494,10 @@ function applyDubbingMediaSelection(file) {
         }
     }
 
-    if (dubBtn) dubBtn.style.display = 'block';
+    if (dubBtn) {
+        dubBtn.style.display = 'block';
+        if (!_dubbingStartLocked) dubBtn.disabled = false;
+    }
     if (uploadBox) uploadBox.classList.add('has-file');
     if (nameLine) {
         const mb = (file.size / 1024 / 1024).toFixed(1);
