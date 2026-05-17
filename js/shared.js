@@ -37,7 +37,13 @@ window.parseJwtSub = function parseJwtSub(token) {
 window.getApiAuthHeaders = function getApiAuthHeaders() {
     const token = localStorage.getItem('token');
     if (!token) return null;
-    const userId = window.parseJwtSub(token);
+    let userId = window.parseJwtSub(token);
+    if (!userId) {
+        try {
+            const cached = JSON.parse(localStorage.getItem('sl_user_cache') || 'null');
+            if (cached && cached.id) userId = String(cached.id);
+        } catch (_) {}
+    }
     if (!userId) return null;
     return {
         'Authorization': 'Bearer ' + token,
@@ -113,7 +119,7 @@ window.getSupabase = function getSupabase() {
         const { url, key } = requireSupabaseConfig();
         supabaseClient = window.supabase.createClient(url, key, {
             auth: {
-                flowType: 'implicit',
+                flowType: 'pkce',
                 detectSessionInUrl: true,
                 persistSession: true
             }
@@ -201,15 +207,50 @@ function logCreditsFetchIssue(label, detail) {
  * طلبات /api/user/init ثم /api/user/credits — مسح الجلسة فقط عند 401.
  * Timeout / 500 / 502: يبقى المستخدم مسجّلاً ويُعرض placeholder للرصيد.
  */
+async function refreshAuthHeadersFromSupabase(supa, session) {
+    if (!supa?.auth?.getSession) return null;
+    try {
+        const { data: { session: fresh } } = await supa.auth.getSession();
+        const s = fresh || session;
+        if (!s?.access_token || !s?.user?.id) return null;
+        localStorage.setItem('token', s.access_token);
+        return {
+            'Authorization': 'Bearer ' + s.access_token,
+            'X-User-Id': String(s.user.id)
+        };
+    } catch (_) {
+        return null;
+    }
+}
+
 async function fetchUserInitAndCredits(session, baseUser, authHeaders, signal) {
+    const supa = typeof window.getSupabase === 'function' ? window.getSupabase() : null;
     const userId = String(session.user.id);
     const initKey = 'sl_user_inited_' + userId;
+
+    async function handle401() {
+        const refreshed = await refreshAuthHeadersFromSupabase(supa, session);
+        if (refreshed) return refreshed;
+        window.clearSessionAndGuestUI('Session expired — please sign in again');
+        return null;
+    }
+
     if (!sessionStorage.getItem(initKey)) {
-        const initRes = await fetch(`${API_BASE}/api/user/init`, {
+        let initRes = await fetch(`${API_BASE}/api/user/init`, {
             method: 'POST',
             headers: authHeaders,
             signal: signal
         });
+        if (initRes.status === 401) {
+            const refreshed = await handle401();
+            if (!refreshed) return;
+            authHeaders = refreshed;
+            initRes = await fetch(`${API_BASE}/api/user/init`, {
+                method: 'POST',
+                headers: authHeaders,
+                signal: signal
+            });
+        }
         if (initRes.status === 401) {
             window.clearSessionAndGuestUI('Session expired — please sign in again');
             return;
@@ -220,10 +261,19 @@ async function fetchUserInitAndCredits(session, baseUser, authHeaders, signal) {
             sessionStorage.setItem(initKey, '1');
         }
     }
-    const res = await fetch(`${API_BASE}/api/user/credits`, {
+    let res = await fetch(`${API_BASE}/api/user/credits`, {
         headers: authHeaders,
         signal: signal
     });
+    if (res.status === 401) {
+        const refreshed = await handle401();
+        if (!refreshed) return;
+        authHeaders = refreshed;
+        res = await fetch(`${API_BASE}/api/user/credits`, {
+            headers: authHeaders,
+            signal: signal
+        });
+    }
     if (res.status === 401) {
         window.clearSessionAndGuestUI('Session expired — please sign in again');
         return;
