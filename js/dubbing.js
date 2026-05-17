@@ -53,6 +53,20 @@ const GET_API_URL = () => {
     return String(base).replace(/\/$/, '').replace(/([^:]\/)\/+/g, '$1');
 };
 
+/** Retry on 429 (Cloudflare / edge) so parallel dub starts do not all fail at once. */
+async function fetchWithRetry(url, options, { retries = 3, baseDelayMs = 500 } = {}) {
+    let res;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        res = await fetch(url, options);
+        if (res.status !== 429 || attempt === retries) return res;
+        const retryAfter = parseInt(res.headers.get('Retry-After') || '0', 10);
+        const waitMs = retryAfter > 0 ? retryAfter * 1000 : baseDelayMs * Math.pow(2, attempt);
+        console.warn('[dubbing] rate limited (429), retrying', { attempt: attempt + 1, waitMs });
+        await new Promise((r) => setTimeout(r, waitMs));
+    }
+    return res;
+}
+
 function abortActiveDubbingWork() {
     if (dubbingWorkAbort) {
         dubbingWorkAbort.abort();
@@ -220,7 +234,7 @@ async function startDubbing() {
             try {
                 console.log('Sending to /api/dub...', { lang: langCode, file_key: fileKey });
 
-                const dubRes = await fetch(dubEndpoint, {
+                const dubRes = await fetchWithRetry(dubEndpoint, {
                     method: 'POST',
                     headers: dubHeaders,
                     signal: workSignal,
@@ -286,7 +300,11 @@ async function startDubbing() {
             }
         };
 
-        await Promise.all(langArray.map(dubOneLanguage));
+        // Sequential starts avoid edge 429 bursts; each job still tracks via SSE in parallel.
+        for (let i = 0; i < langArray.length; i++) {
+            if (i > 0) await new Promise((r) => setTimeout(r, 350));
+            await dubOneLanguage(langArray[i]);
+        }
     } catch (e) {
         if (e && e.name === 'AbortError') {
             console.warn('[dubbing] work aborted');
