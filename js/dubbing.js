@@ -78,6 +78,49 @@ function extractJobIdFromDubResponse(body) {
     return String(body.job_id || body.id || '').trim();
 }
 
+function normalizeJobStatus(status) {
+    const s = String(status || '').trim().toLowerCase();
+    if (['complete', 'done', 'success', 'succeeded'].includes(s)) return 'completed';
+    if (['error', 'failure', 'fail'].includes(s)) return 'failed';
+    return s;
+}
+
+function extractOutputUrl(data) {
+    if (!data || typeof data !== 'object') return '';
+    return String(
+        data.output_url || data.video_url || data.audio_url || data.url || ''
+    ).trim();
+}
+
+function parseJobStatusPayload(data) {
+    const status = normalizeJobStatus(data && data.status);
+    return {
+        status,
+        output_url: extractOutputUrl(data),
+        error: (data && (data.error || data.message)) || ''
+    };
+}
+
+async function fetchJobStatusFromSupabase(jobId) {
+    const supa = typeof window.getSupabase === 'function' ? window.getSupabase() : null;
+    if (!supa) return null;
+    try {
+        const { data, error } = await supa
+            .from('dubbing_jobs')
+            .select('status, output_url, error')
+            .eq('id', jobId)
+            .maybeSingle();
+        if (error) {
+            console.warn('[dubbing] Supabase job status:', error.message || error);
+            return null;
+        }
+        return data;
+    } catch (err) {
+        console.warn('[dubbing] Supabase job status failed', err);
+        return null;
+    }
+}
+
 /** Retry on 429 (Cloudflare / edge) so parallel dub starts do not all fail at once. */
 async function fetchWithRetry(url, options, { retries = 3, baseDelayMs = 500 } = {}) {
     let res;
@@ -298,8 +341,13 @@ async function startDubbing() {
                     updateProgress('Dubbing in progress...', dubbingProgressMonotonic);
                 });
 
+                const outputUrl = extractOutputUrl(job);
+                if (!outputUrl) {
+                    throw new Error('Dubbing finished but video URL is missing — check webhook / Supabase job row');
+                }
+
                 cinemaResults[langCode] = {
-                    url: job.output_url,
+                    url: outputUrl,
                     name: langInfo?.name_en || langCode,
                     flag: langCode
                 };
@@ -377,6 +425,8 @@ function watchJobViaPoll(jobId, signal, onProgressTick) {
         const url = buildJobPollUrl(jobId);
         let settled = false;
         let timer = null;
+        let tickCount = 0;
+        let pollErrors = 0;
         const maxMs = 45 * 60 * 1000;
         const started = Date.now();
 
@@ -402,8 +452,29 @@ function watchJobViaPoll(jobId, signal, onProgressTick) {
             signal.addEventListener('abort', onAbort, { once: true });
         }
 
+        const resolveIfTerminal = async (raw) => {
+            let parsed = parseJobStatusPayload(raw);
+            if (parsed.status === 'completed' && !parsed.output_url) {
+                const supaRow = await fetchJobStatusFromSupabase(jobId);
+                if (supaRow) parsed = parseJobStatusPayload(supaRow);
+            }
+            if (parsed.status === 'completed') {
+                if (!parsed.output_url) {
+                    throw new Error('Job completed but output URL is missing');
+                }
+                finish(resolve, { status: 'completed', output_url: parsed.output_url });
+                return true;
+            }
+            if (parsed.status === 'failed') {
+                finish(reject, new Error(parsed.error || 'Worker encountered an error'));
+                return true;
+            }
+            return false;
+        };
+
         const tick = async () => {
             if (settled) return;
+            tickCount += 1;
             if (Date.now() - started > maxMs) {
                 finish(reject, new Error('Dubbing timed out — please try again'));
                 return;
@@ -412,15 +483,38 @@ function watchJobViaPoll(jobId, signal, onProgressTick) {
                 const res = await fetch(url, { headers, signal });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data.error || ('status poll failed: HTTP ' + res.status));
-                if (data.status === 'completed') {
-                    finish(resolve, { status: 'completed', output_url: data.output_url || '' });
-                } else if (data.status === 'failed') {
-                    finish(reject, new Error(data.error || 'Worker encountered an error'));
-                } else if (typeof onProgressTick === 'function') {
-                    onProgressTick();
+
+                pollErrors = 0;
+                if (await resolveIfTerminal(data)) return;
+
+                if (tickCount % 3 === 0) {
+                    const supaRow = await fetchJobStatusFromSupabase(jobId);
+                    if (supaRow && (await resolveIfTerminal(supaRow))) return;
                 }
+
+                if (tickCount === 1 || tickCount % 10 === 0) {
+                    console.log('[dubbing] poll status', {
+                        jobId,
+                        status: data.status,
+                        hasOutput: !!extractOutputUrl(data)
+                    });
+                }
+
+                if (typeof onProgressTick === 'function') onProgressTick();
             } catch (err) {
-                if (err && err.name === 'AbortError') finish(reject, err);
+                if (err && err.name === 'AbortError') {
+                    finish(reject, err);
+                    return;
+                }
+                pollErrors += 1;
+                console.warn('[dubbing] poll error', {
+                    jobId,
+                    attempt: pollErrors,
+                    message: err && err.message ? err.message : String(err)
+                });
+                if (pollErrors >= 6) {
+                    finish(reject, new Error((err && err.message) || 'Could not reach status API'));
+                }
             }
         };
 
@@ -482,16 +576,16 @@ function watchJobViaSSE(jobId, signal, onProgressTick) {
         }
 
         const handleStatusPayload = (data) => {
-            const status = (data && data.status) || '';
-            if (status === 'completed') {
+            const parsed = parseJobStatusPayload(data);
+            if (parsed.status === 'completed') {
                 finish(resolve, {
                     status: 'completed',
-                    output_url: (data && data.output_url) || ''
+                    output_url: parsed.output_url
                 });
                 return true;
             }
-            if (status === 'failed') {
-                finish(reject, new Error((data && data.error) || 'Worker encountered an error'));
+            if (parsed.status === 'failed') {
+                finish(reject, new Error(parsed.error || 'Worker encountered an error'));
                 return true;
             }
             return false;
@@ -543,7 +637,7 @@ function watchJobViaSSE(jobId, signal, onProgressTick) {
                 closeSource();
                 finish(reject, new Error('SSE_UNAVAILABLE'));
             }
-        }, 12000);
+        }, 25000);
 
         eventSource.onerror = () => {
             if (settled) return;
@@ -563,7 +657,7 @@ function watchJobViaSSE(jobId, signal, onProgressTick) {
 
 function switchCinemaLang(langCode) {
     const data = cinemaResults[langCode];
-    if (!data) return;
+    if (!data || !data.url) return;
 
     document.querySelectorAll('.side-lang-card').forEach(c => c.classList.remove('active'));
     document.getElementById(`side-${langCode}`)?.classList.add('active');
