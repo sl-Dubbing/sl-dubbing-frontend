@@ -91,11 +91,11 @@
 <div class="page">
     <header class="top-bar">
         <a class="logo" href="/">
-            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px;">
                 <path d="M16 3C8.82 3 3 8.82 3 16C3 23.18 8.82 29 16 29C23.18 29 29 23.18 29 16V14H16V19H23.2C22.1 22.1 19.3 24 16 24C11.58 24 8 20.42 8 16C8 11.58 11.58 8 16 8C18.4 8 20.5 9.06 21.8 10.74L25.4 7.14C22.9 4.6 19.6 3 16 3Z" fill="#0f0f10"/>
                 <path d="M29 16C29 23.18 23.18 29 16 29V24C19.3 24 22.1 22.1 23.2 19H29V16Z" fill="#007aff"/>
             </svg>
-            Glotix
+            <span style="font-size: 1.6rem; font-weight: 800; margin-left: 10px; letter-spacing: -0.5px;">Glotix</span>
         </a>
 
         <div class="user-zone">
@@ -154,25 +154,27 @@
     </div>
 
     <div class="section-title">
-        <h2>Simple Pricing</h2>
-        <p>Monthly subscription. Cancel anytime.</p>
+        <h2>Pay As You Go Credits</h2>
+        <p>No monthly subscriptions. Buy credits only when you need them. Credits never expire.</p>
     </div>
 
-    <div class="plans-row">
-        <div class="plan">
-            <h3>Starter</h3>
-            <div class="price-box"><div class="price-num">$4<span style="font-size:1rem;font-weight:600;">/mo</span></div></div>
-            <a href="/pricing" class="buy-btn">Get Started</a>
-        </div>
-        <div class="plan" style="border: 2px solid var(--primary); box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
-            <h3>Creator</h3>
-            <div class="price-box"><div class="price-num">$18<span style="font-size:1rem;font-weight:600;">/mo</span></div></div>
-            <a href="/pricing" class="buy-btn">Get Started</a>
-        </div>
-        <div class="plan">
-            <h3>Pro</h3>
-            <div class="price-box"><div class="price-num">$85<span style="font-size:1rem;font-weight:600;">/mo</span></div></div>
-            <a href="/pricing" class="buy-btn">Get Started</a>
+    <div class="plans-row" style="display: flex; justify-content: center;">
+        <div class="plan" style="border: 2px solid var(--accent-blue); box-shadow: 0 10px 40px rgba(37, 99, 235, 0.12); text-align: center; max-width: 600px; width: 100%; align-items: center;">
+            <div style="background: #eff6ff; color: var(--accent-blue); padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; margin-bottom: 20px;">
+                <i class="fas fa-coins"></i> Flexible Top-ups
+            </div>
+            <h3 style="font-size: 2rem; margin-bottom: 15px;">Credit Packs</h3>
+            <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 25px;">
+                Starting from just <strong>$5</strong>. Get full access to all AI tools, Video Dubbing, Premium Voices, and 102+ languages.
+            </p>
+            <ul style="list-style: none; text-align: left; margin-bottom: 30px; display: inline-block;">
+                <li style="margin-bottom: 10px;"><i class="fas fa-check" style="color: var(--success); margin-right: 10px;"></i> Pay only for what you use</li>
+                <li style="margin-bottom: 10px;"><i class="fas fa-check" style="color: var(--success); margin-right: 10px;"></i> Unused credits roll over forever</li>
+                <li><i class="fas fa-check" style="color: var(--success); margin-right: 10px;"></i> Instant account upgrade</li>
+            </ul>
+            <a href="/pricing" class="buy-btn" style="background: var(--accent-blue); font-size: 1.1rem;">
+                View Credit Packs <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+            </a>
         </div>
     </div>
 </div>
