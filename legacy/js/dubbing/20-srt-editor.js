@@ -522,22 +522,7 @@
     // # guard — رفض/خروج
     if (S.srtPreviewFileKey) return S.srtPreviewFileKey;
 
-    const { normalizeApiBaseUrl } = DubbingApp.api;
-    // # HTTP — طلب API
-    const urlRes = await fetch(`${normalizeApiBaseUrl()}/api/upload-url`, {
-      // # block — طلب HTTP/API
-      method: 'POST',
-      headers: { ...authHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        filename: file.name,
-        content_type: file.type || 'application/octet-stream',
-      }),
-    // # block — parse/serialize JSON
-    });
-    const urlData = await urlRes.json().catch(() => ({}));
-    // # guard — رفض/خروج
-    if (!urlRes.ok) throw new Error(urlData.error || 'upload-url failed');
-    await DubbingApp.upload.uploadMediaFileFromUploadUrlResponse(urlData, file, authHeaders);
+    const urlData = await DubbingApp.upload.uploadMediaFileResumableToR2(file, authHeaders);
     S.srtPreviewFileKey = urlData.file_key;
     return S.srtPreviewFileKey;
   }

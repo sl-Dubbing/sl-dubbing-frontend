@@ -43,7 +43,7 @@ type MultipartSession = {
 };
 
 const DEFAULT_CHUNK_BYTES = 16 * 1024 * 1024;
-const MULTIPART_THRESHOLD_BYTES = 500 * 1024 * 1024;
+const MULTIPART_THRESHOLD_BYTES = 16 * 1024 * 1024;
 const SESSION_PREFIX = 'glotix_r2_multipart_v1_';
 
 // # FN uploadToPresignedUrl

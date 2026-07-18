@@ -112,37 +112,17 @@
       // # block — رفع أو تخزين ملف
       }
 
-      // # HTTP — طلب إلى API
-      const urlRes = await fetch(`${normalizeApiBaseUrl()}/api/upload-url`, {
-        // # block — طلب HTTP/API
-        method: 'POST',
-        headers: { ...authHeaders, 'Content-Type': 'application/json' },
-        // # تسلسل JSON للطلب
-        body: JSON.stringify({
-          filename: file.name,
-          // # block — طلب HTTP/API
-          content_type: file.type || 'application/octet-stream',
-        // # block — parse/serialize JSON
-        }),
-      // # block — parse/serialize JSON
-      });
-      // # guard — شرط رفض أو خروج مبكر
-      if (!urlRes.ok) {
-        // # parse — قراءة JSON من الاستجابة
-        const errData = await urlRes.json().catch(() => ({}));
-        // # raise — رفع خطأ للم caller
-        throw new Error(errData.error || `upload-url failed: HTTP ${urlRes.status}`);
-      // # block — رفع أو تخزين ملف
+      let urlData;
+      // # guard — SRT extraction already uploaded this exact selected file; never upload it twice
+      if (S.srtPreviewFileKey) {
+        urlData = { file_key: S.srtPreviewFileKey };
+        DubbingApp.ui.updateDubbingProgressBarUi('Using uploaded file...', 50);
+      } else {
+        urlData = await DubbingApp.upload.uploadMediaFileResumableToR2(
+          file,
+          authHeaders,
+        );
       }
-      // # parse — قراءة JSON من الاستجابة
-      const urlData = await urlRes.json();
-      // # block — رفع أو تخزين ملف
-      await DubbingApp.upload.uploadMediaFileFromUploadUrlResponse(
-        urlData,
-        file,
-        authHeaders,
-      // # block — رفع أو تخزين ملف
-      );
       // # block — رفع أو تخزين ملف
       S.progressPercentMonotonic = 50;
       // # HTTP — طلب outbound
