@@ -17,28 +17,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Build static site
-        env:
-          PUBLIC_API_BASE: https://glotix-api-production.up.railway.app
-          PUBLIC_SUPABASE_URL: https://ckjkkxrlgisjdolwddfg.supabase.co
-          PUBLIC_SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjU0OTUsImV4cCI6MjA5MzA0MTQ5NX0.F-4TbmO6_7plPm8NBr_6djCv6gtEPpWFw9J7m8vTs6M
-          PUBLIC_USE_GO_GATEWAY: 'false'
-          PUBLIC_DUB_USE_SSE: 'true'
-          PUBLIC_VOICE_CLONE_CREDIT_COST: '100'
-        run: npm run build
-      - name: Ensure Pages markers
+      - name: Assemble legacy static site
         run: |
-          printf 'glotix.ai\n' > build/CNAME
-          touch build/.nojekyll
+          mkdir -p site
+          cp -r legacy/*.html site/
+          cp -r legacy/css site/css
+          cp -r legacy/js site/js
+          mkdir -p site/auth
+          cp legacy/auth/confirm.html site/auth/confirm.html
+          cp -r icon-index site/icon-index
+          cp -r logo site/logo
+          cp -r demo site/demo
+          cp robots.txt sitemap.xml site/ 2>/dev/null || true
+          printf 'glotix.ai\n' > site/CNAME
+          touch site/.nojekyll
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
+          publish_dir: ./site
           cname: glotix.ai
           force_orphan: true
