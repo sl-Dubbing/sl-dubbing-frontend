@@ -115,9 +115,19 @@
     const sampleText = resolveSelectedVoiceSampleTextFromDom();
     const usingSaved = !!global.usingSavedVoice;
     const mode = readSelectedVoiceModeFromDomElements();
-    const quality = global.dubbingQuality || 'studio';
+    let quality = String(global.dubbingQuality || 'studio').toLowerCase();
+    const elevenLabsVoiceId = String(global.selectedElevenLabsVoiceId || '').trim();
     // # block — معالجة صوت/استنساخ
     const cpuSite = !!(global.APP_CONFIG && global.APP_CONFIG.CPU_SITE_MODE);
+    const videoClone = !sample && !usingSaved && mode !== 'default' && !elevenLabsVoiceId;
+    // # guard — Fast Dub cannot isolate music/clone from video; fall back to studio
+    if (quality === 'fast' && videoClone) {
+      quality = 'studio';
+      global.showToast?.(
+        'Fast Dub needs Default/Premium voice — using Studio for voice clone',
+        'info',
+      );
+    }
 
     // # guard — CPU site mode: Edge neural voices, browser stem prep, no GPU clone
     if (cpuSite && !sample && !usingSaved) {
@@ -146,6 +156,8 @@
       if (sampleText) payload.sample_text = sampleText;
       // # guard — شرط رفض أو خروج مبكر
       if (usingSaved) payload.use_saved_voice = true;
+      // # guard — premium ElevenLabs id skips Instant Voice Clone on Fast path
+      if (elevenLabsVoiceId) payload.elevenlabs_voice_id = elevenLabsVoiceId;
       // # return — إرجاع النتيجة
       return payload;
     }
@@ -163,11 +175,12 @@
         enable_lipsync: !!global.enableLipsync,
         // # block — معالجة صوت/استنساخ
         quality,
+        ...(elevenLabsVoiceId ? { elevenlabs_voice_id: elevenLabsVoiceId } : {}),
       // # block — معالجة صوت/استنساخ
       };
     }
     // # guard — شرط رفض أو خروج مبكر
-    if (mode === 'default') {
+    if (mode === 'default' || (quality === 'fast' && !sample)) {
       // # return — إرجاع النتيجة
       return {
         voice_mode: 'default',
@@ -175,6 +188,7 @@
         speaker_mode: (global.speakerMode || 'auto'),
         enable_lipsync: !!global.enableLipsync,
         quality,
+        ...(elevenLabsVoiceId ? { elevenlabs_voice_id: elevenLabsVoiceId } : {}),
       };
     }
     return {

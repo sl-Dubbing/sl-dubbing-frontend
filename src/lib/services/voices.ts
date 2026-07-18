@@ -12,6 +12,7 @@ export type Voice = {
 	sample_text?: string;
 	avatar_url?: string;
 	engine?: string;
+	elevenlabs_voice_id?: string;
 	source: 'quick' | 'premium' | 'saved' | 'library' | 'upload' | 'video' | 'default';
 };
 
@@ -31,6 +32,9 @@ export async function loadPremiumVoices(): Promise<Voice[]> {
 			sample_text: String(voice.sample_text || ''),
 			avatar_url: String(voice.avatar_url || ''),
 			engine: String(voice.engine || ''),
+			elevenlabs_voice_id: String(
+				voice.elevenlabs_voice_id || voice.eleven_labs_voice_id || ''
+			),
 			source: 'premium' as const
 		}));
 	} catch {

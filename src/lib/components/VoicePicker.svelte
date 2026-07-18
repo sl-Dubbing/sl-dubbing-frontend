@@ -14,6 +14,7 @@
 		selected?: Voice | null;
 		includeQuick?: boolean;
 		includeVideoClone?: boolean;
+		preferDefault?: boolean;
 		onchange?: (voice: Voice) => void;
 	};
 
@@ -21,6 +22,7 @@
 		selected = null,
 		includeQuick = false,
 		includeVideoClone = false,
+		preferDefault = false,
 		onchange
 	}: Props = $props();
 
@@ -50,9 +52,11 @@
 		voices = [...(saved ? [saved] : []), ...clones, ...premium];
 		loading = false;
 		if (!selected) {
-			if (includeQuick) choose(quickVoice);
+			if (preferDefault) choose(defaultVoice);
+			else if (includeQuick) choose(quickVoice);
 			else if (includeVideoClone) choose(videoClone);
 			else if (voices[0]) choose(voices[0]);
+			else choose(defaultVoice);
 		}
 	}
 

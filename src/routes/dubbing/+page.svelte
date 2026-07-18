@@ -60,7 +60,7 @@
 	let selectedVoice = $state<Voice | null>(null);
 	let speakerMode = $state('auto');
 	let enableLipsync = $state(false);
-	let quality = $state('studio');
+	let quality = $state('fast');
 	let segments = $state<ScriptSegment[]>([]);
 	let sourceSegments = $state<ScriptSegment[]>([]);
 	let srtStatus = $state('');
@@ -243,13 +243,18 @@
 
 	function voicePayload() {
 		const voice = selectedVoice;
+		let effectiveQuality = quality;
+		if (effectiveQuality === 'fast' && (!voice || voice.source === 'video')) {
+			effectiveQuality = 'studio';
+			showToast('Fast Dub needs Default/Premium voice — using Studio for video clone', 'info');
+		}
 		if (!voice || voice.source === 'video') {
 			return {
 				voice_mode: 'clone',
 				clone_source: 'video',
 				speaker_mode: speakerMode,
 				enable_lipsync: enableLipsync,
-				quality
+				quality: effectiveQuality
 			};
 		}
 		if (voice.source === 'default') {
@@ -257,7 +262,7 @@
 				voice_mode: 'default',
 				speaker_mode: speakerMode,
 				enable_lipsync: enableLipsync,
-				quality
+				quality: effectiveQuality
 			};
 		}
 		return {
@@ -270,10 +275,11 @@
 						: voice.source,
 			sample_url: voice.sample_url,
 			sample_text: voice.sample_text || '',
+			elevenlabs_voice_id: voice.elevenlabs_voice_id || '',
 			use_saved_voice: voice.source === 'saved',
 			speaker_mode: speakerMode,
 			enable_lipsync: enableLipsync,
-			quality
+			quality: effectiveQuality
 		};
 	}
 
@@ -416,7 +422,9 @@
 			speaker_mode: speakerMode,
 			enable_lipsync: enableLipsync,
 			use_saved_voice: 'use_saved_voice' in voice ? voice.use_saved_voice : false,
-			quality,
+			quality: 'quality' in voice ? voice.quality : quality,
+			elevenlabs_voice_id:
+				'elevenlabs_voice_id' in voice ? voice.elevenlabs_voice_id || '' : '',
 			video_output: isVideo,
 			segments: translated,
 			script_segments: translated
@@ -640,6 +648,7 @@
 		<VoicePicker
 			selected={selectedVoice}
 			includeVideoClone
+			preferDefault={quality === 'fast'}
 			onchange={(voice) => (selectedVoice = voice)}
 		/>
 
@@ -655,8 +664,8 @@
 			<label>
 				Quality
 				<select bind:value={quality}>
-					<option value="studio">Studio</option>
-					<option value="fast">Fast</option>
+					<option value="fast">Fast (ElevenLabs Flash)</option>
+					<option value="studio">Studio (music isolation + clone)</option>
 				</select>
 			</label>
 			<label class="check">

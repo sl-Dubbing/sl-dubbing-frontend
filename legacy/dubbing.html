@@ -868,12 +868,12 @@
             <button class="dropdown-btn" id="voiceSelectBtn" type="button">
                 <span style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
                     <span id="voiceSelectIcon"><i class="fa-solid fa-microphone-lines" style="font-size:1.1rem;color:#6b7280;"></i></span>
-                    <span id="voiceSelectLabel" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Voice Clone</span>
+                    <span id="voiceSelectLabel" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Default Voice</span>
                 </span>
                 <span class="brand-chevron" id="voiceSelectArrow" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
             </button>
             <div class="voice-dropdown-panel" id="voiceDropdownPanel">
-                <div class="voice-option-basic selected" id="voiceOptClone" onclick="selectVoiceOption('clone','',this,'','Voice Clone')">
+                <div class="voice-option-basic" id="voiceOptClone" onclick="selectVoiceOption('clone','',this,'','Voice Clone')">
                     <i class="fa-regular fa-copy"></i>
                     <div style="display:flex;flex-direction:column;">
                         <span style="font-weight:600;font-size:0.95rem;color:var(--text-main);">Voice Clone</span>
@@ -885,7 +885,7 @@
                         <span style="font-weight:600;font-size:0.95rem;color:var(--text-main);">My Saved Voice</span>
                     </div>
                 </div>
-                <div class="voice-option-basic" id="voiceOptDefault" onclick="selectVoiceOption('default','',this,'','Default Voice')">
+                <div class="voice-option-basic selected" id="voiceOptDefault" onclick="selectVoiceOption('default','',this,'','Default Voice')">
                     <i class="fa-solid fa-robot"></i>
                     <div style="display:flex;flex-direction:column;">
                         <span style="font-weight:600;font-size:0.95rem;color:var(--text-main);">Default Voice</span>
@@ -897,6 +897,17 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="qualityModeRow" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 4px;">
+        <span style="font-size:0.85rem;font-weight:600;color:var(--text-muted);white-space:nowrap;">
+            <i class="fa-solid fa-bolt" style="margin-right:6px;color:var(--accent-blue);"></i>Mode
+        </span>
+        <div role="group" aria-label="Dubbing quality mode" id="qualityModeToggle" style="display:inline-flex;background:var(--bg-soft,#f3f4f6);border-radius:10px;padding:3px;gap:2px;">
+            <button type="button" class="speaker-mode-btn active" data-quality-mode="fast">Fast</button>
+            <button type="button" class="speaker-mode-btn" data-quality-mode="studio">Studio</button>
+        </div>
+        <span id="qualityModeHint" style="font-size:0.78rem;color:#94a3b8;">Fast = ElevenLabs Flash, no GPU wait</span>
     </div>
 
     <div id="speakerModeRow">
@@ -1087,9 +1098,34 @@
     const voiceLabel      = document.getElementById('voiceSelectLabel');
     const voicesContainer = document.getElementById('supabaseVoicesContainer');
     const previewPlayer   = document.getElementById('voicePreviewPlayer');
-    window.voiceMode = 'clone'; window.selectedSample = ''; window.selectedSampleText = ''; window.forceEngine = ''; window.selectedCloneSource = 'video';
+    window.voiceMode = 'default'; window.selectedSample = ''; window.selectedSampleText = ''; window.forceEngine = ''; window.selectedCloneSource = '';
     window.speakerMode = 'auto';
     window.enableLipsync = false;
+    window.dubbingQuality = 'fast';
+    window.selectedElevenLabsVoiceId = '';
+    (function initQualityModeToggle() {
+        const root = document.getElementById('qualityModeToggle');
+        const hint = document.getElementById('qualityModeHint');
+        if (!root) return;
+        root.querySelectorAll('.speaker-mode-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                root.querySelectorAll('.speaker-mode-btn').forEach((b) => b.classList.remove('active'));
+                btn.classList.add('active');
+                window.dubbingQuality = btn.getAttribute('data-quality-mode') || 'studio';
+                if (hint) {
+                    hint.textContent = window.dubbingQuality === 'fast'
+                        ? 'Fast = ElevenLabs Flash, no stem separation (Default/Premium voice)'
+                        : 'Studio keeps music isolation + clone';
+                }
+                if (window.dubbingQuality === 'fast'
+                    && window.voiceMode === 'clone'
+                    && !String(window.selectedSample || '').trim()
+                    && !String(window.selectedElevenLabsVoiceId || '').trim()) {
+                    window.showToast?.('Fast Dub works best with Default or Premium voice', 'info');
+                }
+            });
+        });
+    })();
     (function initSpeakerModeToggle() {
         const root = document.getElementById('speakerModeToggle');
         if (!root) return;
@@ -1129,6 +1165,11 @@
     function selectVoiceOption(mode, sampleUrl, element, engine='', name='') {
         window.voiceMode = mode; window.selectedSample = sampleUrl; window.selectedSampleText = ''; window.forceEngine = engine;
         window.selectedCloneSource = sampleUrl ? (window.selectedCloneSource || 'premium') : 'video';
+        if (!sampleUrl || mode === 'default') {
+            window.selectedElevenLabsVoiceId = '';
+        } else if (element && element.getAttribute) {
+            window.selectedElevenLabsVoiceId = (element.getAttribute('data-elevenlabs-voice-id') || '').trim();
+        }
         const savedOpt = document.getElementById('voiceOptSaved');
         window.usingSavedVoice = !!(sampleUrl && ((savedOpt && element === savedOpt) || (element && element.classList && element.classList.contains('voice-saved-user-card'))));
         document.getElementById('voiceOptClone').classList.remove('selected');

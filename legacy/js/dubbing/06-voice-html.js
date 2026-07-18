@@ -151,6 +151,9 @@
         // # block — معالجة صوت/استنساخ
         const sampleText = escapeHtmlForVoiceCardLabels(voice.sample_text || '');
         const engine = escapeHtmlForVoiceCardLabels(voice.engine || '');
+        const elevenId = escapeHtmlForVoiceCardLabels(
+          voice.elevenlabs_voice_id || voice.eleven_labs_voice_id || '',
+        );
         const avatar = escapeHtmlForVoiceCardLabels(
           voice.avatar_url ||
             `https://ui-avatars.com/api/?name=${encodeURIComponent(voice.name || 'V')}&background=f3f4f6&color=111827`,
@@ -159,7 +162,7 @@
         const selected = global.selectedSample === voice.sample_url ? ' selected' : '';
         // # return — إرجاع النتيجة
         return `
-            <div class="voice-avatar-card${selected}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-avatar-url="${avatar}"
+            <div class="voice-avatar-card${selected}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url="${avatar}"
                  onclick="onPremiumVoiceCardClick(this)">
                 <div class="voice-avatar-wrapper">
                     <img src="${avatar}" alt="${name}">
@@ -337,10 +340,12 @@
     const sampleText = (cardEl.getAttribute('data-sample-text') || '').trim();
     const name = cardEl.getAttribute('data-name') || 'Voice';
     const engine = cardEl.getAttribute('data-engine') || '';
+    const elevenLabsVoiceId = (cardEl.getAttribute('data-elevenlabs-voice-id') || '').trim();
     // # block — معالجة صوت/استنساخ
     global.usingSavedVoice = cardEl.classList.contains('voice-saved-user-card');
     global.selectedSample = sampleUrl;
     global.selectedSampleText = sampleText;
+    global.selectedElevenLabsVoiceId = elevenLabsVoiceId;
     global.voiceMode = 'clone';
     global.forceEngine = engine;
     global.selectedCloneSource = cardEl.classList.contains('voice-user-clone-card')

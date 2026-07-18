@@ -234,6 +234,9 @@
             // # block — معالجة صوت/استنساخ
             ...hyperPayload,
           };
+          if (mergedVoice.elevenlabs_voice_id) {
+            requestBody.elevenlabs_voice_id = mergedVoice.elevenlabs_voice_id;
+          }
           // # شرط
           if (hasScript) {
             let readySegs = scriptSegments;
