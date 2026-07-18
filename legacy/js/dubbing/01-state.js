@@ -54,6 +54,10 @@
     selectedMediaDurationSec: 0,
     scriptSegments: [],
     srtPreviewFileKey: '',
+    srtAudioFileKey: '',
+    srtVideoFileKey: '',
+    videoUploadPromise: null,
+    fastPathMode: '',
   };
 
   global.savedVoiceProfile = global.savedVoiceProfile || null;

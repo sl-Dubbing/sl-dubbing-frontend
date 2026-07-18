@@ -1,5 +1,5 @@
 // # FILE frontend/sl-dubbing-frontend-main/src/lib/services/media-prepare.ts
-// # AR Local media prep: extract audio in-browser before R2 upload when safe
+// # AR Local media prep: extract compressed audio in-browser before R2 upload when safe
 // # KW صوت_معالجة,ffmpeg,رفع,upload,WASM,worker
 
 import type { FfmpegProgress } from '$lib/services/ffmpeg';
@@ -11,6 +11,7 @@ export type PreparedMedia = {
 	mode: 'audio-only' | 'original';
 	originalFile: File;
 	extractedAudio?: Blob;
+	audioFile?: File;
 };
 
 export type PrepareMediaOptions = {
@@ -28,9 +29,9 @@ function isVideoFile(file: File): boolean {
 	return file.type.startsWith('video/') || /\.(mp4|mov|webm|mkv|m4v)$/i.test(file.name);
 }
 
-function audioFileName(source: File): string {
+function audioFileName(source: File, ext = 'mp3'): string {
 	const base = source.name.replace(/\.[^.]+$/, '') || 'audio';
-	return `${base}.wav`;
+	return `${base}.${ext}`;
 }
 
 // # FN shouldExtractAudioLocally
@@ -42,18 +43,21 @@ export function shouldExtractAudioLocally(
 ): boolean {
 	if (options.forceOriginal || options.enableLipsync) return false;
 	if (!isVideoFile(file)) return false;
-	const minBytes = options.minBytesForExtract ?? 8 * 1024 * 1024;
+	const minBytes = options.minBytesForExtract ?? 2 * 1024 * 1024;
 	const deviceMemoryGb =
 		typeof navigator !== 'undefined' && 'deviceMemory' in navigator
 			? Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory || 4)
 			: 4;
-	const memoryAwareMax = Math.min(1024 * 1024 * 1024, Math.max(256, deviceMemoryGb * 128) * 1024 * 1024);
+	const memoryAwareMax = Math.min(
+		1024 * 1024 * 1024,
+		Math.max(256, deviceMemoryGb * 128) * 1024 * 1024
+	);
 	const maxBytes = options.maxBytesForExtract ?? memoryAwareMax;
 	return file.size >= minBytes && file.size <= maxBytes;
 }
 
 // # FN prepareMediaForUpload
-// # AR Extract mono 16 kHz WAV locally when lipsync is off; else keep original
+// # AR Extract mono 16 kHz MP3 locally when lipsync is off; else keep original
 // # KW صوت_معالجة,ffmpeg,رفع,upload,WASM
 export async function prepareMediaForUpload(
 	file: File,
@@ -70,20 +74,23 @@ export async function prepareMediaForUpload(
 		const extractedAudio = await extractAudioWithFfmpegWasm(file, {
 			sampleRate: 16000,
 			channels: 1,
+			format: 'mp3',
+			bitrate: '64k',
 			onProgress: options.onProgress
 		});
-		const uploadFile = new File([extractedAudio], audioFileName(file), {
-			type: 'audio/wav',
+		const audioFile = new File([extractedAudio], audioFileName(file, 'mp3'), {
+			type: 'audio/mpeg',
 			lastModified: Date.now()
 		});
 		options.onStatus?.(
-			`Local audio ready (${Math.max(1, Math.round(uploadFile.size / (1024 * 1024)))} MB) — uploading…`
+			`Local audio ready (${Math.max(1, Math.round(audioFile.size / (1024 * 1024)))} MB) — uploading…`
 		);
 		return {
-			uploadFile,
+			uploadFile: audioFile,
 			mode: 'audio-only',
 			originalFile: file,
-			extractedAudio
+			extractedAudio,
+			audioFile
 		};
 	} catch (error) {
 		console.warn('[media-prepare] local extract failed; uploading original', error);

@@ -65,6 +65,9 @@
 	let sourceSegments = $state<ScriptSegment[]>([]);
 	let srtStatus = $state('');
 	let uploadedKey = $state('');
+	let audioUploadedKey = $state('');
+	let videoUploadedKey = $state('');
+	let videoUploadPromise = $state<Promise<UploadGrant> | null>(null);
 	let uploadGrant = $state<UploadGrant | null>(null);
 	let preparedMedia = $state<PreparedMedia | null>(null);
 	let progress = $state(0);
@@ -145,6 +148,9 @@
 		segments = [];
 		sourceSegments = [];
 		uploadedKey = '';
+		audioUploadedKey = '';
+		videoUploadedKey = '';
+		videoUploadPromise = null;
 		uploadGrant = null;
 		preparedMedia = null;
 		results = [];
@@ -160,10 +166,14 @@
 	}
 
 	// # FN uploadMediaFileToR2PresignedUrl
-	// # AR Locally extract audio when safe, then PUT directly to R2 with progress
+	// # AR Fast path: upload compressed audio for ASR and start video upload in parallel
 	// # KW رفع,upload,R2,storage,ffmpeg,WASM
 	async function ensureUploaded(): Promise<UploadGrant> {
-		if (uploadedKey && uploadGrant) return uploadGrant;
+		if (videoUploadedKey && uploadGrant?.file_key === videoUploadedKey) return uploadGrant;
+		if (audioUploadedKey && preparedMedia?.mode === 'audio-only' && !videoUploadedKey) {
+			// Audio ready; video may still be uploading — return audio grant for ASR
+			if (uploadGrant?.file_key === audioUploadedKey) return uploadGrant;
+		}
 		if (!file) throw new Error('Select a media file first');
 
 		const prepared =
@@ -180,10 +190,40 @@
 					});
 		preparedMedia = prepared;
 
-		statusText =
-			prepared.mode === 'audio-only'
-				? 'Uploading extracted audio directly to storage…'
-				: 'Uploading media directly to storage…';
+		if (prepared.mode === 'audio-only' && prepared.audioFile) {
+			statusText = 'Uploading extracted audio directly to storage…';
+			const audioGrant = await uploadFileResumableToR2(prepared.audioFile, {
+				contentType: 'audio/mpeg',
+				onProgress: (ratio) => {
+					progress = Math.max(progress, Math.round(30 + ratio * 20));
+				}
+			});
+			const audioKey = audioGrant.file_key;
+			if (!audioKey) throw new Error('Incomplete audio upload grant');
+			audioUploadedKey = audioKey;
+			uploadedKey = audioKey;
+			uploadGrant = audioGrant;
+
+			videoUploadPromise = uploadFileResumableToR2(file, {
+				contentType: file.type || 'application/octet-stream',
+				onProgress: (ratio) => {
+					progress = Math.max(progress, Math.round(50 + ratio * 10));
+					statusText = 'Background video upload…';
+				}
+			}).then((grant) => {
+				const key = grant.file_key;
+				if (!key) throw new Error('Incomplete video upload grant');
+				videoUploadedKey = key;
+				uploadGrant = grant;
+				return grant;
+			});
+
+			progress = Math.max(progress, 50);
+			statusText = 'Audio uploaded — transcript can start while video uploads';
+			return audioGrant;
+		}
+
+		statusText = 'Uploading media directly to storage…';
 		const grant = await uploadFileResumableToR2(prepared.uploadFile, {
 			contentType: prepared.uploadFile.type || 'application/octet-stream',
 			onProgress: (ratio) => {
@@ -193,13 +233,38 @@
 		const fileKey = grant.file_key;
 		if (!fileKey) throw new Error('Incomplete upload grant');
 		uploadedKey = fileKey;
+		videoUploadedKey = fileKey;
+		audioUploadedKey = '';
 		uploadGrant = grant;
 		progress = Math.max(progress, 55);
-		statusText =
-			prepared.mode === 'audio-only'
-				? 'Audio uploaded (skipped full-video transfer)'
-				: 'Media uploaded';
+		statusText = 'Media uploaded';
 		return grant;
+	}
+
+	async function ensureVideoReadyForDub(): Promise<string> {
+		if (videoUploadedKey) return videoUploadedKey;
+		let pending = videoUploadPromise;
+		if (pending) {
+			statusText = 'Finishing background video upload…';
+			const grant = await pending;
+			const key = grant.file_key;
+			if (!key) throw new Error('Video upload incomplete');
+			videoUploadedKey = key;
+			return key;
+		}
+		const grant = await ensureUploaded();
+		pending = videoUploadPromise;
+		if (pending) {
+			const videoGrant = await pending;
+			const key = videoGrant.file_key;
+			if (!key) throw new Error('Video upload incomplete');
+			videoUploadedKey = key;
+			return key;
+		}
+		const key = grant.file_key || videoUploadedKey || uploadedKey;
+		if (!key) throw new Error('Video file_key missing');
+		videoUploadedKey = key;
+		return key;
 	}
 
 	// # FN extractScriptFromMedia
@@ -213,13 +278,19 @@
 		srtStatus = 'Uploading & extracting script…';
 		try {
 			await ensureUploaded();
+			const transcribeBody: Record<string, string> = {
+				source_language: sourceLang
+			};
+			if (audioUploadedKey && preparedMedia?.mode === 'audio-only') {
+				transcribeBody.audio_file_key = audioUploadedKey;
+				transcribeBody.file_key = audioUploadedKey;
+			} else {
+				transcribeBody.file_key = uploadedKey;
+			}
 			const res = await apiFetch('/api/dub/transcribe', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					file_key: uploadedKey,
-					source_language: sourceLang
-				})
+				body: JSON.stringify(transcribeBody)
 			});
 			const data = await parseJsonSafe<{
 				success?: boolean;
@@ -380,7 +451,11 @@
 	}
 
 	async function finalizeResultItem(item: ResultItem): Promise<ResultItem> {
+		// Server Fast path now muxes on Modal; keep local remux only as a last-resort fallback.
 		if (!(preparedMedia?.mode === 'audio-only' && isVideo && preparedMedia.originalFile)) {
+			return item;
+		}
+		if (item.url && /\.(mp4|webm|mov)(\?|$)/i.test(item.url)) {
 			return item;
 		}
 		try {
@@ -406,8 +481,9 @@
 		const voice = voicePayload();
 		const translated = await segmentsForTarget(code);
 		const source = findLanguage(languages, sourceLang);
-		const body = {
-			file_key: uploadedKey,
+		const videoKey = await ensureVideoReadyForDub();
+		const body: Record<string, unknown> = {
+			file_key: videoKey,
 			lang: code,
 			target_language: language?.base_lang || code.split('-')[0],
 			dialect: language?.dialect || '',
@@ -429,6 +505,9 @@
 			segments: translated,
 			script_segments: translated
 		};
+		if (audioUploadedKey && preparedMedia?.mode === 'audio-only') {
+			body.audio_file_key = audioUploadedKey;
+		}
 		const res = await apiFetch('/api/dub', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -674,6 +753,9 @@
 					bind:checked={enableLipsync}
 					onchange={() => {
 						uploadedKey = '';
+						audioUploadedKey = '';
+						videoUploadedKey = '';
+						videoUploadPromise = null;
 						uploadGrant = null;
 						preparedMedia = null;
 					}}

@@ -99,23 +99,40 @@
   // # FN uploadMediaFileResumableToR2
   // # AR Upload once: parallel multipart for medium/large media, direct PUT for small files.
   // # KW رفع,upload,R2,storage,multipart,resume,سرعة
-  async function uploadMediaFileResumableToR2(file, authHeaders) {
-    const contentType = file.type || 'application/octet-stream';
+  async function uploadMediaFileResumableToR2(file, authHeaders, options) {
+    const opts = options || {};
+    const contentType = opts.contentType || file.type || 'application/octet-stream';
+    const progressLabel = opts.progressLabel || 'Uploading File (parallel)...';
+    const reportProgress = (ratio) => {
+      if (typeof opts.onProgress === 'function') {
+        opts.onProgress(ratio, Math.round(ratio * file.size), file.size);
+        return;
+      }
+      DubbingApp.ui.updateDubbingProgressBarUi(progressLabel, 10 + ratio * 40);
+    };
     if (file.size < MULTIPART_THRESHOLD_BYTES) {
       const response = await fetch(`${DubbingApp.api.normalizeApiBaseUrl()}/api/upload-url`, {
         method: 'POST',
         headers: { ...authHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, content_type: contentType }),
+        body: JSON.stringify({
+          filename: file.name || opts.filename || 'upload.bin',
+          content_type: contentType,
+        }),
       });
       const grant = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(grant.error || `upload-url failed: HTTP ${response.status}`);
       await uploadMediaFileFromUploadUrlResponse(grant, file, authHeaders);
+      reportProgress(1);
       return grant;
     }
 
     const session = await postMultipartJson(
       '/api/uploads/multipart/initiate',
-      { filename: file.name, content_type: contentType, file_size: file.size },
+      {
+        filename: file.name || opts.filename || 'upload.bin',
+        content_type: contentType,
+        file_size: file.size,
+      },
       authHeaders,
     );
     const chunks = [];
@@ -130,7 +147,7 @@
     const report = () => {
       const active = [...activeBytes.values()].reduce((sum, value) => sum + value, 0);
       const ratio = Math.min(1, (completedBytes + active) / file.size);
-      DubbingApp.ui.updateDubbingProgressBarUi('Uploading File (parallel)...', 10 + ratio * 40);
+      reportProgress(ratio);
     };
     const uploadNext = async () => {
       while (cursor < chunks.length) {

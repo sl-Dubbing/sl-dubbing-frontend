@@ -97,6 +97,10 @@
     S.selectedMediaFile = null;
     S.selectedMediaDurationSec = 0;
     S.srtPreviewFileKey = '';
+    S.srtAudioFileKey = '';
+    S.srtVideoFileKey = '';
+    S.videoUploadPromise = null;
+    S.fastPathMode = '';
     DubbingApp.srtEditor?.clearSrtEditor?.();
     DubbingApp.srtEditor?.showSrtWorkspace?.(false);
     // # block — رفع أو تخزين ملف
@@ -156,6 +160,10 @@
       S.selectedMediaFile = file;
       S.selectedMediaDurationSec = 0;
       S.srtPreviewFileKey = '';
+      S.srtAudioFileKey = '';
+      S.srtVideoFileKey = '';
+      S.videoUploadPromise = null;
+      S.fastPathMode = '';
       DubbingApp.srtEditor?.clearSrtEditor?.();
       DubbingApp.srtEditor?.showSrtWorkspace?.(true);
       setUploadDropZoneCollapsed(true);

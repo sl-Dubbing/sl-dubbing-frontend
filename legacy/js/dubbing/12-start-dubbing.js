@@ -113,15 +113,63 @@
       }
 
       let urlData;
-      // # guard — SRT extraction already uploaded this exact selected file; never upload it twice
-      if (S.srtPreviewFileKey) {
+      let audioFileKey = S.srtAudioFileKey || '';
+      const quality = String(
+        DubbingApp.voicePayload?.buildVoiceConfigPayloadForDubApiRequest?.()?.quality ||
+          global.dubbingQuality ||
+          'fast',
+      ).toLowerCase();
+      const lipsync = !!global.enableLipsync;
+      const wantFastAudio =
+        quality === 'fast' &&
+        !lipsync &&
+        DubbingApp.browserAudio?.shouldExtractAudioForFastPath?.(file, {
+          enableLipsync: lipsync,
+        });
+
+      // # guard — reuse keys from extract step; never upload the same media twice
+      if (S.srtVideoFileKey) {
+        urlData = { file_key: S.srtVideoFileKey };
+        DubbingApp.ui.updateDubbingProgressBarUi('Using uploaded video...', 50);
+      } else if (S.videoUploadPromise) {
+        DubbingApp.ui.updateDubbingProgressBarUi('Finishing background video upload...', 45);
+        const grant = await S.videoUploadPromise;
+        urlData = { file_key: grant.file_key };
+        S.srtVideoFileKey = grant.file_key;
+      } else if (wantFastAudio && !S.srtAudioFileKey) {
+        // Extract path was skipped (user started dub without extract) — prepare now
+        DubbingApp.ui.updateDubbingProgressBarUi('Extracting audio locally...', 8);
+        const prepared = await DubbingApp.browserAudio.prepareFastPathMedia(file, {
+          enableLipsync: lipsync,
+          onStatus: (message) => DubbingApp.ui.updateDubbingProgressBarUi(message, 10),
+        });
+        if (prepared.mode === 'audio-first' && prepared.audioFile) {
+          const audioGrant = await DubbingApp.upload.uploadMediaFileResumableToR2(
+            prepared.audioFile,
+            authHeaders,
+            { contentType: 'audio/mpeg', progressLabel: 'Uploading extracted audio...' },
+          );
+          audioFileKey = audioGrant.file_key;
+          S.srtAudioFileKey = audioFileKey;
+          S.fastPathMode = 'audio-first';
+          S.videoUploadPromise = DubbingApp.upload.uploadMediaFileResumableToR2(
+            file,
+            authHeaders,
+            { progressLabel: 'Background video upload...' },
+          );
+          const videoGrant = await S.videoUploadPromise;
+          urlData = { file_key: videoGrant.file_key };
+          S.srtVideoFileKey = videoGrant.file_key;
+        } else {
+          urlData = await DubbingApp.upload.uploadMediaFileResumableToR2(file, authHeaders);
+          S.srtVideoFileKey = urlData.file_key;
+        }
+      } else if (S.srtPreviewFileKey && S.fastPathMode !== 'audio-first') {
         urlData = { file_key: S.srtPreviewFileKey };
         DubbingApp.ui.updateDubbingProgressBarUi('Using uploaded file...', 50);
       } else {
-        urlData = await DubbingApp.upload.uploadMediaFileResumableToR2(
-          file,
-          authHeaders,
-        );
+        urlData = await DubbingApp.upload.uploadMediaFileResumableToR2(file, authHeaders);
+        S.srtVideoFileKey = urlData.file_key;
       }
       // # block — رفع أو تخزين ملف
       S.progressPercentMonotonic = 50;
@@ -129,7 +177,10 @@
       DubbingApp.ui.updateDubbingProgressBarUi('Sending processing requests...', 50);
 
       const fileKey = urlData.file_key;
-      S.srtPreviewFileKey = fileKey;
+      if (S.fastPathMode !== 'audio-first') {
+        S.srtPreviewFileKey = fileKey;
+      }
+      S.srtVideoFileKey = fileKey;
       const langArray = Array.from(global.selectedLangs);
       // # block — طلب HTTP/API
       const dubEndpoint = `${normalizeApiBaseUrl()}/api/dub`;
@@ -214,6 +265,9 @@
             // # block — معالجة صوت/استنساخ
             ...hyperPayload,
           };
+          if (audioFileKey) {
+            requestBody.audio_file_key = audioFileKey;
+          }
           if (mergedVoice.elevenlabs_voice_id) {
             requestBody.elevenlabs_voice_id = mergedVoice.elevenlabs_voice_id;
           }
