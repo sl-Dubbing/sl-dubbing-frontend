@@ -22,8 +22,12 @@
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const isDirect = typeof url === 'string' && url.includes('/api/upload/direct');
+      const resolvedType =
+        (contentType && String(contentType).trim()) ||
+        (file && file.type) ||
+        'application/octet-stream';
       xhr.open('PUT', url, true);
-      xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
+      xhr.setRequestHeader('Content-Type', resolvedType);
       // # شرط — فرع منطقي
       if (isDirect && authHeaders) {
         // # شرط — فرع منطقي
@@ -44,7 +48,12 @@
           // # block — رفع أو تخزين ملف
           ? resolve()
           : reject(new Error('Storage Upload Failed: HTTP ' + xhr.status));
-      xhr.onerror = () => reject(new Error('Network Error during upload'));
+      xhr.onerror = () =>
+        reject(
+          new Error(
+            'Network Error during upload (R2 blocked the browser response — retry once; if it persists, refresh and sign in again)'
+          )
+        );
       xhr.send(file);
     });
   }
@@ -60,8 +69,12 @@
       const base = DubbingApp.api.normalizeApiBaseUrl();
       uploadUrl = base + (uploadUrl.startsWith('/') ? uploadUrl : '/' + uploadUrl);
     }
+    const contentType =
+      (urlData.content_type && String(urlData.content_type).trim()) ||
+      (file && file.type) ||
+      'application/octet-stream';
     // # block — رفع أو تخزين ملف
-    return uploadMediaFileToR2PresignedUrl(uploadUrl, file, file.type, authHeaders);
+    return uploadMediaFileToR2PresignedUrl(uploadUrl, file, contentType, authHeaders);
   }
 
   DubbingApp.upload = {

@@ -84,7 +84,11 @@ export function uploadToPresignedUrl(
 			};
 			xhr.onerror = () => {
 				options.signal?.removeEventListener('abort', onAbort);
-				reject(new Error('Direct upload network error'));
+				reject(
+					new Error(
+						'Direct upload network error (storage CORS/signature). Retry once after refresh.'
+					)
+				);
 			};
 			xhr.onabort = () => {
 				options.signal?.removeEventListener('abort', onAbort);
