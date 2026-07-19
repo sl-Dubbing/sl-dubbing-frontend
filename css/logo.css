@@ -1,0 +1,529 @@
+/* ══════════════════════════════════════════════════════
+   css/logo.css — Glotix Logo Component (Centralized)
+   Usage in every page:
+       <link rel="stylesheet" href="css/logo.css">
+
+   Header (arrow mark + wordmark + i-tittle; light/dark):
+       <a class="logo" href="/">
+           <span class="logo-lockup">
+               <img class="logo-mark logo-img--light" src="/logo/logo_arrow_White.svg" alt="">
+               <img class="logo-mark logo-img--dark" src="/logo/logo_arrow_Black.svg" alt="">
+               <span class="logo-wordmark">
+                   <img class="logo-img logo-img--light" src="/logo/glotix_Black.svg" alt="Glotix">
+                   <img class="logo-img logo-img--dark" src="/logo/glotix_White.svg" alt="">
+                   <img class="logo-i-tittle" src="/logo/glotix_Triangle.svg" alt="">
+               </span>
+           </span>
+       </a>
+
+   Icon-only (favicon, compact UI — no wordmark):
+       <img class="logo-mark logo-mark-only logo-img--light" src="/logo/logo_arrow_White.svg" alt="Glotix">
+       <img class="logo-mark logo-mark-only logo-img--dark" src="/logo/logo_arrow_Black.svg" alt="">
+
+   API down: html.api-unreachable → .logo-i-tittle pulses
+   ══════════════════════════════════════════════════════ */
+
+.logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.6rem;
+    font-weight: 800;
+    text-decoration: none;
+    color: var(--text-main, #111827);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    /* Never inherit glass / ice treatments from brand marks */
+    transform: none !important;
+    filter: none !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+    isolation: auto;
+}
+
+.logo-lockup {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 0;
+}
+
+.logo-wordmark {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
+    overflow: visible;
+}
+
+/* ── Brand arrow mark (works on light + dark; gold triangle) ── */
+.logo-mark {
+    height: 42px;
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0;
+    display: block;
+    transition: transform 0.5s cubic-bezier(0.34, 1.45, 0.64, 1);
+    transform: scale(1);
+    transform-origin: center center;
+    filter: none !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    opacity: 1 !important;
+    cursor: pointer;
+}
+
+.logo-mark.logo-mark-only,
+.logo-mark-only {
+    height: 44px;
+}
+
+/* ── Wordmark IMG (name only — triangle is .logo-i-tittle) ── */
+.logo-img {
+    height: 26px;
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0;
+    display: block;
+    transition: transform 0.3s ease;
+    /* Protect official brand mark — never glass-mask or recolor */
+    transform: none;
+    filter: none !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    opacity: 1 !important;
+}
+
+/*
+  Orange tittle above "i" (glotix_Black viewBox 1451.44×357.48):
+  i-center≈73.96%, i-top≈24.28%, triangle apex≈43.6% from left of asset
+*/
+.logo-i-tittle {
+    position: absolute;
+    left: 73.96%;
+    bottom: 75.72%;
+    height: 48%;
+    width: auto;
+    max-width: none;
+    object-fit: contain;
+    transform: translateX(-43.6%);
+    transform-origin: 43.6% 100%;
+    pointer-events: none;
+    z-index: 2;
+    filter: none !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+
+/* API unreachable — slow pulse on the i-tittle */
+@keyframes logo-tittle-pulse {
+    0%, 100% {
+        transform: translateX(-43.6%) translateY(0) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateX(-43.6%) translateY(-3px) scale(1.12);
+        opacity: 0.55;
+    }
+}
+
+html.api-unreachable .logo-i-tittle {
+    animation: logo-tittle-pulse 2.6s ease-in-out infinite;
+}
+
+/* Magnet hover — only while mouse is ON the arrow; eases back when leave */
+.logo-mark.logo-img--light:hover,
+.logo-mark.logo-img--dark:hover {
+    transform: scale(1.18);
+}
+
+/* Legacy connection badge — replaced by logo tittle pulse */
+.srv-badge {
+    display: none !important;
+}
+
+/* Black wordmark on light UI; white wordmark on dark (triangle stays gold) */
+.logo-img--light { display: block; }
+.logo-img--dark { display: none; }
+
+html[data-theme="dark"] .logo-img--light { display: none; }
+html[data-theme="dark"] .logo-img--dark { display: block; }
+
+@media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) .logo-img--light { display: none; }
+    html:not([data-theme="light"]) .logo-img--dark { display: block; }
+}
+
+.logo:hover .logo-img {
+    transform: none;
+    filter: none !important;
+}
+
+/* Keep inactive theme assets hidden even on hover */
+html[data-theme="dark"] .logo:hover .logo-img--light,
+html[data-theme="light"] .logo:hover .logo-img--dark {
+    display: none;
+}
+@media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) .logo:hover .logo-img--light { display: none; }
+}
+@media (prefers-color-scheme: light) {
+    html:not([data-theme="dark"]) .logo:hover .logo-img--dark { display: none; }
+}
+
+/* ── SVG logo (legacy fallback for any inline <svg>) ── */
+.logo svg {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+    filter: none !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+}
+
+.logo:hover svg {
+    transform: scale(1.08) rotate(-3deg);
+}
+
+/* Wordmark SVG already includes "Glotix" — hide leftover text nodes */
+.logo > span:not(.logo-lockup):not(.logo-wordmark),
+.logo > b {
+    display: none;
+}
+
+/* ── Footer / compact variant ── */
+.logo.logo-sm,
+.logo .logo-img.logo-sm {
+    font-size: 1.2rem;
+}
+.logo.logo-sm .logo-lockup {
+    gap: 6px;
+}
+.logo.logo-sm .logo-mark {
+    height: 32px;
+}
+.logo.logo-sm .logo-img,
+.logo-img.logo-sm {
+    height: 20px;
+}
+.logo.logo-sm .logo-i-tittle {
+    height: 48%;
+}
+
+/* ── Smaller on narrow screens ── */
+@media (max-width: 480px) {
+    .logo {
+        font-size: 1.3rem;
+        gap: 8px;
+    }
+    .logo-lockup {
+        gap: 6px;
+    }
+    .logo-mark {
+        height: 36px;
+    }
+    .logo-img {
+        height: 22px;
+    }
+    .logo svg {
+        width: 26px;
+        height: 26px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════
+   Brand glass triangles — unified 3D ice / crystal emblem
+   Icon + shell share one transform (one object, not two layers)
+   ══════════════════════════════════════════════════════ */
+:root {
+    --brand-mark-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Cpath fill='%23000' d='M58.8 18.4c5.6 3.2 8.6 10.2 7.2 16.8L48.4 72.2c-2.8 6.4-10.4 9-16.4 5.6-2-.9-3.8-2.6-4.8-4.6L8.6 36.8c-1.4-2.8-1.6-6-.6-9 2.8-8.4 12.2-12.4 20.2-8.8l24.8 7.2c2.4.7 4.6 2.2 6.8 4.2z'/%3E%3C/svg%3E");
+    --brand-glass-shell: url("../logo/Glotix_Glass_Mark.svg"), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2096%2096%22%20fill%3D%22none%22%3E%20%3Cdefs%3E%20%3C%21--%20Crystal%20/%20ice%20body%20--%3E%20%3ClinearGradient%20id%3D%22iceFace%22%20x1%3D%2222%22%20y1%3D%2214%22%20x2%3D%2274%22%20y2%3D%2286%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23ffffff%22%20stop-opacity%3D%220.78%22/%3E%20%3Cstop%20offset%3D%2228%25%22%20stop-color%3D%22%23eef8ff%22%20stop-opacity%3D%220.42%22/%3E%20%3Cstop%20offset%3D%2262%25%22%20stop-color%3D%22%23ffffff%22%20stop-opacity%3D%220.22%22/%3E%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23dbeafe%22%20stop-opacity%3D%220.48%22/%3E%20%3C/linearGradient%3E%20%3C%21--%20Edge%20bevel%20%28bright%20rim%29%20--%3E%20%3ClinearGradient%20id%3D%22iceRim%22%20x1%3D%2220%22%20y1%3D%2216%22%20x2%3D%2270%22%20y2%3D%2280%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23ffffff%22%20stop-opacity%3D%221%22/%3E%20%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%23ffffff%22%20stop-opacity%3D%220.55%22/%3E%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23bfdbfe%22%20stop-opacity%3D%220.75%22/%3E%20%3C/linearGradient%3E%20%3C%21--%20Top%20specular%20glint%20--%3E%20%3CradialGradient%20id%3D%22iceGlint%22%20cx%3D%2238%22%20cy%3D%2228%22%20r%3D%2228%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23ffffff%22%20stop-opacity%3D%220.95%22/%3E%20%3Cstop%20offset%3D%2245%25%22%20stop-color%3D%22%23ffffff%22%20stop-opacity%3D%220.25%22/%3E%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23ffffff%22%20stop-opacity%3D%220%22/%3E%20%3C/radialGradient%3E%20%3C%21--%20Soft%20depth%20under%20the%20crystal%20--%3E%20%3Cfilter%20id%3D%22iceDepth%22%20x%3D%22-35%25%22%20y%3D%22-35%25%22%20width%3D%22170%25%22%20height%3D%22170%25%22%3E%20%3CfeDropShadow%20dx%3D%220%22%20dy%3D%2210%22%20stdDeviation%3D%227%22%20flood-color%3D%22%230f172a%22%20flood-opacity%3D%220.28%22/%3E%20%3CfeDropShadow%20dx%3D%220%22%20dy%3D%221%22%20stdDeviation%3D%220.6%22%20flood-color%3D%22%23ffffff%22%20flood-opacity%3D%220.95%22/%3E%20%3C/filter%3E%20%3C/defs%3E%20%3C%21--%20Glotix%20mark%20%E2%80%94%20crystal%20shell%20--%3E%20%3Cg%20filter%3D%22url%28%23iceDepth%29%22%3E%20%3Cpath%20d%3D%22M70.6%2022.1c6.7%203.8%2010.3%2012.2%208.6%2020.2L58.1%2086.6c-3.4%207.7-12.5%2010.8-19.7%206.7-2.4-1.1-4.6-3.1-5.8-5.5L10.3%2044.2c-1.7-3.4-1.9-7.2-.7-10.8C13%2023.3%2024.2%2018.5%2033.8%2022.8l29.8%208.6c2.9.8%205.5%202.6%208.2%205z%22%20fill%3D%22url%28%23iceFace%29%22%20stroke%3D%22url%28%23iceRim%29%22%20stroke-width%3D%222.4%22%20stroke-linejoin%3D%22round%22%20/%3E%20%3Cpath%20d%3D%22M70.6%2022.1c6.7%203.8%2010.3%2012.2%208.6%2020.2L58.1%2086.6c-3.4%207.7-12.5%2010.8-19.7%206.7-2.4-1.1-4.6-3.1-5.8-5.5L10.3%2044.2c-1.7-3.4-1.9-7.2-.7-10.8C13%2023.3%2024.2%2018.5%2033.8%2022.8l29.8%208.6c2.9.8%205.5%202.6%208.2%205z%22%20fill%3D%22url%28%23iceGlint%29%22%20opacity%3D%220.9%22%20/%3E%20%3C%21--%20Inner%20rim%20for%203D%20thickness%20--%3E%20%3Cpath%20d%3D%22M66.2%2026.8c4.8%202.8%207.4%209%206.2%2014.8L55.2%2078.4c-2.4%205.4-8.9%207.6-14%204.7-1.7-.8-3.2-2.2-4-3.9L16.8%2045.6c-1.2-2.4-1.3-5.1-.4-7.6%202.4-7%2010.4-10.3%2017.2-7.4l26.2%207.6c2%20.6%203.9%201.9%205.8%203.6z%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C255%2C255%2C0.45%29%22%20stroke-width%3D%221.1%22%20stroke-linejoin%3D%22round%22%20opacity%3D%220.85%22%20/%3E%20%3C/g%3E%20%3C/svg%3E");
+}
+
+/* One 3D crystal badge: ambient tint + ice SVG + recessed glyph */
+.brand-mark-well,
+.tool-card .ico,
+.feature-icon,
+.hg-icon {
+    --ice-size: 64px;
+    width: var(--ice-size) !important;
+    height: var(--ice-size) !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    position: relative;
+    display: inline-grid !important;
+    place-items: center;
+    isolation: isolate;
+    overflow: visible !important;
+    background: transparent !important;
+    /* Unified object tilt (logo-like) */
+    transform: perspective(420px) rotateX(12deg) rotateZ(-10deg);
+    transform-style: preserve-3d;
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1), filter 0.28s ease;
+    filter: drop-shadow(0 14px 26px rgba(15, 23, 42, 0.28));
+}
+
+/* Color refraction glow — sits IN the ice (masked to triangle) */
+.brand-mark-well::before,
+.tool-card .ico::before,
+.feature-icon::before,
+.hg-icon::before {
+    content: "";
+    position: absolute;
+    inset: 8% 10% 10% 8%;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 38% 34%, #fff 0%, transparent 42%),
+        radial-gradient(circle at 48% 48%, var(--glass-ambient, #fcca69) 0%, transparent 70%);
+    -webkit-mask-image: var(--brand-mark-mask);
+    mask-image: var(--brand-mark-mask);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    transform: translateZ(0);
+    opacity: 0.95;
+}
+
+/* Ice / glass shell SVG wraps everything */
+.brand-mark-well::after,
+.tool-card .ico::after,
+.feature-icon::after,
+.hg-icon::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: var(--brand-glass-shell) center / contain no-repeat;
+    -webkit-mask-image: none;
+    mask-image: none;
+    transform: translateZ(1px);
+}
+
+/* Glyph engraved into the crystal (same object) */
+.brand-mark-well i,
+.tool-card .ico i,
+.feature-icon i,
+.hg-icon i {
+    position: relative;
+    z-index: 2;
+    font-size: 1.15rem !important;
+    line-height: 1;
+    color: #fff !important;
+    transform: translate3d(1px, 1px, 10px);
+    text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.55),
+        0 -1px 1px rgba(15, 23, 42, 0.2),
+        0 3px 8px rgba(15, 23, 42, 0.28);
+    filter: none;
+}
+
+.tool-card:hover .ico,
+.feature-card:hover .feature-icon,
+.brand-mark-well:hover,
+.usecase-tile:hover .hg-icon {
+    transform: perspective(420px) rotateX(8deg) rotateZ(-6deg) translateY(-4px) scale(1.04);
+    filter: drop-shadow(0 18px 32px rgba(15, 23, 42, 0.32));
+}
+
+/* Language flags — country flag clipped to triangle (SVG alpha). No PNG mask (hides flag). */
+.lang-flag-shell {
+    --flag-size: 22px;
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: var(--flag-size);
+    height: var(--flag-size);
+    flex-shrink: 0;
+    vertical-align: middle;
+    filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.14));
+}
+.lang-flag-shell .lang-flag,
+.lang-flag-shell > img.lang-flag {
+    position: relative;
+    z-index: 1;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    object-fit: cover;
+    box-shadow: none !important;
+    transform: none;
+    filter: none;
+    /* SVG: opaque triangle + transparent outside — flag colors show through */
+    -webkit-mask-image: var(--brand-mark-mask);
+    mask-image: var(--brand-mark-mask);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+}
+.lang-flag,
+img.lang-flag,
+.lang-chip > img,
+.ba-lang > img,
+.showcase-mock-line > img {
+    border-radius: 0 !important;
+    -webkit-mask-image: var(--brand-mark-mask);
+    mask-image: var(--brand-mark-mask);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-source-type: alpha;
+    mask-mode: alpha;
+    box-shadow: none !important;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.lang-item .lang-flag-shell,
+#srcLangFlag .lang-flag-shell,
+#targetLangFlag .lang-flag-shell,
+.target-lang-flags-stack .lang-flag-shell,
+#currentFlag .lang-flag-shell { --flag-size: 22px; }
+.lang-pill .lang-flag-shell { --flag-size: 18px; }
+.lang-chip .lang-flag-shell { --flag-size: 28px; }
+.ba-lang .lang-flag-shell,
+.showcase-mock-line .lang-flag-shell { --flag-size: 20px; }
+
+/* Dropdown chevron — plain arrow (no glass triangle) */
+.brand-chevron {
+    width: 1.1em;
+    height: 1.1em;
+    display: inline-grid !important;
+    place-items: center;
+    position: relative;
+    flex-shrink: 0;
+    background: transparent !important;
+    transform: none;
+    filter: none;
+    transition: transform 0.22s ease;
+}
+.brand-chevron::before,
+.brand-chevron::after {
+    display: none !important;
+    content: none !important;
+}
+.brand-chevron > i,
+.brand-chevron .fa-chevron-down {
+    position: relative;
+    z-index: 1;
+    font-size: 0.72rem !important;
+    line-height: 1;
+    color: #0a0a0a !important;
+    text-shadow: none;
+    transform: none;
+}
+/* Dark mode — brand gold (logo accent) */
+html[data-theme="dark"] .brand-chevron > i,
+html[data-theme="dark"] .brand-chevron .fa-chevron-down {
+    color: #fcca69 !important;
+}
+@media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) .brand-chevron > i,
+    html:not([data-theme="light"]) .brand-chevron .fa-chevron-down {
+        color: #fcca69 !important;
+    }
+}
+.dropdown-btn.active .brand-chevron,
+.lang-btn.active .brand-chevron,
+#voiceSelectBtn[aria-expanded="true"] .brand-chevron {
+    transform: rotate(180deg);
+}
+
+/* Index page custom PNG icons (art already includes triangle) — skip ice CSS */
+.tool-card .ico.ico--asset,
+.feature-icon.ico--asset,
+.brand-mark-well.ico--asset {
+    width: 72px !important;
+    height: 72px !important;
+    transform: none !important;
+    filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.14)) !important;
+    background: transparent !important;
+    display: inline-flex !important;
+    place-items: center;
+}
+.tool-card .ico.ico--asset::before,
+.tool-card .ico.ico--asset::after,
+.feature-icon.ico--asset::before,
+.feature-icon.ico--asset::after {
+    display: none !important;
+    content: none !important;
+}
+.tool-card .ico.ico--asset img,
+.feature-icon.ico--asset img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    /* PNGs ship on black canvas — blend so only gold triangle + glyph remain on light UI */
+    mix-blend-mode: screen;
+}
+.tool-card:hover .ico.ico--asset {
+    /* Hover motion owned by index.html (stronger pulse + triangle tilt) */
+    transform: translateY(-6px) scale(1.1) !important;
+    filter: drop-shadow(0 16px 28px rgba(252, 202, 105, 0.45)) !important;
+}
+
+/* Index feature cards: empty triangle shell (4.png) + black FA glyph */
+.feature-icon.feature-icon--shell {
+    width: 64px !important;
+    height: 64px !important;
+    filter: drop-shadow(0 8px 16px rgba(15, 23, 42, 0.12)) !important;
+    background: transparent !important;
+    display: inline-grid !important;
+    place-items: center;
+    isolation: isolate;
+    /* Continuous tilt is defined on index.html (triangleTilt) */
+}
+.feature-icon.feature-icon--shell::before,
+.feature-icon.feature-icon--shell::after {
+    display: none !important;
+    content: none !important;
+}
+.feature-icon.feature-icon--shell img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: screen;
+}
+.feature-icon.feature-icon--shell i {
+    position: relative;
+    z-index: 2;
+    color: var(--heading, #0a0a0a) !important;
+    font-size: 1.05rem !important;
+    line-height: 1;
+    transform: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+}
+.feature-card:hover .feature-icon.feature-icon--shell,
+.usecase-tile:hover .feature-icon.feature-icon--shell {
+    /* Hover tilt speed owned by index.html (triangleTiltHover) */
+    filter: drop-shadow(0 14px 24px rgba(252, 202, 105, 0.4)) !important;
+}
+.usecase-tile .feature-icon.feature-icon--shell {
+    margin: 0 auto 14px;
+}

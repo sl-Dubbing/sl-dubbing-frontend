@@ -1,0 +1,1225 @@
+﻿<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>My Files | Glotix</title>
+    <meta name="description" content="View and manage your dubbed videos and TTS outputs in Glotix My Files.">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="canonical" href="https://glotix.ai/history">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/svg+xml" href="/logo/logo_arrow_White.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/logo.css">
+    <link rel="stylesheet" href="css/brand-theme.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <script>
+      (function () {
+        try {
+          var m = localStorage.getItem('glotix_theme') || 'system';
+          var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var t = m === 'light' || m === 'dark' ? m : (dark ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', t);
+          document.documentElement.style.colorScheme = t;
+        } catch (e) {}
+      })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --accent-gold: #fcca69; --accent-yellow: #fcca69; --bg-soft: #eeedea;
+            --bg-page: #f6f5f1; --bg-card: #ffffff; --border-color: #e0dfdb;
+            --text-main: #1a1a1a; --text-muted: #6b6b6b;
+            --primary: #0a0a0a; --primary-hover: #2a2a2a;
+            --accent-blue: #3b82f6; --accent-green: #22c55e;
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899; --error: #ef4444;
+            --radius-md: 16px; --radius-lg: 24px;
+            --ease-silk: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; line-height: 1.5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px 3%; }
+
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px 48px; width: 100%; }
+        .logo { display: flex; align-items: center; gap: 10px; font-size: 1.6rem; font-weight: 800; text-decoration: none; color: var(--text-main); letter-spacing: -0.5px; }
+        .logo svg { width: 32px; height: 32px; }
+
+        .user-zone { position: relative; display: flex; align-items: center; gap: 12px; }
+        .menu-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.95rem; color: var(--text-main); transition: 0.2s; }
+        .menu-btn:hover { background: #f3f4f6; }
+
+        .dropdown-panel { position: absolute; top: calc(100% + 12px); right: 0; width: 300px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); padding: 16px; display: flex; flex-direction: column; gap: 8px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: 0.2s; z-index: 1000; }
+        .dropdown-panel.active { opacity: 1; visibility: visible; transform: translateY(0); }
+        .dropdown-panel a, .dropdown-panel button.menu-item { text-decoration: none; color: var(--text-main); padding: 12px 14px; border-radius: 10px; font-weight: 500; display: flex; align-items: center; gap: 14px; transition: 0.2s; background: transparent; border: none; width: 100%; text-align: left; cursor: pointer; font-size: 0.95rem; }
+        .dropdown-panel a:hover, .dropdown-panel button.menu-item:hover { background: #f3f4f6; }
+        .menu-divider { border: none; border-top: 1px solid var(--border-color); margin: 8px 0; }
+
+        .auth-buttons { display: flex; gap: 10px; margin-bottom: 5px; }
+        .btn-login, .btn-signup { flex: 1; padding: 12px; border-radius: 10px; text-align: center; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: 0.2s; cursor: pointer; }
+        .btn-login { background: var(--bg-page); border: 1px solid var(--border-color); color: var(--text-main); }
+        .btn-signup { background: var(--primary); color: white; border: 1px solid var(--primary); }
+        .logged-in-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; margin-bottom: 5px; display: none; }
+        .user-name { font-weight: 600; font-size: 0.95rem; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; }
+        .balance-text { color: var(--text-muted); font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+        .logout-btn { color: var(--error) !important; display: none; }
+
+        @media (max-width: 800px) { .top-bar { padding: 16px 24px; } }
+
+        .fm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: var(--bg-card); padding: 30px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 2px 10px rgba(0,0,0,0.02); flex-wrap: wrap; gap: 16px; }
+        .fm-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 5px; letter-spacing: -0.5px; }
+        .fm-header p { color: var(--text-muted); font-size: 1rem; }
+
+        .view-switcher { display: inline-flex; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 10px; padding: 4px; gap: 4px; }
+        .view-switcher button { background: transparent; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .view-switcher button.active { background: var(--bg-card); color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .view-switcher button:hover:not(.active) { color: var(--text-main); }
+
+        .filter-tabs { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
+        .filter-tab { background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; color: var(--text-muted); transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .filter-tab:hover { border-color: #d1d5db; color: var(--text-main); }
+        .filter-tab.active { background: var(--accent-blue); border-color: var(--accent-blue); color: white; }
+        .filter-tab .count { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; }
+        .filter-tab:not(.active) .count { background: #f3f4f6; color: var(--text-muted); }
+
+        .file-list-card { background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .file-list-header { padding: 18px 24px; background: var(--bg-page); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .file-list-header-left { display: flex; align-items: center; gap: 14px; }
+        .select-all-wrap { display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; user-select: none; color: var(--text-main); }
+        .select-all-wrap input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-blue); }
+        .file-count { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+
+        .bulk-actions { display: none; align-items: center; gap: 10px; }
+        .bulk-actions.visible { display: flex; }
+        .selected-label { font-size: 0.9rem; color: var(--text-muted); font-weight: 600; }
+        .btn-clear { background: transparent; border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: var(--text-main); }
+        .btn-clear:hover { background: #f3f4f6; }
+        .btn-bulk-delete { background: var(--error); color: #fff; border: 1px solid var(--error); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+        .btn-bulk-delete:hover { background: #dc2626; }
+        .btn-bulk-delete:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* List view */
+        #fileList.view-list .file-item { display: flex; align-items: center; padding: 14px 24px; border-bottom: 1px solid var(--border-color); transition: 0.15s; flex-wrap: wrap; gap: 15px; }
+        #fileList.view-list .file-item:last-child { border-bottom: none; }
+        #fileList.view-list .file-item:hover { background: #f9fafb; }
+        #fileList.view-list .file-item.selected { background: #eff6ff; }
+
+        #fileList.view-list .file-thumb { width: 88px; height: 56px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #f3f4f6; display: flex; align-items: center; justify-content: center; position: relative; }
+        #fileList.view-list .file-thumb video, #fileList.view-list .file-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        #fileList.view-list .file-thumb .thumb-icon { font-size: 1.5rem; color: var(--text-muted); }
+        #fileList.view-list .file-thumb.video-thumb { background: #fef3c7; color: var(--accent-yellow); }
+        #fileList.view-list .file-thumb.clone-thumb { background: #f3e8ff; color: var(--accent-purple); }
+        #fileList.view-list .file-thumb.tts-thumb { background: #fce7f3; color: var(--accent-pink); }
+        #fileList.view-list .file-thumb .play-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.25); color: #fff; opacity: 0; transition: 0.2s; cursor: pointer; }
+        #fileList.view-list .file-thumb:hover .play-overlay { opacity: 1; }
+
+        #fileList.view-list .file-info { flex: 1; min-width: 200px; }
+        #fileList.view-list .file-name { font-weight: 600; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; color: var(--text-main); font-size: 1rem; word-break: break-word; }
+        #fileList.view-list .file-meta { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+
+        .container { max-width: 1480px; }
+        /* Cinema / montage grid */
+        #fileList.view-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 28px; padding: 28px; background: transparent; }
+        .file-list-card { background: transparent; border: none; box-shadow: none; overflow: visible; }
+        .file-list-header { background: transparent; border-bottom: none; padding-left: 8px; padding-right: 8px; }
+        #fileList.view-grid .file-item { display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 22px; overflow: hidden; transition: transform 0.45s cubic-bezier(0.22,1,0.36,1), box-shadow 0.45s cubic-bezier(0.22,1,0.36,1), border-color 0.35s; position: relative; isolation: isolate; }
+        #fileList.view-grid .file-item:hover { transform: translateY(-10px) scale(1.015); box-shadow: var(--shadow-lift, 0 28px 60px rgba(0,0,0,0.18)); border-color: var(--accent-gold); }
+        #fileList.view-grid .file-item.is-playing { border-color: var(--accent-gold); box-shadow: 0 0 0 1px var(--accent-gold), var(--shadow-lift, 0 28px 60px rgba(0,0,0,0.2)); }
+        #fileList.view-grid .file-item.selected { border-color: var(--accent-gold); box-shadow: 0 0 0 2px rgba(252,202,105,0.35); }
+
+        #fileList.view-grid .file-thumb { width: 100%; aspect-ratio: 16/9; background: #0a0a0a; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        #fileList.view-grid .file-thumb video, #fileList.view-grid .file-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(1.02); transition: transform 0.7s cubic-bezier(0.22,1,0.36,1), filter 0.45s; filter: saturate(1.05) contrast(1.02); }
+        #fileList.view-grid .file-item:hover .file-thumb video, #fileList.view-grid .file-item:hover .file-thumb img { transform: scale(1.08); }
+        #fileList.view-grid .file-thumb::after { content:''; position:absolute; inset:0; background: var(--cinema-overlay, linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.55) 100%)); opacity:0.55; pointer-events:none; transition: opacity 0.4s; }
+        #fileList.view-grid .file-item:hover .file-thumb::after { opacity: 0.22; }
+        #fileList.view-grid .file-thumb .thumb-icon { font-size: 2.8rem; color: rgba(255,255,255,0.55); z-index: 1; }
+        #fileList.view-grid .file-thumb.video-thumb { background: #0a0a0a; color: var(--accent-gold); }
+        #fileList.view-grid .file-thumb.clone-thumb { background: linear-gradient(135deg, #1a1228, #2a1a40); color: var(--accent-purple); }
+        #fileList.view-grid .file-thumb.tts-thumb { background: linear-gradient(135deg, #1a1018, #2a1520); color: var(--accent-pink); }
+        #fileList.view-grid .file-thumb .play-overlay { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; background: transparent; color: #fff; opacity: 0.9; transition: opacity 0.35s, transform 0.35s; cursor: pointer; font-size: 1.1rem; pointer-events: none; }
+        #fileList.view-grid .file-thumb .play-overlay .pulse-ring { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(252,202,105,0.92); color: #0a0a0a; box-shadow: 0 0 0 0 rgba(252,202,105,0.55); animation: cinemaPulse 2.2s ease-out infinite; font-size: 1.35rem; }
+        #fileList.view-grid .file-item:hover .play-overlay, #fileList.view-grid .file-item.is-playing .play-overlay { opacity: 0; transform: scale(1.15); }
+        @keyframes cinemaPulse { 0% { box-shadow: 0 0 0 0 rgba(252,202,105,0.55); } 70% { box-shadow: 0 0 0 18px rgba(252,202,105,0); } 100% { box-shadow: 0 0 0 0 rgba(252,202,105,0); } }
+        @media (max-width: 800px) { #fileList.view-grid { grid-template-columns: 1fr; gap: 18px; padding: 12px 0; } }
+
+        #fileList.view-grid .file-info { padding: 14px 14px 8px; flex: 1; }
+        #fileList.view-grid .file-name { font-weight: 600; font-size: 0.95rem; color: var(--text-main); margin-bottom: 6px; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        #fileList.view-grid .file-meta { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+
+        #fileList.view-grid .file-actions { padding: 8px 12px 12px; display: flex; gap: 6px; justify-content: flex-end; }
+
+        /* Common */
+        .item-checkbox { width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-blue); flex-shrink: 0; }
+        #fileList.view-grid .item-checkbox { position: absolute; top: 10px; left: 10px; z-index: 2; background: rgba(255,255,255,0.95); border-radius: 4px; }
+
+        .lang-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #f3f4f6; border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: var(--text-main); }
+        .type-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .type-badge.dubbing { background: #fef3c7; color: #92400e; }
+        .type-badge.clone { background: #f3e8ff; color: #6b21a8; }
+        .type-badge.tts { background: #fce7f3; color: #9d174d; }
+        .status-badge.processing { background: #eff6ff; color: #1d4ed8; display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
+        .file-thumb.processing-thumb { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); display: flex; align-items: center; justify-content: center; color: #2563eb; }
+
+        .file-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+        .btn-action { background: var(--bg-page); border: 1px solid var(--border-color); width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: var(--text-main); transition: 0.2s; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+        .btn-action:hover { background: var(--primary); color: #fff; }
+        .btn-action.danger:hover { background: var(--error); border-color: var(--error); }
+        .btn-action.loading { opacity: 0.6; pointer-events: none; }
+        .btn-action.redub:hover { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
+
+        /* Re-dub modal */
+        .redub-modal { display: none; position: fixed; inset: 0; z-index: 10000; align-items: center; justify-content: center; padding: 24px; }
+        .redub-modal.open { display: flex; }
+        .redub-modal-backdrop { position: absolute; inset: 0; background: rgba(17,24,39,0.55); backdrop-filter: blur(4px); }
+        .redub-modal-card { position: relative; z-index: 1; width: min(480px, 100%); background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 24px; box-shadow: 0 24px 60px rgba(0,0,0,0.18); }
+        .redub-modal-card h3 { margin: 0 0 8px; font-size: 1.2rem; }
+        .redub-modal-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px; }
+        .redub-lang-select { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-color); font-size: 0.95rem; margin-bottom: 16px; }
+        .redub-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .btn-redub-start { background: var(--accent-blue); color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-redub-cancel { background: var(--bg-page); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+        /* Inline Audio Player Customization */
+        audio.inline-player { height: 38px; width: 100%; max-width: 320px; outline: none; border-radius: 8px; margin: 8px 0; background: #f8fafc; }
+        audio.inline-player::-webkit-media-controls-panel { background: #f8fafc; }
+        #fileList.view-grid audio.inline-player { max-width: 100%; }
+
+        .empty-state { text-align: center; padding: 60px 30px; color: var(--text-muted); }
+        .empty-state i { font-size: 3.5rem; margin-bottom: 15px; opacity: 0.4; }
+        .empty-state .empty-title { font-weight: 700; font-size: 1.1rem; color: var(--text-main); margin-bottom: 6px; }
+        .empty-state .empty-action { margin-top: 16px; display: inline-block; padding: 10px 20px; background: var(--accent-blue); color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 0.9rem; }
+
+        /* Inline media preview */
+        .media-modal { display: none; position: fixed; inset: 0; z-index: 9999; align-items: center; justify-content: center; padding: 24px; }
+        .media-modal.open { display: flex; }
+        .media-modal-backdrop { position: absolute; inset: 0; background: rgba(17, 24, 39, 0.55); backdrop-filter: blur(4px); }
+        .media-modal-card { position: relative; z-index: 1; width: min(920px, 100%); background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: 0 24px 60px rgba(0,0,0,0.18); padding: 24px; }
+        .media-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; }
+        .media-modal-header h3 { font-size: 1.1rem; font-weight: 700; margin: 0; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .media-modal-close { width: 36px; height: 36px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-page); cursor: pointer; font-size: 1.2rem; line-height: 1; color: var(--text-muted); }
+        .media-modal-close:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+        #mediaModalBody video, #mediaModalBody audio { width: 100%; border-radius: 12px; background: #000; }
+        #mediaModalBody video { max-height: min(70vh, 520px); }
+        .tts-text-preview { padding: 16px; background: var(--bg-page); border-radius: 10px; margin-bottom: 14px; color: var(--text-main); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+
+        /* Voice clones — circle + name (dedicated gallery) */
+        #fileList.clone-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 20px;
+            padding: 24px;
+        }
+        #fileList.clone-gallery .file-item.clone-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 22px 16px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            background: var(--bg-card);
+            transition: 0.2s;
+            position: relative;
+        }
+        #fileList.clone-gallery .file-item.clone-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 28px rgba(99, 102, 241, 0.12);
+            border-color: #c4b5fd;
+        }
+        #fileList.clone-gallery .item-checkbox { display: none !important; }
+
+        .clone-avatar-wrap { position: relative; margin-bottom: 12px; }
+        .clone-avatar {
+            width: 76px; height: 76px; border-radius: 50%;
+            background: linear-gradient(145deg, #8b5cf6 0%, #6366f1 55%, #4f46e5 100%);
+            color: #fff; font-size: 1.75rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+            border: 3px solid #fff;
+            outline: 1px solid #e9d5ff;
+        }
+        .clone-play-fab {
+            position: absolute; right: -4px; bottom: 0;
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 2px solid #fff; background: var(--primary); color: #fff;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: 0.2s;
+        }
+        .clone-play-fab:hover { background: var(--accent-blue); transform: scale(1.05); }
+
+        .clone-name {
+            font-weight: 700; font-size: 1rem; color: var(--text-main);
+            margin-bottom: 4px; line-height: 1.3;
+            max-width: 100%; word-break: break-word;
+        }
+        .clone-meta {
+            font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;
+        }
+        .clone-actions {
+            display: flex; gap: 8px; justify-content: center; width: 100%;
+        }
+        .file-list-header.clone-toolbar-hidden .select-all-wrap,
+        .file-list-header.clone-toolbar-hidden #bulkActions,
+        .file-list-header.clone-toolbar-hidden #deleteAllBtn { display: none !important; }
+
+        @media (max-width: 600px) {
+            #fileList.view-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; padding: 14px; }
+            #fileList.clone-gallery { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 14px; padding: 16px; }
+            .fm-header { padding: 20px; }
+            .fm-header h1 { font-size: 1.5rem; }
+            #fileList.view-list .file-thumb { width: 64px; height: 40px; }
+            .clone-avatar { width: 64px; height: 64px; font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+<header class="top-bar">
+    <a class="logo" href="/">
+        <span class="logo-lockup">
+            <img class="logo-mark logo-img--light" src="/logo/logo_arrow_White.svg" alt="" onerror="this.onerror=null;this.src='logo/logo_arrow_White.svg'">
+            <img class="logo-mark logo-img--dark" src="/logo/logo_arrow_Black.svg" alt="" onerror="this.onerror=null;this.src='logo/logo_arrow_Black.svg'">
+            <span class="logo-wordmark">
+                <img class="logo-img logo-img--light" src="/logo/glotix_Black.svg" alt="Glotix" onerror="this.onerror=null;this.src='logo/glotix_Black.svg'">
+                <img class="logo-img logo-img--dark" src="/logo/glotix_White.svg" alt="" onerror="this.onerror=null;this.src='logo/glotix_White.svg'">
+                <img class="logo-i-tittle" src="/logo/glotix_Triangle.svg" alt="" onerror="this.onerror=null;this.src='logo/glotix_Triangle.svg'">
+            </span>
+        </span>
+    </a>
+    <div class="user-zone">
+        <button type="button" class="theme-toggle" data-theme-toggle title="Theme" aria-label="Toggle theme"><i class="fa-solid fa-moon icon-moon"></i><i class="fa-solid fa-sun icon-sun"></i></button>
+        <button class="menu-btn" id="menuBtn">
+            <i class="fa-solid fa-bars"></i> Menu
+        </button>
+        <div class="dropdown-panel" id="mainMenuDropdown">
+            <div class="auth-buttons" id="guestMenu">
+                <a href="/login" class="btn-login">Login</a>
+                <a href="/signup" class="btn-signup">Sign up</a>
+            </div>
+            <div class="logged-in-box" id="userMenu">
+                <div class="user-name">
+                    <img id="menuAvatar" class="user-avatar" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="User">
+                    <span id="menuUserName">My Account</span>
+                </div>
+                <a href="/pricing" class="balance-text" style="text-decoration: none; cursor: pointer;"><i class="fas fa-coins"></i> <span id="menuCredits">...</span> Credits</a>
+            </div>
+            <hr class="menu-divider">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="/dubbing"><i class="fa-regular fa-file-video"></i> Dubbing Studio</a>
+            <a href="/tts"><i class="fa-regular fa-comment-dots"></i> Text to Speech</a>
+            <hr class="menu-divider">
+            <a href="/history"><i class="fa-regular fa-folder-open"></i> My Files</a>
+            <a href="/developer" class="menu-item" style="background:#f0f9ff;color:#0284c7;border:1px solid #bae6fd;"><i class="fas fa-code"></i> Developer API</a>
+            <a href="/pricing" class="menu-item" style="background: #eff6ff; color: #007aff; border: 1px solid #bfdbfe; margin-top: 5px; margin-bottom: 5px;"><i class="fas fa-arrow-up-right-from-square"></i> Upgrade Plan</a>
+            <button class="menu-item logout-btn" id="logoutBtn">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+            </button>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <main>
+        <div class="fm-header">
+            <div>
+                <h1>Your Studio Reel</h1>
+                <p>A cinematic shelf of your dubs — hover to preview, click to open.</p>
+            </div>
+            <div class="view-switcher" role="tablist" aria-label="View mode">
+                <button type="button" id="viewListBtn" title="List view"><i class="fa-solid fa-list"></i> List</button>
+                <button type="button" id="viewGridBtn" class="active" title="Grid view"><i class="fa-solid fa-table-cells-large"></i> Grid</button>
+            </div>
+        </div>
+
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All <span class="count" id="countAll">0</span></button>
+            <button class="filter-tab" data-filter="dubbing"><i class="fa-solid fa-film"></i> Dubbing <span class="count" id="countDubbing">0</span></button>
+            <button class="filter-tab" data-filter="tts"><i class="fa-solid fa-comment-dots"></i> TTS <span class="count" id="countTts">0</span></button>
+            <button class="filter-tab" data-filter="clone"><i class="fa-solid fa-microphone"></i> Voice Clones <span class="count" id="countClones">0</span></button>
+        </div>
+
+        <div class="file-list-card">
+            <div class="file-list-header" id="fileListHeader">
+                <div class="file-list-header-left">
+                    <label class="select-all-wrap">
+                        <input type="checkbox" id="selectAllCheckbox">
+                        <span>Select all</span>
+                    </label>
+                    <span class="file-count" id="fileCountLabel">0 items</span>
+                </div>
+                <div class="bulk-actions" id="bulkActions">
+                    <span class="selected-label" id="selectedLabel">0 selected</span>
+                    <button type="button" class="btn-clear" id="clearSelectionBtn">Clear</button>
+                    <button type="button" class="btn-bulk-delete" id="bulkDeleteBtn">
+                        <i class="fa-solid fa-trash"></i> Delete selected
+                    </button>
+                </div>
+                <button type="button" class="btn-clear" id="deleteAllBtn" title="Safely delete all generated files (keeps your Voice Clones)" style="border-color:#fecaca;color:#dc2626;">
+                    <i class="fa-solid fa-trash-can"></i> Delete all
+                </button>
+            </div>
+            <div id="fileList" class="view-grid">
+                <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><div class="empty-title">Loading...</div></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div id="toasts"></div>
+
+<div id="redubModal" class="redub-modal" role="dialog" aria-modal="true" aria-labelledby="redubModalTitle">
+    <div class="redub-modal-backdrop" onclick="closeRedubModal()"></div>
+    <div class="redub-modal-card">
+        <h3 id="redubModalTitle">Dub in another language</h3>
+        <p>Uses saved stems and transcript — skips upload, separation, and voice cloning. Faster and lower cost.</p>
+        <label for="redubLangSelect" style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:6px;">Target language</label>
+        <select id="redubLangSelect" class="redub-lang-select"></select>
+        <div class="redub-actions">
+            <button type="button" class="btn-redub-cancel" onclick="closeRedubModal()">Cancel</button>
+            <button type="button" class="btn-redub-start" id="redubStartBtn" onclick="submitRedubJob()">Start fast dub</button>
+        </div>
+    </div>
+</div>
+
+<div id="mediaModal" class="media-modal" role="dialog" aria-modal="true" aria-labelledby="mediaModalTitle">
+    <div class="media-modal-backdrop" onclick="closeMediaModal()"></div>
+    <div class="media-modal-card">
+        <div class="media-modal-header">
+            <h3 id="mediaModalTitle">Preview</h3>
+            <button type="button" class="media-modal-close" onclick="closeMediaModal()" aria-label="Close">&times;</button>
+        </div>
+        <div id="mediaModalBody"></div>
+    </div>
+</div>
+
+<script src="js/languages.js"></script>
+<script src="js/config.js"></script>
+<!-- shared — فهرس عربي أعلى كل ملف في js/shared/ -->
+<script src="js/shared/theme.js?v=2"></script>
+<script src="js/shared/01-api-base.js?v=17"></script>
+<script src="js/shared/02-toast.js?v=17"></script>
+<script src="js/shared/03-jwt.js?v=17"></script>
+<script src="js/shared/04-auth-headers.js?v=17"></script>
+<script src="js/shared/06-guest-menu.js?v=17"></script>
+<script src="js/shared/07-supabase-client.js?v=17"></script>
+<script src="js/shared/08-credits-helpers.js?v=19"></script>
+<script src="js/shared/10-menu-ui.js?v=17"></script>
+<script src="js/shared/11-menu-actions.js?v=17"></script>
+<script src="js/shared/05-session.js?v=17"></script>
+<script src="js/shared/09-credits-fetch.js?v=17"></script>
+<script src="js/shared/12-auth-sync.js?v=17"></script>
+<script src="js/shared/13-connection.js?v=18"></script>
+<script src="js/shared/15-api-errors.js?v=18"></script>
+<script src="js/shared/14-init.js?v=18"></script>
+
+<script>
+    const API = String(window.API_BASE || 'https://api.glotix.ai').replace(/\/$/, '').replace(/([^:]\/)\/+/g, '$1');
+    const TTS_HISTORY_KEY = 'glotix_tts_history';
+    const VIEW_MODE_KEY = 'glotix_files_view_mode';
+
+    let allFiles = [];
+    let currentFilter = 'all';
+    let currentView = localStorage.getItem(VIEW_MODE_KEY) || 'grid';
+    const selectedIds = new Set();
+    let historyPollTimer = null;
+    let redubSourceJobId = null;
+    let redubPollTimer = null;
+
+    function normalizeFileStatus(status) {
+        const s = String(status || '').trim().toLowerCase();
+        if (['complete', 'done', 'success', 'succeeded'].includes(s)) return 'completed';
+        if (['error', 'failure', 'fail'].includes(s)) return 'failed';
+        return s;
+    }
+
+    function isFileProcessing(f) {
+        const status = normalizeFileStatus(f?.status);
+        return f?.type === 'dubbing' && ['pending', 'processing', 'queued'].includes(status);
+    }
+
+    function hasProcessingDubbingFiles() {
+        return allFiles.some(isFileProcessing);
+    }
+
+    function scheduleHistoryPollingWhileProcessing() {
+        if (historyPollTimer) clearInterval(historyPollTimer);
+        if (!hasProcessingDubbingFiles()) return;
+        historyPollTimer = setInterval(() => {
+            loadFilesFromApi({ silent: true }).catch(() => {});
+        }, 8000);
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return 'Unknown';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return 'Unknown';
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+    }
+
+    function escapeHtml(str) {
+        return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function isVideoUrl(url) {
+        if (!url) return false;
+        if (/^data:video\//i.test(url)) return true;
+        return /\.(mp4|mov|webm|m4v|mkv)(\?|#|$)/i.test(url);
+    }
+
+    function guessFilename(url, name, type) {
+        const base = (name || 'glotix-file').replace(/[^\w\u0600-\u06FF.-]+/g, '_').slice(0, 80);
+        if (isVideoUrl(url)) return `${base}.mp4`;
+        if (type === 'clone' || type === 'tts') return `${base}.wav`;
+        return `${base}.mp4`;
+    }
+
+    function findFileById(id) {
+        return allFiles.find(f => String(f.id) === String(id));
+    }
+
+    /* ───── TTS history (localStorage) ───── */
+    function loadTTSHistory() {
+        try {
+            const raw = localStorage.getItem(TTS_HISTORY_KEY);
+            if (!raw) return [];
+            const arr = JSON.parse(raw);
+            if (!Array.isArray(arr)) return [];
+            return arr.map(item => ({
+                id: item.id || `tts_${item.created_at || Date.now()}`,
+                type: 'tts',
+                status: 'completed',
+                output_url: item.output_url || '',
+                created_at: item.created_at,
+                name: item.name || 'Generated Audio',
+                text: item.text || '', // إضافة النص كـ description
+                lang: item.lang || ''
+            }));
+        } catch (_) { return []; }
+    }
+
+    function saveTTSHistoryList(items) {
+        try {
+            localStorage.setItem(TTS_HISTORY_KEY, JSON.stringify(items.map(i => ({
+                id: i.id, output_url: i.output_url || '', created_at: i.created_at,
+                text: i.text || '', name: i.name, lang: i.lang || ''
+            }))));
+        } catch (e) { console.warn('Failed to save TTS history:', e); }
+    }
+
+    function deleteTTSItem(id) {
+        const items = loadTTSHistory().filter(i => String(i.id) !== String(id));
+        saveTTSHistoryList(items);
+    }
+
+    /* ───── Modal preview ───── */
+    window.closeMediaModal = function() {
+        const modal = document.getElementById('mediaModal');
+        const body = document.getElementById('mediaModalBody');
+        modal?.classList.remove('open');
+        document.body.style.overflow = '';
+        if (body) {
+            const media = body.querySelector('video, audio');
+            if (media) { media.pause(); media.removeAttribute('src'); media.load(); }
+            body.innerHTML = '';
+        }
+    };
+
+    window.openMediaPlayer = function(id) {
+        const f = findFileById(id);
+        if (!f) return;
+        const url = (f.output_url || '').trim();
+
+        const modal = document.getElementById('mediaModal');
+        const body = document.getElementById('mediaModalBody');
+        const title = document.getElementById('mediaModalTitle');
+        if (!modal || !body) return;
+
+        title.textContent = f.name || 'Preview';
+        let html = '';
+
+        if (!url) {
+            window.showToast?.('No media URL for this file', 'error');
+            return;
+        } else if (isVideoUrl(url)) {
+            html += `<video controls autoplay playsinline src="${escapeHtml(url)}"></video>`;
+        } else {
+            html += `<audio controls autoplay src="${escapeHtml(url)}"></audio>`;
+        }
+
+        body.innerHTML = html;
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        const media = body.querySelector('video, audio');
+        if (media) {
+            media.onerror = () => { window.showToast?.('Could not play this file in the browser', 'error'); };
+        }
+    };
+
+    window.downloadMediaFile = async function(id, btn) {
+        const f = findFileById(id);
+        const url = (f?.output_url || '').trim();
+        if (!url) {
+            window.showToast?.('No download URL for this file', 'error');
+            return;
+        }
+
+        const filename = guessFilename(url, f.name, f.type);
+        if (btn) btn.classList.add('loading');
+
+        try {
+            if (url.startsWith('data:') || url.startsWith('blob:')) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.showToast?.('Download started', 'success');
+                return;
+            }
+            const res = await fetch(url, { mode: 'cors' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const blob = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+            window.showToast?.('Download started', 'success');
+        } catch (_) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.rel = 'noopener';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.showToast?.('Opening file — save from browser if download did not start', 'info');
+        } finally {
+            if (btn) btn.classList.remove('loading');
+        }
+    };
+
+    /* ───── Loaders ───── */
+    function sortFilesNewestFirst(files) {
+        return (files || []).slice().sort((a, b) => {
+            const ta = new Date(a.created_at || 0).getTime();
+            const tb = new Date(b.created_at || 0).getTime();
+            if (tb !== ta) return tb - ta;
+            return String(b.id || '').localeCompare(String(a.id || ''));
+        });
+    }
+
+    async function loadFilesFromApi(opts = {}) {
+        const silent = !!opts.silent;
+        const headers = typeof window.getApiAuthHeaders === 'function' ? window.getApiAuthHeaders() : null;
+        let dubFiles = [];
+        let cloneFiles = [];
+        const ephemeralDub =
+            typeof window.GLOTIX_EPHEMERAL_DUB === 'boolean'
+                ? window.GLOTIX_EPHEMERAL_DUB
+                : (localStorage.getItem('glotix_ephemeral_dub') === '1' ||
+                   localStorage.getItem('glotix_ephemeral_dub') === 'true');
+
+        if (headers) {
+            try {
+                const res = await fetch(`${API}/api/user/files`, { headers });
+                const data = await res.json();
+                if (data.success && data.files) {
+                    let allDbFiles = sortFilesNewestFirst(data.files);
+                    // Ephemeral dubbing: never surface dubbing history (credits-only persistence).
+                    dubFiles = ephemeralDub ? [] : allDbFiles.filter(f => f.type === 'dubbing');
+                    let ttsDbFiles = allDbFiles.filter(f => f.type === 'tts');
+                    
+                    let toDelete = [];
+                    
+                    // Auto-prune: keep last 5 dubbed videos (FIFO; backend also enforces)
+                    if (!ephemeralDub && dubFiles.length > 5) {
+                        toDelete.push(...dubFiles.slice(5).map(f => ({ type: f.type, id: String(f.id) })));
+                        dubFiles = dubFiles.slice(0, 5);
+                    }
+                    
+                    // 💡 التنظيف التلقائي: الإبقاء على 7 فقط في قاعدة البيانات (TTS)
+                    if (ttsDbFiles.length > 7) {
+                        toDelete.push(...ttsDbFiles.slice(7).map(f => ({ type: f.type, id: String(f.id) })));
+                    }
+
+                    if (toDelete.length > 0) {
+                        fetch(`${API}/api/user/files/bulk-delete`, {
+                            method: 'POST',
+                            headers: { ...headers, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ items: toDelete })
+                        }).catch(()=>{});
+                    }
+                }
+            } catch (e) {}
+
+            try {
+                const clonesRes = await fetch(`${API}/api/user/voice-clones`, { headers });
+                if (clonesRes.ok) {
+                    const cData = await clonesRes.json();
+                    if (cData.success && cData.clones) {
+                        cloneFiles = cData.clones.map(c => ({
+                            id: c.id, type: 'clone', status: 'completed',
+                            output_url: c.sample_url, created_at: c.created_at, name: c.name || 'Voice Clone'
+                        }));
+                    }
+                }
+            } catch (e) {}
+        }
+
+        const ttsFiles = loadTTSHistory();
+        allFiles = sortFilesNewestFirst([...dubFiles, ...cloneFiles, ...ttsFiles]);
+
+        selectedIds.clear();
+        updateCounts();
+        renderFiles();
+        scheduleHistoryPollingWhileProcessing();
+        if (!silent && hasProcessingDubbingFiles() && typeof window.showToast === 'function') {
+            window.showToast('Some videos are still processing — this page will update automatically', 'info');
+        }
+    }
+
+    function updateCounts() {
+        const setCount = (id, n) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = String(n);
+        };
+        setCount('countAll', allFiles.length);
+        setCount('countDubbing', allFiles.filter(f => f.type === 'dubbing').length);
+        setCount('countClones', allFiles.filter(f => f.type === 'clone').length);
+        setCount('countTts', allFiles.filter(f => f.type === 'tts').length);
+    }
+
+    /* ───── Render ───── */
+    function getFiltered() {
+        return allFiles.filter(f => currentFilter === 'all' || f.type === currentFilter);
+    }
+
+    function updateToolbarForFilter() {
+        const header = document.getElementById('fileListHeader');
+        const deleteAllBtn = document.getElementById('deleteAllBtn');
+        const isCloneTab = currentFilter === 'clone';
+        if (header) header.classList.toggle('clone-toolbar-hidden', isCloneTab);
+        if (deleteAllBtn) {
+            deleteAllBtn.style.display = isCloneTab ? 'none' : '';
+        }
+        if (isCloneTab) selectedIds.clear();
+    }
+
+    function cloneInitialLetter(name) {
+        const s = String(name || 'V').trim();
+        if (!s) return 'V';
+        const ch = s.charAt(0);
+        return /[\u0600-\u06FF]/.test(ch) ? ch : ch.toUpperCase();
+    }
+
+    function renderCloneItemHTML(f) {
+        const name = f.name || 'Voice Clone';
+        const url = (f.output_url || '').trim();
+        const hasUrl = !!url;
+        const id = String(f.id);
+        const initial = cloneInitialLetter(name);
+
+        const actions = `
+            ${hasUrl ? `<button type="button" class="btn-action" title="Preview" onclick="openCloneAudioPreview('${escapeHtml(id)}')"><i class="fa-solid fa-play"></i></button>` : ''}
+            ${hasUrl ? `<button type="button" class="btn-action" title="Download" onclick="downloadMediaFile('${escapeHtml(id)}', this)"><i class="fa-solid fa-download"></i></button>` : ''}
+            <button type="button" class="btn-action danger" title="Delete sample" onclick="deleteSingleFile('${escapeHtml(id)}')"><i class="fa-solid fa-trash"></i></button>
+        `;
+
+        return `
+            <div class="file-item clone-card" data-id="${escapeHtml(id)}" data-type="clone">
+                <div class="clone-avatar-wrap">
+                    <div class="clone-avatar" aria-hidden="true">${escapeHtml(initial)}</div>
+                    ${hasUrl ? `<button type="button" class="clone-play-fab" onclick="openCloneAudioPreview('${escapeHtml(id)}')" title="Preview sample"><i class="fa-solid fa-play"></i></button>` : ''}
+                </div>
+                <div class="clone-name">${escapeHtml(name)}</div>
+                <div class="clone-meta"><i class="fa-regular fa-clock"></i> ${formatDate(f.created_at)}</div>
+                <div class="clone-actions">${actions}</div>
+            </div>
+        `;
+    }
+
+    window.openCloneAudioPreview = function(id) {
+        openMediaPlayer(id);
+    };
+
+    function renderItemHTML(f) {
+        if (f.type === 'clone' && currentFilter === 'clone') {
+            return renderCloneItemHTML(f);
+        }
+
+        const isClone = f.type === 'clone';
+        const isTts = f.type === 'tts';
+        const isDubbing = f.type === 'dubbing';
+        const url = (f.output_url || '').trim();
+        const hasUrl = !!url;
+        const isSelected = selectedIds.has(String(f.id));
+        const isProcessing = isFileProcessing(f);
+        const langCode = f.language || f.lang;
+
+        let displayTitle = f.name || `File ${String(f.id).substring(0, 8)}`;
+        let subtitleText = '';
+
+        if (isTts) {
+            displayTitle = 'Text-to-Speech Audio';
+            if (f.text) subtitleText = `"${f.text}"`;
+        } else if (isClone) {
+            displayTitle = f.name || 'Voice Clone';
+        }
+
+        let thumbClass = 'video-thumb';
+        let iconHTML = '<i class="fa-solid fa-film thumb-icon"></i>';
+        let thumbInner = '';
+
+        if (isClone) {
+            thumbClass = 'clone-thumb'; iconHTML = '<i class="fa-solid fa-microphone thumb-icon"></i>';
+        } else if (isTts) {
+            thumbClass = 'tts-thumb'; iconHTML = '<i class="fa-solid fa-comment-dots thumb-icon"></i>';
+        } else if (isProcessing) {
+            thumbClass = 'processing-thumb';
+            iconHTML = '<i class="fa-solid fa-circle-notch fa-spin thumb-icon"></i>';
+        }
+
+        if (hasUrl && isVideoUrl(url)) {
+            thumbInner = `<video class="cinema-preview" preload="metadata" muted playsinline loop src="${escapeHtml(url)}#t=0.5" onerror="this.style.display='none'"></video>`;
+            thumbClass = 'video-thumb';
+        } else { thumbInner = iconHTML; }
+
+        const playOverlay = (hasUrl && isVideoUrl(url)) ? `<div class="play-overlay" onclick="openMediaPlayer('${f.id}')"><span class="pulse-ring"><i class="fa-solid fa-play"></i></span></div>` : '';
+
+        let typeBadge = '';
+        if (isDubbing) typeBadge = `<span class="type-badge dubbing">Dubbing</span>`;
+        else if (isClone) typeBadge = `<span class="type-badge clone">Voice Clone</span>`;
+        else if (isTts) typeBadge = `<span class="type-badge tts">TTS</span>`;
+
+        const langBadge = langCode ? `<span class="lang-badge">${escapeHtml(String(langCode).toUpperCase())}</span>` : '';
+        const processingBadge = isProcessing
+            ? `<span class="status-badge processing"><i class="fa-solid fa-circle-notch fa-spin"></i> Processing</span>`
+            : '';
+
+        let inlinePlayer = '';
+        if (hasUrl && !isVideoUrl(url)) {
+            inlinePlayer = `<audio class="inline-player" controls preload="metadata" src="${escapeHtml(url)}"></audio>`;
+        } else if (isProcessing) {
+            inlinePlayer = `
+                <div style="margin: 8px 0; font-size: 0.85rem; color: #1d4ed8; background: #eff6ff; padding: 6px 10px; border-radius: 6px; display: inline-block;">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Dubbing in progress — safe to close or refresh this page.
+                </div>
+            `;
+        } else if (isTts && !hasUrl) {
+            inlinePlayer = `
+                <div style="margin: 8px 0; font-size: 0.85rem; color: var(--error); background: #fef2f2; padding: 6px 10px; border-radius: 6px; display: inline-block;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Audio session expired. Re-generate in TTS Studio.
+                </div>
+            `;
+        }
+
+        const actions = `
+            ${f.redub_available && isDubbing && !isProcessing ? `<button type="button" class="btn-action redub" title="Dub in another language" onclick="openRedubModal('${escapeHtml(String(f.id))}')"><i class="fa-solid fa-pen"></i></button>` : ''}
+            ${hasUrl && isVideoUrl(url) ? `<button type="button" class="btn-action" title="Play Video" onclick="openMediaPlayer('${f.id}')"><i class="fa-solid fa-play"></i></button>` : ''}
+            ${hasUrl ? `<button type="button" class="btn-action" title="Download" onclick="downloadMediaFile('${f.id}', this)"><i class="fa-solid fa-download"></i></button>` : ''}
+            <button type="button" class="btn-action danger" title="Delete" onclick="deleteSingleFile('${f.id}')"><i class="fa-solid fa-trash"></i></button>
+        `;
+
+        const showCheckbox = f.type !== 'clone';
+
+        return `
+            <div class="file-item${isSelected ? ' selected' : ''}" data-id="${f.id}" data-type="${f.type}">
+                ${showCheckbox ? `<input type="checkbox" class="item-checkbox" data-id="${f.id}" ${isSelected ? 'checked' : ''}>` : ''}
+                <div class="file-thumb ${thumbClass}">
+                    ${thumbInner}
+                    ${playOverlay}
+                </div>
+                <div class="file-info">
+                    <div class="file-name">${escapeHtml(displayTitle)}</div>
+                    ${subtitleText ? `<div style="font-size:0.85rem; color:var(--text-muted); line-height:1.4; margin-bottom: 6px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${escapeHtml(subtitleText)}</div>` : ''}
+                    ${inlinePlayer}
+                    <div class="file-meta" style="margin-top: 6px;">
+                        ${typeBadge}
+                        ${processingBadge}
+                        <span><i class="fa-regular fa-clock"></i> ${formatDate(f.created_at)}</span>
+                        ${langBadge}
+                    </div>
+                </div>
+                <div class="file-actions">${actions}</div>
+            </div>
+        `;
+    }
+
+    
+    function bindCinemaHoverPreview() {
+        const list = document.getElementById('fileList');
+        if (!list || !list.classList.contains('view-grid')) return;
+        list.querySelectorAll('.file-item').forEach((card) => {
+            if (card.dataset.cinemaBound) return;
+            const video = card.querySelector('video.cinema-preview');
+            if (!video) return;
+            card.dataset.cinemaBound = '1';
+            let playTimer = null;
+            card.addEventListener('mouseenter', () => {
+                playTimer = setTimeout(() => {
+                    card.classList.add('is-playing');
+                    video.muted = true;
+                    const p = video.play();
+                    if (p && p.catch) p.catch(() => {});
+                }, 120);
+            });
+            card.addEventListener('mouseleave', () => {
+                if (playTimer) clearTimeout(playTimer);
+                card.classList.remove('is-playing');
+                try { video.pause(); video.currentTime = Math.min(0.5, video.duration || 0.5); } catch (_) {}
+            });
+        });
+    }
+
+    function renderFiles() {
+        const list = document.getElementById('fileList');
+        const isCloneTab = currentFilter === 'clone';
+        updateToolbarForFilter();
+
+        list.classList.toggle('view-list', !isCloneTab && currentView === 'list');
+        list.classList.toggle('view-grid', !isCloneTab && currentView === 'grid');
+        list.classList.toggle('clone-gallery', isCloneTab);
+
+        const filtered = getFiltered();
+        const countLabel = isCloneTab
+            ? `${filtered.length} voice sample${filtered.length !== 1 ? 's' : ''}`
+            : `${filtered.length} item${filtered.length !== 1 ? 's' : ''}`;
+        document.getElementById('fileCountLabel').textContent = countLabel;
+
+        if (filtered.length === 0) {
+            list.innerHTML = renderEmptyState();
+        bindCinemaHoverPreview();
+            updateBulkActionsUi();
+            return;
+        }
+
+        list.innerHTML = filtered.map(renderItemHTML).join('');
+
+        list.querySelectorAll('.item-checkbox').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const id = cb.dataset.id;
+                if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
+                const item = list.querySelector(`.file-item[data-id="${CSS.escape(id)}"]`);
+                if (item) item.classList.toggle('selected', cb.checked);
+                updateBulkActionsUi();
+            });
+        });
+        updateBulkActionsUi();
+    }
+
+    function renderEmptyState() {
+        if (currentFilter === 'tts') return `<div class="empty-state"><i class="fa-solid fa-comment-dots"></i><div class="empty-title">No TTS history yet</div><p>Generated audio from Text to Speech will appear here.</p><a href="/tts" class="empty-action"><i class="fa-solid fa-plus"></i> Create TTS</a></div>`;
+        if (currentFilter === 'dubbing') return `<div class="empty-state"><i class="fa-solid fa-film"></i><div class="empty-title">No dubbed videos yet</div><a href="/dubbing" class="empty-action"><i class="fa-solid fa-plus"></i> Start dubbing</a></div>`;
+        if (currentFilter === 'clone') return `<div class="empty-state"><i class="fa-solid fa-microphone"></i><div class="empty-title">No voice clones yet</div></div>`;
+        return `<div class="empty-state"><i class="fa-regular fa-folder-open"></i><div class="empty-title">No files found</div></div>`;
+    }
+
+    /* ───── Selection / bulk delete ───── */
+    function updateBulkActionsUi() {
+        const bulk = document.getElementById('bulkActions');
+        const label = document.getElementById('selectedLabel');
+        const selectAll = document.getElementById('selectAllCheckbox');
+        const count = selectedIds.size;
+        bulk.classList.toggle('visible', count > 0);
+        label.textContent = `${count} selected`;
+
+        const visibleIds = getFiltered().filter(f => f.type !== 'clone').map(f => String(f.id));
+        if (visibleIds.length === 0) {
+            selectAll.checked = false; selectAll.indeterminate = false;
+        } else {
+            const allSelected = visibleIds.every(id => selectedIds.has(id));
+            const someSelected = visibleIds.some(id => selectedIds.has(id));
+            selectAll.checked = allSelected; selectAll.indeterminate = !allSelected && someSelected;
+        }
+    }
+
+    document.getElementById('selectAllCheckbox').addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        getFiltered().forEach(f => {
+            if (f.type === 'clone') return;
+            const id = String(f.id);
+            if (checked) selectedIds.add(id); else selectedIds.delete(id);
+        });
+        renderFiles();
+    });
+
+    document.getElementById('clearSelectionBtn').addEventListener('click', () => { selectedIds.clear(); renderFiles(); });
+
+    async function bulkDeleteServer(items) {
+        const headers = typeof window.getApiAuthHeaders === 'function' ? window.getApiAuthHeaders() : null;
+        if (!headers || items.length === 0) return { deleted: 0, failed: 0 };
+        try {
+            const res = await fetch(`${API}/api/user/files/bulk-delete`, {
+                method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (data && data.success) return { deleted: Number(data.deleted) || 0, failed: Number(data.failed) || 0 };
+            return { deleted: 0, failed: items.length };
+        } catch (_) { return { deleted: 0, failed: items.length }; }
+    }
+
+    document.getElementById('bulkDeleteBtn').addEventListener('click', async () => {
+        if (selectedIds.size === 0) return;
+        if (!confirm(`Permanently delete ${selectedIds.size} item(s)? This cannot be undone.`)) return;
+
+        const btn = document.getElementById('bulkDeleteBtn');
+        btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+
+        const ids = [...selectedIds];
+        const serverItems = [];
+        let ttsDeleted = 0;
+
+        let cloneSkipped = 0;
+        for (const id of ids) {
+            const f = findFileById(id);
+            if (!f) continue;
+            if (f.type === 'clone') {
+                cloneSkipped++;
+                continue;
+            }
+            if (f.type === 'tts') { deleteTTSItem(id); ttsDeleted++; }
+            else { serverItems.push({ type: f.type, id: String(id) }); }
+        }
+
+        if (cloneSkipped > 0 && serverItems.length === 0 && ttsDeleted === 0) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-trash"></i> Delete selected';
+            window.showToast?.('Voice clones can only be deleted individually from this tab.', 'info');
+            return;
+        }
+
+        const { deleted, failed } = await bulkDeleteServer(serverItems);
+        const totalOk = deleted + ttsDeleted;
+
+        btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-trash"></i> Delete selected';
+
+        if (totalOk > 0) window.showToast?.(`Deleted ${totalOk} item${totalOk !== 1 ? 's' : ''}`, 'success');
+        if (failed > 0) window.showToast?.(`Failed to delete ${failed} item${failed !== 1 ? 's' : ''}`, 'error');
+        await loadFilesFromApi();
+    });
+
+    document.getElementById('deleteAllBtn').addEventListener('click', async () => {
+        if (currentFilter === 'clone') return;
+
+        const itemsToDelete = allFiles.filter(f => f.type === 'dubbing');
+
+        if (itemsToDelete.length === 0) {
+            window.showToast?.('No dubbing files to delete. TTS audio and voice clones are kept.', 'info');
+            return;
+        }
+
+        if (!confirm(`Delete ALL Dubbing files (${itemsToDelete.length} item(s))?\n\nYour TTS audio and voice clone samples will NOT be deleted.\n\nContinue?`)) return;
+
+        const typed = prompt('Type DELETE to confirm permanent removal of your dubbing files:');
+        if ((typed || '').trim().toUpperCase() !== 'DELETE') {
+            window.showToast?.('Delete cancelled', 'info');
+            return;
+        }
+
+        const btn = document.getElementById('deleteAllBtn');
+        btn.disabled = true; const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+
+        const serverItems = itemsToDelete.map(f => ({ type: f.type, id: String(f.id) }));
+        let serverFail = 0;
+
+        if (serverItems.length > 0) {
+            const { failed } = await bulkDeleteServer(serverItems);
+            serverFail = failed;
+        }
+
+        btn.disabled = false; btn.innerHTML = orig;
+
+        if (serverFail > 0) {
+            window.showToast?.(`${serverFail} item(s) could not be removed`, 'error');
+        } else {
+            window.showToast?.(`Dubbing files deleted. TTS audio and voice clones kept safe!`, 'success');
+        }
+
+        await loadFilesFromApi();
+    });
+
+    window.deleteSingleFile = async function(id) {
+        const f = findFileById(id);
+        if (!f) return;
+        if (!confirm('Permanently delete this item? This cannot be undone.')) return;
+
+        if (f.type === 'tts') {
+            deleteTTSItem(id);
+            window.showToast?.('Deleted', 'success');
+            await loadFilesFromApi();
+            return;
+        }
+
+        const headers = typeof window.getApiAuthHeaders === 'function' ? window.getApiAuthHeaders() : null;
+        if (!headers) {
+            window.showToast?.('Please sign in first', 'error');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API}/api/user/files/${encodeURIComponent(f.type)}/${encodeURIComponent(String(f.id))}`, {
+                method: 'DELETE',
+                headers,
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.success === false) {
+                throw new Error(data.error || 'Delete failed');
+            }
+            window.showToast?.('Deleted', 'success');
+            await loadFilesFromApi();
+        } catch (err) {
+            window.showToast?.(err.message || 'Delete failed', 'error');
+        }
+    };
+
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentFilter = tab.dataset.filter || 'all';
+            selectedIds.clear();
+            renderFiles();
+        });
+    });
+
+    const viewListBtn = document.getElementById('viewListBtn');
+    const viewGridBtn = document.getElementById('viewGridBtn');
+    function setViewMode(mode) {
+        currentView = mode;
+        localStorage.setItem(VIEW_MODE_KEY, mode);
+        viewListBtn?.classList.toggle('active', mode === 'list');
+        viewGridBtn?.classList.toggle('active', mode === 'grid');
+        renderFiles();
+    }
+    viewListBtn?.addEventListener('click', () => setViewMode('list'));
+    viewGridBtn?.addEventListener('click', () => setViewMode('grid'));
+    setViewMode(currentView);
+
+    function populateRedubLanguages(currentLang) {
+        const sel = document.getElementById('redubLangSelect');
+        if (!sel) return;
+        const langs = (window.LANGUAGES || []).filter(l => l.supports_clone !== false);
+        const cur = String(currentLang || '').toLowerCase();
+        sel.innerHTML = langs.map(l => {
+            const code = l.code;
+            const selected = code.toLowerCase() === cur ? ' selected' : '';
+            return `<option value="${escapeHtml(code)}"${selected}>${escapeHtml(l.flag || '')} ${escapeHtml(l.name_en || code)}</option>`;
+        }).join('');
+        const firstOther = langs.find(l => l.code.toLowerCase() !== cur);
+        if (firstOther) sel.value = firstOther.code;
+    }
+
+    window.openRedubModal = function(jobId) {
+        const ephemeralDub =
+            typeof window.GLOTIX_EPHEMERAL_DUB === 'boolean'
+                ? window.GLOTIX_EPHEMERAL_DUB
+                : (localStorage.getItem('glotix_ephemeral_dub') === '1' ||
+                   localStorage.getItem('glotix_ephemeral_dub') === 'true');
+        if (ephemeralDub) {
+            window.showToast?.('Dubbing is session-only — history re-dub is disabled', 'info');
+            return;
+        }
+        const f = findFileById(jobId);
+        if (!f || !f.redub_available) {
+            window.showToast?.('Fast re-dub is not available for this file', 'error');
+            return;
+        }
+        redubSourceJobId = String(jobId);
+        populateRedubLanguages(f.language || f.lang);
+        document.getElementById('redubModal')?.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeRedubModal = function() {
+        document.getElementById('redubModal')?.classList.remove('open');
+        document.body.style.overflow = '';
+        redubSourceJobId = null;
+    };
+
+    async function pollRedubJob(jobId) {
+        const headers = typeof window.getApiAuthHeaders === 'function' ? window.getApiAuthHeaders() : null;
+        if (!headers) return;
+        if (redubPollTimer) clearInterval(redubPollTimer);
+        redubPollTimer = setInterval(async () => {
+            try {
+                const res = await fetch(`${API}/api/job/${encodeURIComponent(jobId)}`, { headers });
+                const data = await res.json().catch(() => ({}));
+                const st = String(data.status || '').toLowerCase();
+                if (st === 'completed' && data.output_url) {
+                    clearInterval(redubPollTimer);
+                    redubPollTimer = null;
+                    window.showToast?.('Re-dub complete!', 'success');
+                    await loadFilesFromApi();
+                } else if (st === 'failed') {
+                    clearInterval(redubPollTimer);
+                    redubPollTimer = null;
+                    window.showToast?.(data.error || 'Re-dub failed', 'error');
+                    await loadFilesFromApi();
+                }
+            } catch (_) {}
+        }, 4000);
+    }
+
+    window.submitRedubJob = async function() {
+        if (!redubSourceJobId) return;
+        const sel = document.getElementById('redubLangSelect');
+        const lang = (sel?.value || '').trim();
+        if (!lang) {
+            window.showToast?.('Select a target language', 'error');
+            return;
+        }
+        const headers = typeof window.getApiAuthHeaders === 'function' ? window.getApiAuthHeaders() : null;
+        if (!headers) {
+            window.showToast?.('Please sign in first', 'error');
+            return;
+        }
+        const btn = document.getElementById('redubStartBtn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Starting…'; }
+        try {
+            const res = await fetch(`${API}/api/dub/redub`, {
+                method: 'POST',
+                headers: { ...headers, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source_job_id: redubSourceJobId, lang }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.success === false) {
+                throw new Error(data.message || data.error || `HTTP ${res.status}`);
+            }
+            closeRedubModal();
+            window.showToast?.('Fast re-dub started — stems reused, no re-cloning', 'success');
+            await loadFilesFromApi();
+            if (data.job_id) pollRedubJob(data.job_id);
+        } catch (err) {
+            window.showToast?.(err.message || 'Could not start re-dub', 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'Start fast dub'; }
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadFilesFromApi().catch(() => {
+            const list = document.getElementById('fileList');
+            if (list) {
+                list.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><div class="empty-title">Could not load files</div><p>Check your connection and sign in again.</p></div>`;
+            }
+        });
+    });
+</script>
+</body>
+</html>
