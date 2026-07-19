@@ -56,15 +56,20 @@
 
 	function voiceRequest() {
 		const voice = selectedVoice;
-		if (!voice || voice.source === 'quick') {
+		if (!voice) {
 			return {
-				voice_id: 'quick_edge',
-				voice_name: 'Quick',
+				voice_id: '',
+				voice_name: 'Default',
 				sample_url: '',
 				sample_text: '',
-				mode: 'quick'
+				mode: 'standard',
+				elevenlabs_voice_id: ''
 			};
 		}
+		const elevenlabsVoiceId =
+			voice.source === 'library' || voice.source === 'saved'
+				? ''
+				: String(voice.elevenlabs_voice_id || voice.id || '');
 		return {
 			voice_id:
 				voice.source === 'library' || voice.source === 'saved'
@@ -73,7 +78,8 @@
 			voice_name: voice.name,
 			sample_url: voice.sample_url,
 			sample_text: voice.sample_text || '',
-			mode: 'standard'
+			mode: 'standard',
+			elevenlabs_voice_id: elevenlabsVoiceId
 		};
 	}
 
@@ -430,7 +436,6 @@
 		<div class="card-panel voice-panel">
 			<VoicePicker
 				selected={selectedVoice}
-				includeQuick
 				onchange={(voice) => (selectedVoice = voice)}
 			/>
 		</div>

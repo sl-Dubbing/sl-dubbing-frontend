@@ -114,20 +114,50 @@
     if (!id) {
       return Promise.reject(new Error('Missing job id'));
     }
-    const token = resolveAccessTokenForDubbingJobStream();
-    // # guard — رفض/خروج
-    if (!token) {
-      return Promise.reject(new Error('Missing auth token for SSE'));
-    }
-    const baseUrl = buildDubbingJobStatusStreamUrl(id);
-    const streamUrl =
-      baseUrl +
-      // # block — حلقة/تكرار
-      (baseUrl.includes('?') ? '&' : '?') +
-      'access_token=' +
-      encodeURIComponent(token);
+    return (async () => {
+      const authHeaders =
+        typeof global.getApiAuthHeaders === 'function' ? global.getApiAuthHeaders() : {};
+      let streamUrl = buildDubbingJobStatusStreamUrl(id);
+      try {
+        const ticketRes = await fetch(
+          (global.API_BASE || '') +
+            '/api/dub/status/' +
+            encodeURIComponent(id) +
+            '/sse-ticket',
+          { method: 'POST', headers: authHeaders }
+        );
+        const ticketJson = await ticketRes.json().catch(() => ({}));
+        const ticket = String(ticketJson?.sse_ticket || '').trim();
+        if (ticket) {
+          streamUrl =
+            buildDubbingJobStatusStreamUrl(id) +
+            (buildDubbingJobStatusStreamUrl(id).includes('?') ? '&' : '?') +
+            'sse_ticket=' +
+            encodeURIComponent(ticket);
+        } else {
+          const token = resolveAccessTokenForDubbingJobStream();
+          if (!token) {
+            throw new Error('Missing auth token for SSE');
+          }
+          streamUrl =
+            buildDubbingJobStatusStreamUrl(id) +
+            (buildDubbingJobStatusStreamUrl(id).includes('?') ? '&' : '?') +
+            'access_token=' +
+            encodeURIComponent(token);
+        }
+      } catch (error) {
+        const token = resolveAccessTokenForDubbingJobStream();
+        if (!token) {
+          throw error instanceof Error ? error : new Error('Missing auth token for SSE');
+        }
+        streamUrl =
+          buildDubbingJobStatusStreamUrl(id) +
+          (buildDubbingJobStatusStreamUrl(id).includes('?') ? '&' : '?') +
+          'access_token=' +
+          encodeURIComponent(token);
+      }
 
-    return new Promise((resolve, reject) => {
+      return new Promise((resolve, reject) => {
       let settled = false;
       let es = null;
       // # block — إرجاع نتيجة
@@ -258,6 +288,7 @@
         }
       };
     });
+    })();
   }
 
   // # FN pollDubbingJobUntilComplete

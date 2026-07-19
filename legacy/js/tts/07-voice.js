@@ -29,7 +29,7 @@
         note.id = 'voiceCloneNote';
         // # block — معالجة صوت/استنساخ
         note.style.cssText = 'font-size:0.72rem;color:#f59e0b;margin-top:4px;display:flex;align-items:center;gap:4px;padding:0 4px;';
-        note.innerHTML = '<i class="fa-solid fa-circle-info"></i> Cloned / premium voices use ElevenLabs — use ⚡ Quick for Edge TTS';
+        note.innerHTML = '<i class="fa-solid fa-circle-info"></i> Cloned / premium voices use ElevenLabs Multilingual';
         document.querySelector('.editor-controls')?.appendChild(note);
       }
       note.style.display = 'flex';
@@ -283,7 +283,7 @@
     card.className = 'v-avatar-card';
     card.id = 'quickVoiceCard';
     // # block — معالجة صوت/استنساخ
-    card.title = 'Fast Edge TTS — half the credits';
+    card.title = 'Fast ElevenLabs Flash TTS';
     card.innerHTML = `
       <div class="v-img-wrapper" style="background:linear-gradient(135deg,#f59e0b,#f97316);">
         <i class="fa-solid fa-bolt" style="color:#fff;font-size:1rem;"></i>

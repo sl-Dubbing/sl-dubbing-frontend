@@ -59,7 +59,7 @@
       TtsApp.voice.showVoiceCloneNote(true);
       document.getElementById('cloneCard')?.classList.add('selected');
     } else if (!S.selectedVoiceId) {
-      // Reliable default: Edge TTS (Quick) — no ElevenLabs key required
+      // Reliable default: ElevenLabs Flash (Quick) when no saved/premium voice
       TtsApp.voice.selectQuickEdgeVoice?.();
     }
     // # block — معالجة صوت/استنساخ

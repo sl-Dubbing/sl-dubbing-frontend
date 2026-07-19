@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
 	import LanguageSelect from '$lib/components/LanguageSelect.svelte';
 	import SrtEditor from '$lib/components/SrtEditor.svelte';
 	import VoicePicker from '$lib/components/VoicePicker.svelte';
@@ -89,13 +90,34 @@
 			targetLangs = targetLangs.filter((code) => findLanguage(items, code));
 			if (!targetLangs.length && items[0]) targetLangs = [items[0].code];
 		});
-		void resumePendingJobs();
+		// # guard — Wait for auth.ready so pending jobs load under the real user id, not guest.
+		void waitForAuthReady().then(() => resumePendingJobs());
 		return () => {
 			abort?.abort();
 			if (previewUrl) URL.revokeObjectURL(previewUrl);
+			// # guard — Remuxed blob: URLs are not freed by clearing results alone.
+			revokeResultBlobUrls(results);
 			void releaseMediaPrepareResources();
 		};
 	});
+
+	async function waitForAuthReady(): Promise<void> {
+		if (get(auth).ready) return;
+		await new Promise<void>((resolve) => {
+			const unsub = auth.subscribe((state) => {
+				if (state.ready) {
+					unsub();
+					resolve();
+				}
+			});
+		});
+	}
+
+	function revokeResultBlobUrls(items: ResultItem[]) {
+		for (const item of items) {
+			if (item.url?.startsWith('blob:')) URL.revokeObjectURL(item.url);
+		}
+	}
 
 	function storageKey(): string {
 		return `${PENDING_PREFIX}${$auth.user?.id || 'guest'}`;
@@ -139,6 +161,7 @@
 		}
 		file = next;
 		if (previewUrl) URL.revokeObjectURL(previewUrl);
+		revokeResultBlobUrls(results);
 		previewUrl = next ? URL.createObjectURL(next) : null;
 		isVideo = !!(
 			next &&
@@ -194,6 +217,7 @@
 			statusText = 'Uploading extracted audio directly to storage…';
 			const audioGrant = await uploadFileResumableToR2(prepared.audioFile, {
 				contentType: 'audio/mpeg',
+				signal: abort?.signal,
 				onProgress: (ratio) => {
 					progress = Math.max(progress, Math.round(30 + ratio * 20));
 				}
@@ -206,6 +230,7 @@
 
 			videoUploadPromise = uploadFileResumableToR2(file, {
 				contentType: file.type || 'application/octet-stream',
+				signal: abort?.signal,
 				onProgress: (ratio) => {
 					progress = Math.max(progress, Math.round(50 + ratio * 10));
 					statusText = 'Background video upload…';
@@ -226,6 +251,7 @@
 		statusText = 'Uploading media directly to storage…';
 		const grant = await uploadFileResumableToR2(prepared.uploadFile, {
 			contentType: prepared.uploadFile.type || 'application/octet-stream',
+			signal: abort?.signal,
 			onProgress: (ratio) => {
 				progress = Math.max(progress, Math.round(30 + ratio * 25));
 			}
@@ -373,9 +399,13 @@
 	// # AR Watch SSE and polling concurrently; first terminal result wins
 	// # KW مهمة,job,polling,SSE,status
 	async function watchJob(job: PendingJob, signal: AbortSignal): Promise<ResultItem> {
-		const headers = (await refreshApiAuthHeadersFromSupabase()) || getApiAuthHeaders();
+		let headers = (await refreshApiAuthHeadersFromSupabase()) || getApiAuthHeaders();
 		let done = false;
 		let eventSource: EventSource | null = null;
+		// # guard — Upload UI can sit at ~55%; map Modal 0–100 into the remaining band so the bar never freezes.
+		const progressFloor = Math.min(Math.max(progress, 0), 55);
+		const startedAt = Date.now();
+		const maxWatchMs = 45 * 60 * 1000;
 
 		return new Promise<ResultItem>((resolve, reject) => {
 			const stop = () => {
@@ -386,48 +416,92 @@
 				const state = String(payload.status || payload.state || '').toLowerCase();
 				const apiProgress = Number(payload.progress ?? payload.percent ?? 0);
 				if (Number.isFinite(apiProgress) && apiProgress > 0) {
-					progress = Math.max(progress, Math.min(96, apiProgress));
+					const mapped = progressFloor + (apiProgress / 100) * (96 - progressFloor);
+					progress = Math.max(progress, Math.min(96, mapped));
 				}
-				statusText = state || 'Processing…';
-				if (['completed', 'done', 'success'].includes(state)) {
+				const stage = String(payload.stage || '').trim();
+				const message = String(payload.message || '').trim();
+				statusText = message || stage || state || 'Processing…';
+				if (['completed', 'done', 'success', 'complete', 'succeeded'].includes(state)) {
 					const url = outputUrl(payload);
 					stop();
 					if (!url) return reject(new Error(`${job.langName}: completed without media URL`));
 					resolve({ jobId: job.jobId, langCode: job.langCode, langName: job.langName, url });
 				}
-				if (['failed', 'error', 'cancelled', 'canceled'].includes(state)) {
+				if (['failed', 'error', 'failure', 'fail'].includes(state)) {
 					stop();
 					reject(new Error(String(payload.error || payload.message || `${job.langName} failed`)));
+				}
+				if (['cancelled', 'canceled'].includes(state)) {
+					stop();
+					reject(new DOMException('Cancelled', 'AbortError'));
 				}
 			};
 
 			if (appConfig.DUB_USE_SSE && headers) {
-				const token = headers.Authorization.replace(/^Bearer\s+/i, '');
-				const url = `${apiBase()}/api/dub/status/${encodeURIComponent(job.jobId)}?access_token=${encodeURIComponent(token)}`;
-				eventSource = new EventSource(url);
-				const onSse = (event: MessageEvent) => {
-					try {
-						handle(JSON.parse(event.data) as Record<string, unknown>);
-					} catch {
-						/* ignore malformed event */
-					}
-				};
-				eventSource.onmessage = onSse;
-				eventSource.addEventListener('progress', onSse);
-				eventSource.addEventListener('completed', onSse);
-				eventSource.addEventListener('failed', onSse);
-				eventSource.onerror = () => eventSource?.close();
+				void fetch(`${apiBase()}/api/dub/status/${encodeURIComponent(job.jobId)}/sse-ticket`, {
+					method: 'POST',
+					headers
+				})
+					.then(async (ticketRes) => {
+						if (!ticketRes.ok || done) return;
+						const ticketPayload = await parseJsonSafe<{ sse_ticket?: string }>(ticketRes);
+						const ticket = String(ticketPayload?.sse_ticket || '').trim();
+						if (!ticket || done) return;
+						const url = `${apiBase()}/api/dub/status/${encodeURIComponent(job.jobId)}?sse_ticket=${encodeURIComponent(ticket)}`;
+						eventSource = new EventSource(url);
+						const onSse = (event: MessageEvent) => {
+							try {
+								handle(JSON.parse(event.data) as Record<string, unknown>);
+							} catch {
+								/* ignore malformed event */
+							}
+						};
+						eventSource.onmessage = onSse;
+						eventSource.addEventListener('progress', onSse);
+						eventSource.addEventListener('completed', onSse);
+						eventSource.addEventListener('failed', onSse);
+						eventSource.onerror = () => eventSource?.close();
+					})
+					.catch(() => {
+						/* fall through to polling */
+					});
 			}
 
 			void (async () => {
+				let notFoundStreak = 0;
 				while (!done && !signal.aborted) {
+					if (Date.now() - startedAt > maxWatchMs) {
+						stop();
+						reject(new Error(`${job.langName}: timed out waiting for job status`));
+						return;
+					}
 					try {
-						const res = await fetch(`${apiBase()}/api/job/${encodeURIComponent(job.jobId)}`, {
+						let res = await fetch(`${apiBase()}/api/job/${encodeURIComponent(job.jobId)}`, {
 							headers: headers || undefined,
 							signal
 						});
-						const payload = await parseJsonSafe<Record<string, unknown>>(res);
-						if (payload) handle(payload);
+						if (res.status === 401) {
+							headers = (await refreshApiAuthHeadersFromSupabase()) || getApiAuthHeaders();
+							res = await fetch(`${apiBase()}/api/job/${encodeURIComponent(job.jobId)}`, {
+								headers: headers || undefined,
+								signal
+							});
+						}
+						if (res.status === 404) {
+							notFoundStreak += 1;
+							if (notFoundStreak >= 5) {
+								stop();
+								reject(new Error(`${job.langName}: job not found`));
+								return;
+							}
+						} else {
+							notFoundStreak = 0;
+						}
+						if (res.ok) {
+							const payload = await parseJsonSafe<Record<string, unknown>>(res);
+							if (payload) handle(payload);
+						}
 					} catch (error) {
 						if ((error as Error).name === 'AbortError') break;
 					}
@@ -565,6 +639,7 @@
 
 		busy = true;
 		progress = 5;
+		revokeResultBlobUrls(results);
 		results = [];
 		activeResult = null;
 		abort?.abort();
@@ -610,14 +685,17 @@
 			ids.map((id) => apiFetch(`/api/dub/${encodeURIComponent(id)}/cancel`, { method: 'POST' }))
 		);
 		for (const id of ids) clearPending(id);
+		// # guard — AbortController stops in-flight R2 uploads even before any job_id exists.
 		abort?.abort();
 		activeJobIds = [];
 		busy = false;
 		statusText = 'Cancelled';
-		showToast('Active dubbing jobs cancelled', 'info');
+		showToast(ids.length ? 'Active dubbing jobs cancelled' : 'Upload cancelled', 'info');
 	}
 
 	async function resumePendingJobs() {
+		await waitForAuthReady();
+		if (!get(auth).user) return;
 		const pending = loadPending();
 		if (!pending.length) return;
 		busy = true;
@@ -784,7 +862,7 @@
 					Start Dubbing
 				{/if}
 			</button>
-			{#if busy && activeJobIds.length}
+			{#if busy}
 				<button class="btn-outline danger" type="button" onclick={cancelAll}>Cancel all</button>
 			{/if}
 		</div>
