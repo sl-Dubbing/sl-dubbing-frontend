@@ -31,41 +31,19 @@
 			const res = await apiFetch('/api/developer/keys');
 			const data = await parseJsonSafe<{ keys?: ApiKey[]; data?: ApiKey[]; api_keys?: ApiKey[] }>(res);
 			keys = data?.api_keys || data?.keys || data?.data || [];
-		} catch {
-			showToast('Failed to load API keys', 'error');
-		} finally {
-			loading = false;
-		}
+		} catch { showToast('Failed to load API keys', 'error'); } finally { loading = false; }
 	}
 
 	async function createKey() {
-		creating = true;
-		newKeyPlain = null;
+		creating = true; newKeyPlain = null;
 		try {
-			const res = await apiFetch('/api/developer/keys', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name: keyName || 'My key' })
-			});
-			const data = await parseJsonSafe<{
-				key?: string;
-				api_key?: string;
-				error?: string;
-				message?: string;
-				success?: boolean;
-			}>(res);
-			if (!res.ok || data?.success === false) {
-				showToast(data?.error || data?.message || 'Could not create key', 'error');
-				return;
-			}
+			const res = await apiFetch('/api/developer/keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: keyName || 'My key' }) });
+			const data = await parseJsonSafe<{ key?: string; api_key?: string; error?: string; message?: string; success?: boolean }>(res);
+			if (!res.ok || data?.success === false) { showToast(data?.error || data?.message || 'Could not create key', 'error'); return; }
 			newKeyPlain = data?.key || data?.api_key || null;
 			showToast('API key created — copy it now', 'success');
 			await loadKeys();
-		} catch {
-			showToast('Could not create key', 'error');
-		} finally {
-			creating = false;
-		}
+		} catch { showToast('Could not create key', 'error'); } finally { creating = false; }
 	}
 
 	async function revokeKey(id: string) {

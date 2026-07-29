@@ -51,13 +51,7 @@
 		]);
 		voices = [...(saved ? [saved] : []), ...clones, ...premium];
 		loading = false;
-		if (!selected) {
-			if (preferDefault) choose(defaultVoice);
-			else if (includeQuick) choose(quickVoice);
-			else if (includeVideoClone) choose(videoClone);
-			else if (voices[0]) choose(voices[0]);
-			else choose(defaultVoice);
-		}
+		if (!selected) choose(preferDefault ? defaultVoice : includeQuick ? quickVoice : includeVideoClone ? videoClone : voices[0] || defaultVoice);
 	}
 
 	const quickVoice: Voice = {
@@ -87,12 +81,8 @@
 	function play(event: MouseEvent, voice: Voice) {
 		event.stopPropagation();
 		if (!voice.sample_url) return;
-		if (audioPreview) {
-			audioPreview.pause();
-			audioPreview = null;
-		}
-		audioPreview = new Audio(voice.sample_url);
-		void audioPreview.play();
+		audioPreview?.pause();
+		(audioPreview = new Audio(voice.sample_url)).play();
 	}
 
 	async function handleUpload(event: Event) {
@@ -135,9 +125,6 @@
 		}
 	}
 
-	// # FN startMicrophoneVoiceCapture
-	// # AR Record a short voice sample from the browser microphone
-	// # KW صوت,استنساخ,voice,clone,sample
 	async function startRecording() {
 		try {
 			recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });

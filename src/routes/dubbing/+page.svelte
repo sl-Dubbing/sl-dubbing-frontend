@@ -83,6 +83,11 @@
 	const PENDING_PREFIX = 'glotix_pending_dub_jobs_';
 	const MAX_BYTES = 5 * 1024 * 1024 * 1024;
 
+	function resetUploadState() {
+		uploadedKey = ''; audioUploadedKey = ''; videoUploadedKey = '';
+		videoUploadPromise = null; uploadGrant = null; preparedMedia = null;
+	}
+
 	onMount(() => {
 		void loadLanguages().then((items) => {
 			languages = items;
@@ -168,14 +173,8 @@
 			(next.type.startsWith('video/') || /\.(mp4|mov|webm|mkv)$/i.test(next.name))
 		);
 		durationSeconds = 0;
-		segments = [];
-		sourceSegments = [];
-		uploadedKey = '';
-		audioUploadedKey = '';
-		videoUploadedKey = '';
-		videoUploadPromise = null;
-		uploadGrant = null;
-		preparedMedia = null;
+		segments = []; sourceSegments = [];
+		resetUploadState();
 		results = [];
 		activeResult = null;
 		progress = 0;
@@ -269,26 +268,11 @@
 
 	async function ensureVideoReadyForDub(): Promise<string> {
 		if (videoUploadedKey) return videoUploadedKey;
-		let pending = videoUploadPromise;
-		if (pending) {
-			statusText = 'Finishing background video upload…';
-			const grant = await pending;
-			const key = grant.file_key;
-			if (!key) throw new Error('Video upload incomplete');
-			videoUploadedKey = key;
-			return key;
-		}
-		const grant = await ensureUploaded();
-		pending = videoUploadPromise;
-		if (pending) {
-			const videoGrant = await pending;
-			const key = videoGrant.file_key;
-			if (!key) throw new Error('Video upload incomplete');
-			videoUploadedKey = key;
-			return key;
-		}
-		const key = grant.file_key || videoUploadedKey || uploadedKey;
-		if (!key) throw new Error('Video file_key missing');
+		if (!videoUploadPromise) await ensureUploaded();
+		if (videoUploadPromise) statusText = 'Finishing background video upload…';
+		const grant = videoUploadPromise ? await videoUploadPromise : uploadGrant;
+		const key = grant?.file_key || videoUploadedKey || uploadedKey;
+		if (!key) throw new Error('Video upload incomplete');
 		videoUploadedKey = key;
 		return key;
 	}
@@ -345,39 +329,11 @@
 			effectiveQuality = 'studio';
 			showToast('Fast Dub needs Default/Premium voice — using Studio for video clone', 'info');
 		}
-		if (!voice || voice.source === 'video') {
-			return {
-				voice_mode: 'clone',
-				clone_source: 'video',
-				speaker_mode: speakerMode,
-				enable_lipsync: enableLipsync,
-				quality: effectiveQuality
-			};
-		}
-		if (voice.source === 'default') {
-			return {
-				voice_mode: 'default',
-				speaker_mode: speakerMode,
-				enable_lipsync: enableLipsync,
-				quality: effectiveQuality
-			};
-		}
-		return {
-			voice_mode: 'clone',
-			clone_source:
-				voice.source === 'upload'
-					? 'library'
-					: voice.source === 'premium'
-						? 'premium'
-						: voice.source,
-			sample_url: voice.sample_url,
-			sample_text: voice.sample_text || '',
-			elevenlabs_voice_id: voice.elevenlabs_voice_id || '',
-			use_saved_voice: voice.source === 'saved',
-			speaker_mode: speakerMode,
-			enable_lipsync: enableLipsync,
-			quality: effectiveQuality
-		};
+		const base = { speaker_mode: speakerMode, enable_lipsync: enableLipsync, quality: effectiveQuality };
+		if (!voice || voice.source === 'video') return { voice_mode: 'clone', clone_source: 'video', ...base };
+		if (voice.source === 'default') return { voice_mode: 'default', ...base };
+		const cloneSource = voice.source === 'upload' ? 'library' : voice.source === 'premium' ? 'premium' : voice.source;
+		return { voice_mode: 'clone', clone_source: cloneSource, sample_url: voice.sample_url, sample_text: voice.sample_text || '', elevenlabs_voice_id: voice.elevenlabs_voice_id || '', use_saved_voice: voice.source === 'saved', ...base };
 	}
 
 	function outputUrl(payload: Record<string, unknown>): string {
@@ -412,6 +368,9 @@
 				done = true;
 				eventSource?.close();
 			};
+			const doneSet = new Set(['completed', 'done', 'success', 'complete', 'succeeded']);
+			const failSet = new Set(['failed', 'error', 'failure', 'fail']);
+			const cancelSet = new Set(['cancelled', 'canceled']);
 			const handle = (payload: Record<string, unknown>) => {
 				const state = String(payload.status || payload.state || '').toLowerCase();
 				const apiProgress = Number(payload.progress ?? payload.percent ?? 0);
@@ -419,20 +378,16 @@
 					const mapped = progressFloor + (apiProgress / 100) * (96 - progressFloor);
 					progress = Math.max(progress, Math.min(96, mapped));
 				}
-				const stage = String(payload.stage || '').trim();
-				const message = String(payload.message || '').trim();
-				statusText = message || stage || state || 'Processing…';
-				if (['completed', 'done', 'success', 'complete', 'succeeded'].includes(state)) {
-					const url = outputUrl(payload);
+				statusText = String(payload.message || payload.stage || state || 'Processing…').trim() || 'Processing…';
+				if (doneSet.has(state)) {
 					stop();
+					const url = outputUrl(payload);
 					if (!url) return reject(new Error(`${job.langName}: completed without media URL`));
 					resolve({ jobId: job.jobId, langCode: job.langCode, langName: job.langName, url });
-				}
-				if (['failed', 'error', 'failure', 'fail'].includes(state)) {
+				} else if (failSet.has(state)) {
 					stop();
 					reject(new Error(String(payload.error || payload.message || `${job.langName} failed`)));
-				}
-				if (['cancelled', 'canceled'].includes(state)) {
+				} else if (cancelSet.has(state)) {
 					stop();
 					reject(new DOMException('Cancelled', 'AbortError'));
 				}
@@ -565,16 +520,8 @@
 			source_dialect: source?.dialect || '',
 			translate: false,
 			voice_config: voice,
-			sample_url: 'sample_url' in voice ? voice.sample_url : '',
-			sample_text: 'sample_text' in voice ? voice.sample_text : '',
-			voice_mode: voice.voice_mode,
-			clone_source: 'clone_source' in voice ? voice.clone_source : '',
-			speaker_mode: speakerMode,
-			enable_lipsync: enableLipsync,
-			use_saved_voice: 'use_saved_voice' in voice ? voice.use_saved_voice : false,
-			quality: 'quality' in voice ? voice.quality : quality,
-			elevenlabs_voice_id:
-				'elevenlabs_voice_id' in voice ? voice.elevenlabs_voice_id || '' : '',
+			...voice,
+			elevenlabs_voice_id: 'elevenlabs_voice_id' in voice ? (voice.elevenlabs_voice_id || '') : '',
 			video_output: isVideo,
 			segments: translated,
 			script_segments: translated
@@ -829,14 +776,7 @@
 				<input
 					type="checkbox"
 					bind:checked={enableLipsync}
-					onchange={() => {
-						uploadedKey = '';
-						audioUploadedKey = '';
-						videoUploadedKey = '';
-						videoUploadPromise = null;
-						uploadGrant = null;
-						preparedMedia = null;
-					}}
+					onchange={() => resetUploadState()}
 				/>
 				Enable lip sync
 				<span class="hint"

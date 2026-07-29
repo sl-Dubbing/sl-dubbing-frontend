@@ -19,6 +19,8 @@ export type Voice = {
 // # FN loadPremiumVoices
 // # AR Fetch public premium voices from Supabase voices table
 // # KW صوت,استنساخ,voice,clone,sample
+const s = (v: unknown, d = '') => String(v ?? d);
+
 export async function loadPremiumVoices(): Promise<Voice[]> {
 	const supabase = getSupabase();
 	if (!supabase) return [];
@@ -26,15 +28,13 @@ export async function loadPremiumVoices(): Promise<Voice[]> {
 		const { data, error } = await supabase.from('voices').select('*').order('created_at');
 		if (error || !data) return [];
 		return data.map((voice) => ({
-			id: String(voice.id),
-			name: String(voice.name || 'Premium Voice'),
-			sample_url: String(voice.sample_url || ''),
-			sample_text: String(voice.sample_text || ''),
-			avatar_url: String(voice.avatar_url || ''),
-			engine: String(voice.engine || ''),
-			elevenlabs_voice_id: String(
-				voice.elevenlabs_voice_id || voice.eleven_labs_voice_id || ''
-			),
+			id: s(voice.id),
+			name: s(voice.name, 'Premium Voice'),
+			sample_url: s(voice.sample_url),
+			sample_text: s(voice.sample_text),
+			avatar_url: s(voice.avatar_url),
+			engine: s(voice.engine),
+			elevenlabs_voice_id: s(voice.elevenlabs_voice_id || voice.eleven_labs_voice_id),
 			source: 'premium' as const
 		}));
 	} catch {
@@ -48,16 +48,11 @@ export async function loadPremiumVoices(): Promise<Voice[]> {
 export async function loadUserVoiceClones(): Promise<Voice[]> {
 	try {
 		const res = await apiFetch('/api/user/voice-clones');
-		const data = await parseJsonSafe<{
-			clones?: Array<Record<string, unknown>>;
-		}>(res);
+		const data = await parseJsonSafe<{ clones?: Array<Record<string, unknown>> }>(res);
 		if (!res.ok || !Array.isArray(data?.clones)) return [];
 		return data.clones.map((voice) => ({
-			id: String(voice.id || ''),
-			name: String(voice.name || 'My Voice'),
-			sample_url: String(voice.sample_url || ''),
-			sample_text: String(voice.sample_text || ''),
-			source: 'library' as const
+			id: s(voice.id), name: s(voice.name, 'My Voice'), sample_url: s(voice.sample_url),
+			sample_text: s(voice.sample_text), source: 'library' as const
 		}));
 	} catch {
 		return [];
@@ -90,30 +85,23 @@ export async function loadSavedVoice(): Promise<Voice | null> {
 // # FN uploadVoiceSample
 // # AR Upload a browser audio sample to an authenticated R2 grant
 // # KW صوت,استنساخ,voice,clone,sample,رفع,upload,R2
+const firstOf = <T extends Record<string, unknown>>(obj: T | null | undefined, keys: string[]): string | undefined => {
+	for (const k of keys) { const v = obj?.[k]; if (typeof v === 'string' && v) return v; }
+};
+
 export async function uploadVoiceSample(file: Blob, filename = 'voice-sample.webm'): Promise<string> {
 	const contentType = file.type || 'audio/webm';
 	const grantRes = await apiFetch('/api/upload-url', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		method: 'POST', headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ filename, content_type: contentType, category: 'voice-clones' })
 	});
-	const grant = await parseJsonSafe<{
-		upload_url?: string;
-		put_url?: string;
-		url?: string;
-		get_url?: string;
-		file_url?: string;
-	}>(grantRes);
+	const grant = await parseJsonSafe<Record<string, unknown>>(grantRes);
 	if (!grantRes.ok) throw new Error('Could not create voice upload');
-	const putUrl = grant?.upload_url || grant?.put_url || grant?.url;
+	const putUrl = firstOf(grant, ['upload_url', 'put_url', 'url']);
 	if (!putUrl) throw new Error('No voice upload URL returned');
-	const put = await fetch(putUrl, {
-		method: 'PUT',
-		headers: { 'Content-Type': contentType },
-		body: file
-	});
+	const put = await fetch(putUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file });
 	if (!put.ok) throw new Error('Voice upload failed');
-	const sampleUrl = grant?.get_url || grant?.file_url || grant?.url;
+	const sampleUrl = firstOf(grant, ['get_url', 'file_url', 'url']);
 	if (!sampleUrl) throw new Error('No voice sample URL returned');
 	return sampleUrl;
 }

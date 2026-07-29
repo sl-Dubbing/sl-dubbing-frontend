@@ -25,13 +25,14 @@ export type PrepareMediaOptions = {
 	onProgress?: (event: FfmpegProgress) => void;
 };
 
+const keepOriginal = (file: File): PreparedMedia => ({ uploadFile: file, mode: 'original', originalFile: file });
+
 function isVideoFile(file: File): boolean {
 	return file.type.startsWith('video/') || /\.(mp4|mov|webm|mkv|m4v)$/i.test(file.name);
 }
 
 function audioFileName(source: File, ext = 'mp3'): string {
-	const base = source.name.replace(/\.[^.]+$/, '') || 'audio';
-	return `${base}.${ext}`;
+	return `${source.name.replace(/\.[^.]+$/, '') || 'audio'}.${ext}`;
 }
 
 // # FN shouldExtractAudioLocally
@@ -59,43 +60,23 @@ export function shouldExtractAudioLocally(
 // # FN prepareMediaForUpload
 // # AR Extract mono 16 kHz MP3 locally when lipsync is off; else keep original
 // # KW صوت_معالجة,ffmpeg,رفع,upload,WASM
-export async function prepareMediaForUpload(
-	file: File,
-	options: PrepareMediaOptions = {}
-): Promise<PreparedMedia> {
-	if (!shouldExtractAudioLocally(file, options)) {
-		return { uploadFile: file, mode: 'original', originalFile: file };
-	}
+export async function prepareMediaForUpload(file: File, options: PrepareMediaOptions = {}): Promise<PreparedMedia> {
+	if (!shouldExtractAudioLocally(file, options)) return keepOriginal(file);
 
 	options.onStatus?.('Extracting audio locally (no full-video upload)…');
 	try {
 		browserFfmpegUsed = true;
 		const { extractAudioWithFfmpegWasm } = await import('$lib/services/ffmpeg');
 		const extractedAudio = await extractAudioWithFfmpegWasm(file, {
-			sampleRate: 16000,
-			channels: 1,
-			format: 'mp3',
-			bitrate: '64k',
-			onProgress: options.onProgress
+			sampleRate: 16000, channels: 1, format: 'mp3', bitrate: '64k', onProgress: options.onProgress
 		});
-		const audioFile = new File([extractedAudio], audioFileName(file, 'mp3'), {
-			type: 'audio/mpeg',
-			lastModified: Date.now()
-		});
-		options.onStatus?.(
-			`Local audio ready (${Math.max(1, Math.round(audioFile.size / (1024 * 1024)))} MB) — uploading…`
-		);
-		return {
-			uploadFile: audioFile,
-			mode: 'audio-only',
-			originalFile: file,
-			extractedAudio,
-			audioFile
-		};
+		const audioFile = new File([extractedAudio], audioFileName(file, 'mp3'), { type: 'audio/mpeg', lastModified: Date.now() });
+		options.onStatus?.(`Local audio ready (${Math.max(1, Math.round(audioFile.size / (1024 * 1024)))} MB) — uploading…`);
+		return { uploadFile: audioFile, mode: 'audio-only', originalFile: file, extractedAudio, audioFile };
 	} catch (error) {
 		console.warn('[media-prepare] local extract failed; uploading original', error);
 		options.onStatus?.('Local extract unavailable — uploading original media…');
-		return { uploadFile: file, mode: 'original', originalFile: file };
+		return keepOriginal(file);
 	}
 }
 
@@ -108,8 +89,9 @@ export async function remuxDubbedAudioOntoVideo(
 	options: { onProgress?: (event: FfmpegProgress) => void } = {}
 ): Promise<Blob> {
 	browserFfmpegUsed = true;
-	const { loadBrowserFfmpeg } = await import('$lib/services/ffmpeg');
-	const { fetchFile } = await import('@ffmpeg/util');
+	const [{ loadBrowserFfmpeg, ffmpegBytesToBlob }, { fetchFile }] = await Promise.all([
+		import('$lib/services/ffmpeg'), import('@ffmpeg/util')
+	]);
 	const ffmpeg = await loadBrowserFfmpeg({ onProgress: options.onProgress });
 	const videoName = `video-${crypto.randomUUID()}.mp4`;
 	const audioName = `dub-${crypto.randomUUID()}.wav`;
@@ -117,34 +99,10 @@ export async function remuxDubbedAudioOntoVideo(
 	await ffmpeg.writeFile(videoName, await fetchFile(videoFile));
 	await ffmpeg.writeFile(audioName, await fetchFile(dubbedAudio));
 	try {
-		await ffmpeg.exec([
-			'-i',
-			videoName,
-			'-i',
-			audioName,
-			'-map',
-			'0:v:0',
-			'-map',
-			'1:a:0',
-			'-c:v',
-			'copy',
-			'-c:a',
-			'aac',
-			'-shortest',
-			outName
-		]);
-		const result = await ffmpeg.readFile(outName);
-		if (typeof result === 'string') throw new Error('Remux returned an invalid buffer');
-		const bytes = Uint8Array.from(result);
-		return new Blob([bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)], {
-			type: 'video/mp4'
-		});
+		await ffmpeg.exec(['-i', videoName, '-i', audioName, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-shortest', outName]);
+		return ffmpegBytesToBlob(await ffmpeg.readFile(outName), 'video/mp4');
 	} finally {
-		await Promise.allSettled([
-			ffmpeg.deleteFile(videoName),
-			ffmpeg.deleteFile(audioName),
-			ffmpeg.deleteFile(outName)
-		]);
+		await Promise.allSettled([ffmpeg.deleteFile(videoName), ffmpeg.deleteFile(audioName), ffmpeg.deleteFile(outName)]);
 	}
 }
 

@@ -46,122 +46,61 @@ const DEFAULT_CHUNK_BYTES = 16 * 1024 * 1024;
 const MULTIPART_THRESHOLD_BYTES = 16 * 1024 * 1024;
 const SESSION_PREFIX = 'glotix_r2_multipart_v1_';
 
-// # FN uploadToPresignedUrl
-// # AR PUT one object to a temporary R2 URL without proxying through Rust
-// # KW رفع,upload,R2,storage
-export function uploadToPresignedUrl(
+// # FN xhrPutWithRetry
+// # AR PUT a blob to a presigned URL with XHR progress and exponential-backoff retry
+function xhrPutWithRetry(
 	putUrl: string,
 	body: Blob,
-	options: DirectUploadOptions = {}
-): Promise<void> {
-	const maxAttempts = options.maxAttempts ?? 3;
+	options: DirectUploadOptions,
+	maxAttempts: number,
+	baseDelay: number,
+	resolveValue: (xhr: XMLHttpRequest) => string | void
+): Promise<string | void> {
 	let attempt = 0;
-
-	const run = (): Promise<void> =>
+	const run = (): Promise<string | void> =>
 		new Promise((resolve, reject) => {
 			const xhr = new XMLHttpRequest();
 			xhr.open('PUT', putUrl, true);
 			xhr.setRequestHeader('Content-Type', options.contentType || body.type || 'application/octet-stream');
-
-			const onAbort = () => {
-				xhr.abort();
-				reject(new DOMException('Aborted', 'AbortError'));
-			};
+			const onAbort = () => { xhr.abort(); reject(new DOMException('Aborted', 'AbortError')); };
 			options.signal?.addEventListener('abort', onAbort, { once: true });
-
-			xhr.upload.onprogress = (event) => {
-				if (!event.lengthComputable) return;
-				options.onProgress?.(event.loaded / event.total, event.loaded, event.total);
-			};
-			xhr.onload = () => {
-				options.signal?.removeEventListener('abort', onAbort);
-				if (xhr.status >= 200 && xhr.status < 300) {
-					options.onProgress?.(1, body.size, body.size);
-					resolve();
-					return;
-				}
-				reject(new Error(`Direct upload failed: HTTP ${xhr.status}`));
-			};
-			xhr.onerror = () => {
-				options.signal?.removeEventListener('abort', onAbort);
-				reject(
-					new Error(
-						'Direct upload network error (storage CORS/signature). Retry once after refresh.'
-					)
-				);
-			};
-			xhr.onabort = () => {
-				options.signal?.removeEventListener('abort', onAbort);
-				reject(new DOMException('Aborted', 'AbortError'));
-			};
-			xhr.send(body);
-		});
-
-	const attemptUpload = async (): Promise<void> => {
-		attempt += 1;
-		try {
-			await run();
-		} catch (error) {
-			if (error instanceof DOMException && error.name === 'AbortError') throw error;
-			if (attempt >= maxAttempts) throw error;
-			await new Promise((resolve) => setTimeout(resolve, Math.min(8000, 400 * 2 ** (attempt - 1))));
-			await attemptUpload();
-		}
-	};
-
-	return attemptUpload();
-}
-
-function uploadPartToPresignedUrl(
-	putUrl: string,
-	body: Blob,
-	options: DirectUploadOptions = {}
-): Promise<string> {
-	const maxAttempts = options.maxAttempts ?? 4;
-	let attempt = 0;
-	const run = (): Promise<string> =>
-		new Promise((resolve, reject) => {
-			const xhr = new XMLHttpRequest();
-			xhr.open('PUT', putUrl, true);
-			const onAbort = () => xhr.abort();
-			options.signal?.addEventListener('abort', onAbort, { once: true });
-			xhr.upload.onprogress = (event) => {
-				if (event.lengthComputable) {
-					options.onProgress?.(event.loaded / event.total, event.loaded, event.total);
-				}
-			};
 			const cleanup = () => options.signal?.removeEventListener('abort', onAbort);
-			xhr.onload = () => {
-				cleanup();
-				if (xhr.status < 200 || xhr.status >= 300) {
-					reject(new Error(`Multipart part upload failed: HTTP ${xhr.status}`));
-					return;
-				}
-				resolve(xhr.getResponseHeader('ETag')?.trim() || 'uploaded');
+
+			xhr.upload.onprogress = (event) => {
+				if (event.lengthComputable) options.onProgress?.(event.loaded / event.total, event.loaded, event.total);
 			};
-			xhr.onerror = () => {
-				cleanup();
-				reject(new Error('Multipart part network error'));
-			};
-			xhr.onabort = () => {
-				cleanup();
-				reject(new DOMException('Aborted', 'AbortError'));
-			};
+			xhr.onload = () => { cleanup(); resolve(resolveValue(xhr)); };
+			xhr.onerror = () => { cleanup(); reject(new Error('Upload network error')); };
+			xhr.onabort = () => { cleanup(); reject(new DOMException('Aborted', 'AbortError')); };
 			xhr.send(body);
 		});
 
-	const attemptUpload = async (): Promise<string> => {
+	const attemptUpload = async (): Promise<string | void> => {
 		attempt += 1;
-		try {
-			return await run();
-		} catch (error) {
+		try { return await run(); } catch (error) {
 			if (error instanceof DOMException && error.name === 'AbortError') throw error;
 			if (attempt >= maxAttempts) throw error;
-			await new Promise((resolve) => setTimeout(resolve, Math.min(8000, 500 * 2 ** (attempt - 1))));
+			await new Promise((r) => setTimeout(r, Math.min(8000, baseDelay * 2 ** (attempt - 1))));
 			return attemptUpload();
 		}
 	};
 	return attemptUpload();
+}
+
+// # FN uploadToPresignedUrl
+// # AR PUT one object to a temporary R2 URL with progress
+export function uploadToPresignedUrl(putUrl: string, body: Blob, options: DirectUploadOptions = {}): Promise<void> {
+	return xhrPutWithRetry(putUrl, body, options, options.maxAttempts ?? 3, 400, (xhr) => {
+		if (xhr.status < 200 || xhr.status >= 300) throw new Error(`Upload failed: HTTP ${xhr.status}`);
+		options.onProgress?.(1, body.size, body.size);
+	}) as Promise<void>;
+}
+
+function uploadPartToPresignedUrl(putUrl: string, body: Blob, options: DirectUploadOptions = {}): Promise<string> {
+	return xhrPutWithRetry(putUrl, body, options, options.maxAttempts ?? 4, 500, (xhr) => {
+		if (xhr.status < 200 || xhr.status >= 300) throw new Error(`Part upload failed: HTTP ${xhr.status}`);
+		return xhr.getResponseHeader('ETag')?.trim() || 'uploaded';
+	}) as Promise<string>;
 }
 
 // # FN splitBlobIntoChunks

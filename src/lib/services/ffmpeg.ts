@@ -48,52 +48,30 @@ export function loadBrowserFfmpeg(options: ExtractAudioOptions = {}): Promise<FF
 // # FN extractAudioWithFfmpegWasm
 // # AR Convert browser media to mono speech audio (compressed MP3 by default) in FFmpeg's worker
 // # KW صوت_معالجة,ffmpeg,mix,LUFS,WASM,worker
+export function ffmpegBytesToBlob(result: Awaited<ReturnType<FFmpeg['readFile']>>, mime: string): Blob {
+	if (typeof result === 'string') throw new Error('FFmpeg returned an invalid buffer');
+	const bytes = Uint8Array.from(result);
+	return new Blob([bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)], { type: mime });
+}
+
 export async function extractAudioWithFfmpegWasm(
 	input: File,
 	options: ExtractAudioOptions = {}
 ): Promise<Blob> {
 	const ffmpeg = await loadBrowserFfmpeg(options);
 	const format = options.format || 'mp3';
-	const extension = input.name.split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'bin';
-	const inputName = `input-${crypto.randomUUID()}.${extension}`;
+	const ext = input.name.split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'bin';
+	const inputName = `input-${crypto.randomUUID()}.${ext}`;
 	const outputName = `audio-${crypto.randomUUID()}.${format}`;
 	await ffmpeg.writeFile(inputName, await fetchFile(input));
 	try {
-		const args =
-			format === 'wav'
-				? [
-						'-i',
-						inputName,
-						'-vn',
-						'-ac',
-						String(options.channels || 1),
-						'-ar',
-						String(options.sampleRate || 16000),
-						'-c:a',
-						'pcm_s16le',
-						outputName
-					]
-				: [
-						'-i',
-						inputName,
-						'-vn',
-						'-ac',
-						String(options.channels || 1),
-						'-ar',
-						String(options.sampleRate || 16000),
-						'-b:a',
-						options.bitrate || '64k',
-						'-c:a',
-						'libmp3lame',
-						outputName
-					];
-		await ffmpeg.exec(args);
-		const result = await ffmpeg.readFile(outputName);
-		if (typeof result === 'string') throw new Error('FFmpeg returned an invalid audio buffer');
-		const bytes = Uint8Array.from(result);
-		return new Blob([bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)], {
-			type: format === 'wav' ? 'audio/wav' : 'audio/mpeg'
-		});
+		const ac = String(options.channels || 1);
+		const ar = String(options.sampleRate || 16000);
+		const codecArgs = format === 'wav'
+			? ['-c:a', 'pcm_s16le']
+			: ['-b:a', options.bitrate || '64k', '-c:a', 'libmp3lame'];
+		await ffmpeg.exec(['-i', inputName, '-vn', '-ac', ac, '-ar', ar, ...codecArgs, outputName]);
+		return ffmpegBytesToBlob(await ffmpeg.readFile(outputName), format === 'wav' ? 'audio/wav' : 'audio/mpeg');
 	} finally {
 		await Promise.allSettled([ffmpeg.deleteFile(inputName), ffmpeg.deleteFile(outputName)]);
 	}

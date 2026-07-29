@@ -74,96 +74,38 @@
 		}
 	}
 
+	function uid() { return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`; }
+
 	async function generateVideo() {
-		if (!$auth.user) {
-			showToast('Please sign in', 'error');
-			return;
-		}
-		if (!file) {
-			showToast('Choose an image', 'error');
-			return;
-		}
-		if (!prompt.trim()) {
-			showToast('Enter what the person should say', 'error');
-			return;
-		}
-		busy = true;
-		resultUrl = null;
-		resultText = null;
+		if (!file || !prompt.trim()) { showToast(!file ? 'Choose an image' : 'Enter what the person should say', 'error'); return; }
+		if (!$auth.user) { showToast('Please sign in', 'error'); return; }
+		busy = true; resultUrl = null; resultText = null;
 		try {
-			const imageSnapshot = await imageDataUrl(file);
-			const fd = new FormData();
-			fd.append('image', file);
-			fd.append('prompt', prompt.trim());
+			const snap = await imageDataUrl(file);
+			const fd = new FormData(); fd.append('image', file); fd.append('prompt', prompt.trim());
 			const res = await apiFetch('/api/image/to-video', { method: 'POST', body: fd });
-			const data = await parseJsonSafe<{
-				video_url?: string;
-				url?: string;
-				error?: string;
-				message?: string;
-			}>(res);
-			if (!res.ok) {
-				showToast(data?.error || data?.message || 'Generation failed', 'error');
-				return;
-			}
+			const data = await parseJsonSafe<{ video_url?: string; url?: string; error?: string; message?: string }>(res);
+			if (!res.ok) { showToast(data?.error || data?.message || 'Generation failed', 'error'); return; }
 			resultUrl = data?.video_url || data?.url || null;
-			addResult({
-				id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
-				createdAt: new Date().toISOString(),
-				prompt: prompt.trim(),
-				imageDataUrl: imageSnapshot,
-				videoUrl: resultUrl || undefined,
-				creditsCharged: (data as { credits_charged?: number })?.credits_charged
-			});
+			addResult({ id: uid(), createdAt: new Date().toISOString(), prompt: prompt.trim(), imageDataUrl: snap, videoUrl: resultUrl || undefined, creditsCharged: (data as any)?.credits_charged });
 			showToast('Video ready', 'success');
 			await refreshUserCreditsInMenu();
-		} catch {
-			showToast('Generation failed', 'error');
-		} finally {
-			busy = false;
-		}
+		} catch { showToast('Generation failed', 'error'); } finally { busy = false; }
 	}
 
 	async function askAboutPhoto() {
-		if (!$auth.user) {
-			showToast('Please sign in', 'error');
-			return;
-		}
-		if (!file) {
-			showToast('Choose an image', 'error');
-			return;
-		}
-		busy = true;
-		resultText = null;
+		if (!file) { showToast('Choose an image', 'error'); return; }
+		if (!$auth.user) { showToast('Please sign in', 'error'); return; }
+		busy = true; resultText = null;
 		try {
-			const imageSnapshot = await imageDataUrl(file);
-			const fd = new FormData();
-			fd.append('image', file);
-			fd.append('prompt', prompt.trim() || 'Describe this image');
+			const snap = await imageDataUrl(file);
+			const fd = new FormData(); fd.append('image', file); fd.append('prompt', prompt.trim() || 'Describe this image');
 			const res = await apiFetch('/api/image/process', { method: 'POST', body: fd });
-			const data = await parseJsonSafe<{
-				text?: string;
-				result?: string;
-				response?: string;
-				error?: string;
-			}>(res);
-			if (!res.ok) {
-				showToast(data?.error || 'Process failed', 'error');
-				return;
-			}
+			const data = await parseJsonSafe<{ text?: string; result?: string; response?: string; error?: string }>(res);
+			if (!res.ok) { showToast(data?.error || 'Process failed', 'error'); return; }
 			resultText = data?.response || data?.text || data?.result || JSON.stringify(data);
-			addResult({
-				id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
-				createdAt: new Date().toISOString(),
-				prompt: prompt.trim(),
-				imageDataUrl: imageSnapshot,
-				response: resultText || ''
-			});
-		} catch {
-			showToast('Process failed', 'error');
-		} finally {
-			busy = false;
-		}
+			addResult({ id: uid(), createdAt: new Date().toISOString(), prompt: prompt.trim(), imageDataUrl: snap, response: resultText || '' });
+		} catch { showToast('Process failed', 'error'); } finally { busy = false; }
 	}
 </script>
 

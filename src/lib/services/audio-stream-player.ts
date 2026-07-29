@@ -64,33 +64,30 @@ export function createAudioStreamPlayer(options: AudioStreamPlayerOptions = {}) 
 
 		await new Promise<void>((resolve, reject) => {
 			mediaSource!.addEventListener('sourceopen', () => resolve(), { once: true });
-			mediaSource!.addEventListener(
-				'error',
-				() => reject(new Error('MediaSource failed to open')),
-				{ once: true }
-			);
+			mediaSource!.addEventListener('error', () => reject(new Error('MediaSource failed to open')), { once: true });
 		});
 
 		const sourceBuffer = mediaSource.addSourceBuffer(mimeType);
-		let loaded = 0;
-		let started = false;
+		let loaded = 0, started = false;
 
 		const append = (chunk: Uint8Array) =>
 			new Promise<void>((resolve, reject) => {
-				const onUpdate = () => {
+				let settled = false;
+				const onUpdate = () => { if (settled) return; settled = true; cleanup(); resolve(); };
+				const onError = () => { if (settled) return; settled = true; cleanup(); reject(new Error('SourceBuffer append failed')); };
+				const cleanup = () => {
 					sourceBuffer.removeEventListener('updateend', onUpdate);
 					sourceBuffer.removeEventListener('error', onError);
-					resolve();
-				};
-				const onError = () => {
-					sourceBuffer.removeEventListener('updateend', onUpdate);
-					sourceBuffer.removeEventListener('error', onError);
-					reject(new Error('SourceBuffer append failed'));
 				};
 				sourceBuffer.addEventListener('updateend', onUpdate);
 				sourceBuffer.addEventListener('error', onError);
 				sourceBuffer.appendBuffer(chunk.slice().buffer);
 			});
+
+		const waitForBufferReady = () =>
+			sourceBuffer.updating
+				? new Promise((r) => sourceBuffer.addEventListener('updateend', () => r(undefined), { once: true }))
+				: Promise.resolve();
 
 		try {
 			while (true) {
@@ -100,22 +97,11 @@ export function createAudioStreamPlayer(options: AudioStreamPlayerOptions = {}) 
 				if (!value?.byteLength) continue;
 				loaded += value.byteLength;
 				options.onProgress?.(loaded);
-				while (sourceBuffer.updating) {
-					await new Promise((resolve) =>
-						sourceBuffer.addEventListener('updateend', () => resolve(undefined), { once: true })
-					);
-				}
+				await waitForBufferReady();
 				await append(value);
-				if (!started) {
-					started = true;
-					await audio.play();
-				}
+				if (!started && (started = true)) await audio.play();
 			}
-			while (sourceBuffer.updating) {
-				await new Promise((resolve) =>
-					sourceBuffer.addEventListener('updateend', () => resolve(undefined), { once: true })
-				);
-			}
+			await waitForBufferReady();
 			if (mediaSource.readyState === 'open') mediaSource.endOfStream();
 		} finally {
 			activeReader = null;

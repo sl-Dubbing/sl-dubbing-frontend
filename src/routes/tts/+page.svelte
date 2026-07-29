@@ -30,7 +30,18 @@
 	let currentTime = $state(0);
 	let playbackRate = $state(1);
 	let dictating = $state(false);
-	let recognition: { stop(): void } | null = null;
+	type SpeechRecognitionCtor = new () => SpeechRecognitionInstance;
+	type SpeechRecognitionInstance = {
+		lang: string;
+		continuous: boolean;
+		interimResults: boolean;
+		start(): void;
+		stop(): void;
+		onresult: (event: { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> }) => void;
+		onend: () => void;
+		onerror: () => void;
+	};
+	let recognition: SpeechRecognitionInstance | null = null;
 	let recent = $state<RecentTts[]>([]);
 	let recentLoading = $state(true);
 	let streamPlayer = createAudioStreamPlayer();
@@ -55,38 +66,14 @@
 	});
 
 	function voiceRequest() {
-		const voice = selectedVoice;
-		if (!voice) {
-			return {
-				voice_id: '',
-				voice_name: 'Default',
-				sample_url: '',
-				sample_text: '',
-				mode: 'standard',
-				elevenlabs_voice_id: ''
-			};
-		}
-		const elevenlabsVoiceId =
-			voice.source === 'library' || voice.source === 'saved'
-				? ''
-				: String(voice.elevenlabs_voice_id || voice.id || '');
-		return {
-			voice_id:
-				voice.source === 'library' || voice.source === 'saved'
-					? `clone_${voice.id}`
-					: voice.id,
-			voice_name: voice.name,
-			sample_url: voice.sample_url,
-			sample_text: voice.sample_text || '',
-			mode: 'standard',
-			elevenlabs_voice_id: elevenlabsVoiceId
-		};
+		const v = selectedVoice;
+		if (!v) return { voice_id: '', voice_name: 'Default', sample_url: '', sample_text: '', mode: 'standard', elevenlabs_voice_id: '' };
+		const isClone = v.source === 'library' || v.source === 'saved';
+		return { voice_id: isClone ? `clone_${v.id}` : v.id, voice_name: v.name, sample_url: v.sample_url, sample_text: v.sample_text || '', mode: 'standard', elevenlabs_voice_id: isClone ? '' : String(v.elevenlabs_voice_id || v.id || '') };
 	}
 
 	function saveLocalHistory(item: RecentTts) {
-		const list = loadLocalHistory().filter(
-			(existing) => existing.id !== item.id && existing.output_url !== item.output_url
-		);
+		const list = loadLocalHistory().filter(e => e.id !== item.id && e.output_url !== item.output_url);
 		localStorage.setItem(HISTORY_KEY, JSON.stringify([item, ...list].slice(0, 7)));
 	}
 
@@ -100,9 +87,6 @@
 		}
 	}
 
-	// # FN generateTtsAudioFromApi
-	// # AR Generate TTS with language, voice, translation context, and credits
-	// # KW توليد_صوت,TTS,synthesis
 	async function generate() {
 		if (!$auth.user) return showToast('Please sign in first', 'error');
 		const cleanText = text.trim();
@@ -245,44 +229,13 @@
 		if (audioEl) audioEl.playbackRate = playbackRate;
 	}
 
-	function formatTime(value: number) {
-		if (!Number.isFinite(value)) return '0:00';
-		const minutes = Math.floor(value / 60);
-		return `${minutes}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
-	}
+	const formatTime = (v: number) => !Number.isFinite(v) ? '0:00' : `${Math.floor(v/60)}:${String(Math.floor(v%60)).padStart(2,'0')}`;
 
 	function startDictation() {
-		const SpeechRecognition =
-			(window as typeof window & {
-				SpeechRecognition?: new () => {
-					lang: string;
-					continuous: boolean;
-					interimResults: boolean;
-					start(): void;
-					stop(): void;
-					onresult: (event: {
-						results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }>;
-					}) => void;
-					onend: () => void;
-					onerror: () => void;
-				};
-				webkitSpeechRecognition?: new () => {
-					lang: string;
-					continuous: boolean;
-					interimResults: boolean;
-					start(): void;
-					stop(): void;
-					onresult: (event: {
-						results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }>;
-					}) => void;
-					onend: () => void;
-					onerror: () => void;
-				};
-			}).SpeechRecognition ||
-			(window as typeof window & { webkitSpeechRecognition?: new () => never })
-				.webkitSpeechRecognition;
-		if (!SpeechRecognition) return showToast('Speech dictation is not supported here', 'error');
-		const instance = new SpeechRecognition();
+		const win = window as typeof window & { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor };
+		const recognitionCtor: SpeechRecognitionCtor | undefined = win.SpeechRecognition || win.webkitSpeechRecognition;
+		if (!recognitionCtor) return showToast('Speech dictation is not supported here', 'error');
+		const instance = new recognitionCtor();
 		instance.lang = lang;
 		instance.continuous = true;
 		instance.interimResults = false;

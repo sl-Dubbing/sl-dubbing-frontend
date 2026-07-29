@@ -40,6 +40,14 @@
 		}
 	}
 
+	async function syncRemoteFiles() {
+		const res = await apiFetch('/api/user/files');
+		const data = await parseJsonSafe<{ files?: FileItem[]; items?: FileItem[] }>(res);
+		const remote = data?.files || data?.items || [];
+		const seen = new Set(remote.map((item) => item.id));
+		files = [...remote, ...loadLocalTts().filter((item) => !seen.has(item.id))];
+	}
+
 	onMount(() => {
 		const unsub = auth.subscribe(() => {
 			void refresh();
@@ -62,105 +70,59 @@
 	);
 
 	async function refresh() {
-		if (!$auth.user) {
-			loading = false;
-			files = [];
-			return;
-		}
+		if (!$auth.user) { loading = false; files = []; return; }
 		loading = true;
 		try {
-			const res = await apiFetch('/api/user/files');
-			const data = await parseJsonSafe<{ files?: FileItem[]; items?: FileItem[] }>(res);
-			const remote = data?.files || data?.items || [];
-			const seen = new Set(remote.map((item) => item.id));
-			files = [...remote, ...loadLocalTts().filter((item) => !seen.has(item.id))];
+			await syncRemoteFiles();
 			const processing = files.some((f) =>
 				['pending', 'processing', 'queued', 'running'].includes(String(f.status || '').toLowerCase())
 			);
 			if (pollTimer) clearInterval(pollTimer);
-			if (processing) {
-				pollTimer = setInterval(() => {
-					void refreshQuiet();
-				}, 8000);
-			}
-		} catch {
-			showToast('Failed to load files', 'error');
-		} finally {
-			loading = false;
-		}
+			if (processing) pollTimer = setInterval(() => { void refreshQuiet(); }, 8000);
+		} catch { showToast('Failed to load files', 'error'); } finally { loading = false; }
 	}
 
 	async function refreshQuiet() {
-		try {
-			const res = await apiFetch('/api/user/files');
-			const data = await parseJsonSafe<{ files?: FileItem[]; items?: FileItem[] }>(res);
-			const remote = data?.files || data?.items || [];
-			const seen = new Set(remote.map((item) => item.id));
-			files = [...remote, ...loadLocalTts().filter((item) => !seen.has(item.id))];
-		} catch {
-			/* ignore */
-		}
+		try { await syncRemoteFiles(); } catch { /* ignore */ }
 	}
 
 	function toggleSelect(id: string) {
 		const next = new Set(selected);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
+		next.has(id) ? next.delete(id) : next.add(id);
 		selected = next;
 	}
 
 	async function deleteOne(file: FileItem) {
 		if (file.local) {
-			const updated = loadLocalTts().filter(
-				(item) => item.id !== file.id && mediaUrl(item) !== mediaUrl(file)
-			);
-			localStorage.setItem('glotix_tts_history', JSON.stringify(updated));
-			files = files.filter((item) => item !== file);
-			showToast('Deleted', 'success');
-			return;
-		}
-		const type = file.type || 'dubbing';
-		const res = await apiFetch(
-			`/api/user/files/${encodeURIComponent(type)}/${encodeURIComponent(file.id)}`,
-			{ method: 'DELETE' }
-		);
-		if (!res.ok) {
-			showToast('Delete failed', 'error');
-			return;
+			localStorage.setItem('glotix_tts_history', JSON.stringify(
+				loadLocalTts().filter(item => item.id !== file.id && mediaUrl(item) !== mediaUrl(file))
+			));
+			files = files.filter(item => item !== file);
+		} else {
+			const t = file.type || 'dubbing';
+			const res = await apiFetch(`/api/user/files/${encodeURIComponent(t)}/${encodeURIComponent(file.id)}`, { method: 'DELETE' });
+			if (!res.ok) { showToast('Delete failed', 'error'); return; }
+			await refresh();
 		}
 		showToast('Deleted', 'success');
-		await refresh();
 	}
 
 	async function bulkDelete() {
-		const ids = [...selected];
-		if (!ids.length) return;
-		if (!confirm(`Delete ${ids.length} file(s)?`)) return;
-		const chosen = files.filter((file) => selected.has(file.id));
-		const localChosen = chosen.filter((file) => file.local);
-		if (localChosen.length) {
-			const localUrls = new Set(localChosen.map(mediaUrl));
-			const updated = loadLocalTts().filter(
-				(item) => !selected.has(item.id) && !localUrls.has(mediaUrl(item))
-			);
-			localStorage.setItem('glotix_tts_history', JSON.stringify(updated));
+		if (!selected.size) return;
+		if (!confirm(`Delete ${selected.size} file(s)?`)) return;
+		const chosen = files.filter(f => selected.has(f.id));
+		const localUrls = new Set(chosen.filter(f => f.local).map(mediaUrl));
+		if (localUrls.size) {
+			localStorage.setItem('glotix_tts_history', JSON.stringify(
+				loadLocalTts().filter(item => !selected.has(item.id) && !localUrls.has(mediaUrl(item)))
+			));
 		}
-		const items = chosen
-			.filter((file) => !file.local)
-			.map((file) => ({ type: file.type || 'dubbing', id: String(file.id) }));
-		if (!items.length) {
-			selected = new Set();
-			await refresh();
-			return;
-		}
-		const res = await apiFetch('/api/user/files/bulk-delete', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ items })
-		});
-		if (!res.ok) {
-			showToast('Bulk delete failed', 'error');
-			return;
+		const items = chosen.filter(f => !f.local).map(f => ({ type: f.type || 'dubbing', id: String(f.id) }));
+		if (items.length) {
+			const res = await apiFetch('/api/user/files/bulk-delete', {
+				method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items })
+			});
+			if (!res.ok) { showToast('Bulk delete failed', 'error'); return; }
 		}
 		selected = new Set();
 		showToast('Deleted', 'success');

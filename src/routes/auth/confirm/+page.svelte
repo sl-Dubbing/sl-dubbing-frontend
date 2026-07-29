@@ -12,46 +12,19 @@
 		opts: { sendWelcome?: boolean } = {}
 	) {
 		localStorage.setItem('token', session.access_token);
-		const headers = {
-			Authorization: `Bearer ${session.access_token}`,
-			'X-User-Id': String(session.user.id)
-		};
+		const h = { Authorization: `Bearer ${session.access_token}`, 'X-User-Id': String(session.user.id) };
 		let credits: number | string = '...';
-		try {
-			await fetch(`${apiBase()}/api/user/init`, { method: 'POST', headers });
-			const res = await fetch(`${apiBase()}/api/user/credits`, { headers });
-			if (res.ok) {
-				const d = await parseJsonSafe<{ success?: boolean; credits?: number }>(res);
-				if (d && (d.success || d.credits != null)) credits = d.credits ?? '...';
-			}
-		} catch {
-			/* ignore */
-		}
+		const base = apiBase();
+		try { await fetch(`${base}/api/user/init`, { method: 'POST', headers: h }); const r = await fetch(`${base}/api/user/credits`, { headers: h }); if (r.ok) { const d = await parseJsonSafe<{ success?: boolean; credits?: number }>(r); if (d && (d.success || d.credits != null)) credits = d.credits ?? '...'; } } catch { /* ignore */ }
 		const meta = session.user.user_metadata || {};
 		const email = session.user.email || '';
 		const name = meta.full_name || meta.name || (email ? email.split('@')[0] : 'User');
-		const userData = {
-			id: session.user.id,
-			email,
-			name,
-			avatar:
-				meta.avatar_url ||
-				meta.picture ||
-				`https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0f0f10&color=fff&size=64`,
-			credits
-		};
-		localStorage.setItem('sl_user_cache', JSON.stringify(userData));
-
+		localStorage.setItem('sl_user_cache', JSON.stringify({
+			id: session.user.id, email, name, credits,
+			avatar: meta.avatar_url || meta.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0f0f10&color=fff&size=64`,
+		}));
 		if (opts.sendWelcome) {
-			try {
-				await fetch(`${apiBase()}/api/auth/verified`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json', ...headers },
-					body: JSON.stringify({ email, name })
-				});
-			} catch {
-				/* ignore */
-			}
+			try { await fetch(`${base}/api/auth/verified`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...h }, body: JSON.stringify({ email, name }) }); } catch { /* ignore */ }
 		}
 		await goto('/');
 	}

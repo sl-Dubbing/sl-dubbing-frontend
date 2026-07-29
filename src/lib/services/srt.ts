@@ -45,43 +45,22 @@ export function parseSrtTimestamp(raw: string): number {
 // # KW تفريغ,srt
 export function parseSrtText(text: string): ScriptSegment[] {
 	const output: ScriptSegment[] = [];
-	const blocks = String(text || '')
-		.replace(/\r\n/g, '\n')
-		.split(/\n\s*\n/);
-	for (const [index, block] of blocks.entries()) {
-		const lines = block
-			.split('\n')
-			.map((line) => line.trim())
-			.filter(Boolean);
+	for (const block of String(text || '').replace(/\r\n/g, '\n').split(/\n\s*\n/)) {
+		const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
 		if (lines.length < 2) continue;
 		const offset = /^\d+$/.test(lines[0]) ? 1 : 0;
-		const time = (lines[offset] || '').match(
-			/(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})/
-		);
+		const time = (lines[offset] || '').match(/(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})/);
 		if (!time) continue;
 		const body = lines.slice(offset + 1).join('\n').trim();
-		if (!body) continue;
-		output.push({
-			id: index,
-			start: parseSrtTimestamp(time[1]),
-			end: parseSrtTimestamp(time[2]),
-			text: body,
-			speaker: 0
-		});
+		if (body) output.push({ id: output.length, start: parseSrtTimestamp(time[1]), end: parseSrtTimestamp(time[2]), text: body, speaker: 0 });
 	}
 	return output;
 }
 
 export function cloneSegments(segments: ScriptSegment[]): ScriptSegment[] {
 	return segments
-		.map((segment, index) => ({
-			id: segment.id ?? index,
-			start: Number(segment.start) || 0,
-			end: Number(segment.end) || 0,
-			text: String(segment.text || '').trim(),
-			speaker: segment.speaker ?? 0
-		}))
-		.filter((segment) => segment.text);
+		.map((s, i) => ({ id: s.id ?? i, start: Number(s.start) || 0, end: Number(s.end) || 0, text: String(s.text || '').trim(), speaker: s.speaker ?? 0 }))
+		.filter((s) => s.text);
 }
 
 // # FN translateSegmentsLiteralApi

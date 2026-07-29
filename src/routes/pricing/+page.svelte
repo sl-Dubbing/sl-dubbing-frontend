@@ -19,16 +19,10 @@
 	const FALLBACK_PACKS: Pack[] = [
 		{ id: 'price_char_free', name: 'Free', credits: 2000, amount_cents: 0, free: true },
 		{ id: 'price_char_starter', name: 'Starter', credits: 90000, amount_cents: 900 },
-		{
-			id: 'price_char_creator',
-			name: 'Creator',
-			credits: 220000,
-			amount_cents: 2200,
-			popular: true
-		},
+		{ id: 'price_char_creator', name: 'Creator', credits: 220000, amount_cents: 2200, popular: true },
 		{ id: 'price_char_pro', name: 'Pro', credits: 990000, amount_cents: 9900 },
 		{ id: 'price_char_scale', name: 'Scale', credits: 3300000, amount_cents: 33000 },
-		{ id: 'price_char_business', name: 'Business', credits: 9900000, amount_cents: 99000 }
+		{ id: 'price_char_business', name: 'Business', credits: 9900000, amount_cents: 99000 },
 	];
 
 	let packs = $state<Pack[]>([]);
@@ -44,51 +38,22 @@
 		loading = true;
 		try {
 			const res = await apiFetch('/api/payments/config', { auth: false });
-			const data = await parseJsonSafe<{
-				packs?: Pack[] | Record<string, Pack>;
-				packages?: Pack[];
-				top_ups?: Record<string, Pack>;
-			}>(res);
+			const data = await parseJsonSafe<{ packs?: Pack[] | Record<string, Pack>; packages?: Pack[]; top_ups?: Record<string, Pack> }>(res);
 			const raw = data?.top_ups || data?.packs || data?.packages || [];
-			if (Array.isArray(raw)) packs = raw;
-			else packs = Object.entries(raw).map(([id, v]) => ({ ...v, id }));
-		} catch {
-			packs = FALLBACK_PACKS;
-		} finally {
-			if (!packs.length) packs = FALLBACK_PACKS;
-			loading = false;
-		}
+			packs = Array.isArray(raw) ? raw : Object.entries(raw).map(([id, v]) => ({ ...v, id }));
+		} catch { packs = FALLBACK_PACKS; } finally { if (!packs.length) packs = FALLBACK_PACKS; loading = false; }
 	}
 
 	async function checkout(body: Record<string, unknown>) {
-		if (!$auth.user) {
-			showToast('Please sign in to purchase credits', 'error');
-			return;
-		}
+		if (!$auth.user) { showToast('Please sign in to purchase credits', 'error'); return; }
 		busy = true;
 		try {
-			const res = await apiFetch('/api/payments/checkout', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(body)
-			});
-			const data = await parseJsonSafe<{
-				success?: boolean;
-				url?: string;
-				checkout_url?: string;
-				error?: string;
-			}>(res);
+			const res = await apiFetch('/api/payments/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+			const data = await parseJsonSafe<{ success?: boolean; url?: string; checkout_url?: string; error?: string }>(res);
 			const url = data?.url || data?.checkout_url;
-			if (!res.ok || data?.success === false || !url) {
-				showToast(data?.error || 'Checkout failed', 'error');
-				return;
-			}
+			if (!res.ok || data?.success === false || !url) { showToast(data?.error || 'Checkout failed', 'error'); return; }
 			window.location.href = url;
-		} catch {
-			showToast('Checkout failed', 'error');
-		} finally {
-			busy = false;
-		}
+		} catch { showToast('Checkout failed', 'error'); } finally { busy = false; }
 	}
 </script>
 
