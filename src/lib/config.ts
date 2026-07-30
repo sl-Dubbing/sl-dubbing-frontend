@@ -25,7 +25,7 @@ function asBool(v: string | undefined, fallback = false): boolean {
 	return v === 'true' || v === '1';
 }
 
-const DEFAULT_API_BASE = 'https://glotix-api-production.up.railway.app';
+const DEFAULT_API_BASE = 'https://glotix--api.modal.run';
 const DEFAULT_SUPABASE_URL = 'https://ckjkkxrlgisjdolwddfg.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY =
 	'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNramtreHJsZ2lzamRvbHdkZGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjU0OTUsImV4cCI6MjA5MzA0MTQ5NX0.F-4TbmO6_7plPm8NBr_6djCv6gtEPpWFw9J7m8vTs6M';
