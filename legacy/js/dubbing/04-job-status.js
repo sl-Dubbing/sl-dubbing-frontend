@@ -509,7 +509,7 @@
       return pollDubbingJobUntilComplete(jobId, signal, onProgressTick);
     }
 
-    // Race SSE against DB polling. Process-local progress cache on Railway can
+    // Race SSE against DB polling. Process-local progress cache on Modal can
     // hide "completed" from the SSE worker while GET /api/job still reads Postgres.
     const localAc = new AbortController();
     // # FN stopBoth

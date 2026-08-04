@@ -72,7 +72,7 @@
       // # guard — شرط رفض أو خروج مبكر
       if (errLower.includes('queue') || errLower.includes('redis')) {
         // # block — معالجة أخطاء
-        return 'Server queue unavailable — check Redis on Railway (web + worker-dubbing)';
+        return 'Server queue unavailable — check Modal API outbox worker / Supabase Postgres';
       }
       // # guard — شرط رفض أو خروج مبكر
       if (errLower.includes('database')) return 'Database unavailable — try again later';
