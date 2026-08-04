@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signing in... | Glotix</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/svg+xml" href="/logo/logo_arrow_White.svg">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="/css/brand-theme.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #ffffff; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .box { text-align: center; padding: 20px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #e8e4d8; border-top-color: #fcca69; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        p { color: #5c6494; font-size: 1rem; font-weight: 500; }
+        .error-box { display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; max-width: 400px; }
+        .error-box p { color: #dc2626; margin-bottom: 12px; }
+        .error-box a { color: #0a0a0a; text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <div id="loadingView">
+        <div class="spinner"></div>
+        <p>Signing you in...</p>
+    </div>
+    <div id="errorView" class="error-box">
+        <p id="errorMsg">Something went wrong. Please try again.</p>
+        <a href="/login">← Back to Login</a>
+    </div>
+</div>
+
+<script src="/js/config.js"></script>
+<script>
+(async function() {
+    const supa = window.supabase.createClient(
+        window.APP_CONFIG.SUPABASE_URL,
+        window.APP_CONFIG.SUPABASE_KEY,
+        { auth: { flowType: 'pkce' } }
+    );
+
+    function showError(msg) {
+        document.getElementById('loadingView').style.display = 'none';
+        const errView = document.getElementById('errorView');
+        errView.style.display = 'block';
+        document.getElementById('errorMsg').textContent = msg || 'Something went wrong.';
+    }
+
+    const apiBase = String(window.APP_CONFIG.API_BASE || 'https://api.glotix.ai').replace(/\/$/, '');
+
+    async function saveAndRedirect(session, opts) {
+        opts = opts || {};
+        localStorage.setItem('token', session.access_token);
+
+        let credits = '...';
+        const authHeaders = {
+            'Authorization': `Bearer ${session.access_token}`,
+            'X-User-Id': String(session.user.id)
+        };
+        try {
+            await fetch(apiBase + '/api/user/init', { method: 'POST', headers: authHeaders });
+            const res = await fetch(apiBase + '/api/user/credits', { headers: authHeaders });
+            if (res.ok) {
+                const d = await res.json();
+                if (d.success) credits = d.credits;
+            }
+        } catch(e) {}
+
+        const meta = session.user.user_metadata || {};
+        const userData = {
+            id:      session.user.id,
+            email:   session.user.email,
+            name:    meta.full_name || meta.name || session.user.email.split('@')[0],
+            avatar:  meta.avatar_url || meta.picture ||
+                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                         session.user.email.split('@')[0]
+                     )}&background=0f0f10&color=fff&size=64`,
+            credits: credits
+        };
+        localStorage.setItem('sl_user_cache', JSON.stringify(userData));
+
+        // ترحيب مرة واحدة (أول تسجيل Google أو تأكيد بريد) — الباكند يمنع التكرار
+        if (opts.sendWelcome) {
+            try {
+                await fetch(apiBase + '/api/auth/verified', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...authHeaders
+                    },
+                    body: JSON.stringify({ email: session.user.email, name: userData.name })
+                });
+            } catch(e) {}
+        }
+
+        window.location.replace('/');
+    }
+
+    const params     = new URLSearchParams(window.location.search);
+    const token_hash = params.get('token_hash');
+    const type       = params.get('type') || 'signup';
+    const hash       = window.location.hash;
+
+    // ── الطريقة 1: token_hash في الـ URL (من الـ Auth Hook) ──
+    if (token_hash) {
+        try {
+            const { data, error } = await supa.auth.verifyOtp({
+                token_hash,
+                type: type === 'recovery' ? 'recovery' : 'email'
+            });
+
+            if (error) {
+                showError(error.message);
+                return;
+            }
+
+            if (data?.session) {
+                await saveAndRedirect(data.session, { sendWelcome: true });
+                return;
+            }
+        } catch(e) {
+            showError(e.message);
+            return;
+        }
+    }
+
+    // ── الطريقة 2: access_token في الـ hash (Google OAuth) ──
+    if (hash && hash.includes('access_token')) {
+        const { data: { session } } = await supa.auth.getSession();
+        if (session) {
+            await saveAndRedirect(session, { sendWelcome: true });
+            return;
+        }
+    }
+
+    // ── الطريقة 3: انتظار SIGNED_IN event ──
+    supa.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            await saveAndRedirect(session, { sendWelcome: true });
+        }
+    });
+
+    // ── الطريقة 4: timeout fallback ──
+    setTimeout(async () => {
+        const { data: { session } } = await supa.auth.getSession();
+        if (session) {
+            await saveAndRedirect(session, { sendWelcome: true });
+        } else if (!token_hash) {
+            window.location.replace('/');
+        }
+    }, 5000);
+
+})();
+</script>
+</body>
+</html>

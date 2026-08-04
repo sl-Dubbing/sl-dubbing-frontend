@@ -1,0 +1,86 @@
+/* ══════════════════════════════════════════
+   style.css — Glotix (HeyGen-inspired + gold #fcca69)
+   ══════════════════════════════════════════ */
+
+:root {
+    --bg-page: #f6f5f1;
+    --bg-card: #ffffff;
+    --bg-soft: #eeedea;
+    --border-color: #e0dfdb;
+    --text-main: #1a1a1a;
+    --text-muted: #6b6b6b;
+    --primary: #0a0a0a;
+    --primary-hover: #2a2a2a;
+    --accent-blue: #3b82f6;
+    --accent-gold: #fcca69;
+    --accent-yellow: #fcca69;
+    --accent-green: #22c55e;
+    --error: #ef4444;
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --transition: 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ── الإعدادات العامة ── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background: var(--bg-page);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.5;
+}
+
+/* ── إخفاء ملفات الـ Layout القديمة في حال تم استدعاؤها خطأ ── */
+/* يمنع التضارب مع الأكواد القديمة */
+.sidebar.collapsed, .menu-toggle .btn-circle {
+    display: none !important;
+}
+
+/* ── Toast notifications (shared by dubbing, TTS, history) ── */
+#toasts {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+    max-width: min(92vw, 480px);
+}
+#toasts .toast,
+#toast.toast {
+    padding: 14px 22px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+    background: var(--accent-green, #10b981);
+    color: #fff;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+#toasts .toast.show,
+#toast.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+#toasts .toast.error,
+#toast.toast.error {
+    background: var(--error, #ef4444);
+}
+#toasts .toast.success,
+#toast.toast.success {
+    background: var(--accent-green, #10b981);
+}

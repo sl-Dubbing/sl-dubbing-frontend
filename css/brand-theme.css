@@ -1,0 +1,259 @@
+/* ══════════════════════════════════════════
+   brand-theme.css — HeyGen-inspired UI + Glotix gold accent
+   Ref: https://app.heygen.com/home
+   ══════════════════════════════════════════ */
+
+:root {
+    /* Warm light surfaces (HeyGen light) */
+    --bg-page: #f6f5f1;
+    --bg-card: #ffffff;
+    --bg-soft: #eeedea;
+    --surface2: #eeedea;
+    --border-color: #e0dfdb;
+    --border-light: #d0cfcb;
+
+    /* Typography */
+    --text-main: #1a1a1a;
+    --text-muted: #6b6b6b;
+    --heading: #0a0a0a;
+
+    /* Actions: black primary + gold highlight */
+    --primary: #0a0a0a;
+    --primary-hover: #2a2a2a;
+    --accent-blue: #3b82f6;
+    --accent-gold: #fcca69;
+    --accent-gold-hover: #f5bc52;
+    --accent-yellow: #fcca69;
+    --accent-green: #22c55e;
+    --accent-purple: #8b5cf6;
+    --accent-pink: #ec4899;
+    --success: #16a34a;
+    --error: #ef4444;
+
+    --shadow-soft: 0 1px 2px rgba(10, 10, 10, 0.04), 0 8px 24px rgba(10, 10, 10, 0.06);
+    --shadow-lift: 0 12px 32px rgba(10, 10, 10, 0.1);
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-pill: 999px;
+    --radius-icon: 18px;
+    --transition: 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+    --font-display: "Segoe UI", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+body {
+    background-color: var(--bg-page) !important;
+    background-image: none !important;
+    color: var(--text-main);
+    font-family: var(--font-display);
+}
+
+/* ── Primary buttons (HeyGen: black / white) ── */
+.btn-signup,
+.btn-primary,
+.btn-cta.primary,
+.btn-redub-start,
+button.primary-action,
+#dubBtn,
+.dub-start-btn,
+.start-btn {
+    background: var(--primary) !important;
+    color: #fff !important;
+    border: 1px solid var(--primary) !important;
+    border-radius: var(--radius-pill) !important;
+    box-shadow: none !important;
+    font-weight: 700 !important;
+    transition:
+        transform var(--transition),
+        box-shadow var(--transition),
+        background var(--transition),
+        color var(--transition),
+        border-color var(--transition) !important;
+}
+
+.btn-signup:hover,
+.btn-primary:hover,
+.btn-cta.primary:hover,
+.btn-redub-start:hover,
+button.primary-action:hover,
+#dubBtn:hover,
+.dub-start-btn:hover,
+.start-btn:hover {
+    background: var(--primary-hover) !important;
+    color: #fff !important;
+    border-color: var(--primary-hover) !important;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft) !important;
+}
+
+.btn-login,
+.btn-secondary,
+.btn-cta.outline,
+.btn-redub-cancel,
+.btn-clear {
+    background: #fff !important;
+    color: var(--heading) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-pill) !important;
+    transition: transform var(--transition), background var(--transition), border-color var(--transition), box-shadow var(--transition) !important;
+}
+
+.btn-login:hover,
+.btn-secondary:hover,
+.btn-cta.outline:hover,
+.btn-redub-cancel:hover,
+.btn-clear:hover {
+    background: var(--bg-soft) !important;
+    border-color: var(--border-light) !important;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-soft);
+}
+
+/* Gold accent chip / CTA secondary */
+.btn-gold,
+.eyebrow,
+.hero-badge,
+.ba-step-pill {
+    background: var(--accent-gold) !important;
+    color: var(--heading) !important;
+    border: none !important;
+}
+
+/* ══════════════════════════════════════════
+   Brand mark icon wells — Glotix tilted triangle
+   ══════════════════════════════════════════ */
+.hg-icon,
+.feature-icon,
+.tool-card .ico,
+.usecase-tile .hg-icon {
+    /* Size + 3D ice look owned by logo.css */
+    border-radius: 0 !important;
+    display: inline-grid !important;
+    place-items: center;
+    font-size: 1.15rem !important;
+    flex-shrink: 0;
+    position: relative;
+    overflow: visible;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.step-num {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem !important;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid transparent;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+.hg-icon i,
+.feature-icon i,
+.tool-card .ico i,
+.usecase-tile i {
+    position: relative;
+    z-index: 2;
+    transform: translate(1px, -1px);
+}
+
+/* Glass ambient blooms (color under frost — like reference backdrop tint) */
+.hg-icon.gold,
+.feature-icon.amber,
+.tool-card.tts .ico {
+    --glass-ambient: #fcca69;
+    color: #fff;
+    background: transparent !important;
+}
+.hg-icon.blue,
+.feature-icon.blue,
+.tool-card.dub .ico {
+    --glass-ambient: #60a5fa;
+    color: #fff;
+    background: transparent !important;
+}
+.hg-icon.violet,
+.feature-icon.purple,
+.feature-icon.indigo,
+.tool-card.image .ico {
+    --glass-ambient: #a78bfa;
+    color: #fff;
+    background: transparent !important;
+}
+.hg-icon.mint,
+.feature-icon.green {
+    --glass-ambient: #4ade80;
+    color: #fff;
+    background: transparent !important;
+}
+.hg-icon.rose,
+.feature-icon.pink {
+    --glass-ambient: #f472b6;
+    color: #fff;
+    background: transparent !important;
+}
+.hg-icon.slate {
+    --glass-ambient: #a1a1aa;
+    color: #fff;
+    background: transparent !important;
+}
+
+/* Soft white tool cards (not gold capsules) */
+.tool-card,
+.feature-card,
+.usecase-tile,
+.step-card,
+.lang-chip {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: 0 1px 0 rgba(10, 10, 10, 0.02);
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition) !important;
+}
+
+.tool-card:hover,
+.feature-card:hover,
+.usecase-tile:hover,
+.step-card:hover,
+.lang-chip:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: var(--shadow-lift) !important;
+    border-color: var(--border-light) !important;
+}
+
+.menu-btn {
+    background: #fff !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-pill) !important;
+    color: var(--heading) !important;
+}
+
+.menu-btn:hover {
+    background: var(--bg-soft) !important;
+    border-color: var(--border-light) !important;
+}
+
+.filter-tab.active,
+.view-switcher button.active {
+    background: var(--primary) !important;
+    color: #fff !important;
+    border-color: var(--primary) !important;
+}
+
+.balance-text {
+    background: #fff8e8 !important;
+    color: var(--heading) !important;
+    border: 1px solid #f6e2b8 !important;
+}
+
+.dropdown-panel a:hover,
+.dropdown-panel button.menu-item:hover {
+    background: var(--bg-soft) !important;
+    color: var(--heading) !important;
+}

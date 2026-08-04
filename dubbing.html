@@ -1,0 +1,1292 @@
+﻿<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Glotix | Dubbing Studio</title>
+    <meta name="description" content="Upload a video and dub it into 55+ languages with AI voice cloning. Translate, synthesize, and download from Glotix Dubbing Studio.">
+    <link rel="canonical" href="https://glotix.ai/dubbing">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Glotix">
+    <meta property="og:title" content="Glotix | Dubbing Studio">
+    <meta property="og:description" content="AI video dubbing with voice cloning and lip-sync-ready output in 55+ languages.">
+    <meta property="og:url" content="https://glotix.ai/dubbing">
+    <meta property="og:image" content="https://glotix.ai/apple-touch-icon.png">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/svg+xml" href="/logo/logo_arrow_White.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/logo.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/brand-theme.css">
+    <link rel="stylesheet" href="css/theme.css?v=20260717s">
+    <script>
+      (function () {
+        try {
+          var m = localStorage.getItem('glotix_theme') || 'system';
+          var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var t = m === 'light' || m === 'dark' ? m : (dark ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', t);
+          document.documentElement.style.colorScheme = t;
+        } catch (e) {}
+      })();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --accent-gold: #fcca69; --accent-yellow: #fcca69; --bg-soft: #eeedea;
+            --bg-page: #f6f5f1; --bg-card: #ffffff; --border-color: #e0dfdb;
+            --text-main: #1a1a1a; --text-muted: #6b6b6b;
+            --primary: #0a0a0a; --primary-hover: #2a2a2a;
+            --accent-blue: #3b82f6; --accent-green: #22c55e;
+            --error: #ef4444; --radius-md: 12px; --radius-lg: 20px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; overflow-x: hidden; line-height: 1.5; }
+        .container { max-width: 1280px; margin: 0 auto; padding: 20px 24px 40px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px 48px; }
+        .user-zone { position: relative; display: flex; align-items: center; gap: 12px; }
+        .menu-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.95rem; color: var(--text-main); transition: 0.2s; }
+        .menu-btn:hover { background: #f3f4f6; }
+        .dropdown-panel { position: absolute; top: calc(100% + 12px); right: 0; width: 300px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); padding: 16px; display: flex; flex-direction: column; gap: 8px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: 0.2s; z-index: 1000; }
+        .dropdown-panel.active { opacity: 1; visibility: visible; transform: translateY(0); }
+        .dropdown-panel a, .dropdown-panel button.menu-item { text-decoration: none; color: var(--text-main); padding: 12px 14px; border-radius: 10px; font-weight: 500; display: flex; align-items: center; gap: 14px; transition: 0.2s; background: transparent; border: none; width: 100%; text-align: left; cursor: pointer; font-size: 0.95rem; }
+        .dropdown-panel a:hover, .dropdown-panel button.menu-item:hover { background: #f3f4f6; }
+        .menu-divider { border: none; border-top: 1px solid var(--border-color); margin: 8px 0; }
+        .auth-buttons { display: flex; gap: 10px; margin-bottom: 5px; }
+        .btn-login, .btn-signup { flex: 1; padding: 12px; border-radius: 10px; text-align: center; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: 0.2s; cursor: pointer; }
+        .btn-login { background: var(--bg-page); border: 1px solid var(--border-color); color: var(--text-main); }
+        .btn-signup { background: var(--primary); color: white; border: 1px solid var(--primary); }
+        .logged-in-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; margin-bottom: 5px; display: none; }
+        .user-name { font-weight: 600; font-size: 0.95rem; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; }
+        .balance-text { color: var(--text-muted); font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+        .logout-btn { color: var(--error) !important; display: none; }
+        .upload-box { position: relative; display: block; background: var(--bg-card); border: 1px dashed #d1d5db; border-radius: var(--radius-lg); padding: 60px 24px; text-align: center; cursor: pointer; transition: 0.3s; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); overflow: hidden; }
+        .upload-box:hover { border-color: var(--accent-blue); background: #f8fafc; }
+        .upload-box.drag-over { border-color: var(--accent-blue); background: #eff6ff; }
+        .upload-box.has-file { border-color: var(--accent-green); background: #ecfdf5; }
+        .upload-box.is-collapsed { display: none !important; }
+        /* Full-hit file input — click anywhere on the box opens the picker */
+        #dropZone > .media-file-input {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 5;
+            font-size: 0;
+        }
+        #dropZone > .upload-icon,
+        #dropZone > .upload-title,
+        #dropZone > .upload-subtitle {
+            position: relative;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .replace-media-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 5;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.92);
+            color: #111;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+            font-size: 1.05rem;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        .replace-media-btn:hover {
+            transform: scale(1.06);
+            background: #fff;
+        }
+        .dub-media-row.is-visible .replace-media-btn { display: inline-flex; }
+        .upload-icon { font-size: 3rem; color: #60a5fa; margin-bottom: 15px; }
+        .upload-title { font-weight: 600; font-size: 1.2rem; color: var(--text-main); }
+        .upload-subtitle { color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; }
+        #previewArea {
+            display: none;
+            position: relative;
+            width: 100%;
+            margin-bottom: 0;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            background: #000;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            height: 100%;
+            max-height: min(72vh, 640px);
+            flex-direction: column;
+        }
+        .dub-media-row.is-visible #previewArea { display: flex; }
+        #videoPreview {
+            width: 100%;
+            display: block;
+            flex: 1;
+            max-height: none;
+            min-height: 200px;
+            object-fit: contain;
+            background: #000;
+        }
+        #audioPreviewLabel { display: none; padding: 50px; text-align: center; background: #f1f5f9; color: #334155; }
+
+        .dub-media-row {
+            display: none;
+            grid-template-columns: minmax(300px, 400px) 1fr;
+            gap: 18px;
+            align-items: stretch;
+            margin-bottom: 25px;
+            min-height: min(72vh, 640px);
+        }
+        .dub-media-row.is-visible { display: grid; }
+        .srt-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            height: 100%;
+            max-height: min(72vh, 640px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+        .srt-panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+        }
+        .srt-panel-head h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .srt-zoom-controls {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .srt-zoom-controls button {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-soft, var(--bg-page));
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1;
+        }
+        .srt-zoom-controls button:hover { background: var(--bg-page); filter: brightness(1.08); }
+        .srt-zoom-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            min-width: 36px;
+            text-align: center;
+        }
+        .srt-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+        .srt-actions button, .srt-actions label.srt-file-btn {
+            border: 1px solid var(--border-color);
+            background: var(--bg-soft, var(--bg-page));
+            color: var(--text-main);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .srt-actions button:hover, .srt-actions label.srt-file-btn:hover {
+            background: var(--bg-page);
+            filter: brightness(1.08);
+        }
+        .srt-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .srt-status {
+            font-size: 0.75rem;
+            color: var(--accent-blue);
+            min-height: 1.1em;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+        }
+        .srt-segment-list {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 4px;
+            --srt-font-scale: 1;
+            scrollbar-gutter: stable;
+        }
+        .srt-segment-list::-webkit-scrollbar { width: 8px; }
+        .srt-segment-list::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 8px;
+        }
+        .srt-segment-list::-webkit-scrollbar-track { background: transparent; }
+        .srt-cue {
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 8px;
+            background: var(--bg-soft, var(--bg-page));
+            color: var(--text-main);
+            flex-shrink: 0;
+        }
+        .srt-cue-meta {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .srt-cue-meta input {
+            width: 72px;
+            font-size: calc(0.75rem * var(--srt-font-scale, 1));
+            padding: 4px 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-card);
+            color: var(--text-main);
+            color-scheme: inherit;
+        }
+        .srt-cue-meta .srt-cue-idx {
+            font-size: calc(0.7rem * var(--srt-font-scale, 1));
+            font-weight: 700;
+            color: var(--text-muted);
+            min-width: 28px;
+        }
+        .srt-cue textarea {
+            width: 100%;
+            min-height: calc(52px * var(--srt-font-scale, 1));
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+            font-size: calc(0.9rem * var(--srt-font-scale, 1));
+            line-height: 1.45;
+            resize: vertical;
+            font-family: inherit;
+            background: var(--bg-card);
+            color: var(--text-main);
+            color-scheme: inherit;
+        }
+        .srt-cue textarea::placeholder,
+        .srt-cue-meta input::placeholder {
+            color: var(--text-muted);
+            opacity: 0.8;
+        }
+        .srt-cue-remove {
+            margin-left: auto;
+            border: none;
+            background: transparent;
+            color: var(--error);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .srt-empty {
+            color: var(--text-muted);
+            font-size: calc(0.85rem * var(--srt-font-scale, 1));
+            padding: 18px 8px;
+            text-align: center;
+            border: 1px dashed var(--border-color);
+            border-radius: 10px;
+        }
+        html[data-theme="dark"] .srt-cue {
+            background: #000000;
+            border-color: #222;
+        }
+        html[data-theme="dark"] .srt-cue textarea,
+        html[data-theme="dark"] .srt-cue-meta input {
+            background: #000000;
+            color: #f3f4f6;
+            border-color: #333;
+            -webkit-text-fill-color: #f3f4f6;
+        }
+        html[data-theme="dark"] .srt-actions button,
+        html[data-theme="dark"] .srt-actions label.srt-file-btn,
+        html[data-theme="dark"] .srt-zoom-controls button {
+            background: #111;
+            border-color: #333;
+            color: #e5e7eb;
+        }
+        @media (prefers-color-scheme: dark) {
+            html:not([data-theme="light"]) .srt-cue {
+                background: #000000;
+                border-color: #222;
+            }
+            html:not([data-theme="light"]) .srt-cue textarea,
+            html:not([data-theme="light"]) .srt-cue-meta input {
+                background: #000000;
+                color: #f3f4f6;
+                border-color: #333;
+                -webkit-text-fill-color: #f3f4f6;
+            }
+            html:not([data-theme="light"]) .srt-actions button,
+            html:not([data-theme="light"]) .srt-actions label.srt-file-btn,
+            html:not([data-theme="light"]) .srt-zoom-controls button {
+                background: #111;
+                border-color: #333;
+                color: #e5e7eb;
+            }
+        }
+        @media (max-width: 900px) {
+            .dub-media-row.is-visible { grid-template-columns: 1fr; min-height: 0; }
+            .srt-panel { max-height: min(55vh, 480px); height: auto; min-height: 280px; }
+            #previewArea { max-height: min(50vh, 420px); }
+        }
+
+        .controls-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 25px;
+            align-items: center;
+        }
+        .controls-row > * { min-width: 0; }
+
+        #speakerModeRow {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: -8px 0 12px;
+        }
+        #lipsyncRow {
+            display: flex;
+            align-items: center;
+            margin: 0 0 20px;
+        }
+        .speaker-mode-btn {
+            border: 0;
+            background: transparent;
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        .speaker-mode-btn.active {
+            background: var(--accent-gold, #fcca69);
+            color: #0a0a0a;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+        }
+
+        /* --- Brand orange attention pulse for language pickers --- */
+        .needs-attention {
+            border-color: var(--accent-gold, #fcca69) !important;
+            box-shadow: 0 0 0 4px rgba(252, 202, 105, 0.22) !important;
+            animation: pulse-brand-alert 2s infinite;
+            transition: all 0.3s ease;
+        }
+
+        @keyframes pulse-brand-alert {
+            0% { box-shadow: 0 0 0 0 rgba(252, 202, 105, 0.45); }
+            70% { box-shadow: 0 0 0 8px rgba(252, 202, 105, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(252, 202, 105, 0); }
+        }
+
+        /* --- تنسيق السهم بين اللغتين --- */
+        .lang-direction-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 1.2rem;
+        }
+        .dropdown-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: 500; font-size: 0.95rem; position: relative; transition: 0.2s; color: var(--text-main); min-width: 0; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .dropdown-btn:hover { border-color: #d1d5db; }
+        .dropdown-btn.active { border-color: var(--accent-gold, #fcca69); box-shadow: 0 0 0 3px rgba(252, 202, 105, 0.22); }
+        .dropdown-btn > i:first-child { font-size: 1.1rem; color: #4b5563; }
+        .dropdown-btn .fa-chevron-down { font-size: 0.72rem; /* color from logo.css .brand-chevron */ }
+        .lang-catalog-hint { display: none !important; }
+        .src-lang-btn.invalid { border-color: var(--accent-gold, #fcca69); box-shadow: 0 0 0 3px rgba(252, 202, 105, 0.22); }
+        #srcLangFlag { display: flex; align-items: center; flex-shrink: 0; }
+        #targetLangFlag { display: flex; align-items: center; flex-shrink: 0; }
+        #voiceSelectIcon { display: flex; align-items: center; flex-shrink: 0; }
+        .voice-select-trigger-avatar {
+            width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+            border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .target-lang-flags-stack { display: flex; align-items: center; }
+        .target-lang-flags-stack .lang-flag-shell + .lang-flag-shell { margin-left: -6px; }
+        .badge { background: var(--accent-gold, #fcca69); color: #0a0a0a; border-radius: 50%; min-width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; margin-left: auto; }
+        .lang-dropdown { position: absolute; top: calc(100% + 10px); left: 0; width: 100%; min-width: 320px; background: var(--bg-card) !important; border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 16px 40px rgba(15,23,42,0.10); display: none; z-index: 100; padding: 12px; cursor: default; text-align: left; }
+        .lang-btn.active .lang-dropdown { display: block; }
+        .src-lang-btn.active { z-index: 110; }
+        .src-lang-btn.active .lang-dropdown { z-index: 111; }
+        .lang-catalog-hint { display: none !important; }
+        .lang-search { width: 100%; padding: 11px 14px 11px 38px; border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 10px; outline: none; box-sizing: border-box; font-size: 0.9rem; background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%2494a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242.656a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/%3E%3C/svg%3E") no-repeat 14px center; transition: 0.2s; }
+        .lang-search:focus { border-color: var(--accent-gold, #fcca69); background-color: var(--bg-card); box-shadow: 0 0 0 3px rgba(252, 202, 105, 0.22); }
+        .lang-list { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; padding-right: 2px; scrollbar-width: thin; }
+        .lang-section-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; padding: 12px 10px 4px; }
+        .lang-empty { text-align: center; padding: 28px 12px; color: #94a3b8; font-size: 0.9rem; }
+        .selected-langs-display { margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+        .selected-langs-empty { font-size: 0.82rem; color: #94a3b8; padding: 4px 2px; }
+        .selected-langs-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+        .lang-pill { display: inline-flex; align-items: center; gap: 7px; background: #f1f5f9; border: 1px solid #e2e8f0; padding: 5px 10px 5px 6px; border-radius: 999px; font-size: 0.8rem; cursor: pointer; color: #334155; font-weight: 600; font-family: inherit; transition: 0.15s; }
+        .lang-pill:hover { background: #e2e8f0; }
+        .lang-pill .remove-icon { color: #94a3b8; margin-left: 2px; font-size: 0.95rem; line-height: 1; }
+        .lang-pill .lang-flag { width: 18px; height: 18px; border-radius: 0; object-fit: cover; }
+        .lang-item { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 10px; cursor: pointer; transition: 0.15s; border: none !important; }
+        .lang-item.is-locale { padding-left: 18px; }
+        .lang-item:hover { background: #f8fafc; }
+        .lang-item.selected { background: #eff6ff; }
+        .lang-item .checkbox { display: none !important; }
+        .lang-item .lang-flag, .lang-item img.lang-flag { width: 22px; height: 22px; border-radius: 0; object-fit: cover; flex-shrink: 0; }
+        .lang-item .lang-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+        .lang-item .lang-en { font-weight: 600; color: var(--text-main); font-size: 0.92rem; line-height: 1.25; }
+        .lang-item .lang-dialect { display: none !important; }
+        .lang-item.selected::after { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; margin-left: auto; color: #2563eb; background: #dbeafe; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; flex-shrink: 0; }
+        .voice-dropdown-panel { position: absolute; top: calc(100% + 10px); left: 0; width: 100%; min-width: 320px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); z-index: 200; padding: 12px; display: none; flex-direction: column; gap: 8px; }
+        .voice-dropdown-panel.open { display: flex; }
+        .voice-option-basic { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .voice-option-basic:hover { background: #f3f4f6; }
+        .voice-option-basic.selected { background: #eff6ff; border-color: #bfdbfe; }
+        .voice-option-basic i { color: var(--accent-blue); font-size: 1.2rem; background: #fff; padding: 8px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .premium-voices-grid { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px 5px; }
+        .voice-avatar-card { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; width: 75px; }
+        .voice-avatar-wrapper { position: relative; width: 65px; height: 65px; border-radius: 50%; border: 2px solid transparent; padding: 2px; transition: 0.2s; }
+        .voice-avatar-card:hover .voice-avatar-wrapper { border-color: #d1d5db; }
+        .voice-avatar-card.selected .voice-avatar-wrapper { border-color: var(--accent-blue); }
+        .voice-avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: #f3f4f6; }
+        .voice-play-overlay { position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px; background: rgba(0,0,0,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; opacity: 0; transition: 0.2s; }
+        .voice-avatar-wrapper:hover .voice-play-overlay { opacity: 1; }
+        .voice-play-overlay.playing { opacity: 1; background: rgba(37,99,235,0.6); }
+        .voice-name-label { font-size: 0.85rem; font-weight: 500; color: var(--text-main); text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .voice-avatar-card.selected .voice-name-label { font-weight: 700; color: var(--accent-blue); }
+        .voice-save-plus-card.disabled { opacity: 0.55; cursor: not-allowed; }
+        .voice-save-plus-card.ready .voice-save-plus-inner { background: #ecfdf5; border-color: var(--accent-green); color: var(--accent-green); }
+        .voice-save-plus-card.ready .voice-avatar-wrapper { border-color: var(--accent-green); }
+        .voice-save-plus-inner { width: 100%; height: 100%; border-radius: 50%; border: 2px dashed #d1d5db; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #6b7280; background: #f9fafb; transition: 0.2s; }
+        .voice-save-plus-card:not(.disabled):hover .voice-save-plus-inner { border-color: var(--accent-blue); color: var(--accent-blue); background: #eff6ff; }
+        .voice-saved-user-card .voice-save-plus-inner { background: #eff6ff; border: 2px solid var(--accent-blue); color: var(--accent-blue); font-size: 1.1rem; }
+        .start-btn {
+            width: 100%;
+            background: #0a0a0a;
+            color: #fff;
+            border: 1px solid #0a0a0a;
+            padding: 16px;
+            border-radius: 999px;
+            font-size: 1.05rem;
+            font-weight: 750;
+            cursor: pointer;
+            margin-top: 20px;
+            margin-bottom: 4px;
+            transition: transform 0.22s cubic-bezier(0.32,0.72,0,1), box-shadow 0.22s, background 0.22s;
+        }
+        .start-btn:hover {
+            background: #2a2a2a;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(10,10,10,0.12);
+        }
+        .start-btn:active { transform: translateY(1px); }
+        .progress-box { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; margin-top: 25px; display: none; }
+        .progress-bar-bg { height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; margin-top: 15px; }
+        .progress-bar-fill { height: 100%; width: 0%; background: var(--accent-blue); transition: 0.4s; }
+        .cancel-dub-btn {
+            margin-top: 14px;
+            width: 100%;
+            padding: 11px 16px;
+            border-radius: 10px;
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #b91c1c;
+            font-weight: 600;
+            font-size: 0.92rem;
+            cursor: pointer;
+        }
+        .cancel-dub-btn:hover { background: #fee2e2; }
+        .cancel-dub-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+        .cinema-results { display: flex; gap: 20px; background: #111827; padding: 20px; border-radius: var(--radius-lg); margin-top: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .cinema-player { flex: 3; position: relative; background: #000; border-radius: 12px; overflow: hidden; min-height: 400px; display: flex; align-items: center; justify-content: center; }
+        .cinema-player video { width: 100%; height: 100%; object-fit: contain; }
+        .cinema-sidebar { flex: 1; background: #1f2937; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 220px; max-height: 450px; overflow-y: auto; }
+        .side-lang-card { padding: 12px 14px; border-radius: 8px; background: #374151; color: #9ca3af; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; font-size: 0.9rem; font-weight: 500; border: 1px solid transparent; }
+        .side-lang-card:hover { background: #4b5563; color: #e5e7eb; }
+        .side-lang-card.active { background: #ffffff; color: #111827; font-weight: 600; border-color: #fff; }
+        .dl-corner { position: absolute; top: 15px; right: 15px; z-index: 100; display: none; }
+        .dl-icon-btn { background: rgba(255,255,255,0.9); color: #111827; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem; transition: 0.2s; backdrop-filter: blur(5px); }
+        .dl-icon-btn:hover { background: #fff; transform: scale(1.05); }
+        .overlay, .sidebar { display: none !important; }
+        @media (max-width: 800px) {
+            .top-bar { padding: 16px 24px; }
+            .cinema-results { flex-direction: column; }
+            .controls-row { grid-template-columns: 1fr; }
+            .lang-direction-arrow { display: none; }
+        }
+        #recentJobsGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .recent-works-section { margin-top: 32px; margin-bottom: 8px; }
+        .recent-job-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px; transition: 0.2s; overflow: hidden; position: relative; }
+        .recent-job-card:hover { border-color: #bfdbfe; box-shadow: 0 6px 20px rgba(37,99,235,0.08); }
+        /* ── Recent job card media players ── */
+        .rjc-video-wrap { position: relative; border-radius: 10px; overflow: hidden; background: #0f0f0f; aspect-ratio: 16/9; }
+        .rjc-video-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .rjc-skeleton { position: absolute; inset: 0; background: linear-gradient(90deg, #1e293b 25%, #2d3748 50%, #1e293b 75%); background-size: 200% 100%; animation: rjc-shimmer 1.4s ease-in-out infinite; pointer-events: none; }
+        @keyframes rjc-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .rjc-audio-wrap { position: relative; border-radius: 10px; overflow: hidden; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 12px 14px 8px; }
+        .rjc-waveform-svg { width: 100%; height: 36px; display: block; margin-bottom: 8px; }
+        .rjc-audio-native { width: 100%; height: 32px; display: block; }
+        .rjc-del-btn { position: absolute; top: 8px; left: 8px; z-index: 20; width: 28px; height: 28px; border-radius: 7px; border: none; background: rgba(15,23,42,0.72); color: rgba(255,255,255,0.85); cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s, transform 0.1s; }
+        .recent-job-card:hover .rjc-del-btn { opacity: 1; }
+        .rjc-del-btn:hover { background: #ef4444; color: #fff; transform: scale(1.07); }
+        .rjc-del-btn:active { transform: scale(0.93); }
+        .rjc-del-btn:disabled { opacity: 0.4 !important; pointer-events: none; }
+        .dub-download-btn { position: absolute; top: 8px; right: 8px; z-index: 20; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: var(--accent-blue); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; box-shadow: 0 2px 8px rgba(37,99,235,0.35); transition: 0.15s; opacity: 0.95; }
+        .dub-download-btn:hover { background: #1d4ed8; transform: translateY(-1px); opacity: 1; }
+        .dub-download-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        .rjc-reuse-btn { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-page); color: var(--text-main); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.15s; }
+        .rjc-reuse-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); background: #eff6ff; }
+        .rjc-reuse-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+        .recent-job-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 8px; }
+        .recent-job-meta-info { overflow: hidden; min-width: 0; }
+        .recent-job-date { font-size: 0.85rem; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .recent-job-ago { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
+        .recent-job-status { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+        @media (max-width: 900px) { #recentJobsGrid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 520px) { #recentJobsGrid { grid-template-columns: 1fr; } }
+        .audio-player-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 40px; color: #fff; gap: 20px; width: 100%; }
+        .audio-player-header { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; font-weight: 500; }
+        .audio-waveform { width: 100%; max-width: 600px; height: 60px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+        .audio-controls { display: flex; align-items: center; gap: 20px; }
+        .play-btn { width: 50px; height: 50px; border-radius: 50%; background: var(--accent-blue); color: white; border: none; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .play-btn:hover { background: #1d4ed8; transform: scale(1.05); }
+        .audio-time { font-family: monospace; font-size: 0.85rem; color: #9ca3af; }
+        .voice-save-modal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .voice-save-modal-backdrop { position: absolute; inset: 0; background: rgba(17,24,39,0.45); }
+        .voice-save-modal-card { position: relative; max-width: 420px; width: 100%; background: var(--bg-card); border-radius: 16px; padding: 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); border: 1px solid var(--border-color); }
+        .voice-save-modal-card h3 { font-size: 1.15rem; margin-bottom: 10px; }
+        .voice-save-modal-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; }
+        .voice-save-modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+        .btn-secondary { padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-page); cursor: pointer; font-weight: 600; }
+        .btn-primary { padding: 10px 16px; border-radius: 10px; border: none; background: var(--primary); color: #fff; cursor: pointer; font-weight: 600; }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* ── Dubbing showcase (before / after) ── */
+        .dub-showcase { display: none !important; }
+        .dub-showcase-eyebrow { display: inline-block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-blue); background: #eff6ff; padding: 6px 12px; border-radius: 20px; margin-bottom: 14px; }
+        .dub-showcase-head h2 { font-size: clamp(1.35rem, 3vw, 1.75rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 12px; color: var(--text-main); }
+        .dub-showcase-head p { color: var(--text-muted); font-size: 1rem; line-height: 1.7; max-width: 720px; }
+        .dub-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 32px 0 40px; }
+        .dub-feature { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 18px; transition: 0.2s; }
+        .dub-feature:hover { border-color: #bfdbfe; box-shadow: 0 8px 24px rgba(37,99,235,0.06); }
+        .dub-feature i { font-size: 1.25rem; color: var(--accent-blue); margin-bottom: 10px; display: block; }
+        .dub-feature h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+        .dub-feature p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.55; margin: 0; }
+        .ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .ba-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px; overflow: hidden; box-shadow: 0 10px 32px rgba(0,0,0,0.05); }
+        .ba-card-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border-color); background: #fafafa; }
+        .ba-badge { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.07em; padding: 4px 9px; border-radius: 6px; text-transform: uppercase; }
+        .ba-badge.before { background: #eff6ff; color: #1d4ed8; }
+        .ba-badge.after { background: #ecfdf5; color: #047857; }
+        .ba-lang { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 600; }
+        .ba-lang img { width: 20px; height: 20px; border-radius: 0; }
+        .ba-video-wrap { position: relative; aspect-ratio: 16/9; background: #111; }
+        .ba-video-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .ba-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(180deg, #1a1a1f, #0f0f10); color: #94a3b8; text-align: center; padding: 20px; }
+        .ba-placeholder img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,0.12); }
+        .ba-placeholder p { font-size: 0.82rem; line-height: 1.5; max-width: 200px; margin: 0; }
+        .ba-placeholder.hidden { display: none; }
+        .ba-workflow { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+        .ba-step-pill { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); background: #f3f4f6; padding: 8px 14px; border-radius: 20px; }
+        .ba-script-box { margin-top: 28px; padding: 18px 20px; background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 14px; }
+        .ba-script-box h4 { font-size: 0.92rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .ba-script-box pre { white-space: pre-wrap; font-family: inherit; font-size: 0.9rem; line-height: 1.65; color: var(--text-muted); margin: 0; }
+        @media (max-width: 800px) {
+            .dub-features { grid-template-columns: 1fr; }
+            .ba-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── Voice clone guide (full-width breakout) ── */
+        .clone-guide-breakout {
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            padding: 0 clamp(16px, 3vw, 40px);
+            box-sizing: border-box;
+        }
+        .clone-guide {
+            max-width: 1400px;
+            margin: 32px auto 0;
+            padding: 36px clamp(24px, 3vw, 40px) 32px;
+            background: linear-gradient(165deg, #fafbff 0%, #f8fafc 45%, #ffffff 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 22px;
+            box-shadow: 0 12px 40px rgba(37, 99, 235, 0.06);
+        }
+        .clone-guide-head { margin-bottom: 28px; }
+        .clone-guide-eyebrow {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+            color: #7c3aed; background: #f5f3ff; padding: 6px 12px; border-radius: 999px; margin-bottom: 12px;
+        }
+        .clone-guide-head h2 {
+            font-size: clamp(1.2rem, 2.5vw, 1.55rem); font-weight: 800; letter-spacing: -0.02em;
+            color: var(--text-main); margin-bottom: 10px;
+        }
+        .clone-guide-head p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.7; max-width: none; margin: 0; }
+        .clone-guide-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-bottom: 28px;
+        }
+        .clone-guide-card {
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px;
+            overflow: hidden; transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+            display: flex; flex-direction: column;
+        }
+        .clone-guide-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+            border-color: #c7d2fe;
+        }
+        .clone-guide-visual {
+            position: relative; aspect-ratio: 16 / 10; display: flex; align-items: center; justify-content: center;
+            padding: 18px; overflow: hidden;
+        }
+        .clone-guide-visual.video-clone {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 55%, #e0e7ff 100%);
+        }
+        .clone-guide-visual.premium-voices {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 55%, #ecfdf5 100%);
+        }
+        .clone-guide-visual.saved-sample {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 55%, #fef3c7 100%);
+        }
+        .clone-guide-visual svg { width: 100%; max-width: 100%; height: auto; display: block; filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.08)); }
+        .clone-guide-badge {
+            position: absolute; top: 12px; right: 12px;
+            font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+            padding: 5px 10px; border-radius: 999px; border: 1px solid transparent;
+        }
+        .clone-guide-badge.charge { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+        .clone-guide-badge.free { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+        .clone-guide-badge.normal { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .clone-guide-body { padding: 18px 18px 20px; flex: 1; display: flex; flex-direction: column; }
+        .clone-guide-body h3 {
+            font-size: 1rem; font-weight: 800; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+        }
+        .clone-guide-body p { font-size: 0.86rem; color: var(--text-muted); line-height: 1.6; margin: 0 0 12px; flex: 1; }
+        .clone-guide-meta {
+            display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.78rem; font-weight: 600; color: #475569;
+        }
+        .clone-guide-meta span {
+            display: inline-flex; align-items: center; gap: 6px; background: #f8fafc;
+            border: 1px solid #e2e8f0; padding: 5px 10px; border-radius: 999px;
+        }
+        .clone-flow {
+            background: var(--bg-card); border: 1px dashed #cbd5e1; border-radius: 16px;
+            padding: 20px 18px 18px;
+        }
+        .clone-flow-title {
+            font-size: 0.92rem; font-weight: 800; margin-bottom: 16px; color: var(--text-main);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .clone-flow-steps {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; position: relative;
+        }
+        .clone-flow-step {
+            text-align: center; padding: 14px 10px 12px; border-radius: 14px; background: #f8fafc;
+            border: 1px solid #e2e8f0; position: relative;
+        }
+        .clone-flow-step-icon {
+            width: 44px; height: 44px; margin: 0 auto 10px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+            background: #fff; border: 1px solid #e2e8f0; color: var(--accent-blue);
+        }
+        .clone-flow-step strong { display: block; font-size: 0.82rem; margin-bottom: 4px; color: var(--text-main); }
+        .clone-flow-step span { font-size: 0.74rem; color: var(--text-muted); line-height: 1.45; display: block; }
+        .clone-flow-step:not(:last-child)::after {
+            content: '→'; position: absolute; right: -8px; top: 50%; transform: translateY(-50%);
+            color: #94a3b8; font-weight: 700; font-size: 0.9rem; z-index: 1;
+        }
+        .clone-tip {
+            margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: #eff6ff;
+            border: 1px solid #bfdbfe; font-size: 0.84rem; color: #1e40af; line-height: 1.55;
+            display: flex; gap: 10px; align-items: flex-start;
+        }
+        .clone-tip i { margin-top: 2px; flex-shrink: 0; }
+        @media (max-width: 900px) {
+            .clone-guide-grid { grid-template-columns: 1fr; }
+            .clone-flow-steps { grid-template-columns: 1fr 1fr; }
+            .clone-flow-step:not(:last-child)::after { display: none; }
+        }
+        @media (max-width: 520px) {
+            .clone-guide { padding: 24px 18px; }
+            .clone-flow-steps { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-bar">
+    <a class="logo" href="/">
+        <span class="logo-lockup">
+            <img class="logo-mark logo-img--light" src="/logo/logo_arrow_White.svg" alt="" onerror="this.onerror=null;this.src='logo/logo_arrow_White.svg'">
+            <img class="logo-mark logo-img--dark" src="/logo/logo_arrow_Black.svg" alt="" onerror="this.onerror=null;this.src='logo/logo_arrow_Black.svg'">
+            <span class="logo-wordmark">
+                <img class="logo-img logo-img--light" src="/logo/glotix_Black.svg" alt="Glotix" onerror="this.onerror=null;this.src='logo/glotix_Black.svg'">
+                <img class="logo-img logo-img--dark" src="/logo/glotix_White.svg" alt="" onerror="this.onerror=null;this.src='logo/glotix_White.svg'">
+                <img class="logo-i-tittle" src="/logo/glotix_Triangle.svg" alt="" onerror="this.onerror=null;this.src='logo/glotix_Triangle.svg'">
+            </span>
+        </span>
+    </a>
+    <div class="user-zone">
+        <button type="button" class="theme-toggle" data-theme-toggle title="Theme" aria-label="Toggle theme"><i class="fa-solid fa-moon icon-moon"></i><i class="fa-solid fa-sun icon-sun"></i></button>
+
+        <button class="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i> Menu</button>
+        <div class="dropdown-panel" id="mainMenuDropdown">
+            <div class="auth-buttons" id="guestMenu">
+                <a href="/login" class="btn-login">Login</a>
+                <a href="/signup" class="btn-signup">Sign up</a>
+            </div>
+            <div class="logged-in-box" id="userMenu">
+                <div class="user-name">
+                    <img id="menuAvatar" class="user-avatar" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="User">
+                    <span id="menuUserName">My Account</span>
+                </div>
+                <a href="/pricing" class="balance-text" style="text-decoration:none;cursor:pointer;"><i class="fas fa-font"></i> <span id="menuCredits">...</span> chars</a>
+            </div>
+            <hr class="menu-divider">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="/dubbing"><i class="fa-regular fa-file-video"></i> Dubbing Studio</a>
+            <a href="/tts"><i class="fa-regular fa-comment-dots"></i> Text to Speech</a>
+            <a href="/video-creation"><i class="fa-regular fa-image"></i> Image Studio</a>
+            <hr class="menu-divider">
+            <a href="/history"><i class="fa-regular fa-folder-open"></i> My Files</a>
+            <a href="/developer" class="menu-item" style="background:#f0f9ff;color:#0284c7;border:1px solid #bae6fd;"><i class="fas fa-code"></i> Developer API</a>
+            <a href="/pricing" class="menu-item" style="background:#eff6ff;color:#007aff;border:1px solid #bfdbfe;margin-top:5px;margin-bottom:5px;"><i class="fas fa-arrow-up-right-from-square"></i> Upgrade Plan</a>
+            <button class="menu-item logout-btn" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <label class="upload-box" id="dropZone">
+        <input type="file" id="mediaFile" class="media-file-input" accept="video/*,audio/*,.mp4,.mov,.mkv,.webm,.mp3,.wav,.m4a">
+        <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+        <div class="upload-title">Drag & Drop or Click to Upload</div>
+        <p class="upload-subtitle" id="uploadConstraintsHint">Supports MP4, MOV, MP3, WAV (Max 500MB)</p>
+        <p class="upload-subtitle" id="selectedFileNameLine" style="display:none;margin-top:8px;font-weight:600;color:var(--text-main);"></p>
+    </label>
+
+    <div class="dub-media-row" id="dubMediaRow">
+        <aside class="srt-panel" id="srtEditorPanel" aria-label="Script / SRT editor">
+            <div class="srt-panel-head">
+                <h3><i class="fa-regular fa-closed-captioning"></i> Script (SRT)</h3>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="srt-zoom-controls" title="Ctrl + mouse wheel to zoom text">
+                        <button type="button" id="srtZoomOutBtn" aria-label="Zoom out">−</button>
+                        <span class="srt-zoom-label" id="srtZoomLabel">100%</span>
+                        <button type="button" id="srtZoomInBtn" aria-label="Zoom in">+</button>
+                    </div>
+                    <span id="srtCueCount" style="font-size:0.75rem;font-weight:700;color:var(--text-muted);">0 cues</span>
+                </div>
+            </div>
+            <div class="srt-actions">
+                <button type="button" id="srtExtractBtn" title="Transcribe uploaded media">Extract script</button>
+                <label class="srt-file-btn" for="srtFileInput">Load .srt</label>
+                <input type="file" id="srtFileInput" accept=".srt,text/plain" style="display:none;">
+                <button type="button" id="srtAddCueBtn">Add cue</button>
+                <button type="button" id="srtClearBtn">Clear</button>
+            </div>
+            <div class="srt-status" id="srtStatus" aria-live="polite"></div>
+            <div class="srt-segment-list" id="srtSegmentList">
+                <div class="srt-empty" id="srtEmpty">No cues yet — Extract script or load an .srt file.</div>
+            </div>
+        </aside>
+        <div id="previewArea">
+            <button type="button" id="replaceMediaBtn" class="replace-media-btn" title="Replace current media" aria-label="Replace current media">
+                <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+            </button>
+            <video id="videoPreview" controls></video>
+            <div id="audioPreviewLabel">
+                <i class="fa-solid fa-music fa-3x" style="color:#60a5fa;"></i>
+                <h4 id="audioFileName" style="margin-top:15px;font-weight:500;"></h4>
+            </div>
+        </div>
+    </div>
+    <div class="controls-row">
+        <div class="dropdown-btn lang-btn src-lang-btn" id="srcLangTrigger" onclick="toggleSrcLangDropdown(event)" style="position:relative;">
+            <span style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                <span id="srcLangFlag"><i class="fa-solid fa-globe" style="font-size:1.1rem;color:#6b7280;"></i></span>
+                <span id="srcLangLabel" style="font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Select video language *</span>
+            </span>
+            <span class="brand-chevron arrow" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
+            <div class="lang-dropdown" onclick="event.stopPropagation()">
+                <input type="text" id="srcLangSearch" class="lang-search" placeholder="Search source language...">
+                <div id="srcLangList" class="lang-list"></div>
+            </div>
+        </div>
+
+        <div class="lang-direction-arrow" aria-hidden="true">
+            <i class="fa-solid fa-arrow-right-long"></i>
+        </div>
+
+        <div class="dropdown-btn lang-btn" id="langTrigger" onclick="toggleLangDropdown(event)">
+            <span style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                <span id="targetLangFlag"><i class="fa-solid fa-language" style="font-size:1.2rem;color:#6b7280;"></i></span>
+                <span id="targetLangLabel" style="font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Select languages</span>
+            </span>
+            <span style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <span class="badge" id="langCountBadge" style="display:none;">0</span>
+                <span class="brand-chevron arrow" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
+            </span>
+            <div class="lang-dropdown" onclick="event.stopPropagation()">
+                <div id="selectedLangsDisplay" class="selected-langs-display"></div>
+                <input type="text" id="langSearch" class="lang-search" placeholder="Search language or dialect...">
+                <div id="langList" class="lang-list"></div>
+            </div>
+        </div>
+        <div style="position:relative;" id="voiceSelectWrap">
+            <button class="dropdown-btn" id="voiceSelectBtn" type="button">
+                <span style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                    <span id="voiceSelectIcon"><i class="fa-solid fa-microphone-lines" style="font-size:1.1rem;color:#6b7280;"></i></span>
+                    <span id="voiceSelectLabel" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Default Voice</span>
+                </span>
+                <span class="brand-chevron" id="voiceSelectArrow" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
+            </button>
+            <div class="voice-dropdown-panel" id="voiceDropdownPanel">
+                <div class="voice-option-basic" id="voiceOptClone" onclick="selectVoiceOption('clone','',this,'','Voice Clone')">
+                    <i class="fa-regular fa-copy"></i>
+                    <div style="display:flex;flex-direction:column;">
+                        <span style="font-weight:600;font-size:0.95rem;color:var(--text-main);">Voice Clone</span>
+                    </div>
+                </div>
+                <div class="voice-option-basic" id="voiceOptSaved" style="display:none;" onclick="applySavedVoiceSelection()">
+                    <i class="fa-solid fa-fingerprint"></i>
+                    <div style="display:flex;flex-direction:column;">
+                        <span style="font-weight:600;font-size:0.95rem;color:var(--text-main);">My Saved Voice</span>
+                    </div>
+                </div>
+                <div class="voice-option-basic selected" id="voiceOptDefault" onclick="selectVoiceOption('default','',this,'','Default Voice')">
+                    <i class="fa-solid fa-robot"></i>
+                    <div style="display:flex;flex-direction:column;">
+                        <span style="font-weight:600;font-size:0.95rem;color:var(--text-main);">Default Voice</span>
+                    </div>
+                </div>
+                <div style="font-size:0.75rem;font-weight:700;color:#9ca3af;margin-top:10px;margin-bottom:5px;padding:0 5px;">PREMIUM VOICES</div>
+                <div id="supabaseVoicesContainer" class="premium-voices-grid">
+                    <div style="padding:10px;text-align:center;color:#9ca3af;font-size:0.85rem;width:100%;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="qualityModeRow" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 4px;">
+        <span style="font-size:0.85rem;font-weight:600;color:var(--text-muted);white-space:nowrap;">
+            <i class="fa-solid fa-bolt" style="margin-right:6px;color:var(--accent-blue);"></i>Mode
+        </span>
+        <div role="group" aria-label="Dubbing quality mode" id="qualityModeToggle" style="display:inline-flex;background:var(--bg-soft,#f3f4f6);border-radius:10px;padding:3px;gap:2px;">
+            <button type="button" class="speaker-mode-btn active" data-quality-mode="fast">Fast</button>
+            <button type="button" class="speaker-mode-btn" data-quality-mode="studio">Studio</button>
+        </div>
+        <span id="qualityModeHint" style="font-size:0.78rem;color:#94a3b8;">Fast = ElevenLabs Flash, no GPU wait</span>
+    </div>
+
+    <div id="speakerModeRow">
+        <span style="font-size:0.85rem;font-weight:600;color:var(--text-muted);white-space:nowrap;">
+            <i class="fa-solid fa-users" style="margin-right:6px;color:var(--accent-blue);"></i>Speakers
+        </span>
+        <div role="group" aria-label="Speaker clone mode" id="speakerModeToggle" style="display:inline-flex;background:var(--bg-soft,#f3f4f6);border-radius:10px;padding:3px;gap:2px;">
+            <button type="button" class="speaker-mode-btn active" data-speaker-mode="auto">Auto</button>
+            <button type="button" class="speaker-mode-btn" data-speaker-mode="single">Single</button>
+            <button type="button" class="speaker-mode-btn" data-speaker-mode="multi">Multi</button>
+        </div>
+    </div>
+
+    <div id="lipsyncRow">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;font-weight:600;color:var(--text-main);">
+            <input type="checkbox" id="enableLipsyncToggle" style="width:18px;height:18px;accent-color:var(--accent-blue);">
+            <span><i class="fa-solid fa-face-smile" style="margin-right:6px;color:var(--accent-blue);"></i>Lip-sync</span>
+        </label>
+    </div>
+
+    <button id="dubBtn" class="start-btn" style="display:none;">Extract Script</button>
+    <div id="progressArea" class="progress-box">
+        <div style="font-weight:600;color:#374151;display:flex;justify-content:space-between;font-size:0.95rem;">
+            <span id="statusTxt">Initializing...</span>
+            <span id="statusPct">0%</span>
+        </div>
+        <div class="progress-bar-bg"><div id="progFill" class="progress-bar-fill"></div></div>
+        <button id="cancelDubBtn" type="button" class="cancel-dub-btn" style="display:none;">Cancel &amp; delete permanently</button>
+    </div>
+    <div id="resultsCard" style="display:none;">
+        <div class="cinema-results">
+            <div class="cinema-player">
+                <div id="dlArea" class="dl-corner">
+                    <a id="masterDl" href="#" target="_blank" class="dl-icon-btn" title="Download"><i class="fa-solid fa-download"></i></a>
+                </div>
+                <div id="mainPlayer" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                    <i class="fa-solid fa-circle-notch fa-spin fa-2x" style="color:#6b7280;margin-bottom:15px;"></i>
+                    <p style="color:#9ca3af;font-weight:500;font-size:0.95rem;" id="processingTxt">Processing...</p>
+                </div>
+            </div>
+            <aside class="cinema-sidebar" id="cinemaLangs"></aside>
+        </div>
+    </div>
+
+    <div id="recentJobsSection" class="recent-works-section" style="display:none;" hidden aria-hidden="true">
+        <h3 style="font-size:1.05rem;font-weight:700;color:var(--text-main);margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+            <i class="fa-regular fa-clock" style="color:var(--text-muted);"></i> Recent Works
+        </h3>
+        <div id="recentJobsGrid">
+            <div style="grid-column:1/-1;text-align:center;padding:24px;color:#9ca3af;font-size:0.9rem;">Session-only dubbing — no history saved</div>
+        </div>
+    </div>
+
+    <!-- ══ Dubbing Studio — before / after showcase ══ -->
+    <section class="dub-showcase" id="dubShowcase" aria-labelledby="dubShowcaseTitle">
+        <div class="dub-showcase-head">
+            <span class="dub-showcase-eyebrow">How it works</span>
+            <h2 id="dubShowcaseTitle">Professional AI dubbing — from one upload to global reach</h2>
+            <p>
+                Dubbing Studio turns any video or audio into a multilingual production. Upload your file,
+                set the <strong>source language</strong> and one or more <strong>target languages</strong>,
+                then Glotix separates vocals, translates the script, synthesizes natural speech (with optional
+                voice clone), and mixes the new voice back with your original background music and effects.
+            </p>
+        </div>
+
+        <div class="dub-features">
+            <div class="dub-feature">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <h4>Smart translation</h4>
+                <p>Regional AI translation adapts tone and dialect — not word-for-word subtitles.</p>
+            </div>
+            <div class="dub-feature">
+                <i class="fa-solid fa-microphone-lines"></i>
+                <h4>Voice clone</h4>
+                <p>Clone the original speaker from your upload, or use Premium voices / saved samples.</p>
+            </div>
+            <div class="dub-feature">
+                <i class="fa-solid fa-music"></i>
+                <h4>Mix preserved</h4>
+                <p>Background music and sound effects stay intact while vocals are replaced.</p>
+            </div>
+        </div>
+
+        <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:16px;color:var(--text-main);">
+            <i class="fa-solid fa-film" style="color:var(--accent-blue);margin-right:8px;"></i>
+            Before &amp; after — real Glotix output
+        </h3>
+        <p style="color:var(--text-muted);font-size:0.92rem;margin-bottom:20px;line-height:1.6;">
+            Same talking-photo portrait: <strong>English source</strong> on the left,
+            <strong>Italian dub</strong> produced in this studio on the right.
+        </p>
+
+        <div class="ba-grid">
+            <div class="ba-card">
+                <div class="ba-card-head">
+                    <span class="ba-badge before">Before</span>
+                    <span class="ba-lang">
+                        <span class="lang-flag-shell" style="--flag-size:20px"><img class="lang-flag" src="https://hatscripts.github.io/circle-flags/flags/us.svg" alt=""></span>
+                        English (source)
+                    </span>
+                </div>
+                <div class="ba-video-wrap">
+                    <video id="dubDemoBefore" controls playsinline preload="metadata" poster="/demo/portrait.png">
+                        <source src="/demo/EN.mp4" type="video/mp4">
+                    </video>
+                    <div class="ba-placeholder" id="dubDemoBeforePh">
+                        <img src="/demo/portrait.png" alt="Demo portrait" loading="lazy" decoding="async" width="360" height="640">
+                        <p>English talking-head<br>from a single photo</p>
+                    </div>
+                </div>
+            </div>
+            <div class="ba-card">
+                <div class="ba-card-head">
+                    <span class="ba-badge after">After</span>
+                    <span class="ba-lang">
+                        <span class="lang-flag-shell" style="--flag-size:20px"><img class="lang-flag" src="https://hatscripts.github.io/circle-flags/flags/it.svg" alt=""></span>
+                        Italian (Glotix)
+                    </span>
+                </div>
+                <div class="ba-video-wrap">
+                    <video id="dubDemoAfter" controls playsinline preload="metadata" poster="/demo/portrait.png">
+                        <source src="/demo/IT.mp4" type="video/mp4">
+                    </video>
+                    <div class="ba-placeholder" id="dubDemoAfterPh">
+                        <img src="/demo/portrait.png" alt="Demo portrait" loading="lazy" decoding="async" width="360" height="640">
+                        <p>Italian dubbed output<br>via Dubbing Studio</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ba-script-box">
+            <h4><i class="fa-solid fa-quote-left" style="color:var(--accent-blue);"></i> Source script (English)</h4>
+            <pre id="dubDemoScriptText">Loading script…</pre>
+        </div>
+
+        <div class="ba-workflow">
+            <span class="ba-step-pill"><i class="fa-solid fa-upload" style="margin-right:6px;opacity:0.7;"></i> 1. Upload video or audio</span>
+            <span class="ba-step-pill"><i class="fa-solid fa-language" style="margin-right:6px;opacity:0.7;"></i> 2. Pick source → target language</span>
+            <span class="ba-step-pill"><i class="fa-solid fa-clone" style="margin-right:6px;opacity:0.7;"></i> 3. Choose voice clone or premium voice</span>
+            <span class="ba-step-pill"><i class="fa-solid fa-download" style="margin-right:6px;opacity:0.7;"></i> 4. Download from My Files</span>
+        </div>
+    </section>
+</div>
+
+<div id="voiceSaveModal" class="voice-save-modal" style="display:none;" role="dialog">
+    <div class="voice-save-modal-backdrop" onclick="dismissVoiceSaveModal()"></div>
+    <div class="voice-save-modal-card">
+        <h3 id="voiceSaveModalTitle">Save this cloned voice?</h3>
+        <p id="voiceSaveModalText">Cloning finished successfully. Do you want to save this voice to your library? Enter a name and tap Save. Next time you pick this sample, dubbing will be faster.</p>
+        <label for="voiceCloneNameInput" style="display:block;font-weight:600;margin:12px 0 6px;font-size:0.9rem;">Sample Name</label>
+        <input type="text" id="voiceCloneNameInput" placeholder="e.g. My Official Voice" maxlength="120" style="width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:1rem;margin-bottom:16px;">
+        <div class="voice-save-modal-actions">
+            <button type="button" class="btn-secondary" onclick="dismissVoiceSaveModal()">Not now</button>
+            <button type="button" class="btn-primary" id="voiceSaveConfirmBtn" onclick="confirmSaveVoiceProfile()">Save sample</button>
+        </div>
+    </div>
+</div>
+
+<div id="toasts"></div>
+<audio id="voicePreviewPlayer" style="display:none;"></audio>
+
+<script src="js/shared/theme.js?v=2"></script>
+<script src="js/config.js"></script>
+<!-- shared -->
+<script src="js/shared/01-api-base.js?v=17"></script>
+<script src="js/shared/02-toast.js?v=17"></script>
+<script src="js/shared/03-jwt.js?v=17"></script>
+<script src="js/shared/04-auth-headers.js?v=17"></script>
+<script src="js/shared/06-guest-menu.js?v=17"></script>
+<script src="js/shared/07-supabase-client.js?v=17"></script>
+<script src="js/shared/08-credits-helpers.js?v=19"></script>
+<script src="js/shared/10-menu-ui.js?v=17"></script>
+<script src="js/shared/11-menu-actions.js?v=17"></script>
+<script src="js/shared/05-session.js?v=17"></script>
+<script src="js/shared/09-credits-fetch.js?v=17"></script>
+<script src="js/shared/12-auth-sync.js?v=17"></script>
+<script src="js/shared/13-connection.js?v=18"></script>
+<script src="js/shared/15-api-errors.js?v=20"></script>
+<script src="js/shared/16-credits-modal.js?v=20260621e"></script>
+<script src="js/shared/18-credit-balance.js?v=20260713"></script>
+<script src="js/shared/14-init.js?v=18"></script>
+<script>
+    const voiceSelectBtn  = document.getElementById('voiceSelectBtn');
+    const voicePanel      = document.getElementById('voiceDropdownPanel');
+    const voiceArrow      = document.getElementById('voiceSelectArrow');
+    const voiceLabel      = document.getElementById('voiceSelectLabel');
+    const voicesContainer = document.getElementById('supabaseVoicesContainer');
+    const previewPlayer   = document.getElementById('voicePreviewPlayer');
+    window.voiceMode = 'default'; window.selectedSample = ''; window.selectedSampleText = ''; window.forceEngine = ''; window.selectedCloneSource = '';
+    window.speakerMode = 'auto';
+    window.enableLipsync = false;
+    window.dubbingQuality = 'fast';
+    window.selectedElevenLabsVoiceId = '';
+    (function initQualityModeToggle() {
+        const root = document.getElementById('qualityModeToggle');
+        const hint = document.getElementById('qualityModeHint');
+        if (!root) return;
+        root.querySelectorAll('.speaker-mode-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                root.querySelectorAll('.speaker-mode-btn').forEach((b) => b.classList.remove('active'));
+                btn.classList.add('active');
+                window.dubbingQuality = btn.getAttribute('data-quality-mode') || 'studio';
+                if (hint) {
+                    hint.textContent = window.dubbingQuality === 'fast'
+                        ? 'Fast = ElevenLabs Flash, no stem separation (Default/Premium voice)'
+                        : 'Studio keeps music isolation + clone';
+                }
+                if (window.dubbingQuality === 'fast'
+                    && window.voiceMode === 'clone'
+                    && !String(window.selectedSample || '').trim()
+                    && !String(window.selectedElevenLabsVoiceId || '').trim()) {
+                    window.showToast?.('Fast Dub works best with Default or Premium voice', 'info');
+                }
+            });
+        });
+    })();
+    (function initSpeakerModeToggle() {
+        const root = document.getElementById('speakerModeToggle');
+        if (!root) return;
+        root.querySelectorAll('.speaker-mode-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                root.querySelectorAll('.speaker-mode-btn').forEach((b) => b.classList.remove('active'));
+                btn.classList.add('active');
+                window.speakerMode = btn.getAttribute('data-speaker-mode') || 'auto';
+            });
+        });
+    })();
+    (function initLipsyncToggle() {
+        const box = document.getElementById('enableLipsyncToggle');
+        if (!box) return;
+        box.addEventListener('change', () => {
+            window.enableLipsync = !!box.checked;
+        });
+    })();
+    if (voiceSelectBtn) voiceSelectBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!voicePanel) return;
+        const opening = !voicePanel.classList.contains('open');
+        if (typeof window.closeAllSiteDropdowns === 'function') window.closeAllSiteDropdowns();
+        if (opening) {
+            voicePanel.classList.add('open');
+            voiceSelectBtn.classList.add('active');
+            voiceSelectBtn.setAttribute('aria-expanded', 'true');
+            if (voiceArrow) voiceArrow.style.transform = 'rotate(180deg)';
+        }
+    });
+    document.addEventListener('click', function(e) {
+        if (!voicePanel || !voiceSelectBtn) return;
+        if (!e.target.closest('#voiceSelectWrap')) {
+            voicePanel.classList.remove('open'); voiceSelectBtn.classList.remove('active'); if (voiceArrow) voiceArrow.style.transform = 'rotate(0deg)';
+        }
+    });
+    function selectVoiceOption(mode, sampleUrl, element, engine='', name='') {
+        window.voiceMode = mode; window.selectedSample = sampleUrl; window.selectedSampleText = ''; window.forceEngine = engine;
+        window.selectedCloneSource = sampleUrl ? (window.selectedCloneSource || 'premium') : 'video';
+        if (!sampleUrl || mode === 'default') {
+            window.selectedElevenLabsVoiceId = '';
+        } else if (element && element.getAttribute) {
+            window.selectedElevenLabsVoiceId = (element.getAttribute('data-elevenlabs-voice-id') || '').trim();
+        }
+        const savedOpt = document.getElementById('voiceOptSaved');
+        window.usingSavedVoice = !!(sampleUrl && ((savedOpt && element === savedOpt) || (element && element.classList && element.classList.contains('voice-saved-user-card'))));
+        document.getElementById('voiceOptClone').classList.remove('selected');
+        document.getElementById('voiceOptDefault').classList.remove('selected');
+        if (savedOpt) savedOpt.classList.remove('selected');
+        document.querySelectorAll('.voice-avatar-card').forEach(o => o.classList.remove('selected'));
+        if (element) element.classList.add('selected');
+        let displayName = 'Voice Clone';
+        if (mode === 'clone' && !sampleUrl) displayName = 'Voice Clone';
+        else if (mode === 'default') displayName = 'Default Voice';
+        else displayName = name || 'Voice Clone';
+        if (typeof window.updateVoiceSelectTriggerUI === 'function') {
+            window.updateVoiceSelectTriggerUI({ mode, sampleUrl, name: displayName, element });
+        } else {
+            voiceLabel.textContent = displayName;
+        }
+        voicePanel.classList.remove('open'); voiceSelectBtn.classList.remove('active'); voiceArrow.style.transform = 'rotate(0deg)';
+        if (window.DubbingApp?.voiceSave?.onVoiceSelectionChanged) {
+            window.DubbingApp.voiceSave.onVoiceSelectionChanged(mode, sampleUrl);
+        }
+    }
+    function playVoicePreview(e, url, cardElement) {
+        e.stopPropagation();
+        document.querySelectorAll('.voice-play-overlay').forEach(o => { o.classList.remove('playing'); o.innerHTML = '<i class="fa-solid fa-play"></i>'; });
+        const overlay = cardElement.querySelector('.voice-play-overlay');
+        if (previewPlayer.src === url && !previewPlayer.paused) { previewPlayer.pause(); }
+        else {
+            previewPlayer.src = url; previewPlayer.play(); overlay.classList.add('playing'); overlay.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            previewPlayer.onended = () => { overlay.classList.remove('playing'); overlay.innerHTML = '<i class="fa-solid fa-play"></i>'; };
+        }
+    }
+    async function loadSupabaseVoices() {
+        try {
+            const supa = window.getSupabase();
+            if (!supa) return;
+            const { data, error } = await supa.from('voices').select('*').order('created_at', { ascending: true });
+            if (typeof renderPremiumVoicesGrid === 'function') { renderPremiumVoicesGrid(error || !data ? [] : data); return; }
+            if (error || !data || data.length === 0) { voicesContainer.innerHTML = '<div style="padding:10px;color:#9ca3af;font-size:0.85rem;width:100%;text-align:center;">No voices available</div>'; return; }
+            const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+            voicesContainer.innerHTML = data.map(voice => {
+                const url = esc(voice.sample_url), name = esc(voice.name), engine = esc(voice.engine||'');
+                const avatar = esc(voice.avatar_url||('https://ui-avatars.com/api/?name='+encodeURIComponent(voice.name||'V')+'&background=f3f4f6&color=111827'));
+                const sel = window.selectedSample === voice.sample_url ? ' selected' : '';
+                return `<div class="voice-avatar-card${sel}" data-sample-url="${url}" data-name="${name}" data-engine="${engine}" data-avatar-url="${avatar}" onclick="onPremiumVoiceCardClick(this)"><div class="voice-avatar-wrapper"><img src="${avatar}" alt="${name}"><div class="voice-play-overlay" onclick="playVoicePreview(event,'${url}',this.parentElement.parentElement)"><i class="fa-solid fa-play"></i></div></div><span class="voice-name-label">${name}</span></div>`;
+            }).join('');
+        } catch (err) { if (typeof renderPremiumVoicesGrid === 'function') renderPremiumVoicesGrid([]); else voicesContainer.innerHTML = ''; }
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(loadSupabaseVoices, 500);
+        if (typeof loadUserVoiceClones === 'function') loadUserVoiceClones();
+        if (typeof loadSavedVoiceProfile === 'function') loadSavedVoiceProfile().then(profile => { if (profile) { const opt = document.getElementById('voiceOptSaved'); if (opt) opt.style.display = 'flex'; } });
+    });
+    function toggleLangDropdown(event) {
+        event.stopPropagation();
+        const trigger = document.getElementById('langTrigger');
+        const opening = !trigger?.classList.contains('active');
+        if (typeof window.closeAllSiteDropdowns === 'function') window.closeAllSiteDropdowns();
+        if (opening) trigger?.classList.add('active');
+    }
+    document.addEventListener('click', function(e) { if (!e.target.closest('.lang-btn')) { document.getElementById('langTrigger')?.classList.remove('active'); document.getElementById('srcLangTrigger')?.classList.remove('active'); } });
+    function updateLangBadge() { const badge = document.getElementById('langCountBadge'); const count = window.selectedLangs ? window.selectedLangs.size : 0; if (!badge) return; if (count > 0) { badge.textContent = count; badge.style.display = 'inline-flex'; } else { badge.style.display = 'none'; } }
+    window.addEventListener('load', () => setInterval(updateLangBadge, 500));
+
+    (function initDubbingBeforeAfterDemo() {
+        function bindVideoPlaceholder(videoId, placeholderId) {
+            const video = document.getElementById(videoId);
+            const ph = document.getElementById(placeholderId);
+            if (!video || !ph) return;
+            function sync() {
+                const ready = video.readyState >= 1 && !video.error;
+                ph.classList.toggle('hidden', ready);
+                video.style.visibility = ready ? 'visible' : 'hidden';
+            }
+            video.addEventListener('loadedmetadata', sync);
+            video.addEventListener('error', function () {
+                ph.classList.remove('hidden');
+                video.style.visibility = 'hidden';
+            });
+            sync();
+        }
+        bindVideoPlaceholder('dubDemoBefore', 'dubDemoBeforePh');
+        bindVideoPlaceholder('dubDemoAfter', 'dubDemoAfterPh');
+
+        fetch('/demo/script-en.txt')
+            .then(function (r) { return r.ok ? r.text() : ''; })
+            .then(function (t) {
+                const el = document.getElementById('dubDemoScriptText');
+                if (el && t) el.textContent = t.trim();
+            })
+            .catch(function () {});
+    })();
+</script>
+<script src="js/languages.js?v=20260714c"></script>
+<script src="js/src-lang-picker.js?v=20260714c"></script>
+<!-- Dubbing UI modules (order matters) -->
+<script src="js/dubbing/01-state.js?v=17"></script>
+<script src="js/dubbing/16-lang-picker.js?v=20260717f"></script>
+<script src="js/dubbing/17-dub-lang-context.js?v=1"></script>
+<script src="js/dubbing/02-api-config.js?v=20260711e"></script>
+<script src="js/dubbing/03-api-fetch.js?v=16"></script>
+<script src="js/dubbing/05-voice-payload.js?v=16"></script>
+<script src="js/dubbing/06-voice-html.js?v=20260621e"></script>
+<script src="js/dubbing/07-voice-api.js?v=16"></script>
+<script src="js/dubbing/08-voice-save-modal.js?v=20260717a"></script>
+<script src="js/dubbing/09-voice-recorder.js?v=20260621"></script>
+<script src="js/dubbing/04-job-status.js?v=20260714c"></script>
+<script src="js/dubbing/18-stream-player.js?v=1"></script>
+<script src="js/dubbing/10-ui-progress.js?v=99"></script>
+<script src="js/dubbing/11-upload-r2.js?v=17"></script>
+<script src="js/dubbing/11b-browser-audio-extract.js?v=1"></script>
+<script src="js/dubbing/12-start-dubbing.js?v=20260718a"></script>
+<script src="js/dubbing/13-recent-jobs.js?v=20260717b"></script>
+<script src="js/dubbing/17-pending-jobs-resume.js?v=20260714b"></script>
+<script src="js/dubbing/14-media-input.js?v=20260718a"></script>
+<script src="js/dubbing/20-srt-editor.js?v=10"></script>
+<script src="js/dubbing/19-cost-estimate.js?v=20260717b"></script>
+<script src="js/dubbing/15-lang-attention.js?v=20"></script>
+<script src="js/dubbing/99-init.js?v=20260717b"></script>
+</body>
+</html>
