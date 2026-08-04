@@ -526,6 +526,10 @@
 			segments: translated,
 			script_segments: translated
 		};
+		if (Number.isFinite(durationSeconds) && durationSeconds > 0) {
+			body.duration_sec = durationSeconds;
+			body.media_duration = durationSeconds;
+		}
 		if (audioUploadedKey && preparedMedia?.mode === 'audio-only') {
 			body.audio_file_key = audioUploadedKey;
 		}

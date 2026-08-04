@@ -478,9 +478,43 @@
     return _postCheckout({ price_id: 'custom', custom_amount_usd: Number(usd) }, btn);
   }
 
+  // # FN mergeStripeTopUps
+  // # AR Merge API Stripe price IDs with local display copy; drop legacy price_char_* keys.
+  // # KW نقاط,credits,billing,Stripe,purchase
+  function mergeStripeTopUps(topUps) {
+    const merged = {};
+    // Always keep Free (not a Stripe price).
+    merged.price_char_free = { ...DEFAULT_CHARACTER_PACKS.price_char_free };
+    const api = topUps && typeof topUps === 'object' ? topUps : {};
+    Object.entries(api).forEach(([priceId, pack]) => {
+      if (!pack || typeof pack !== 'object') return;
+      // Skip non-Stripe placeholder keys if API somehow returns them.
+      if (String(priceId).startsWith('price_char_') && priceId !== 'price_char_free') return;
+      const fallback =
+        Object.values(DEFAULT_CHARACTER_PACKS).find(
+          (p) =>
+            (pack.tier && p.tier === pack.tier) ||
+            (pack.credits != null && p.credits === pack.credits),
+        ) || {};
+      merged[priceId] = {
+        ...fallback,
+        ...pack,
+        // Ensure Upgrade uses the real Stripe price id from the object key.
+        tier: pack.tier || fallback.tier,
+        credits: pack.credits != null ? pack.credits : fallback.credits,
+        amount_cents: pack.amount_cents != null ? pack.amount_cents : fallback.amount_cents,
+        name: pack.name || fallback.name,
+        features: pack.features || fallback.features,
+        includes: pack.includes || fallback.includes,
+        popular: pack.popular != null ? pack.popular : fallback.popular,
+      };
+    });
+    return merged;
+  }
+
   // # FN loadAndRenderPricingPackages
   // # AR دالة loadAndRenderPricingPackages (loadAndRenderPricingPackages)
-  // # KW عام,general
+  // # KW عام,general,نقاط,credits,billing,Stripe
   async function loadAndRenderPricingPackages(gridEl) {
     const apiBase = (
       SL.apiBase ||
@@ -505,7 +539,8 @@
       }
       // # guard — رفض/خروج
       if (data.success && data.top_ups) {
-        const merged = { ...DEFAULT_CHARACTER_PACKS, ...data.top_ups };
+        // # block — use real Stripe price_* ids only (never keep price_char_* paid placeholders)
+        const merged = mergeStripeTopUps(data.top_ups);
         renderPricingPackages(merged, gridEl);
         // # block — فرع شرطي
         return;

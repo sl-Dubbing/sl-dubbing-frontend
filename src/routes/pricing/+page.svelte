@@ -38,10 +38,24 @@
 		loading = true;
 		try {
 			const res = await apiFetch('/api/payments/config', { auth: false });
-			const data = await parseJsonSafe<{ packs?: Pack[] | Record<string, Pack>; packages?: Pack[]; top_ups?: Record<string, Pack> }>(res);
+			const data = await parseJsonSafe<{
+				packs?: Pack[] | Record<string, Pack>;
+				packages?: Pack[];
+				top_ups?: Record<string, Pack>;
+			}>(res);
 			const raw = data?.top_ups || data?.packs || data?.packages || [];
-			packs = Array.isArray(raw) ? raw : Object.entries(raw).map(([id, v]) => ({ ...v, id }));
-		} catch { packs = FALLBACK_PACKS; } finally { if (!packs.length) packs = FALLBACK_PACKS; loading = false; }
+			const fromApi: Pack[] = Array.isArray(raw)
+				? raw
+				: Object.entries(raw).map(([id, v]) => ({ ...v, id }));
+			const paid = fromApi.filter((p) => p.id && !String(p.id).startsWith('price_char_'));
+			const free = FALLBACK_PACKS.find((p) => p.free) || FALLBACK_PACKS[0];
+			packs = paid.length ? [free, ...paid] : FALLBACK_PACKS;
+		} catch {
+			packs = FALLBACK_PACKS;
+		} finally {
+			if (!packs.length) packs = FALLBACK_PACKS;
+			loading = false;
+		}
 	}
 
 	async function checkout(body: Record<string, unknown>) {

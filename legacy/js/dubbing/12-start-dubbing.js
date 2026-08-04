@@ -268,6 +268,11 @@
           if (audioFileKey) {
             requestBody.audio_file_key = audioFileKey;
           }
+          const durationSec = Number(S.selectedMediaDurationSec || 0);
+          if (Number.isFinite(durationSec) && durationSec > 0) {
+            requestBody.duration_sec = durationSec;
+            requestBody.media_duration = durationSec;
+          }
           if (mergedVoice.elevenlabs_voice_id) {
             requestBody.elevenlabs_voice_id = mergedVoice.elevenlabs_voice_id;
           }
