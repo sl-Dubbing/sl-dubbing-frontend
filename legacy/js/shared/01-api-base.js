@@ -7,6 +7,8 @@
 // ---------------------------------------------------------------------
 //  تطبيع_رابط_قاعدة_API     → normalizeApiBaseUrl
 //  التحقق_من_إعداد_Supabase → requireSupabaseConfig
+//  رابط_دفع_سترايب_مسموح    → isAllowedCheckoutRedirectUrl
+//  رابط_تشغيل_وسائط_مسموح   → isAllowedPlaybackUrl
 // =====================================================================
 (function (global) {
   const SL = (global.SLShared = global.SLShared || {});
@@ -46,6 +48,42 @@
     return { url: String(url), key: String(key) };
   }
 
+  // # FN isAllowedCheckoutRedirectUrl
+  // # AR Only Stripe Checkout hosts may receive a browser navigation after /api/payments/checkout.
+  // # KW نقاط,credits,billing,خصم,security
+  function isAllowedCheckoutRedirectUrl(url) {
+    try {
+      const parsed = new URL(String(url || ''));
+      if (parsed.protocol !== 'https:') return false;
+      const host = parsed.hostname.toLowerCase();
+      return host === 'checkout.stripe.com' || host === 'billing.stripe.com';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // # FN isAllowedPlaybackUrl
+  // # AR Restrict player src/href to Glotix CDN, API, R2, same-origin /api, or blob.
+  // # KW رفع,upload,R2,storage,security
+  function isAllowedPlaybackUrl(url) {
+    const value = String(url || '').trim();
+    if (!value || value.toLowerCase().startsWith('javascript:')) return false;
+    if (value.startsWith('blob:')) return true;
+    if (value.startsWith('/api/')) return true;
+    try {
+      const parsed = new URL(value);
+      if (parsed.protocol !== 'https:') return false;
+      const host = parsed.hostname.toLowerCase();
+      if (host === 'cdn.glotix.ai') return true;
+      if (host === 'glotix.ai' || host === 'www.glotix.ai') return true;
+      if (host.endsWith('.modal.run') && host.includes('sl-dubbing')) return true;
+      if (host.endsWith('.r2.cloudflarestorage.com')) return true;
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   const apiBase = normalizeApiBaseUrl();
   global.API_BASE = apiBase;
   SL.apiBase = apiBase;
@@ -53,6 +91,8 @@
   SL.config = {
     normalizeApiBaseUrl,
     requireSupabaseConfig,
+    isAllowedCheckoutRedirectUrl,
+    isAllowedPlaybackUrl,
     DEFAULT_MENU_AVATAR:
       'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
   };

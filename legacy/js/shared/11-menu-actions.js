@@ -65,7 +65,12 @@
         // # try — معالجة عملية قد تفشل
         try {
           // # localStorage — تخزين محلي
-          localStorage.removeItem('token');
+          if (typeof global.clearGlotixToken === 'function') {
+            global.clearGlotixToken();
+          } else {
+            localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
+          }
           for (let i = sessionStorage.length - 1; i >= 0; i--) {
             // # block — تحديث واجهة/DOM
             const k = sessionStorage.key(i);

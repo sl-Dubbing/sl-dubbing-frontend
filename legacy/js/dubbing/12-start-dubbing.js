@@ -26,7 +26,10 @@
     // # شرط — فرع منطقي
     if (!authHeaders) authHeaders = getDubbingApiAuthHeaders();
     // # localStorage — تخزين محلي
-    const token = localStorage.getItem('token');
+    const token =
+      typeof global.readGlotixToken === 'function'
+        ? global.readGlotixToken()
+        : sessionStorage.getItem('token') || localStorage.getItem('token');
 
     // # guard — شرط رفض أو خروج مبكر
     if (!authHeaders || !token) {
@@ -86,13 +89,13 @@
     // # block — تحديث واجهة/DOM
     document.getElementById('cinemaLangs').innerHTML = '';
     S.cinemaResults = {};
-    S.progressPercentMonotonic = 5;
+    S.progressPercentMonotonic = 0;
 
     // Voice-clone credit toast removed (UI cleanup)
 
     // # try — معالجة عملية قد تفشل
     try {
-      DubbingApp.ui.updateDubbingProgressBarUi('Initializing...', 5);
+      DubbingApp.ui.updateDubbingProgressBarUi('Initializing...', 0);
 
       // # شرط
       if (DubbingApp.hyperLive?.isHyperLiveModeEnabled?.()) {
@@ -130,18 +133,18 @@
       // # guard — reuse keys from extract step; never upload the same media twice
       if (S.srtVideoFileKey) {
         urlData = { file_key: S.srtVideoFileKey };
-        DubbingApp.ui.updateDubbingProgressBarUi('Using uploaded video...', 50);
+        DubbingApp.ui.updateDubbingProgressBarUi('Using uploaded video...', 8);
       } else if (S.videoUploadPromise) {
-        DubbingApp.ui.updateDubbingProgressBarUi('Finishing background video upload...', 45);
+        DubbingApp.ui.updateDubbingProgressBarUi('Finishing background video upload...', 12);
         const grant = await S.videoUploadPromise;
         urlData = { file_key: grant.file_key };
         S.srtVideoFileKey = grant.file_key;
       } else if (wantFastAudio && !S.srtAudioFileKey) {
         // Extract path was skipped (user started dub without extract) — prepare now
-        DubbingApp.ui.updateDubbingProgressBarUi('Extracting audio locally...', 8);
+        DubbingApp.ui.updateDubbingProgressBarUi('Extracting audio locally...', 2);
         const prepared = await DubbingApp.browserAudio.prepareFastPathMedia(file, {
           enableLipsync: lipsync,
-          onStatus: (message) => DubbingApp.ui.updateDubbingProgressBarUi(message, 10),
+          onStatus: (message) => DubbingApp.ui.updateDubbingProgressBarUi(message, 4),
         });
         if (prepared.mode === 'audio-first' && prepared.audioFile) {
           const audioGrant = await DubbingApp.upload.uploadMediaFileResumableToR2(
@@ -166,15 +169,15 @@
         }
       } else if (S.srtPreviewFileKey && S.fastPathMode !== 'audio-first') {
         urlData = { file_key: S.srtPreviewFileKey };
-        DubbingApp.ui.updateDubbingProgressBarUi('Using uploaded file...', 50);
+        DubbingApp.ui.updateDubbingProgressBarUi('Using uploaded file...', 8);
       } else {
         urlData = await DubbingApp.upload.uploadMediaFileResumableToR2(file, authHeaders);
         S.srtVideoFileKey = urlData.file_key;
       }
       // # block — رفع أو تخزين ملف
-      S.progressPercentMonotonic = 50;
+      S.progressPercentMonotonic = Math.max(S.progressPercentMonotonic || 0, 18);
       // # HTTP — طلب outbound
-      DubbingApp.ui.updateDubbingProgressBarUi('Sending processing requests...', 50);
+      DubbingApp.ui.updateDubbingProgressBarUi('Sending processing requests...', S.progressPercentMonotonic);
 
       const fileKey = urlData.file_key;
       if (S.fastPathMode !== 'audio-first') {
@@ -365,29 +368,11 @@
             jobId,
             workSignal,
             (jobMeta) => {
-              // # شرط
-              if (DubbingApp.stemPipeline?.applyDubbingStageToProgressUi) {
-                // # block — فرع شرطي
-                DubbingApp.stemPipeline.applyDubbingStageToProgressUi(jobMeta || {});
-              } else {
-                const apiPct = Number(jobMeta?.progress);
-                // # شرط
-                if (Number.isFinite(apiPct) && apiPct > 0) {
-                  S.progressPercentMonotonic = Math.max(
-                    S.progressPercentMonotonic,
-                    // # block — فرع شرطي
-                    Math.min(94, apiPct),
-                  );
-                } else {
-                  S.progressPercentMonotonic = Math.min(94, S.progressPercentMonotonic + 1);
-                }
-                DubbingApp.ui.updateDubbingProgressBarUi(
-                  // # block — تنفيذ منطق — راجع الأسطر التالية
-                  'Dubbing in progress...',
-                  S.progressPercentMonotonic,
-                // # block — تنفيذ منطق — راجع الأسطر التالية
-                );
-              }
+              DubbingApp.ui.applyServerJobProgressToBar(
+                jobMeta || {},
+                Object.keys(S.cinemaResults).length,
+                langArray.length,
+              );
             },
           );
 
@@ -460,13 +445,16 @@
             });
           }
 
-          const nextPct =
-            // # block — تنفيذ منطق — راجع الأسطر التالية
-            50 + (Object.keys(S.cinemaResults).length / langArray.length) * 50;
+          const nextPct = (Object.keys(S.cinemaResults).length / langArray.length) * 100;
           // # block — تنفيذ منطق — راجع الأسطر التالية
           S.progressPercentMonotonic = Math.max(S.progressPercentMonotonic, nextPct);
           // # block — تنفيذ منطق — راجع الأسطر التالية
-          DubbingApp.ui.updateDubbingProgressBarUi('Dubbing in progress...', S.progressPercentMonotonic);
+          DubbingApp.ui.updateDubbingProgressBarUi(
+            Object.keys(S.cinemaResults).length === langArray.length
+              ? 'All Done!'
+              : 'Dubbing in progress...',
+            S.progressPercentMonotonic,
+          );
 
           // # شرط — فرع منطقي
           if (Object.keys(S.cinemaResults).length === langArray.length) {

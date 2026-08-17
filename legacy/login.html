@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com; media-src 'self' blob: https://cdn.glotix.ai; connect-src 'self' https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>Glotix | Login</title>
-    <meta name="description" content="Sign in to your Glotix account to access AI dubbing, TTS, and your file history.">
+    <meta name="description" content="Sign in to Glotix to open dubbing, text to speech, and your files.">
     <meta name="robots" content="noindex, nofollow">
     <link rel="canonical" href="https://glotix.ai/login">
     <link rel="icon" href="/favicon.ico" sizes="any">
@@ -12,7 +14,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/svg+xml" href="/logo/logo_arrow_White.svg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
     <link rel="stylesheet" href="css/logo.css">
     <link rel="stylesheet" href="css/brand-theme.css">
     <link rel="stylesheet" href="css/theme.css">
@@ -28,7 +30,7 @@
       })();
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" integrity="sha384-tuevtT+97g9yLeuT/m52ejUJbc0hzsN6MPLiQEccySreiGjrcgk2tMBJR7/l6HGM" crossorigin="anonymous"></script>
     <style>
         :root {
             --accent-gold: #fcca69; --accent-yellow: #fcca69; --bg-soft: #eeedea;
@@ -46,7 +48,7 @@
             --radius-lg: 24px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: inherit; }
         body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; overflow-x: hidden; line-height: 1.5; }
         .page { max-width: 1200px; margin: 0 auto; padding: 20px 3%; }
 
@@ -156,7 +158,10 @@ let _redirectingAfterAuth = false;
 function persistSessionAndGoHome(session) {
     if (!session || _redirectingAfterAuth) return;
     _redirectingAfterAuth = true;
-    localStorage.setItem('token', session.access_token);
+    try {
+      sessionStorage.setItem('token', session.access_token);
+      localStorage.removeItem('token');
+    } catch (_) { /* ignore */ }
     if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
     window.location.href = '/';
 }
@@ -199,7 +204,10 @@ async function handleLogin(e) {
         const { data, error } = await supaClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
         if (data.session) {
-            localStorage.setItem('token', data.session.access_token);
+            try {
+              sessionStorage.setItem('token', data.session.access_token);
+              localStorage.removeItem('token');
+            } catch (_) { /* ignore */ }
             window.location.href = '/';
         }
     } catch (err) {

@@ -1,8 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com; media-src 'self' blob: https://cdn.glotix.ai; connect-src 'self' https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>My Files | Glotix</title>
     <meta name="description" content="View and manage your dubbed videos and TTS outputs in Glotix My Files.">
     <meta name="robots" content="noindex, nofollow">
@@ -12,7 +14,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/svg+xml" href="/logo/logo_arrow_White.svg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/logo.css">
     <link rel="stylesheet" href="css/brand-theme.css">
@@ -28,7 +30,7 @@
         } catch (e) {}
       })();
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" integrity="sha384-tuevtT+97g9yLeuT/m52ejUJbc0hzsN6MPLiQEccySreiGjrcgk2tMBJR7/l6HGM" crossorigin="anonymous"></script>
     <style>
         :root {
             --accent-gold: #fcca69; --accent-yellow: #fcca69; --bg-soft: #eeedea;
@@ -42,7 +44,7 @@
             --ease-silk: cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: inherit; }
         body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; line-height: 1.5; }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px 3%; }
 
@@ -208,7 +210,7 @@
         #mediaModalBody video { max-height: min(70vh, 520px); }
         .tts-text-preview { padding: 16px; background: var(--bg-page); border-radius: 10px; margin-bottom: 14px; color: var(--text-main); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
 
-        /* Voice clones — circle + name (dedicated gallery) */
+        /* Voice clones � circle + name (dedicated gallery) */
         #fileList.clone-gallery {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -329,7 +331,7 @@
         <div class="fm-header">
             <div>
                 <h1>Your Studio Reel</h1>
-                <p>A cinematic shelf of your dubs — hover to preview, click to open.</p>
+                <p>A cinematic shelf of your dubs � hover to preview, click to open.</p>
             </div>
             <div class="view-switcher" role="tablist" aria-label="View mode">
                 <button type="button" id="viewListBtn" title="List view"><i class="fa-solid fa-list"></i> List</button>
@@ -377,7 +379,7 @@
     <div class="redub-modal-backdrop" onclick="closeRedubModal()"></div>
     <div class="redub-modal-card">
         <h3 id="redubModalTitle">Dub in another language</h3>
-        <p>Uses saved stems and transcript — skips upload, separation, and voice cloning. Faster and lower cost.</p>
+        <p>Uses saved stems and transcript � skips upload, separation, and voice cloning. Faster and lower cost.</p>
         <label for="redubLangSelect" style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:6px;">Target language</label>
         <select id="redubLangSelect" class="redub-lang-select"></select>
         <div class="redub-actions">
@@ -398,22 +400,22 @@
     </div>
 </div>
 
-<script src="js/languages.js"></script>
+<script src="js/languages.js?v=20260817cdn"></script>
 <script src="js/config.js"></script>
-<!-- shared — فهرس عربي أعلى كل ملف في js/shared/ -->
+<!-- shared � ���� ���� ���� �� ��� �� js/shared/ -->
 <script src="js/shared/theme.js?v=2"></script>
-<script src="js/shared/01-api-base.js?v=17"></script>
+<script src="js/shared/01-api-base.js?v=18"></script>
 <script src="js/shared/02-toast.js?v=17"></script>
-<script src="js/shared/03-jwt.js?v=17"></script>
-<script src="js/shared/04-auth-headers.js?v=17"></script>
+<script src="js/shared/03-jwt.js?v=18"></script>
+<script src="js/shared/04-auth-headers.js?v=18"></script>
 <script src="js/shared/06-guest-menu.js?v=17"></script>
 <script src="js/shared/07-supabase-client.js?v=17"></script>
 <script src="js/shared/08-credits-helpers.js?v=19"></script>
 <script src="js/shared/10-menu-ui.js?v=17"></script>
-<script src="js/shared/11-menu-actions.js?v=17"></script>
-<script src="js/shared/05-session.js?v=17"></script>
-<script src="js/shared/09-credits-fetch.js?v=17"></script>
-<script src="js/shared/12-auth-sync.js?v=17"></script>
+<script src="js/shared/11-menu-actions.js?v=18"></script>
+<script src="js/shared/05-session.js?v=18"></script>
+<script src="js/shared/09-credits-fetch.js?v=18"></script>
+<script src="js/shared/12-auth-sync.js?v=18"></script>
 <script src="js/shared/13-connection.js?v=18"></script>
 <script src="js/shared/15-api-errors.js?v=18"></script>
 <script src="js/shared/14-init.js?v=18"></script>
@@ -483,7 +485,7 @@
         return allFiles.find(f => String(f.id) === String(id));
     }
 
-    /* ───── TTS history (localStorage) ───── */
+    /* ????? TTS history (localStorage) ????? */
     function loadTTSHistory() {
         try {
             const raw = localStorage.getItem(TTS_HISTORY_KEY);
@@ -497,7 +499,7 @@
                 output_url: item.output_url || '',
                 created_at: item.created_at,
                 name: item.name || 'Generated Audio',
-                text: item.text || '', // إضافة النص كـ description
+                text: item.text || '', // ����� ���� �� description
                 lang: item.lang || ''
             }));
         } catch (_) { return []; }
@@ -517,7 +519,7 @@
         saveTTSHistoryList(items);
     }
 
-    /* ───── Modal preview ───── */
+    /* ????? Modal preview ????? */
     window.closeMediaModal = function() {
         const modal = document.getElementById('mediaModal');
         const body = document.getElementById('mediaModalBody');
@@ -605,13 +607,13 @@
             document.body.appendChild(a);
             a.click();
             a.remove();
-            window.showToast?.('Opening file — save from browser if download did not start', 'info');
+            window.showToast?.('Opening file � save from browser if download did not start', 'info');
         } finally {
             if (btn) btn.classList.remove('loading');
         }
     };
 
-    /* ───── Loaders ───── */
+    /* ????? Loaders ????? */
     function sortFilesNewestFirst(files) {
         return (files || []).slice().sort((a, b) => {
             const ta = new Date(a.created_at || 0).getTime();
@@ -642,25 +644,11 @@
                     dubFiles = ephemeralDub ? [] : allDbFiles.filter(f => f.type === 'dubbing');
                     let ttsDbFiles = allDbFiles.filter(f => f.type === 'tts');
                     
-                    let toDelete = [];
-                    
-                    // Auto-prune: keep last 5 dubbed videos (FIFO; backend also enforces)
-                    if (!ephemeralDub && dubFiles.length > 5) {
-                        toDelete.push(...dubFiles.slice(5).map(f => ({ type: f.type, id: String(f.id) })));
-                        dubFiles = dubFiles.slice(0, 5);
+                    if (!ephemeralDub && dubFiles.length > 8) {
+                        dubFiles = dubFiles.slice(0, 8);
                     }
-                    
-                    // 💡 التنظيف التلقائي: الإبقاء على 7 فقط في قاعدة البيانات (TTS)
-                    if (ttsDbFiles.length > 7) {
-                        toDelete.push(...ttsDbFiles.slice(7).map(f => ({ type: f.type, id: String(f.id) })));
-                    }
-
-                    if (toDelete.length > 0) {
-                        fetch(`${API}/api/user/files/bulk-delete`, {
-                            method: 'POST',
-                            headers: { ...headers, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ items: toDelete })
-                        }).catch(()=>{});
+                    if (ttsDbFiles.length > 8) {
+                        ttsDbFiles = ttsDbFiles.slice(0, 8);
                     }
                 }
             } catch (e) {}
@@ -687,7 +675,7 @@
         renderFiles();
         scheduleHistoryPollingWhileProcessing();
         if (!silent && hasProcessingDubbingFiles() && typeof window.showToast === 'function') {
-            window.showToast('Some videos are still processing — this page will update automatically', 'info');
+            window.showToast('Some videos are still processing � this page will update automatically', 'info');
         }
     }
 
@@ -702,7 +690,7 @@
         setCount('countTts', allFiles.filter(f => f.type === 'tts').length);
     }
 
-    /* ───── Render ───── */
+    /* ????? Render ????? */
     function getFiltered() {
         return allFiles.filter(f => currentFilter === 'all' || f.type === currentFilter);
     }
@@ -815,7 +803,7 @@
         } else if (isProcessing) {
             inlinePlayer = `
                 <div style="margin: 8px 0; font-size: 0.85rem; color: #1d4ed8; background: #eff6ff; padding: 6px 10px; border-radius: 6px; display: inline-block;">
-                    <i class="fa-solid fa-circle-notch fa-spin"></i> Dubbing in progress — safe to close or refresh this page.
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Dubbing in progress � safe to close or refresh this page.
                 </div>
             `;
         } else if (isTts && !hasUrl) {
@@ -928,7 +916,7 @@
         return `<div class="empty-state"><i class="fa-regular fa-folder-open"></i><div class="empty-title">No files found</div></div>`;
     }
 
-    /* ───── Selection / bulk delete ───── */
+    /* ????? Selection / bulk delete ????? */
     function updateBulkActionsUi() {
         const bulk = document.getElementById('bulkActions');
         const label = document.getElementById('selectedLabel');
@@ -1132,7 +1120,7 @@
                 : (localStorage.getItem('glotix_ephemeral_dub') === '1' ||
                    localStorage.getItem('glotix_ephemeral_dub') === 'true');
         if (ephemeralDub) {
-            window.showToast?.('Dubbing is session-only — history re-dub is disabled', 'info');
+            window.showToast?.('Dubbing is session-only � history re-dub is disabled', 'info');
             return;
         }
         const f = findFileById(jobId);
@@ -1190,7 +1178,7 @@
             return;
         }
         const btn = document.getElementById('redubStartBtn');
-        if (btn) { btn.disabled = true; btn.textContent = 'Starting…'; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Starting�'; }
         try {
             const res = await fetch(`${API}/api/dub/redub`, {
                 method: 'POST',
@@ -1202,7 +1190,7 @@
                 throw new Error(data.message || data.error || `HTTP ${res.status}`);
             }
             closeRedubModal();
-            window.showToast?.('Fast re-dub started — stems reused, no re-cloning', 'success');
+            window.showToast?.('Fast re-dub started � stems reused, no re-cloning', 'success');
             await loadFilesFromApi();
             if (data.job_id) pollRedubJob(data.job_id);
         } catch (err) {

@@ -7,6 +7,9 @@
 // ---------------------------------------------------------------------
 //  فك_جزء_JWT_ك_JSON        → decodeJwtPayloadPartToUtf8
 //  استخراج_معرف_المستخدم_من_التوكن → parseJwtSub
+//  قراءة_توكن_الجلسة         → readGlotixToken
+//  حفظ_توكن_الجلسة          → writeGlotixToken
+//  مسح_توكن_الجلسة          → clearGlotixToken
 // =====================================================================
 (function (global) {
   const SL = global.SLShared;
@@ -50,6 +53,54 @@
     }
   }
 
-  SL.jwt = { decodeJwtPayloadPartToUtf8, parseJwtSub };
+  /** قراءة_توكن_الجلسة — sessionStorage أولاً ثم ترحيل بقايا localStorage */
+  // # FN readGlotixToken
+  // # AR المصادقة والجلسة (readGlotixToken)
+  // # KW مصادقة,auth,JWT,supabase,security
+  function readGlotixToken() {
+    try {
+      let token = sessionStorage.getItem('token') || '';
+      if (!token) {
+        token = localStorage.getItem('token') || '';
+        if (token) {
+          sessionStorage.setItem('token', token);
+          localStorage.removeItem('token');
+        }
+      }
+      return String(token || '').trim();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  /** حفظ_توكن_الجلسة — لا تُبقِ JWT في localStorage بعد XSS دائم */
+  // # FN writeGlotixToken
+  // # AR المصادقة والجلسة (writeGlotixToken)
+  // # KW مصادقة,auth,JWT,supabase,security
+  function writeGlotixToken(token) {
+    try {
+      const value = String(token || '').trim();
+      if (!value) {
+        sessionStorage.removeItem('token');
+        localStorage.removeItem('token');
+        return;
+      }
+      sessionStorage.setItem('token', value);
+      localStorage.removeItem('token');
+    } catch (_) { /* ignore */ }
+  }
+
+  /** مسح_توكن_الجلسة */
+  // # FN clearGlotixToken
+  // # AR المصادقة والجلسة (clearGlotixToken)
+  // # KW مصادقة,auth,JWT,supabase,security
+  function clearGlotixToken() {
+    writeGlotixToken('');
+  }
+
+  SL.jwt = { decodeJwtPayloadPartToUtf8, parseJwtSub, readGlotixToken, writeGlotixToken, clearGlotixToken };
   global.parseJwtSub = parseJwtSub;
+  global.readGlotixToken = readGlotixToken;
+  global.writeGlotixToken = writeGlotixToken;
+  global.clearGlotixToken = clearGlotixToken;
 })(window);

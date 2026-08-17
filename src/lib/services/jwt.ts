@@ -16,6 +16,44 @@ export function decodeJwtPayloadPartToUtf8(b64: string): string {
 	return binary;
 }
 
+// # FN readGlotixToken
+// # AR Read JWT from sessionStorage and migrate leftover localStorage copies.
+// # KW مصادقة,auth,JWT,supabase,security
+export function readGlotixToken(): string {
+	if (typeof sessionStorage === 'undefined') return '';
+	try {
+		let token = sessionStorage.getItem('token') || '';
+		if (!token && typeof localStorage !== 'undefined') {
+			token = localStorage.getItem('token') || '';
+			if (token) {
+				sessionStorage.setItem('token', token);
+				localStorage.removeItem('token');
+			}
+		}
+		return token.trim();
+	} catch {
+		return '';
+	}
+}
+
+// # FN writeGlotixToken
+// # AR Persist JWT in sessionStorage only.
+// # KW مصادقة,auth,JWT,supabase,security
+export function writeGlotixToken(token: string | null | undefined): void {
+	try {
+		const value = String(token || '').trim();
+		if (!value) {
+			sessionStorage.removeItem('token');
+			localStorage.removeItem('token');
+			return;
+		}
+		sessionStorage.setItem('token', value);
+		localStorage.removeItem('token');
+	} catch {
+		/* ignore */
+	}
+}
+
 // # FN parseJwtSub
 // # AR Extract sub claim from access token
 // # KW مصادقة,auth,JWT,supabase

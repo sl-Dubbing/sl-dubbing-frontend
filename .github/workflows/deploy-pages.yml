@@ -29,6 +29,8 @@ jobs:
           cp -r logo site/logo
           cp -r demo site/demo
           cp robots.txt sitemap.xml site/ 2>/dev/null || true
+          mkdir -p site/.well-known
+          cp legacy/.well-known/security.txt site/.well-known/security.txt 2>/dev/null || true
           printf 'glotix.ai\n' > site/CNAME
           touch site/.nojekyll
       - name: Deploy to gh-pages

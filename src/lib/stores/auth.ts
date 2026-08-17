@@ -7,7 +7,7 @@ import { browser } from '$app/environment';
 import { DEFAULT_MENU_AVATAR } from '$lib/config';
 import { apiBase, parseJsonSafe } from '$lib/services/api';
 import { getSupabase } from '$lib/services/supabase';
-import { parseJwtSub } from '$lib/services/jwt';
+import { parseJwtSub, readGlotixToken, writeGlotixToken } from '$lib/services/jwt';
 import { showToast } from '$lib/stores/toast';
 import type { MenuUser } from '$lib/types/user';
 
@@ -62,7 +62,7 @@ function extractCredits(payload: unknown): number | null {
 // # KW مصادقة,auth,JWT,supabase
 export async function clearSessionAndGuestUI(message?: string): Promise<void> {
 	try {
-		localStorage.removeItem('token');
+		writeGlotixToken('');
 		localStorage.removeItem('sl_user_cache');
 	} catch {
 		/* ignore */
@@ -160,7 +160,7 @@ export async function syncAuthSessionAndCreditsToUi(): Promise<void> {
 	} = await supa.auth.getSession();
 
 	if (!session) {
-		const cachedToken = localStorage.getItem('token');
+		const cachedToken = readGlotixToken();
 		const cachedSub = cachedToken ? parseJwtSub(cachedToken) : null;
 		if (cachedToken && cachedSub) {
 			session = {
@@ -183,7 +183,7 @@ export async function syncAuthSessionAndCreditsToUi(): Promise<void> {
 		}
 	}
 
-	localStorage.setItem('token', session.access_token);
+	writeGlotixToken(session.access_token);
 	const baseUser = buildMenuUserProfileFromSupabaseUser(session.user);
 	if (baseUser) {
 		try {

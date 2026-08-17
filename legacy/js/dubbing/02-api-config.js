@@ -88,7 +88,10 @@
   // # KW رفع,upload,R2,storage,تنفيذ,local,cloud,modal,parity
   function resolveLocalStorageUserIdSuffix() {
     // # localStorage — تخزين محلي
-    const token = localStorage.getItem('token') || '';
+    const token =
+      typeof global.readGlotixToken === 'function'
+        ? global.readGlotixToken()
+        : sessionStorage.getItem('token') || localStorage.getItem('token') || '';
     let uid = 'guest';
     // # شرط — فرع منطقي
     if (token && typeof global.parseJwtSub === 'function') {

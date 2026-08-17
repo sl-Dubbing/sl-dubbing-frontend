@@ -87,7 +87,10 @@
       // # شرط — فرع منطقي
       if (!session) {
         // # localStorage — تخزين محلي
-        const cachedToken = localStorage.getItem('token');
+        const cachedToken =
+          typeof global.readGlotixToken === 'function'
+            ? global.readGlotixToken()
+            : sessionStorage.getItem('token') || localStorage.getItem('token');
         const cachedSub =
           cachedToken && typeof global.parseJwtSub === 'function'
             ? global.parseJwtSub(cachedToken)
@@ -125,7 +128,9 @@
       }
 
       // # localStorage — تخزين محلي
-      localStorage.setItem('token', session.access_token);
+      if (typeof global.writeGlotixToken === 'function') {
+        global.writeGlotixToken(session.access_token);
+      }
       // # try — معالجة عملية قد تفشل
       try {
         // # localStorage — تخزين محلي

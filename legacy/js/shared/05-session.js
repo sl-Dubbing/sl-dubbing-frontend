@@ -18,7 +18,12 @@
     // # try — معالجة عملية قد تفشل
     try {
       // # localStorage — تخزين محلي
-      localStorage.removeItem('token');
+      if (typeof global.clearGlotixToken === 'function') {
+        global.clearGlotixToken();
+      } else {
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+      }
       // # localStorage — تخزين محلي
       localStorage.removeItem('sl_user_cache');
     } catch (_) { /* ignore */ }

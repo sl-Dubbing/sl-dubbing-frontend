@@ -16,7 +16,11 @@
   // # KW مصادقة,auth,JWT,supabase
   function getApiAuthHeaders() {
     // # localStorage — تخزين محلي
-    const token = (localStorage.getItem('token') || '').trim();
+    const token = (
+      typeof global.readGlotixToken === 'function'
+        ? global.readGlotixToken()
+        : ''
+    ).trim();
     // # guard — شرط رفض أو خروج مبكر
     if (!token) return null;
     const userId =
@@ -47,7 +51,9 @@
       // # guard — شرط رفض أو خروج مبكر
       if (!session?.access_token || !session?.user?.id) return getApiAuthHeaders();
       // # localStorage — تخزين محلي
-      localStorage.setItem('token', session.access_token);
+      if (typeof global.writeGlotixToken === 'function') {
+        global.writeGlotixToken(session.access_token);
+      }
       // # localStorage — تخزين محلي
       localStorage.setItem(
         'sl_user_cache',

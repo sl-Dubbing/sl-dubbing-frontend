@@ -27,22 +27,59 @@
     if (dubBtn) dubBtn.disabled = false;
   }
 
+  const UPLOAD_PROGRESS_END = 18;
+
   // # FN updateDubbingProgressBarUi
-  // # KW عام,general
+  // # AR Draw the status label, percent text, and fill width for one progress snapshot.
+  // # KW عام,general,مهمة,job,حالة,status
   function updateDubbingProgressBarUi(labelText, percent) {
+    const shown = Math.max(0, Math.min(100, Number(percent) || 0));
     // # شرط — فرع منطقي
     if (document.getElementById('statusTxt')) {
       document.getElementById('statusTxt').innerText = labelText;
     }
     // # شرط — فرع منطقي
     if (document.getElementById('statusPct')) {
-      document.getElementById('statusPct').innerText = Math.round(percent) + '%';
+      document.getElementById('statusPct').innerText = Math.round(shown) + '%';
     // # block — تحديث واجهة/DOM
     }
     // # شرط — فرع منطقي
     if (document.getElementById('progFill')) {
-      document.getElementById('progFill').style.width = percent + '%';
+      document.getElementById('progFill').style.width = shown + '%';
     }
+  }
+
+  // # FN uploadRatioToProgressPercent
+  // # AR Map a 0–1 upload ratio onto the 0–18% bar so GPU stages own the rest.
+  // # KW رفع,upload,مهمة,job,حالة,status
+  function uploadRatioToProgressPercent(ratio) {
+    const clamped = Math.max(0, Math.min(1, Number(ratio) || 0));
+    // # return — إرجاع النتيجة
+    return Math.round(clamped * UPLOAD_PROGRESS_END);
+  }
+
+  // # FN applyServerJobProgressToBar
+  // # AR Advance the bar from GPU/API progress without a 50% floor; never go backwards.
+  // # KW مهمة,job,polling,حالة,status
+  function applyServerJobProgressToBar(jobMeta, completedCount, totalCount) {
+    const total = Math.max(1, Number(totalCount) || 1);
+    const done = Math.max(0, Number(completedCount) || 0);
+    const apiPct = Number(jobMeta && jobMeta.progress);
+    const jobFrac = Number.isFinite(apiPct)
+      ? Math.min(99, Math.max(0, apiPct)) / 100
+      : 0;
+    const pipelinePct = ((done + jobFrac) / total) * 100;
+    const mapped =
+      UPLOAD_PROGRESS_END + (Math.min(99, pipelinePct) / 99) * (100 - UPLOAD_PROGRESS_END);
+    // # block — تحديث واجهة/DOM
+    S.progressPercentMonotonic = Math.max(
+      S.progressPercentMonotonic || 0,
+      Math.min(99, mapped),
+    );
+    const label =
+      String((jobMeta && (jobMeta.message || jobMeta.stage)) || '').trim() ||
+      'Dubbing in progress...';
+    updateDubbingProgressBarUi(label, S.progressPercentMonotonic);
   }
 
   // # FN showDubbingCancelButton
@@ -72,16 +109,30 @@
     const data = S.cinemaResults[langCode];
     // # guard — شرط رفض أو خروج مبكر
     if (!data || !data.url) return;
+    const rawUrl = String(data.url || '').trim();
+    const allowPlayback =
+      global.SLShared &&
+      global.SLShared.config &&
+      typeof global.SLShared.config.isAllowedPlaybackUrl === 'function' &&
+      global.SLShared.config.isAllowedPlaybackUrl(rawUrl);
+    // # guard — refuse javascript:/foreign hosts in player src
+    if (!allowPlayback) return;
+    const escapeUrl =
+      DubbingApp.voiceHtml && typeof DubbingApp.voiceHtml.escapeHtmlForVoiceCardLabels === 'function'
+        ? DubbingApp.voiceHtml.escapeHtmlForVoiceCardLabels
+        : null;
+    const safeUrl = escapeUrl ? escapeUrl(rawUrl) : '';
+    if (!safeUrl) return;
     document.querySelectorAll('.side-lang-card').forEach((c) => c.classList.remove('active'));
     document.getElementById(`side-${langCode}`)?.classList.add('active');
     document.getElementById('dlArea').style.display = 'block';
     // # block — تحديث واجهة/DOM
-    document.getElementById('masterDl').href = data.url;
-    const isVideo = /\.(mp4|mov|webm)(\?|$)/i.test(data.url);
+    document.getElementById('masterDl').href = rawUrl;
+    const isVideo = /\.(mp4|mov|webm)(\?|$)/i.test(rawUrl);
     // # شرط — فرع منطقي
     if (isVideo) {
       document.getElementById('mainPlayer').innerHTML =
-        `<video controls autoplay src="${data.url}" style="width:100%;height:100%;object-fit:contain;"></video>`;
+        `<video controls autoplay src="${safeUrl}" style="width:100%;height:100%;object-fit:contain;"></video>`;
     } else {
       // Audio-only dubbing result — prefer ultra-low-latency streaming player when available
       // # block — تحديث واجهة/DOM
@@ -89,13 +140,13 @@
       // # guard — شرط رفض أو خروج مبكر
       if (!mainPlayer) return;
       const streamPlayerAvailable = DubbingApp.streamPlayer && typeof DubbingApp.streamPlayer.playStream === 'function';
-      const looksLikeStream = String(data.url || '').includes('/api/stream') || String(data.url || '').includes('?stream=1');
+      const looksLikeStream = rawUrl.includes('/api/stream') || rawUrl.includes('?stream=1');
       // # شرط — فرع منطقي
       if (streamPlayerAvailable && looksLikeStream) {
         mainPlayer.innerHTML = `<div id="streamControls" style="display:flex;gap:8px;align-items:center;margin-top:8px;"><button id="stopStreamBtn" class="btn-clear">Stop</button><span id="streamStatus" style="font-weight:600;margin-left:8px;">Playing…</span></div>`;
         // # block — فرع شرطي
         const headers = (DubbingApp.api && typeof DubbingApp.api.getDubbingApiAuthHeaders === 'function') ? DubbingApp.api.getDubbingApiAuthHeaders() : {};
-        DubbingApp.streamPlayer.playStream(data.url, { headers }).catch((e) => console.error(e));
+        DubbingApp.streamPlayer.playStream(rawUrl, { headers }).catch((e) => console.error(e));
         document.getElementById('stopStreamBtn')?.addEventListener('click', () => {
           DubbingApp.streamPlayer.stop();
           mainPlayer.innerHTML = '<p id="processingTxt">Processing...</p>';
@@ -104,7 +155,7 @@
       } else {
         // Fallback: use native audio tag for simple playback
         mainPlayer.innerHTML =
-          `<audio controls autoplay src="${data.url}" style="width:100%;margin-top:16px;border-radius:8px;"></audio>`;
+          `<audio controls autoplay src="${safeUrl}" style="width:100%;margin-top:16px;border-radius:8px;"></audio>`;
       }
     }
   }
@@ -160,7 +211,7 @@
     // # شرط — فرع منطقي
     if (dlArea) dlArea.style.display = 'none';
     S.cinemaResults = {};
-    S.progressPercentMonotonic = 50;
+    S.progressPercentMonotonic = 0;
     // # شرط — فرع منطقي
     if (!keepSelectedFile) {
       // # block — تحديث واجهة/DOM
@@ -231,6 +282,8 @@
     lockStartDubbingButton,
     unlockStartDubbingButton,
     updateDubbingProgressBarUi,
+    uploadRatioToProgressPercent,
+    applyServerJobProgressToBar,
     showDubbingCancelButton,
     hideDubbingCancelButton,
     switchCinemaResultsToLanguage,

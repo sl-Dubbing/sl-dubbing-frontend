@@ -28,7 +28,9 @@
       // # guard — شرط رفض أو خروج مبكر
       if (!s?.access_token || !s?.user?.id) return null;
       // # localStorage — تخزين محلي
-      localStorage.setItem('token', s.access_token);
+      if (typeof global.writeGlotixToken === 'function') {
+        global.writeGlotixToken(s.access_token);
+      }
       // # return — إرجاع النتيجة
       return {
         Authorization: 'Bearer ' + s.access_token,
@@ -181,7 +183,10 @@
     // # شرط — فرع منطقي
     if (!session?.access_token) {
       // # localStorage — تخزين محلي
-      const token = localStorage.getItem('token');
+      const token =
+        typeof global.readGlotixToken === 'function'
+          ? global.readGlotixToken()
+          : sessionStorage.getItem('token') || localStorage.getItem('token');
       const sub =
         token && typeof global.parseJwtSub === 'function' ? global.parseJwtSub(token) : null;
       // # guard — شرط رفض أو خروج مبكر

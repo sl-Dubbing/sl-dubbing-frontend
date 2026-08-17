@@ -103,7 +103,9 @@
       return auth.slice(7).trim();
     }
     // # block — تحديث واجهة/DOM
-    return String(global.localStorage?.getItem('token') || '').trim();
+    return typeof global.readGlotixToken === 'function'
+      ? global.readGlotixToken()
+      : String(global.sessionStorage?.getItem('token') || global.localStorage?.getItem('token') || '').trim();
   }
 
   // # FN watchDubbingJobViaSse
@@ -135,26 +137,10 @@
             'sse_ticket=' +
             encodeURIComponent(ticket);
         } else {
-          const token = resolveAccessTokenForDubbingJobStream();
-          if (!token) {
-            throw new Error('Missing auth token for SSE');
-          }
-          streamUrl =
-            buildDubbingJobStatusStreamUrl(id) +
-            (buildDubbingJobStatusStreamUrl(id).includes('?') ? '&' : '?') +
-            'access_token=' +
-            encodeURIComponent(token);
+          throw new Error('Missing SSE ticket');
         }
       } catch (error) {
-        const token = resolveAccessTokenForDubbingJobStream();
-        if (!token) {
-          throw error instanceof Error ? error : new Error('Missing auth token for SSE');
-        }
-        streamUrl =
-          buildDubbingJobStatusStreamUrl(id) +
-          (buildDubbingJobStatusStreamUrl(id).includes('?') ? '&' : '?') +
-          'access_token=' +
-          encodeURIComponent(token);
+        throw error instanceof Error ? error : new Error('SSE ticket required');
       }
 
       return new Promise((resolve, reject) => {

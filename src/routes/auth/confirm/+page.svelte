@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { getSupabase } from '$lib/services/supabase';
+	import { writeGlotixToken } from '$lib/services/jwt';
 	import { apiBase, parseJsonSafe } from '$lib/services/api';
 
 	let errorMsg = $state('');
@@ -11,7 +12,7 @@
 		session: { access_token: string; user: { id: string; email?: string; user_metadata?: Record<string, string> } },
 		opts: { sendWelcome?: boolean } = {}
 	) {
-		localStorage.setItem('token', session.access_token);
+		writeGlotixToken(session.access_token);
 		const h = { Authorization: `Bearer ${session.access_token}`, 'X-User-Id': String(session.user.id) };
 		let credits: number | string = '...';
 		const base = apiBase();

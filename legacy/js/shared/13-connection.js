@@ -123,7 +123,10 @@
     } catch (_) { /* status optional */ }
 
     // # localStorage — تخزين محلي
-    const token = localStorage.getItem('token');
+    const token =
+      typeof global.readGlotixToken === 'function'
+        ? global.readGlotixToken()
+        : sessionStorage.getItem('token') || localStorage.getItem('token');
     const authHeaders =
       token && typeof global.getApiAuthHeaders === 'function'
         ? global.getApiAuthHeaders()

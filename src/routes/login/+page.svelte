@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { getSupabase } from '$lib/services/supabase';
+	import { writeGlotixToken } from '$lib/services/jwt';
 	import { syncAuthSessionAndCreditsToUi } from '$lib/stores/auth';
 	import { showToast } from '$lib/stores/toast';
 	import Logo from '$lib/components/Logo.svelte';
@@ -43,7 +44,7 @@
 				const { data, error } = await supa.auth.signInWithPassword({ email, password });
 				if (error) throw error;
 				if (data.session) {
-					localStorage.setItem('token', data.session.access_token);
+					writeGlotixToken(data.session.access_token);
 					await syncAuthSessionAndCreditsToUi();
 					showToast('Signed in', 'success');
 					await goto('/');

@@ -2,7 +2,7 @@
 // # AR Build Authorization + X-User-Id headers for API calls
 
 import type { AuthHeaders } from '$lib/types/user';
-import { parseJwtSub } from '$lib/services/jwt';
+import { parseJwtSub, readGlotixToken, writeGlotixToken } from '$lib/services/jwt';
 import { getSupabase } from '$lib/services/supabase';
 
 function buildHeaders(token: string, userId: string): AuthHeaders {
@@ -10,8 +10,7 @@ function buildHeaders(token: string, userId: string): AuthHeaders {
 }
 
 export function getApiAuthHeaders(): AuthHeaders | null {
-	if (typeof localStorage === 'undefined') return null;
-	const token = (localStorage.getItem('token') || '').trim();
+	const token = readGlotixToken();
 	if (!token) return null;
 	const userId = parseJwtSub(token);
 	return userId ? buildHeaders(token, userId) : null;
@@ -32,7 +31,7 @@ export async function refreshApiAuthHeadersFromSupabase(): Promise<AuthHeaders |
 	try {
 		const { data: { session } } = await supa.auth.getSession();
 		if (!session?.access_token || !session?.user?.id) return getApiAuthHeaders();
-		localStorage.setItem('token', session.access_token);
+		writeGlotixToken(session.access_token);
 		persistUserCache(String(session.user.id), session.user.email || '');
 		return buildHeaders(session.access_token, String(session.user.id));
 	} catch {

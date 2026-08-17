@@ -450,6 +450,14 @@
       if (!res.ok || !data.success || !data.url) {
         throw new Error(data.error || 'Checkout failed');
       }
+      const allowCheckout =
+        SL.config &&
+        typeof SL.config.isAllowedCheckoutRedirectUrl === 'function' &&
+        SL.config.isAllowedCheckoutRedirectUrl(data.url);
+      // # guard — refuse open redirects off Stripe Checkout
+      if (!allowCheckout) {
+        throw new Error('Checkout failed');
+      }
       window.location.href = data.url;
     } catch (err) {
       console.error('Checkout error:', err);
