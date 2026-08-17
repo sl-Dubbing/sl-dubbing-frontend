@@ -72,7 +72,8 @@
 </script>
 
 <svelte:head>
-	<title>Pricing | Glotix</title>
+	<title>AI Dubbing Credits and Pricing | Glotix</title>
+	<meta name="description" content="Credit packs for Glotix AI video dubbing and text to speech. One credit is one character before a 1.4x ElevenLabs plus GPU margin." />
 	<link rel="canonical" href="https://glotix.ai/pricing" />
 </svelte:head>
 

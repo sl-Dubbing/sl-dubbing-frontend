@@ -1,10 +1,12 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Glotix | Subscription</title>
-    <meta name="description" content="Glotix character credit plans for AI dubbing and TTS. 1 credit = 1 character.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com; media-src 'self' blob: https://cdn.glotix.ai; connect-src 'self' https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>AI Dubbing Credits and Pricing | Glotix</title>
+    <meta name="description" content="Glotix credit packs for AI video dubbing and text to speech. One credit is one character before a 1.4x ElevenLabs plus GPU margin. From $9.">
     <link rel="canonical" href="https://glotix.ai/pricing">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/svg+xml" href="/logo/logo_arrow_White.svg">
@@ -46,7 +48,7 @@
             background: var(--bg-page);
             color: var(--text);
             min-height: 100vh;
-            font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: inherit;
             line-height: 1.45;
         }
         .container { max-width: 1240px; margin: 0 auto; padding: 20px 24px 64px; }
@@ -72,7 +74,7 @@
 
         .page-title { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 18px; }
 
-        /* Usage strip — ElevenLabs style */
+        /* Usage strip � ElevenLabs style */
         .usage-strip {
             display: grid;
             grid-template-columns: 1.2fr 1fr;
@@ -264,12 +266,12 @@
         </div>
     </header>
 
-    <h1 class="page-title">Subscription</h1>
+    <h1 class="page-title">AI dubbing credit packs</h1>
 
     <div class="usage-strip" id="usageStrip">
         <div class="usage-card">
             <h4>Credits</h4>
-            <div class="usage-meta" id="usageCreditsLabel">… credits remaining</div>
+            <div class="usage-meta" id="usageCreditsLabel">� credits remaining</div>
             <div class="usage-bar-track"><div class="usage-bar-fill" id="usageCreditsBar"></div></div>
         </div>
         <div class="usage-card">
@@ -304,10 +306,12 @@
     </div>
 
     <p class="hint-line">
-        <strong>1 credit = 1 character</strong>
-        · ~$0.10 per 1,000 credits (fair ~2× margin over API cost)
-        · Free includes <strong>2,000</strong> credits only
-        · charged after translation (×1.5)
+        <strong>1 credit = 1 source character</strong>,
+        billed at 1.4� to cover ElevenLabs plus Modal GPU with a small margin.
+        Retail is <strong>$0.10 per 1,000 credits</strong>
+        (~$0.14 per 1,000 source characters).
+        Free includes <strong>2,000</strong> credits.
+        Credits never expire.
     </p>
 </div>
 
@@ -317,18 +321,18 @@
 <script src="js/config.js?v=20260714"></script>
 <script src="js/shared/01-api-base.js?v=17"></script>
 <script src="js/shared/02-toast.js?v=17"></script>
-<script src="js/shared/03-jwt.js?v=17"></script>
-<script src="js/shared/04-auth-headers.js?v=17"></script>
+<script src="js/shared/03-jwt.js?v=18"></script>
+<script src="js/shared/04-auth-headers.js?v=18"></script>
 <script src="js/shared/06-guest-menu.js?v=17"></script>
 <script src="js/shared/07-supabase-client.js?v=17"></script>
 <script src="js/shared/08-credits-helpers.js?v=19"></script>
 <script src="js/shared/10-menu-ui.js?v=17"></script>
-<script src="js/shared/11-menu-actions.js?v=17"></script>
-<script src="js/shared/05-session.js?v=17"></script>
-<script src="js/shared/09-credits-fetch.js?v=17"></script>
-<script src="js/shared/12-auth-sync.js?v=17"></script>
+<script src="js/shared/11-menu-actions.js?v=18"></script>
+<script src="js/shared/05-session.js?v=18"></script>
+<script src="js/shared/09-credits-fetch.js?v=18"></script>
+<script src="js/shared/12-auth-sync.js?v=18"></script>
 <script src="js/shared/13-connection.js?v=18"></script>
-<script src="js/shared/17-pricing-packages.js?v=20260714d"></script>
+<script src="js/shared/17-pricing-packages.js?v=20260818cogs"></script>
 <script src="js/shared/18-credit-balance.js?v=20260713"></script>
 <script src="js/shared/14-init.js?v=17"></script>
 
@@ -338,7 +342,7 @@
             loadAndRenderPricingPackages();
         }
         document.getElementById('toggleYearly')?.addEventListener('click', () => {
-            if (typeof showToast === 'function') showToast('Yearly billing coming soon — use credit packs for now');
+            if (typeof showToast === 'function') showToast('Yearly billing coming soon � use credit packs for now');
         });
         setTimeout(() => {
             const headers = window.getApiAuthHeaders ? window.getApiAuthHeaders() : null;

@@ -5,16 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com https://hatscripts.github.io; media-src 'self' blob: https://cdn.glotix.ai; connect-src 'self' https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <title>Glotix ? Video dubbing and text to speech</title>
-    <meta name="description" content="Glotix is a dubbing studio for video and speech. Translate dialogue, keep the original soundtrack, and download the finished file.">
+    <title>Glotix | AI Video Dubbing and Text to Speech</title>
+    <meta name="description" content="AI video dubbing studio: isolate dialogue, translate, clone the original speaker, and mix new speech over the original soundtrack. 55+ languages. Text to speech included.">
     <link rel="canonical" href="https://glotix.ai/">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Glotix">
-    <meta property="og:title" content="Glotix ? Video dubbing and text to speech">
-    <meta property="og:description" content="Dub video while keeping the original music. Translate the script, clone the speaker if you want, and download the mix.">
+    <meta property="og:title" content="Glotix | AI Video Dubbing and Text to Speech">
+    <meta property="og:description" content="Professional AI video dubbing that keeps the music. Translate the script, clone the speaker, download the mix.">
     <meta property="og:url" content="https://glotix.ai/">
     <meta property="og:image" content="https://glotix.ai/apple-touch-icon.png">
-    <meta name="twitter:card" content="summary">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Glotix | AI Video Dubbing">
+    <meta name="twitter:description" content="AI video dubbing and text to speech. Keep the original soundtrack.">
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://glotix.ai/#org","name":"Glotix","url":"https://glotix.ai/","logo":"https://glotix.ai/logo/glotix_Full_Black.svg"},{"@type":"SoftwareApplication","@id":"https://glotix.ai/#app","name":"Glotix","applicationCategory":"MultimediaApplication","operatingSystem":"Web","url":"https://glotix.ai/","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"AI video dubbing and text-to-speech studio. Isolates dialogue, translates, clones the speaker, and remixes speech over the original music."},{"@type":"WebSite","@id":"https://glotix.ai/#website","url":"https://glotix.ai/","name":"Glotix","publisher":{"@id":"https://glotix.ai/#org"},"potentialAction":{"@type":"SearchAction","target":"https://glotix.ai/dubbing","query-input":"required name=search_term_string"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the best AI video dubbing tool that keeps the original music?","acceptedAnswer":{"@type":"Answer","text":"Glotix is an AI video dubbing studio that isolates dialogue from the soundtrack, translates the script, synthesizes new speech with optional voice cloning, and mixes it back over the original music and effects."}},{"@type":"Question","name":"How does Glotix compare to other dubbing websites?","acceptedAnswer":{"@type":"Answer","text":"Glotix focuses on dialogue replacement rather than replacing the whole mix. You upload a clip, pick a target language, optionally clone the original speaker, and download a dubbed file with the instrumental bed intact."}},{"@type":"Question","name":"Does Glotix include text to speech?","acceptedAnswer":{"@type":"Answer","text":"Yes. The same voice catalog used in Dubbing Studio is available in Text to Speech, including cloned voices saved to your account."}}]}]}
+    </script>
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -124,6 +129,10 @@
         .hero { text-align: center; padding: 40px 0 56px; }
         .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; line-height: 1.15; margin-bottom: 14px; letter-spacing: -0.03em; color: var(--heading, var(--text-main)); }
         .hero-lead { max-width: 38rem; margin: 0 auto; color: var(--text-muted); font-size: 1.1rem; line-height: 1.55; font-weight: 500; }
+        .faq-list { max-width: 46rem; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; text-align: left; }
+        .faq-item { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px 24px; }
+        .faq-item h3 { font-size: 1.05rem; font-weight: 750; margin: 0 0 8px; }
+        .faq-item p { color: var(--text-muted); margin: 0; font-size: 0.98rem; }
         .hero-badge { display: none; }
 
         /* ?? Tools grid ?? */
@@ -548,8 +557,8 @@
 
 <div class="page">
     <section class="hero">
-        <h1>Dub video.<br>Keep the music and the voice.</h1>
-        <p class="hero-lead">A studio for dialogue replacement: isolate speech, translate the script, then mix a new track over your original soundtrack.</p>
+        <h1>AI video dubbing.<br>Keep the music and the voice.</h1>
+        <p class="hero-lead">A professional AI dubbing website for dialogue replacement: isolate speech, translate the script, clone the speaker, then mix a new track over your original soundtrack.</p>
     </section>
 
     <div class="tools-row">
@@ -818,11 +827,33 @@
         </div>
     </section>
 
+    <section class="section" id="faq">
+        <div class="section-head">
+            <span class="eyebrow">FAQ</span>
+            <h2>AI video dubbing questions</h2>
+            <p>How Glotix works as a dubbing website for creators who need the original mix to stay.</p>
+        </div>
+        <div class="faq-list">
+            <div class="faq-item">
+                <h3>What is the best AI video dubbing tool that keeps the original music?</h3>
+                <p>Glotix isolates dialogue from the soundtrack, translates the script, synthesizes new speech with optional voice cloning, and mixes it back over the original music and effects.</p>
+            </div>
+            <div class="faq-item">
+                <h3>How does Glotix compare to other dubbing websites?</h3>
+                <p>Glotix is built for dialogue replacement, not a full mix replacement. Upload a clip, pick a language, clone the original speaker if you want, and download a dubbed file with the instrumental bed intact.</p>
+            </div>
+            <div class="faq-item">
+                <h3>Does Glotix include text to speech?</h3>
+                <p>Yes. Text to Speech uses the same public voice catalog as Dubbing Studio, including any cloned voices saved to your account.</p>
+            </div>
+        </div>
+    </section>
+
     <!-- ???????????????? CTA banner ???????????????? -->
     <section class="cta-banner">
         <span class="eyebrow" style="background:rgba(255,255,255,0.1); color:#cbd5e1;">Start free</span>
         <h2>Open a studio account</h2>
-        <p>New accounts start with 100 credits. That is enough for a short dubbed clip or a batch of TTS lines. No card on sign-up.</p>
+        <p>New accounts start with 2,000 character credits. That is enough for a short dubbed clip or a batch of TTS lines. No card on sign-up.</p>
         <div class="cta-buttons">
             <a href="/signup" class="btn-cta primary">Create account</a>
             <a href="/pricing" class="btn-cta outline">Credits and packs</a>

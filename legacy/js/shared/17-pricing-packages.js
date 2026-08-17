@@ -11,9 +11,11 @@
   const SL = global.SLShared || (global.SLShared = {});
 
   /**
-   * Glotix character plans — ElevenLabs-style cards.
-   * Retail target: ≈ $0.10 / 1,000 credits (~2–2.5× over $0.04–0.05 COGS).
-   * Free = 2,000 credits only (INITIAL_CHARACTER_CREDITS).
+   * COGS (Aug 2026): ElevenLabs Flash $0.05/1k, Multilingual $0.10/1k,
+   * Modal A10G $0.000306/s ≈ $0.013/1k chars at 1100 chars/min.
+   * CHAR_CREDIT_MARKUP=1.4 → ~20–30% over vendor+GPU. Retail $0.10 / 1k credits.
+   * 1 credit ≈ 1 source character before markup; billed ceil(chars × 1.4).
+   * Free = 2,000 character credits (INITIAL_CHARACTER_CREDITS).
    */
   const DEFAULT_CHARACTER_PACKS = {
     price_char_free: {
@@ -26,7 +28,7 @@
       features: [
         { text: '2,000 free credits', ok: true },
         { text: 'Dubbing + TTS access', ok: true },
-        { text: 'Commercial license', ok: false },
+        { text: '≈ 1 min dubbed / ~1.4k TTS chars', ok: true },
         { text: 'Priority queue', ok: false },
       ],
       includes: '',
@@ -39,7 +41,7 @@
       chars_label: '90k credits',
       features: [
         { text: '90,000 credits', ok: true },
-        { text: '≈ $0.10 per 1k credits', ok: true },
+        { text: '≈ 58 min of dubbed speech', ok: true },
         { text: 'Voice cloning', ok: true },
         { text: 'Commercial license', ok: true },
       ],
@@ -54,7 +56,7 @@
       chars_label: '220k credits',
       features: [
         { text: '220,000 credits', ok: true },
-        { text: '≈ $0.10 per 1k credits', ok: true },
+        { text: '≈ 2.4 hours of dubbed speech', ok: true },
         { text: 'Higher concurrency', ok: true },
         { text: '192 kbps audio', ok: true },
       ],
@@ -68,7 +70,7 @@
       chars_label: '990k credits',
       features: [
         { text: '990,000 credits', ok: true },
-        { text: '≈ $0.10 per 1k credits', ok: true },
+        { text: '≈ 11 hours of dubbed speech', ok: true },
         { text: 'API access', ok: true },
         { text: 'Team-ready workflows', ok: true },
       ],
@@ -82,7 +84,7 @@
       chars_label: '3.3M credits',
       features: [
         { text: '3,300,000 credits', ok: true },
-        { text: '≈ $0.10 per 1k credits', ok: true },
+        { text: '≈ 36 hours of dubbed speech', ok: true },
         { text: 'Workspace seats', ok: true },
         { text: 'Priority support', ok: true },
       ],
@@ -96,7 +98,7 @@
       chars_label: '9.9M credits',
       features: [
         { text: '9,900,000 credits', ok: true },
-        { text: '≈ $0.10 per 1k credits', ok: true },
+        { text: '≈ 107 hours of dubbed speech', ok: true },
         { text: 'Production volume ready', ok: true },
         { text: 'Dedicated support lane', ok: true },
       ],

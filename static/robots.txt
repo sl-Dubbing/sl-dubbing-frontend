@@ -3,5 +3,6 @@ Allow: /
 Disallow: /history
 Disallow: /login
 Disallow: /auth/
+Disallow: /video-creation
 
 Sitemap: https://glotix.ai/sitemap.xml
