@@ -11,6 +11,8 @@
   S.srtPreviewFileKey = S.srtPreviewFileKey || '';
   S.srtFontScale = S.srtFontScale || 1;
   S.preTranslatedLang = S.preTranslatedLang || '';
+  // # block — Language currently painted in the SRT editor (safe for live-edit prefer).
+  S.editorDisplayedLang = S.editorDisplayedLang || '';
   let _translateDebounce = null;
   let _translateSeq = 0;
 
@@ -200,6 +202,7 @@
     S.sourceScriptSegments = cloneScriptSegments(segments).filter((s) => s.text);
     S.translatedByLang = {};
     S.preTranslatedLang = '';
+    S.editorDisplayedLang = '';
   }
 
   // # FN resolveSourceLangBase
@@ -332,6 +335,7 @@
       // Multi-target: keep source visible; translate per lang on Start.
       renderSrtEditor(S.sourceScriptSegments);
       S.preTranslatedLang = '';
+      S.editorDisplayedLang = '';
       setSrtStatus('');
       return;
     }
@@ -344,6 +348,7 @@
     if (srcBase && tgtBase && srcBase === tgtBase) {
       renderSrtEditor(S.sourceScriptSegments);
       S.preTranslatedLang = langCode;
+      S.editorDisplayedLang = langCode;
       // # block — خطوة ترجمة (مترجم)
       setSrtStatus('');
       return;
@@ -356,12 +361,15 @@
       // # guard — رفض/خروج
       if (seq !== _translateSeq) return;
       renderSrtEditor(segs);
+      S.preTranslatedLang = langCode;
+      S.editorDisplayedLang = langCode;
       setSrtStatus('');
       // Silent — no toast
     } catch (err) {
       // # guard — رفض/خروج
       if (seq !== _translateSeq) return;
       console.warn('[srt] silent literal translate failed:', err);
+      S.editorDisplayedLang = '';
       // # block — خطوة ترجمة (مترجم)
       setSrtStatus('');
     }
@@ -498,6 +506,7 @@
     S.sourceScriptSegments = [];
     S.translatedByLang = {};
     S.preTranslatedLang = '';
+    S.editorDisplayedLang = '';
     S.srtPreviewFileKey = '';
     S.srtAudioFileKey = '';
     S.srtVideoFileKey = '';

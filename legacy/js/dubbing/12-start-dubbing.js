@@ -283,10 +283,12 @@
             if (typeof DubbingApp.srtEditor?.getSegmentsReadyForDub === 'function') {
               readySegs = await DubbingApp.srtEditor.getSegmentsReadyForDub(langCode);
             }
-            // Prefer live editor edits when already showing this language
+            // Prefer live editor edits only when the SRT panel already rendered this target.
+            // # guard — Do NOT use preTranslatedLang alone: getSegmentsReadyForDub sets it
+            // before DOM render, which previously overwrote French with Arabic source cues.
             // # شرط
             if (
-              DubbingApp.state?.preTranslatedLang === langCode &&
+              DubbingApp.state?.editorDisplayedLang === langCode &&
               typeof DubbingApp.srtEditor?.getScriptSegmentsForDub === 'function'
             // # block — خطوة ترجمة (مترجم)
             ) {
