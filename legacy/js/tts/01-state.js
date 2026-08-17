@@ -34,6 +34,8 @@
     currentBaseLang: 'ar',
     currentDialect: '',
     selectedVoiceId: null,
+    selectedElevenLabsVoiceId: '',
+    premiumVoicesCache: [],
     customVoiceFile: null,
     currentAudio: null,
     generating: false,

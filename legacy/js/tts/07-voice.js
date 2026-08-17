@@ -48,8 +48,9 @@
   /** اختيار_صوت_بريميوم */
   // # FN selectTtsPremiumVoice
   // # KW صوت,استنساخ,voice,clone,sample,توليد_صوت,TTS,synthesis
-  function selectTtsPremiumVoice(id, name, sampleUrl, sampleText) {
+  function selectTtsPremiumVoice(id, name, sampleUrl, sampleText, elevenLabsVoiceId) {
     S.selectedVoiceId = id;
+    S.selectedElevenLabsVoiceId = (elevenLabsVoiceId || '').trim();
     global.currentSampleUrl = sampleUrl || '';
     global.selectedSample = sampleUrl || '';
     global.currentSampleText = (sampleText || '').trim();
@@ -167,6 +168,7 @@
     // # block — معالجة صوت/استنساخ
     S.customVoiceFile = file;
     S.selectedVoiceId = 'custom_clone';
+    S.selectedElevenLabsVoiceId = '';
 
     const currentVoiceName = document.getElementById('currentVoiceName');
     const cloneLabel = document.getElementById('cloneLabel');
@@ -196,54 +198,74 @@
     document.getElementById('voiceUploadInput')?.click();
   }
 
-  /** جلب_أصوات_بريميوم — من جدول Supabase voices */
+  // # FN ttsTriangleMarkEl
+  // # AR شعار المثلث بدل صور العينات في مربعات اختيار الصوت
+  // # KW صوت,استنساخ,voice,clone,sample,توليد_صوت,TTS,synthesis
+  function ttsTriangleMarkEl() {
+    const wrap = document.createElement('div');
+    wrap.className = 'v-img-wrapper v-mark-triangle';
+    const img = document.createElement('img');
+    img.src = '/logo/glotix_Triangle.svg';
+    img.alt = '';
+    img.addEventListener('error', () => {
+      img.src = 'logo/glotix_Triangle.svg';
+    });
+    wrap.appendChild(img);
+    return wrap;
+  }
+
+  /** جلب_أصوات_بريميوم — نفس كتالوج الدبلجة /api/voices/premium */
   // # FN loadTtsPremiumVoicesFromSupabase
-  // # KW صوت,استنساخ,voice,clone,sample,توليد_صوت,TTS,synthesis,مصادقة,auth,JWT,supabase
+  // # AR Load the shared public catalog used by Dubbing Studio.
+  // # KW صوت,استنساخ,voice,clone,sample,توليد_صوت,TTS,synthesis
   async function loadTtsPremiumVoicesFromSupabase() {
     const grid = document.getElementById('ttsVoicesGrid');
-    const supa = global.getSupabase?.();
+    const { normalizeTtsApiBaseUrl } = TtsApp.helpers;
+    const API = normalizeTtsApiBaseUrl();
     // # guard — شرط رفض أو خروج مبكر
-    if (!supa || !grid) return;
+    if (!API || !grid) return;
     // # try — معالجة عملية قد تفشل
     try {
-      const { data } = await supa.from('voices').select('*').order('created_at');
-      // # شرط — فرع منطقي
-      if (data && data.length > 0) {
-        grid.replaceChildren();
-        data.forEach((v) => {
-          const card = document.createElement('div');
-          card.className =
-            'v-avatar-card' + (S.selectedVoiceId === v.id ? ' selected' : '');
-          // # block — معالجة صوت/استنساخ
-          card.dataset.voiceId = v.id;
-          card.addEventListener('click', () =>
-            selectTtsPremiumVoice(v.id, v.name, v.sample_url, v.sample_text),
-          );
-          const wrap = document.createElement('div');
-          wrap.className = 'v-img-wrapper';
-          // # block — معالجة صوت/استنساخ
-          const img = document.createElement('img');
-          img.src = v.avatar_url || '';
-          img.alt = '';
-          wrap.appendChild(img);
-          card.appendChild(wrap);
-          const nameEl = document.createElement('div');
-          // # block — تنفيذ منطق — راجع الأسطر التالية
-          nameEl.className = 'v-name';
-          nameEl.textContent = v.name || '';
-          card.appendChild(nameEl);
-          grid.appendChild(card);
-        });
-        // Prefer Quick ⚡ by default so Generate works without ElevenLabs/sample setup.
-        // User can still pick a premium/clone voice from the panel.
-        // # شرط
-        if (!S.selectedVoiceId && !S.customVoiceFile && !global.currentSampleUrl) {
-          // # block — معالجة صوت/استنساخ
-          selectQuickEdgeVoice();
-        }
+      // # HTTP — طلب إلى API
+      const res = await fetch(`${API}/api/voices/premium`);
+      const json = await res.json().catch(() => ({}));
+      const data = res.ok && Array.isArray(json.voices) ? json.voices : null;
+      // # guard — شرط رفض أو خروج مبكر
+      if (!data || data.length === 0) return;
+      S.premiumVoicesCache = data;
+      grid.replaceChildren();
+      addQuickVoiceCard();
+      data.forEach((v) => {
+        const card = document.createElement('div');
+        card.className =
+          'v-avatar-card' + (S.selectedVoiceId === v.id ? ' selected' : '');
+        // # block — معالجة صوت/استنساخ
+        card.dataset.voiceId = v.id;
+        card.title = v.name || 'Voice';
+        card.addEventListener('click', () =>
+          selectTtsPremiumVoice(
+            v.id,
+            v.name,
+            v.sample_url,
+            v.sample_text,
+            v.elevenlabs_voice_id || v.eleven_labs_voice_id || '',
+          ),
+        );
+        card.appendChild(ttsTriangleMarkEl());
+        const nameEl = document.createElement('div');
+        // # block — تنفيذ منطق — راجع الأسطر التالية
+        nameEl.className = 'v-name';
+        nameEl.textContent = v.name || '';
+        card.appendChild(nameEl);
+        grid.appendChild(card);
+      });
+      // # شرط
+      if (!S.selectedVoiceId && !S.customVoiceFile && !global.currentSampleUrl) {
+        // # block — معالجة صوت/استنساخ
+        selectQuickEdgeVoice();
       }
     } catch (err) {
-      /* ignore */
+      console.warn('TTS catalog load failed', err);
     }
   }
 
@@ -253,6 +275,7 @@
   // # KW صوت,استنساخ,voice,clone,sample,توليد_صوت,TTS,synthesis
   function selectQuickEdgeVoice() {
     S.selectedVoiceId = 'quick_edge';
+    S.selectedElevenLabsVoiceId = '';
     global.currentSampleUrl = '';
     global.selectedSample = '';
     global.usingSavedVoice = false;
@@ -284,11 +307,11 @@
     card.id = 'quickVoiceCard';
     // # block — معالجة صوت/استنساخ
     card.title = 'Fast ElevenLabs Flash TTS';
-    card.innerHTML = `
-      <div class="v-img-wrapper" style="background:linear-gradient(135deg,#f59e0b,#f97316);">
-        <i class="fa-solid fa-bolt" style="color:#fff;font-size:1rem;"></i>
-      </div>
-      <div class="v-name">Quick</div>`;
+    card.appendChild(ttsTriangleMarkEl());
+    const nameEl = document.createElement('div');
+    nameEl.className = 'v-name';
+    nameEl.textContent = 'Quick';
+    card.appendChild(nameEl);
     // # block — معالجة صوت/استنساخ
     card.addEventListener('click', selectQuickEdgeVoice);
     grid.insertBefore(card, grid.firstChild);
@@ -298,8 +321,9 @@
   // # FN selectTtsUserCloneVoice
   // # AR الصوت والاستنساخ (selectTtsUserCloneVoice)
   // # KW صوت,استنساخ,voice,clone,sample,توليد_صوت,TTS,synthesis
-  function selectTtsUserCloneVoice(id, name, sampleUrl, sampleText) {
+  function selectTtsUserCloneVoice(id, name, sampleUrl, sampleText, elevenLabsVoiceId) {
     S.selectedVoiceId = `clone_${id}`;
+    S.selectedElevenLabsVoiceId = (elevenLabsVoiceId || '').trim();
     global.currentSampleUrl = sampleUrl || '';
     global.selectedSample = sampleUrl || '';
     global.currentSampleText = (sampleText || '').trim();
@@ -370,15 +394,20 @@
         card.className = 'v-avatar-card' + (S.selectedVoiceId === `clone_${clone.id}` ? ' selected' : '');
         // # block — معالجة صوت/استنساخ
         card.dataset.voiceId = `clone_${clone.id}`;
-        const initial = (clone.name || 'V').trim().charAt(0).toUpperCase();
-        card.innerHTML = `
-          <div class="v-img-wrapper" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);">
-            <span style="color:#fff;font-weight:800;font-size:1rem;">${initial}</span>
-          </div>
-          // # block — معالجة صوت/استنساخ
-          <div class="v-name">${(clone.name || 'Voice').slice(0, 12)}</div>`;
+        card.title = clone.name || 'Voice';
+        card.appendChild(ttsTriangleMarkEl());
+        const nameEl = document.createElement('div');
+        nameEl.className = 'v-name';
+        nameEl.textContent = (clone.name || 'Voice').slice(0, 12);
+        card.appendChild(nameEl);
         card.addEventListener('click', () =>
-          selectTtsUserCloneVoice(clone.id, clone.name, clone.sample_url, clone.sample_text)
+          selectTtsUserCloneVoice(
+            clone.id,
+            clone.name,
+            clone.sample_url,
+            clone.sample_text,
+            clone.elevenlabs_voice_id || '',
+          ),
         );
         grid.appendChild(card);
       });
@@ -413,7 +442,11 @@
       const opening = !panel?.classList.contains('active');
       global.closeAllSiteDropdowns?.();
       // # شرط
-      if (opening) panel?.classList.add('active');
+      if (opening) {
+        panel?.classList.add('active');
+        loadTtsPremiumVoicesFromSupabase();
+        loadUserVoiceClonesIntoTtsPanel();
+      }
     });
   }
 

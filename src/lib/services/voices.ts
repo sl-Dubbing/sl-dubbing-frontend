@@ -3,7 +3,6 @@
 // # KW صوت,استنساخ,voice,clone,sample,رفع,upload,R2
 
 import { apiFetch, parseJsonSafe } from '$lib/services/api';
-import { getSupabase } from '$lib/services/supabase';
 
 export type Voice = {
 	id: string;
@@ -17,17 +16,16 @@ export type Voice = {
 };
 
 // # FN loadPremiumVoices
-// # AR Fetch public premium voices from Supabase voices table
+// # AR Fetch public premium voices from /api/voices/premium (PostgREST is closed).
 // # KW صوت,استنساخ,voice,clone,sample
 const s = (v: unknown, d = '') => String(v ?? d);
 
 export async function loadPremiumVoices(): Promise<Voice[]> {
-	const supabase = getSupabase();
-	if (!supabase) return [];
 	try {
-		const { data, error } = await supabase.from('voices').select('*').order('created_at');
-		if (error || !data) return [];
-		return data.map((voice) => ({
+		const res = await apiFetch('/api/voices/premium', { auth: false });
+		const data = await parseJsonSafe<{ voices?: Array<Record<string, unknown>> }>(res);
+		if (!res.ok || !Array.isArray(data?.voices)) return [];
+		return data.voices.map((voice) => ({
 			id: s(voice.id),
 			name: s(voice.name, 'Premium Voice'),
 			sample_url: s(voice.sample_url),

@@ -28,7 +28,7 @@
 		</ul>
 		<h2>How we use information</h2>
 		<ul>
-			<li>To authenticate you and operate dubbing, TTS, and Image Studio features.</li>
+			<li>To authenticate you and operate dubbing and text-to-speech features.</li>
 			<li>To bill character credits and prevent abuse.</li>
 			<li>To improve reliability, security, and support.</li>
 		</ul>

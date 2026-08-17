@@ -11,12 +11,6 @@
 			title: 'Text to Speech',
 			desc: 'Generate natural speech from text with premium and cloned voices.',
 			icon: 'fa-solid fa-microphone'
-		},
-		{
-			href: '/video-creation',
-			title: 'Image Studio',
-			desc: 'Turn a still image into a talking video with estimated credit cost.',
-			icon: 'fa-solid fa-image'
 		}
 	];
 </script>
@@ -25,7 +19,7 @@
 	<title>Glotix | AI Video Dubbing</title>
 	<meta
 		name="description"
-		content="Glotix AI dubbing, text-to-speech, and image-to-video studio."
+		content="Glotix AI dubbing and text-to-speech studio."
 	/>
 	<link rel="canonical" href="https://glotix.ai/" />
 </svelte:head>

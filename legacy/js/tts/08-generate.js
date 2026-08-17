@@ -87,9 +87,10 @@
           // # block — خطوة ترجمة (مترجم)
           voice_id: S.selectedVoiceId,
           voice_name: document.getElementById('currentVoiceName')?.textContent?.trim() || '',
-          // Backend resolves from Supabase; send sample as fallback if service lookup fails
+          // Backend binds a saved Instant Voice id so the second generation skips clone.
           sample_url: global.currentSampleUrl || '',
           sample_text: (global.currentSampleText || '').trim(),
+          elevenlabs_voice_id: S.selectedElevenLabsVoiceId || '',
           mode: global.voiceMode === 'quick' ? 'quick' : 'standard',
         }),
       // # block — معالجة صوت/استنساخ

@@ -175,7 +175,10 @@
   // # KW صوت,استنساخ,voice,clone,sample,رفع,upload,R2,storage,توليد_صوت,TTS,synthesis
   function getTtsUserVoiceStorageKey() {
     // # localStorage — تخزين محلي
-    const token = localStorage.getItem('token') || '';
+    const token =
+      typeof global.readGlotixToken === 'function'
+        ? global.readGlotixToken()
+        : sessionStorage.getItem('token') || localStorage.getItem('token') || '';
     let uid = 'guest';
     // # شرط — فرع منطقي
     if (token && typeof global.parseJwtSub === 'function') {
@@ -259,8 +262,13 @@
   // # AR Text-to-speech (normalizeTtsApiBaseUrl)
   // # KW توليد_صوت,TTS,synthesis
   function normalizeTtsApiBaseUrl() {
+    const cfg = global.APP_CONFIG || {};
     // # return — إرجاع النتيجة
-    return String(global.API_BASE || 'https://api.glotix.ai')
+    return String(
+      cfg.API_BASE ||
+        global.API_BASE ||
+        'https://sl-dubbing--glotix-api-serve.modal.run',
+    )
       .replace(/\/$/, '')
       .replace(/([^:]\/)\/+/g, '$1');
   }

@@ -10,7 +10,6 @@
 	const links = [
 		{ href: '/dubbing', label: 'Dubbing Studio', icon: 'fa-regular fa-file-video' },
 		{ href: '/tts', label: 'Text to Speech', icon: 'fa-regular fa-comment-dots' },
-		{ href: '/video-creation', label: 'Image Studio', icon: 'fa-regular fa-image' },
 		{ href: '/history', label: 'My Files', icon: 'fa-regular fa-folder-open' },
 		{ href: '/developer', label: 'Developer API', icon: 'fas fa-code', accent: 'dev' },
 		{ href: '/pricing', label: 'Upgrade Plan', icon: 'fas fa-arrow-up-right-from-square', accent: 'upgrade' }

@@ -56,10 +56,11 @@
       // # block — معالجة صوت/استنساخ
       `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'My Voice')}&background=eff6ff&color=2563eb&size=128`,
     );
+    const elevenId = escapeHtmlForVoiceCardLabels(profile.elevenlabs_voice_id || '');
     const selected = global.selectedSample === profile.sample_url ? ' selected' : '';
     // # return — إرجاع النتيجة
     return `
-        <div class="voice-avatar-card voice-saved-user-card${selected}" data-sample-url="${url}" data-name="${name}" data-engine="" data-avatar-url="${avatarUrl}"
+        <div class="voice-avatar-card voice-saved-user-card${selected}" data-sample-url="${url}" data-name="${name}" data-engine="" data-elevenlabs-voice-id="${elevenId}" data-avatar-url="${avatarUrl}"
              onclick="onPremiumVoiceCardClick(this)" title="Your saved voice — instant dubbing">
             <div class="voice-avatar-wrapper">
                 <div class="voice-save-plus-inner"><i class="fa-solid fa-fingerprint"></i></div>
@@ -83,13 +84,16 @@
         // # block — معالجة صوت/استنساخ
         const sampleText = escapeHtmlForVoiceCardLabels(voice.sample_text || '');
         const engine = escapeHtmlForVoiceCardLabels(voice.engine || '');
+        const elevenId = escapeHtmlForVoiceCardLabels(
+          voice.elevenlabs_voice_id || voice.eleven_labs_voice_id || '',
+        );
         const avatarUrl = escapeHtmlForVoiceCardLabels(
           `https://ui-avatars.com/api/?name=${encodeURIComponent(voice.name || 'Voice')}&background=eff6ff&color=2563eb&size=128`,
         );
         const selected = global.selectedSample === voice.sample_url ? ' selected' : '';
         // # return — إرجاع النتيجة
         return `
-            <div class="voice-avatar-card voice-user-clone-card${selected}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-avatar-url="${avatarUrl}"
+            <div class="voice-avatar-card voice-user-clone-card${selected}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url="${avatarUrl}"
                  onclick="onPremiumVoiceCardClick(this)" title="Your saved voice">
                 <div class="voice-avatar-wrapper">
                     <div class="voice-save-plus-inner"><i class="fa-solid fa-user"></i></div>
@@ -154,18 +158,14 @@
         const elevenId = escapeHtmlForVoiceCardLabels(
           voice.elevenlabs_voice_id || voice.eleven_labs_voice_id || '',
         );
-        const avatar = escapeHtmlForVoiceCardLabels(
-          voice.avatar_url ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(voice.name || 'V')}&background=f3f4f6&color=111827`,
-        );
         // # block — معالجة صوت/استنساخ
         const selected = global.selectedSample === voice.sample_url ? ' selected' : '';
         // # return — إرجاع النتيجة
         return `
-            <div class="voice-avatar-card${selected}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url="${avatar}"
+            <div class="voice-avatar-card${selected}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url=""
                  onclick="onPremiumVoiceCardClick(this)">
-                <div class="voice-avatar-wrapper">
-                    <img src="${avatar}" alt="${name}">
+                <div class="voice-avatar-wrapper voice-mark-triangle">
+                    <img src="logo/glotix_Triangle.svg" alt="" loading="lazy" decoding="async">
                     <div class="voice-play-overlay" onclick="playVoicePreview(event, '${url}', this.parentElement.parentElement)">
                         <i class="fa-solid fa-play"></i>
                     </div>
@@ -255,9 +255,9 @@
     if (!resolvedAvatar && sampleUrl && Array.isArray(S.premiumVoicesCache)) {
       const match = S.premiumVoicesCache.find((v) => v.sample_url === sampleUrl);
       // # شرط — فرع منطقي
-      if (match?.avatar_url) resolvedAvatar = match.avatar_url;
+      if (match?.avatar_url) resolvedAvatar = 'logo/glotix_Triangle.svg';
       else if (match?.name) {
-        resolvedAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(match.name)}&background=f3f4f6&color=111827&size=128`;
+        resolvedAvatar = 'logo/glotix_Triangle.svg';
       }
     }
 
@@ -301,14 +301,11 @@
       const match = S.premiumVoicesCache?.find((v) => v.sample_url === sampleUrl);
       // # شرط — فرع منطقي
       if (match) {
-        const fallbackAvatar = match.avatar_url
-          // # block — معالجة صوت/استنساخ
-          || `https://ui-avatars.com/api/?name=${encodeURIComponent(match.name || 'Voice')}&background=f3f4f6&color=111827&size=128`;
         updateVoiceSelectTriggerUI({
           mode: global.voiceMode || 'clone',
           sampleUrl,
           name: match.name || 'Voice',
-          avatarUrl: fallbackAvatar,
+          avatarUrl: 'logo/glotix_Triangle.svg',
         // # block — معالجة صوت/استنساخ
         });
         // # return — إرجاع النتيجة
