@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com https://*.googleusercontent.com; media-src 'self' blob: https://cdn.glotix.ai; connect-src 'self' https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>API keys | Glotix</title>
+    <meta name="description" content="Create and name Glotix API keys.">
+    <link rel="canonical" href="https://glotix.ai/developer">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Glotix">
+    <meta property="og:title" content="API keys | Glotix">
+    <meta property="og:url" content="https://glotix.ai/developer">
+    <meta property="og:image" content="https://glotix.ai/apple-touch-icon.png">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="/logo/logo_arrow_White.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/logo.css">
+    <link rel="stylesheet" href="css/brand-theme.css?v=20260818font">
+    <link rel="stylesheet" href="css/theme.css">
+    <script>
+      (function () {
+        try {
+          var m = localStorage.getItem('glotix_theme') || 'system';
+          var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var t = m === 'light' || m === 'dark' ? m : (dark ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', t);
+          document.documentElement.style.colorScheme = t;
+        } catch (e) {}
+      })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" integrity="sha384-tuevtT+97g9yLeuT/m52ejUJbc0hzsN6MPLiQEccySreiGjrcgk2tMBJR7/l6HGM" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg-page: #f6f5f1; --bg-card: #ffffff; --border-color: #e8e4d8;
+            --text-main: #1a1a1a; --text-muted: #6b6b6b; --primary: #0a0a0a;
+            --error: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; line-height: 1.45; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; }
+        .user-zone { position: relative; display: flex; align-items: center; gap: 12px; }
+        .menu-btn { background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; }
+        .dropdown-panel { position: absolute; top: calc(100% + 10px); right: 0; width: 280px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.08); padding: 14px; display: flex; flex-direction: column; gap: 6px; opacity: 0; visibility: hidden; transform: translateY(-8px); transition: 0.2s; z-index: 1000; }
+        .dropdown-panel.active { opacity: 1; visibility: visible; transform: translateY(0); }
+        .dropdown-panel a, .dropdown-panel button.menu-item { text-decoration: none; color: var(--text-main); padding: 11px 12px; border-radius: 10px; font-weight: 500; display: flex; align-items: center; gap: 12px; background: transparent; border: none; width: 100%; text-align: left; cursor: pointer; }
+        .dropdown-panel a:hover, .dropdown-panel button.menu-item:hover { background: #f5f5f5; }
+        .menu-divider { border: none; border-top: 1px solid var(--border-color); margin: 6px 0; }
+        .auth-buttons { display: flex; gap: 8px; }
+        .btn-login, .btn-signup { flex: 1; padding: 11px; border-radius: 10px; text-align: center; text-decoration: none; font-weight: 600; }
+        .btn-login { background: #fafafa; border: 1px solid var(--border-color); color: var(--text-main); }
+        .btn-signup { background: var(--primary); color: #fff; border: 1px solid var(--primary); }
+        .logged-in-box { background: #fafafa; border: 1px solid var(--border-color); padding: 14px; border-radius: 12px; display: none; }
+        .user-name { font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .user-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+        .balance-text { color: var(--text-muted); font-weight: 600; font-size: 0.82rem; display: flex; align-items: center; gap: 8px; text-decoration: none; }
+        .logout-btn { color: var(--error) !important; display: none; }
+
+        .shell { max-width: 1180px; margin: 0 auto; padding: 8px 40px 72px; display: grid; grid-template-columns: 200px 1fr; gap: 40px; }
+        .side-nav { display: flex; flex-direction: column; gap: 2px; padding-top: 8px; }
+        .side-nav a { text-decoration: none; color: var(--text-main); padding: 10px 14px; border-radius: 8px; font-weight: 550; font-size: 0.95rem; }
+        .side-nav a:hover { background: #eeebe6; }
+        .side-nav a.active { background: #eceae6; font-weight: 700; }
+
+        .page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+        .page-head h1 { font-size: 1.7rem; font-weight: 750; letter-spacing: -0.03em; }
+
+        .btn-primary { background: var(--primary); color: #fff; border: none; padding: 9px 16px; border-radius: 8px; font-weight: 650; font-size: 0.9rem; cursor: pointer; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-ghost { background: transparent; border: none; color: #9ca3af; cursor: pointer; padding: 6px 8px; border-radius: 6px; }
+        .btn-ghost:hover { color: var(--error); background: #fef2f2; }
+
+        .keys-table { width: 100%; border-collapse: collapse; }
+        .keys-table th { text-align: left; font-size: 0.78rem; color: var(--text-muted); font-weight: 650; padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
+        .keys-table td { padding: 14px 8px; border-bottom: 1px solid #f0eeea; font-size: 0.9rem; vertical-align: middle; }
+        .keys-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.84rem; color: #444; }
+        .empty-row { color: var(--text-muted); padding: 36px 8px; text-align: left; }
+        .keys-hint { color: var(--text-muted); font-size: 0.9rem; margin: -8px 0 18px; max-width: 46rem; }
+
+        .reveal { display: none; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; }
+        .reveal.show { display: flex; }
+        .reveal code { flex: 1; font-size: 0.84rem; word-break: break-all; }
+        .btn-copy { background: #111; color: #fff; border: none; padding: 8px 12px; border-radius: 8px; font-weight: 650; cursor: pointer; }
+
+        .gate { display: none; }
+        .gate.show { display: block; padding: 28px 0; color: var(--text-muted); }
+        .gate a { color: inherit; font-weight: 700; }
+
+        .modal-bg { display: none; position: fixed; inset: 0; background: rgba(10,10,10,0.35); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-bg.open { display: flex; }
+        .modal { background: #fff; width: min(420px, 100%); border-radius: 14px; padding: 22px; box-shadow: 0 20px 50px rgba(0,0,0,0.18); }
+        .modal h2 { font-size: 1.1rem; margin-bottom: 14px; }
+        .modal input { width: 100%; padding: 11px 12px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.95rem; margin-bottom: 16px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        .btn-cancel { background: #fff; border: 1px solid var(--border-color); padding: 9px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; vertical-align: -2px; }
+        @media (max-width: 800px) {
+            .top-bar, .shell { padding-left: 16px; padding-right: 16px; }
+            .shell { grid-template-columns: 1fr; gap: 20px; }
+            .side-nav { flex-direction: row; flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+<header class="top-bar">
+    <a class="logo" href="/">
+        <span class="logo-lockup">
+            <img class="logo-mark logo-img--light" src="/logo/logo_arrow_White.svg" alt="" onerror="this.onerror=null;this.src='logo/logo_arrow_White.svg'">
+            <img class="logo-mark logo-img--dark" src="/logo/logo_arrow_Black.svg" alt="" onerror="this.onerror=null;this.src='logo/logo_arrow_Black.svg'">
+            <span class="logo-wordmark">
+                <img class="logo-img logo-img--light" src="/logo/glotix_Black.svg" alt="Glotix" onerror="this.onerror=null;this.src='logo/glotix_Black.svg'">
+                <img class="logo-img logo-img--dark" src="/logo/glotix_White.svg" alt="" onerror="this.onerror=null;this.src='logo/glotix_White.svg'">
+                <img class="logo-i-tittle" src="/logo/glotix_Triangle.svg" alt="" onerror="this.onerror=null;this.src='logo/glotix_Triangle.svg'">
+            </span>
+        </span>
+    </a>
+    <div class="user-zone">
+        <button type="button" class="theme-toggle" data-theme-toggle title="Theme" aria-label="Toggle theme"><i class="fa-solid fa-moon icon-moon"></i><i class="fa-solid fa-sun icon-sun"></i></button>
+        <button class="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i> Menu</button>
+        <div class="dropdown-panel" id="mainMenuDropdown">
+            <div class="auth-buttons" id="guestMenu">
+                <a href="/login" class="btn-login">Login</a>
+                <a href="/signup" class="btn-signup">Sign up</a>
+            </div>
+            <div class="logged-in-box" id="userMenu">
+                <div class="user-name">
+                    <img id="menuAvatar" class="user-avatar" src="https://ui-avatars.com/api/?name=User&size=128&background=334155&color=fff" alt="" referrerpolicy="no-referrer">
+                    <span id="menuUserName">My Account</span>
+                </div>
+                <a href="/pricing" class="balance-text" style="text-decoration:none;cursor:pointer;"><i class="fas fa-coins"></i> <span id="menuCredits">...</span> Credits</a>
+            </div>
+            <hr class="menu-divider">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="/dubbing"><i class="fa-regular fa-file-video"></i> Dubbing Studio</a>
+            <a href="/tts"><i class="fa-regular fa-comment-dots"></i> Text to Speech</a>
+            <hr class="menu-divider">
+            <a href="/history"><i class="fa-regular fa-folder-open"></i> My Files</a>
+            <a href="/developer"><i class="fas fa-key"></i> API keys</a>
+            <a href="/pricing"><i class="fas fa-arrow-up-right-from-square"></i> Upgrade Plan</a>
+            <button class="menu-item logout-btn" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
+        </div>
+    </div>
+</header>
+
+<div class="shell">
+    <nav class="side-nav">
+        <a href="/history">Usage</a>
+        <a href="/developer" class="active">API keys</a>
+        <a href="/pricing">Top up</a>
+        <a href="/pricing">Billing</a>
+    </nav>
+
+    <main>
+        <div class="page-head">
+            <h1>API keys</h1>
+            <button class="btn-primary" id="btnOpenCreate" type="button">Create new API key</button>
+        </div>
+        <p class="keys-hint">First key requires any credit pack of $9 or more. You can create up to two keys, each with a different name.</p>
+
+        <div class="gate" id="loginGate"><a href="/login">Sign in</a></div>
+
+        <div id="keysPanel" style="display:none;">
+            <div class="reveal" id="revealBanner">
+                <code id="revealValue"></code>
+                <button class="btn-copy" id="btnCopy" type="button">Copy</button>
+            </div>
+            <table class="keys-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Key</th>
+                        <th>Created</th>
+                        <th>Last used</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="keysBody">
+                    <tr><td class="empty-row" colspan="5">No keys</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<div class="modal-bg" id="createModal" role="dialog" aria-labelledby="createTitle">
+    <div class="modal">
+        <h2 id="createTitle">Create new API key</h2>
+        <input type="text" id="keyName" maxlength="80" placeholder="Unique name" autocomplete="off">
+        <div class="modal-actions">
+            <button class="btn-cancel" id="btnCancel" type="button">Cancel</button>
+            <button class="btn-primary" id="btnCreate" type="button">Create</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/shared/theme.js?v=2"></script>
+<script src="js/config.js"></script>
+<script src="js/shared/01-api-base.js?v=23"></script>
+<script src="js/shared/02-toast.js?v=21"></script>
+<script src="js/shared/03-jwt.js?v=18"></script>
+<script src="js/shared/04-auth-headers.js?v=18"></script>
+<script src="js/shared/06-guest-menu.js?v=17"></script>
+<script src="js/shared/07-supabase-client.js?v=17"></script>
+<script src="js/shared/08-credits-helpers.js?v=19"></script>
+<script src="js/shared/10-menu-ui.js?v=22"></script>
+<script src="js/shared/11-menu-actions.js?v=18"></script>
+<script src="js/shared/05-session.js?v=18"></script>
+<script src="js/shared/09-credits-fetch.js?v=18"></script>
+<script src="js/shared/12-auth-sync.js?v=18"></script>
+<script src="js/shared/13-connection.js?v=18"></script>
+<script src="js/shared/15-api-errors.js?v=21"></script>
+<script src="js/shared/14-init.js?v=18"></script>
+<script>
+const API = (function () {
+  if (typeof window.normalizeApiBaseUrl === 'function') return window.normalizeApiBaseUrl();
+  const cfg = window.APP_CONFIG || {};
+  return String(window.API_BASE || cfg.API_BASE || 'https://sl-dubbing--glotix-api-serve.modal.run')
+    .replace(/\/$/, '');
+})();
+
+const MAX_KEYS = 2;
+let _keys = [];
+let _balance = 0;
+
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function fmtDate(value) {
+  if (!value) return 'ù';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return 'ù';
+  return d.toISOString().slice(0, 10);
+}
+
+function maskKey(prefix) {
+  const p = String(prefix || 'gl_live_');
+  return p + '*****';
+}
+
+async function getHeaders() {
+  return window.getApiAuthHeaders ? await window.getApiAuthHeaders() : null;
+}
+
+function renderKeys() {
+  const body = document.getElementById('keysBody');
+  if (!_keys.length) {
+    body.innerHTML = '<tr><td class="empty-row" colspan="5">No keys</td></tr>';
+    return;
+  }
+  body.innerHTML = _keys.map((k) => `
+    <tr id="ki-${escHtml(k.id)}">
+      <td>${escHtml(k.name || 'Key')}</td>
+      <td class="mono">${escHtml(maskKey(k.prefix))}</td>
+      <td>${escHtml(fmtDate(k.created_at))}</td>
+      <td>${escHtml(fmtDate(k.last_used_at))}</td>
+      <td><button class="btn-ghost" type="button" onclick="revokeKey('${escHtml(k.id)}')" title="Delete"><i class="fas fa-trash-can"></i></button></td>
+    </tr>
+  `).join('');
+}
+
+async function loadKeys() {
+  const headers = await getHeaders();
+  const gate = document.getElementById('loginGate');
+  const panel = document.getElementById('keysPanel');
+  if (!headers) {
+    gate.classList.add('show');
+    panel.style.display = 'none';
+    return;
+  }
+  gate.classList.remove('show');
+  panel.style.display = 'block';
+  try {
+    const credRes = await fetch(`${API}/api/user/credits`, { headers });
+    if (credRes.ok) {
+      const credData = await credRes.json();
+      _balance = credData.character_credits ?? credData.credits ?? credData.balance ?? 0;
+    }
+  } catch (_) {}
+  try {
+    const res = await fetch(`${API}/api/developer/keys`, { headers });
+    const data = await res.json();
+    _keys = data.api_keys || [];
+  } catch (_) {
+    _keys = [];
+  }
+  renderKeys();
+}
+
+function openCreateModal() {
+  if (_keys.length >= MAX_KEYS) {
+    window.showToast?.('Maximum of 2 API keys per account', 'error');
+    return;
+  }
+  document.getElementById('keyName').value = '';
+  document.getElementById('createModal').classList.add('open');
+  document.getElementById('keyName').focus();
+}
+
+function closeCreateModal() {
+  document.getElementById('createModal').classList.remove('open');
+}
+
+async function createKey() {
+  const btn = document.getElementById('btnCreate');
+  const name = document.getElementById('keyName').value.trim() || 'My API Key';
+  const taken = _keys.some((k) => String(k.name || '').trim().toLowerCase() === name.toLowerCase());
+  if (taken) {
+    window.showToast?.('Each API key needs a different name.', 'error');
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  const headers = await getHeaders();
+  if (!headers) {
+    btn.disabled = false;
+    btn.textContent = 'Create';
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/api/developer/keys`, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      if (data.error === 'PACK_REQUIRED') {
+        throw new Error(data.message || 'Buy any credit pack of $9 or more first.');
+      }
+      throw new Error(data.message || data.error || 'Failed');
+    }
+    document.getElementById('revealValue').textContent = data.key;
+    document.getElementById('revealBanner').classList.add('show');
+    _keys.unshift(data.api_key);
+    renderKeys();
+    closeCreateModal();
+  } catch (e) {
+    window.showToast?.(e.message || 'Could not create key', 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Create';
+}
+
+async function revokeKey(keyId) {
+  if (!confirm('Delete this key?')) return;
+  const headers = await getHeaders();
+  if (!headers) return;
+  try {
+    const res = await fetch(`${API}/api/developer/keys/${keyId}`, { method: 'DELETE', headers });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Failed');
+    _keys = _keys.filter((k) => k.id !== keyId);
+    renderKeys();
+  } catch (e) {
+    window.showToast?.(e.message || 'Could not delete key', 'error');
+  }
+}
+
+document.getElementById('btnOpenCreate').addEventListener('click', openCreateModal);
+document.getElementById('btnCancel').addEventListener('click', closeCreateModal);
+document.getElementById('createModal').addEventListener('click', (e) => {
+  if (e.target.id === 'createModal') closeCreateModal();
+});
+document.getElementById('btnCreate').addEventListener('click', createKey);
+document.getElementById('keyName').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') createKey();
+});
+document.getElementById('btnCopy').addEventListener('click', async () => {
+  const val = document.getElementById('revealValue').textContent;
+  try {
+    await navigator.clipboard.writeText(val);
+    document.getElementById('btnCopy').textContent = 'Copied';
+    setTimeout(() => { document.getElementById('btnCopy').textContent = 'Copy'; }, 1600);
+  } catch (_) {}
+});
+document.addEventListener('DOMContentLoaded', loadKeys);
+</script>
+</body>
+</html>
