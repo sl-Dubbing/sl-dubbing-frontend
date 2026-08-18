@@ -31,9 +31,9 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/svg+xml" href="/logo/logo_arrow_White.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
-    <link rel="stylesheet" href="css/logo.css">
+    <link rel="stylesheet" href="css/logo.css?v=20260818icons">
     <link rel="stylesheet" href="css/brand-theme.css?v=20260818font">
-    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/theme.css?v=20260818icons">
     <script>
       (function () {
         try {
@@ -182,7 +182,7 @@
             object-fit: contain;
             display: block;
             pointer-events: none;
-            mix-blend-mode: screen;
+            mix-blend-mode: normal;
             transform-origin: 50% 55%;
         }
         .tool-card:hover .ico.ico--asset {
@@ -318,7 +318,7 @@
         .feature-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 28px; transition: var(--transition); position: relative; overflow: hidden; }
         .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(10,10,10,0.08); border-color: #d0cfcb; }
         .feature-icon { margin-bottom: 18px; }
-        /* Empty triangle shell (icon-index/4.png) + black glyph ? same tilt as tool cards */
+        /* Empty triangle shell (icon-index/4.png?v=2) + black glyph ? same tilt as tool cards */
         .feature-icon.feature-icon--shell {
             width: 64px !important;
             height: 64px !important;
@@ -351,7 +351,7 @@
             inset: 0;
             z-index: 0;
             pointer-events: none;
-            mix-blend-mode: screen;
+            mix-blend-mode: normal;
         }
         .feature-icon.feature-icon--shell i {
             position: relative;
@@ -359,7 +359,7 @@
             isolation: isolate;
             mix-blend-mode: normal;
             color: var(--heading, var(--text-main)) !important;
-            font-size: 1.05rem !important;
+            font-size: 1.35rem !important;
             line-height: 1;
             transform: none !important;
             text-shadow: none !important;
@@ -577,12 +577,12 @@
 
     <div class="tools-row">
         <div class="tool-card tts" onclick="location.href='/tts'">
-            <span class="ico ico--asset"><img src="logo/glotix_Triangle.svg" alt="" width="72" height="72" decoding="async"></span>
+            <span class="ico ico--asset"><img src="icon-index/1.png?v=2" alt="" width="72" height="72" decoding="async"></span>
             <h3>Text to Speech</h3>
             <span class="go">Open <i class="fas fa-arrow-right"></i></span>
         </div>
         <div class="tool-card dub" onclick="location.href='/dubbing'">
-            <span class="ico ico--asset"><img src="logo/glotix_Triangle.svg" alt="" width="72" height="72" decoding="async"></span>
+            <span class="ico ico--asset"><img src="icon-index/2.png?v=2" alt="" width="72" height="72" decoding="async"></span>
             <h3>Video dubbing</h3>
             <span class="go">Open <i class="fas fa-arrow-right"></i></span>
         </div>
@@ -598,7 +598,7 @@
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-icon feature-icon--shell">
-                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
+                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png?v=2" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
                     <i class="fa-solid fa-globe" aria-hidden="true"></i>
                 </div>
                 <h3>Language packs</h3>
@@ -606,7 +606,7 @@
             </div>
             <div class="feature-card">
                 <div class="feature-icon feature-icon--shell">
-                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
+                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png?v=2" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
                     <i class="fa-solid fa-volume-high" aria-hidden="true"></i>
                 </div>
                 <h3>Catalog and cloned voices</h3>
@@ -614,7 +614,7 @@
             </div>
             <div class="feature-card">
                 <div class="feature-icon feature-icon--shell">
-                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
+                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png?v=2" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
                     <i class="fa-solid fa-microphone" aria-hidden="true"></i>
                 </div>
                 <h3>Voice from the source video</h3>
@@ -622,7 +622,7 @@
             </div>
             <div class="feature-card">
                 <div class="feature-icon feature-icon--shell">
-                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
+                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png?v=2" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
                     <i class="fa-solid fa-gauge-high" aria-hidden="true"></i>
                 </div>
                 <h3>Progress you can watch</h3>
@@ -630,7 +630,7 @@
             </div>
             <div class="feature-card">
                 <div class="feature-icon feature-icon--shell">
-                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
+                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png?v=2" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
                     <i class="fa-solid fa-music" aria-hidden="true"></i>
                 </div>
                 <h3>Music and effects stay</h3>
@@ -638,7 +638,7 @@
             </div>
             <div class="feature-card">
                 <div class="feature-icon feature-icon--shell">
-                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
+                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png?v=2" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
                     <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
                 </div>
                 <h3>Your files, your account</h3>
@@ -808,7 +808,7 @@
         <div class="usecases-grid">
             <div class="usecase-tile">
                 <div class="feature-icon feature-icon--shell">
-                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
+                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png?v=2" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
                     <i class="fa-solid fa-clapperboard" aria-hidden="true"></i>
                 </div>
                 <h4>Published video</h4>
@@ -816,7 +816,7 @@
             </div>
             <div class="usecase-tile">
                 <div class="feature-icon feature-icon--shell">
-                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
+                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png?v=2" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
                     <i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i>
                 </div>
                 <h4>Lessons</h4>
@@ -824,7 +824,7 @@
             </div>
             <div class="usecase-tile">
                 <div class="feature-icon feature-icon--shell">
-                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
+                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png?v=2" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
                     <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
                 </div>
                 <h4>Internal video</h4>
@@ -832,7 +832,7 @@
             </div>
             <div class="usecase-tile">
                 <div class="feature-icon feature-icon--shell">
-                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
+                    <span class="feature-icon-triangle" aria-hidden="true"><img src="icon-index/4.png?v=2" alt="" width="64" height="64" decoding="async" aria-hidden="true"></span>
                     <i class="fa-solid fa-comment-dots" aria-hidden="true"></i>
                 </div>
                 <h4>Speech only</h4>

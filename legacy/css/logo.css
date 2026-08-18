@@ -474,8 +474,7 @@ html[data-theme="dark"] .brand-chevron .fa-chevron-down {
     height: 100%;
     object-fit: contain;
     display: block;
-    /* PNGs ship on black canvas — blend so only gold triangle + glyph remain on light UI */
-    mix-blend-mode: screen;
+    mix-blend-mode: normal;
 }
 .tool-card:hover .ico.ico--asset {
     /* Hover motion owned by index.html (stronger pulse + triangle tilt) */
@@ -514,7 +513,7 @@ html[data-theme="dark"] .brand-chevron .fa-chevron-down {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    mix-blend-mode: screen;
+    mix-blend-mode: normal;
 }
 .feature-icon.feature-icon--shell i {
     position: relative;
@@ -522,7 +521,7 @@ html[data-theme="dark"] .brand-chevron .fa-chevron-down {
     isolation: isolate;
     mix-blend-mode: normal;
     color: var(--heading, #0a0a0a) !important;
-    font-size: 1.05rem !important;
+    font-size: 1.35rem !important;
     line-height: 1;
     transform: none !important;
     text-shadow: none !important;
