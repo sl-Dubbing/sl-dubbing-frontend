@@ -507,11 +507,20 @@ html[data-theme="dark"] .brand-chevron .fa-chevron-down {
     object-fit: contain;
     pointer-events: none;
     z-index: 0;
+    mix-blend-mode: normal;
+}
+.feature-icon.feature-icon--shell .feature-icon-triangle {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
     mix-blend-mode: screen;
 }
 .feature-icon.feature-icon--shell i {
     position: relative;
-    z-index: 2;
+    z-index: 3;
+    isolation: isolate;
+    mix-blend-mode: normal;
     color: var(--heading, #0a0a0a) !important;
     font-size: 1.05rem !important;
     line-height: 1;

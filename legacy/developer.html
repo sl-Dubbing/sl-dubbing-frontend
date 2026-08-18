@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com; media-src 'self' blob: https://cdn.glotix.ai; connect-src 'self' https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com https://*.googleusercontent.com; media-src 'self' blob: https://cdn.glotix.ai; connect-src 'self' https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>API keys | Glotix</title>
     <meta name="description" content="Create and name Glotix API keys.">
@@ -127,7 +127,7 @@
             </div>
             <div class="logged-in-box" id="userMenu">
                 <div class="user-name">
-                    <img id="menuAvatar" class="user-avatar" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="">
+                    <img id="menuAvatar" class="user-avatar" src="https://ui-avatars.com/api/?name=User&size=128&background=334155&color=fff" alt="" referrerpolicy="no-referrer">
                     <span id="menuUserName">My Account</span>
                 </div>
                 <a href="/pricing" class="balance-text" style="text-decoration:none;cursor:pointer;"><i class="fas fa-coins"></i> <span id="menuCredits">...</span> Credits</a>
@@ -197,14 +197,14 @@
 
 <script src="js/shared/theme.js?v=2"></script>
 <script src="js/config.js"></script>
-<script src="js/shared/01-api-base.js?v=18"></script>
+<script src="js/shared/01-api-base.js?v=22"></script>
 <script src="js/shared/02-toast.js?v=21"></script>
 <script src="js/shared/03-jwt.js?v=18"></script>
 <script src="js/shared/04-auth-headers.js?v=18"></script>
 <script src="js/shared/06-guest-menu.js?v=17"></script>
 <script src="js/shared/07-supabase-client.js?v=17"></script>
 <script src="js/shared/08-credits-helpers.js?v=19"></script>
-<script src="js/shared/10-menu-ui.js?v=17"></script>
+<script src="js/shared/10-menu-ui.js?v=22"></script>
 <script src="js/shared/11-menu-actions.js?v=18"></script>
 <script src="js/shared/05-session.js?v=18"></script>
 <script src="js/shared/09-credits-fetch.js?v=18"></script>

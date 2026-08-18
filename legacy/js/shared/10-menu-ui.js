@@ -62,7 +62,16 @@
       if (menuUserName) menuUserName.textContent = user.name || 'My Account';
       // # شرط — فرع منطقي
       if (menuAvatar) {
-        menuAvatar.src = user.avatarUrl || defaultAvatar;
+        const fallback =
+          'https://ui-avatars.com/api/?name=' +
+          encodeURIComponent(user.name || 'User') +
+          '&size=128&background=334155&color=fff';
+        menuAvatar.referrerPolicy = 'no-referrer';
+        menuAvatar.onerror = function () {
+          this.onerror = null;
+          this.src = fallback;
+        };
+        menuAvatar.src = user.avatarUrl || defaultAvatar || fallback;
         menuAvatar.alt = user.name || 'User';
       }
       // # شرط — فرع منطقي
@@ -81,6 +90,8 @@
       if (credits) credits.textContent = '...';
       // # شرط — فرع منطقي
       if (menuAvatar) {
+        menuAvatar.referrerPolicy = 'no-referrer';
+        menuAvatar.onerror = null;
         menuAvatar.src = defaultAvatar;
         menuAvatar.alt = 'User';
       }

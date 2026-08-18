@@ -19,8 +19,14 @@
 		menuOpen = !menuOpen;
 	}
 
-	function closeMenu() {
-		menuOpen = false;
+	function onAvatarError(e: Event) {
+		const img = e.currentTarget as HTMLImageElement;
+		const name = $auth.user?.name || 'User';
+		img.onerror = null;
+		img.src =
+			'https://ui-avatars.com/api/?name=' +
+			encodeURIComponent(name) +
+			'&size=128&background=334155&color=fff';
 	}
 
 	function onTheme() {
@@ -57,7 +63,7 @@
 		</button>
 		<button type="button" class="menu-btn" onclick={toggleMenu} aria-expanded={menuOpen}>
 			{#if $auth.user}
-				<img class="menu-btn-avatar" src={$auth.user.avatarUrl || getDefaultAvatar()} alt="" />
+				<img class="menu-btn-avatar" src={$auth.user.avatarUrl || getDefaultAvatar()} alt="" referrerpolicy="no-referrer" onerror={onAvatarError} />
 				<span class="menu-btn-label">{$auth.user.name}</span>
 			{:else}
 				<span class="menu-btn-label">Menu</span>
@@ -73,6 +79,8 @@
 								class="user-avatar"
 								src={$auth.user.avatarUrl || getDefaultAvatar()}
 								alt=""
+								referrerpolicy="no-referrer"
+								onerror={onAvatarError}
 							/>
 							{$auth.user.name}
 						</div>

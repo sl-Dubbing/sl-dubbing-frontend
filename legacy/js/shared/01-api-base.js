@@ -94,6 +94,6 @@
     isAllowedCheckoutRedirectUrl,
     isAllowedPlaybackUrl,
     DEFAULT_MENU_AVATAR:
-      'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
+      'https://ui-avatars.com/api/?name=User&size=128&background=334155&color=fff',
   };
 })(window);

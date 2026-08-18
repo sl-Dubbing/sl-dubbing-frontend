@@ -172,9 +172,12 @@ html[data-theme="dark"] .feature-icon.feature-icon--shell i {
     color: #ffffff !important;
 }
 html[data-theme="dark"] .tool-card .ico.ico--asset img,
-html[data-theme="dark"] .feature-icon.feature-icon--shell img {
+html[data-theme="dark"] .feature-icon.feature-icon--shell .feature-icon-triangle {
     /* PNG icons ship on black — lighten keeps mark visible on dark cards */
     mix-blend-mode: lighten !important;
+}
+html[data-theme="dark"] .feature-icon.feature-icon--shell img {
+    mix-blend-mode: normal !important;
 }
 @media (prefers-color-scheme: dark) {
     html:not([data-theme="light"]) h1,
