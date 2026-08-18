@@ -30,17 +30,17 @@
     // # try — معالجة عملية قد تفشل
     try {
       // # HTTP — طلب إلى API
-      const res = await fetch(`${normalizeApiBaseUrl()}/api/user/voice-clones`, { headers });
-      // # parse — قراءة JSON من الاستجابة
-      const data = await res.json().catch(() => ({}));
-      // # guard — شرط رفض أو خروج مبكر
-      if (!res.ok || !Array.isArray(data.clones)) {
+      const clones =
+        typeof global.fetchSharedUserVoiceClones === 'function'
+          ? await global.fetchSharedUserVoiceClones(normalizeApiBaseUrl(), headers)
+          : null;
+      if (!Array.isArray(clones)) {
         S.userVoiceClonesCache = [];
         DubbingApp.voiceHtml.refreshVoiceSavePlusCardInGrid();
         // # return — إرجاع النتيجة
         return [];
       }
-      S.userVoiceClonesCache = data.clones;
+      S.userVoiceClonesCache = clones;
       // # block — معالجة صوت/استنساخ
       DubbingApp.voiceHtml.refreshVoiceSavePlusCardInGrid();
       // # return — إرجاع النتيجة

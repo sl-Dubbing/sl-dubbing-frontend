@@ -64,7 +64,8 @@ button,
 input,
 select,
 textarea {
-    font-family: var(--font-ui);
+    font-family: var(--font-ui) !important;
+    font-optical-sizing: auto;
 }
 
 body {
@@ -87,7 +88,13 @@ h2,
 .showcase-text h2,
 .cta-banner h2,
 .page-hero h1,
-.dub-showcase-head h2 {
+.dub-showcase-head h2,
+.page-title,
+.fm-header h1,
+.privacy-header h1,
+.login-card h1,
+.plan-price-num,
+.lang-stat .num {
     font-family: var(--font-display) !important;
     font-weight: 300 !important;
     letter-spacing: var(--tracking-display) !important;
@@ -96,10 +103,14 @@ h2,
 
 h3,
 h4,
+h5,
 .tool-card h3,
 .feature-card h3,
 .step-card h3,
-.usecase-tile h4 {
+.usecase-tile h4,
+.plan-name,
+.privacy-section h2,
+.media-modal-header h3 {
     font-family: var(--font-display) !important;
     font-weight: 300 !important;
     letter-spacing: -0.015em;
@@ -145,7 +156,12 @@ pre,
 
 .menu-btn,
 .dropdown-panel a,
-.dropdown-panel button.menu-item {
+.dropdown-panel button.menu-item,
+.lang-pill,
+.lang-item,
+.v-name,
+.voice-name-label,
+.stt-select {
     font-family: var(--font-ui) !important;
     font-size: var(--text-ui) !important;
     font-weight: 500 !important;

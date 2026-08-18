@@ -48,7 +48,12 @@
     restoreSavedCustomVoiceFromLocalStorage();
 
     // # localStorage — تخزين محلي
-    const storedLang = localStorage.getItem(LANG_KEY) || 'ar';
+    const storedLang =
+      (typeof global.getSharedTargetLangCode === 'function'
+        ? global.getSharedTargetLangCode('')
+        : '') ||
+      localStorage.getItem(LANG_KEY) ||
+      'ar';
     S.currentLangCode = normalizeTtsLangCode(storedLang);
 
     TtsApp.lang.bindTtsLanguageDropdownUi(S.currentLangCode);
@@ -58,9 +63,17 @@
     if (S.selectedVoiceId === 'custom_clone') {
       TtsApp.voice.showVoiceCloneNote(true);
       document.getElementById('cloneCard')?.classList.add('selected');
-    } else if (!S.selectedVoiceId) {
-      // Reliable default: ElevenLabs Flash (Quick) when no saved/premium voice
-      TtsApp.voice.selectQuickEdgeVoice?.();
+    } else {
+      const sharedVoice =
+        typeof global.readSharedStudioVoice === 'function' ? global.readSharedStudioVoice() : null;
+      const waitForSharedSample =
+        sharedVoice &&
+        sharedVoice.kind &&
+        sharedVoice.kind !== 'quick' &&
+        sharedVoice.kind !== 'default';
+      if (!S.selectedVoiceId && !waitForSharedSample) {
+        TtsApp.voice.selectQuickEdgeVoice?.();
+      }
     }
     // # block — معالجة صوت/استنساخ
     TtsApp.voice.loadTtsPremiumVoicesFromSupabase();

@@ -91,9 +91,10 @@
           `https://ui-avatars.com/api/?name=${encodeURIComponent(voice.name || 'Voice')}&background=eff6ff&color=2563eb&size=128`,
         );
         const selected = global.selectedSample === voice.sample_url ? ' selected' : '';
+        const voiceId = escapeHtmlForVoiceCardLabels(voice.id || '');
         // # return — إرجاع النتيجة
         return `
-            <div class="voice-avatar-card voice-user-clone-card${selected}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url="${avatarUrl}"
+            <div class="voice-avatar-card voice-user-clone-card${selected}" data-voice-id="${voiceId}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url="${avatarUrl}"
                  onclick="onPremiumVoiceCardClick(this)" title="Your saved voice">
                 <div class="voice-avatar-wrapper">
                     <div class="voice-save-plus-inner"><i class="fa-solid fa-user"></i></div>
@@ -160,9 +161,10 @@
         );
         // # block — معالجة صوت/استنساخ
         const selected = global.selectedSample === voice.sample_url ? ' selected' : '';
+        const voiceId = escapeHtmlForVoiceCardLabels(voice.id || '');
         // # return — إرجاع النتيجة
         return `
-            <div class="voice-avatar-card${selected}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url=""
+            <div class="voice-avatar-card${selected}" data-voice-id="${voiceId}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url=""
                  onclick="onPremiumVoiceCardClick(this)">
                 <div class="voice-avatar-wrapper voice-mark-triangle">
                     <img src="logo/glotix_Triangle.svg" alt="" loading="lazy" decoding="async">
@@ -193,6 +195,14 @@
     const container = document.getElementById('supabaseVoicesContainer');
     // # guard — شرط رفض أو خروج مبكر
     if (!container) return;
+    if (!global.selectedSample && typeof global.readSharedStudioVoice === 'function') {
+      const shared = global.readSharedStudioVoice();
+      if (shared && shared.sample_url && shared.kind !== 'quick' && shared.kind !== 'default') {
+        global.selectedSample = shared.sample_url;
+        global.selectedElevenLabsVoiceId = shared.elevenlabs_voice_id || '';
+        global.voiceMode = 'clone';
+      }
+    }
     // # شرط — فرع منطقي
     if (!S.premiumVoicesCache.length && !global.savedVoiceProfile) {
       container.innerHTML =
@@ -359,6 +369,21 @@
     global.selectedSample = sampleUrl;
     global.voiceMode = 'clone';
     global.usingSavedVoice = cardEl.classList.contains('voice-saved-user-card');
+    if (typeof global.persistSharedStudioVoice === 'function') {
+      const kind = cardEl.classList.contains('voice-user-clone-card')
+        ? 'clone'
+        : cardEl.classList.contains('voice-saved-user-card')
+          ? 'saved'
+          : 'premium';
+      global.persistSharedStudioVoice({
+        kind: kind,
+        id: cardEl.getAttribute('data-voice-id') || '',
+        name: name,
+        sample_url: sampleUrl,
+        sample_text: sampleText,
+        elevenlabs_voice_id: elevenLabsVoiceId,
+      });
+    }
   }
 
   // # FN handleVoiceSavePlusCardClick

@@ -103,6 +103,39 @@
   global.SHARED_LANGUAGES = global.LANGUAGES;
   global.LANG_CATALOG_META = { source: 'fallback', model_id: 'eleven_flash_v2_5', synced: false };
 
+  const SHARED_TARGET_LANG_KEY = 'glotix.target_lang';
+
+  // # FN getSharedTargetLangCode
+  // # AR Last target language shared by Dubbing Studio and Text to Speech.
+  // # KW لغة,language,dialect
+  function getSharedTargetLangCode(fallback) {
+    try {
+      const shared = localStorage.getItem(SHARED_TARGET_LANG_KEY);
+      if (shared) return shared;
+      const ttsOnly = localStorage.getItem('glotix_tts_lang');
+      if (ttsOnly) return ttsOnly;
+    } catch (_) {
+      /* ignore */
+    }
+    return fallback || '';
+  }
+
+  // # FN setSharedTargetLangCode
+  // # KW لغة,language,dialect
+  function setSharedTargetLangCode(code) {
+    const value = String(code || '').trim();
+    if (!value) return;
+    try {
+      localStorage.setItem(SHARED_TARGET_LANG_KEY, value);
+      localStorage.setItem('glotix_tts_lang', value);
+    } catch (_) {
+      /* quota / private mode */
+    }
+  }
+
+  global.getSharedTargetLangCode = getSharedTargetLangCode;
+  global.setSharedTargetLangCode = setSharedTargetLangCode;
+
   global.LANG_FLAG_COUNTRY = {
     ar: 'sa', bg: 'bg', zh: 'cn', hr: 'hr', cs: 'cz', da: 'dk', nl: 'nl',
     en: 'us', fil: 'ph', fi: 'fi', fr: 'fr', de: 'de', el: 'gr', hu: 'hu',

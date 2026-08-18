@@ -8,6 +8,7 @@
 //  فتح_رفع_عينة_الصوت      → triggerTtsVoiceUploadDialog
 //  معالجة_ملف_الصوت_المخصص → processCustomVoiceUploadFile
 //  اختيار_صوت_بريميوم       → selectTtsPremiumVoice
+//  استعادة_العينة_المشتركة  → restoreSharedStudioVoiceOnTts
 //  جلب_أصوات_بريميوم        → loadTtsPremiumVoicesFromSupabase
 //  ربط_لوحة_الأصوات         → bindTtsVoicePanelUi
 // =====================================================================
@@ -86,6 +87,16 @@
       c.classList.toggle('selected', c.dataset.voiceId === id);
     });
     document.getElementById('cloneCard')?.classList.remove('selected');
+    if (typeof global.persistSharedStudioVoice === 'function') {
+      global.persistSharedStudioVoice({
+        kind: 'premium',
+        id: id,
+        name: name || '',
+        sample_url: sampleUrl || '',
+        sample_text: sampleText || '',
+        elevenlabs_voice_id: S.selectedElevenLabsVoiceId,
+      });
+    }
   }
 
   /** معالجة_ملف_الصوت_المخصص — تحويل إلى WAV 16kHz وحفظ محلياً */
@@ -214,6 +225,61 @@
     return wrap;
   }
 
+  /** استعادة_العينة_المشتركة — نفس الاختيار بين الدبلجة وTTS */
+  // # FN restoreSharedStudioVoiceOnTts
+  // # AR Restore the last sample chosen in Dubbing or TTS.
+  // # KW صوت,استنساخ,voice,clone,sample,توليد_صوت,TTS,synthesis
+  function restoreSharedStudioVoiceOnTts() {
+    if (S.selectedVoiceId === 'custom_clone') return;
+    const shared =
+      typeof global.readSharedStudioVoice === 'function' ? global.readSharedStudioVoice() : null;
+    if (!shared || !shared.kind) return;
+    if (shared.kind === 'premium') {
+      const match = (S.premiumVoicesCache || []).find(
+        (v) => String(v.id) === String(shared.id) || (!!shared.sample_url && v.sample_url === shared.sample_url),
+      );
+      if (match) {
+        selectTtsPremiumVoice(
+          match.id,
+          match.name,
+          match.sample_url,
+          match.sample_text,
+          match.elevenlabs_voice_id || match.eleven_labs_voice_id || '',
+        );
+      }
+      return;
+    }
+    if (shared.kind === 'saved' && shared.sample_url) {
+      selectTtsPremiumVoice(
+        'saved',
+        shared.name,
+        shared.sample_url,
+        shared.sample_text,
+        shared.elevenlabs_voice_id || '',
+      );
+      return;
+    }
+    if (shared.kind === 'clone') {
+      const clones = global.SHARED_USER_VOICE_CLONES || [];
+      const match = clones.find(
+        (c) => String(c.id) === String(shared.id) || (!!shared.sample_url && c.sample_url === shared.sample_url),
+      );
+      if (match) {
+        selectTtsUserCloneVoice(
+          match.id,
+          match.name,
+          match.sample_url,
+          match.sample_text,
+          match.elevenlabs_voice_id || '',
+        );
+      }
+      return;
+    }
+    if (shared.kind === 'quick' || shared.kind === 'default') {
+      selectQuickEdgeVoice();
+    }
+  }
+
   /** جلب_أصوات_بريميوم — نفس كتالوج الدبلجة /api/voices/premium */
   // # FN loadTtsPremiumVoicesFromSupabase
   // # AR Load the shared public catalog used by Dubbing Studio.
@@ -226,10 +292,14 @@
     if (!API || !grid) return;
     // # try — معالجة عملية قد تفشل
     try {
-      // # HTTP — طلب إلى API
-      const res = await fetch(`${API}/api/voices/premium`);
-      const json = await res.json().catch(() => ({}));
-      const data = res.ok && Array.isArray(json.voices) ? json.voices : null;
+      let data = [];
+      if (typeof global.fetchSharedPremiumVoices === 'function') {
+        data = await global.fetchSharedPremiumVoices(API);
+      } else {
+        const res = await fetch(`${API}/api/voices/premium`);
+        const json = await res.json().catch(() => ({}));
+        data = res.ok && Array.isArray(json.voices) ? json.voices : [];
+      }
       // # guard — شرط رفض أو خروج مبكر
       if (!data || data.length === 0) return;
       S.premiumVoicesCache = data;
@@ -259,11 +329,7 @@
         card.appendChild(nameEl);
         grid.appendChild(card);
       });
-      // # شرط
-      if (!S.selectedVoiceId && !S.customVoiceFile && !global.currentSampleUrl) {
-        // # block — معالجة صوت/استنساخ
-        selectQuickEdgeVoice();
-      }
+      restoreSharedStudioVoiceOnTts();
     } catch (err) {
       console.warn('TTS catalog load failed', err);
     }
@@ -293,6 +359,9 @@
     // # block — معالجة صوت/استنساخ
     document.getElementById('quickVoiceCard')?.classList.add('selected');
     document.getElementById('cloneCard')?.classList.remove('selected');
+    if (arguments.length && typeof global.persistSharedStudioVoice === 'function') {
+      global.persistSharedStudioVoice({ kind: 'quick', id: 'quick_edge', name: 'Quick' });
+    }
   }
 
   /** إضافة_بطاقة_Quick — في أعلى لوحة الأصوات */
@@ -342,6 +411,16 @@
     document.querySelectorAll('.v-avatar-card').forEach(c => c.classList.remove('selected'));
     document.querySelector(`[data-voice-id="clone_${id}"]`)?.classList.add('selected');
     document.getElementById('cloneCard')?.classList.remove('selected');
+    if (typeof global.persistSharedStudioVoice === 'function') {
+      global.persistSharedStudioVoice({
+        kind: 'clone',
+        id: id,
+        name: name || '',
+        sample_url: sampleUrl || '',
+        sample_text: sampleText || '',
+        elevenlabs_voice_id: S.selectedElevenLabsVoiceId,
+      });
+    }
   }
 
   /** تحميل_عينات_المستخدم_المحفوظة — من /api/user/voice-clones */
@@ -362,12 +441,12 @@
 
     // # try — معالجة عملية قد تفشل
     try {
-      // # HTTP — طلب إلى API
-      const res = await fetch(`${API}/api/user/voice-clones`, { headers });
-      // # parse — قراءة JSON من الاستجابة
-      const data = await res.json().catch(() => ({}));
+      const clones =
+        typeof global.fetchSharedUserVoiceClones === 'function'
+          ? await global.fetchSharedUserVoiceClones(API, headers)
+          : [];
       // # guard — شرط رفض أو خروج مبكر
-      if (!res.ok || !data.success || !Array.isArray(data.clones) || data.clones.length === 0) return;
+      if (!Array.isArray(clones) || clones.length === 0) return;
 
       let section = document.getElementById('ttsUserClonesSection');
       // # guard — شرط رفض أو خروج مبكر
@@ -389,7 +468,7 @@
       if (!grid) return;
       grid.replaceChildren();
 
-      data.clones.forEach((clone) => {
+      clones.forEach((clone) => {
         const card = document.createElement('div');
         card.className = 'v-avatar-card' + (S.selectedVoiceId === `clone_${clone.id}` ? ' selected' : '');
         // # block — معالجة صوت/استنساخ
@@ -411,6 +490,7 @@
         );
         grid.appendChild(card);
       });
+      restoreSharedStudioVoiceOnTts();
     // # block — معالجة صوت/استنساخ
     } catch (_) {}
   }

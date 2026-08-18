@@ -347,6 +347,9 @@
     const data = await res.json().catch(() => ({}));
     // # guard — شرط رفض أو خروج مبكر
     if (!res.ok || !data.success) throw new Error(data.error || 'Could not save voice clone');
+    if (typeof global.invalidateSharedUserVoiceClones === 'function') {
+      global.invalidateSharedUserVoiceClones(headers['X-User-Id']);
+    }
 
     // # دمج clone الجديد في cache (أحدث أولاً)
     if (data.clone && S.userVoiceClonesCache) {

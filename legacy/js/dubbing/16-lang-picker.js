@@ -49,7 +49,8 @@
     const f = (query || '').toLowerCase().trim();
     // # guard — رفض/خروج
     if (!global.LANGUAGES) return [];
-    const filtered = global.LANGUAGES.filter(
+    const catalog = global.SHARED_LANGUAGES || global.LANGUAGES;
+    const filtered = catalog.filter(
       (l) =>
         !f ||
         // # block — فرع شرطي
@@ -241,6 +242,10 @@
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected]));
     global.selectedLangs = selected;
+    if (typeof global.setSharedTargetLangCode === 'function') {
+      const last = code || [...selected][selected.size - 1];
+      if (last) global.setSharedTargetLangCode(last);
+    }
     renderSelectedLangs();
     // # block — تحديث واجهة/DOM
     renderLanguages(document.getElementById('langSearch')?.value || '');
@@ -261,6 +266,10 @@
     // # block — تحديث واجهة/DOM
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected]));
     global.selectedLangs = selected;
+    if (typeof global.setSharedTargetLangCode === 'function') {
+      const last = [...selected][selected.size - 1];
+      if (last) global.setSharedTargetLangCode(last);
+    }
     renderSelectedLangs();
     renderLanguages(document.getElementById('langSearch')?.value || '');
     _updateTargetLangTriggerUI();
@@ -346,8 +355,21 @@
       // # block — فرع شرطي
       global.selectedLangs = selected;
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected]));
+      if (typeof global.setSharedTargetLangCode === 'function') {
+        const last = [...selected][selected.size - 1];
+        if (last) global.setSharedTargetLangCode(last);
+      }
     } else if (global.LANGUAGES[0]) {
-      selected = new Set([global.LANGUAGES.find((l) => l.code === 'en-us')?.code || global.LANGUAGES[0].code]);
+      const shared =
+        typeof global.getSharedTargetLangCode === 'function'
+          ? global.getSharedTargetLangCode('')
+          : '';
+      const sharedOk = shared && global.LANGUAGES.some((l) => l.code === shared);
+      selected = new Set([
+        sharedOk
+          ? shared
+          : global.LANGUAGES.find((l) => l.code === 'en-us')?.code || global.LANGUAGES[0].code,
+      ]);
       global.selectedLangs = selected;
     }
 

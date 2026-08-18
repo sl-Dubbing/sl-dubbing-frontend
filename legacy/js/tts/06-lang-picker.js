@@ -27,10 +27,11 @@
   // # KW توليد_صوت,TTS,synthesis,لغة,language,dialect
   function filterSortLanguages(query) {
     const q = (query || '').toLowerCase().trim();
-    const filtered = (global.LANGUAGES || []).filter(l =>
+    const filtered = (global.SHARED_LANGUAGES || global.LANGUAGES || []).filter(l =>
       !q ||
       l.name_en.toLowerCase().includes(q) ||
       l.name_ar.toLowerCase().includes(q) ||
+      (l.group || '').toLowerCase().includes(q) ||
       // # block — تنفيذ منطق — راجع الأسطر التالية
       l.code.toLowerCase().includes(q)
     );
@@ -108,6 +109,9 @@
     S.currentLangCode = code;
     // # localStorage — تخزين محلي
     localStorage.setItem(LANG_KEY, code);
+    if (typeof global.setSharedTargetLangCode === 'function') {
+      global.setSharedTargetLangCode(code);
+    }
 
     const cfg = typeof global.getLanguageConfig === 'function'
       ? global.getLanguageConfig(code)

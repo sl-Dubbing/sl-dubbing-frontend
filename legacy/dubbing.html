@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
     <link rel="stylesheet" href="css/logo.css">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/brand-theme.css">
+    <link rel="stylesheet" href="css/brand-theme.css?v=20260818font">
     <link rel="stylesheet" href="css/theme.css?v=20260717s">
     <script>
       (function () {
@@ -1076,7 +1076,7 @@
 <script src="js/shared/theme.js?v=2"></script>
 <script src="js/config.js"></script>
 <!-- shared -->
-<script src="js/shared/01-api-base.js?v=22"></script>
+<script src="js/shared/01-api-base.js?v=23"></script>
 <script src="js/shared/02-toast.js?v=21"></script>
 <script src="js/shared/03-jwt.js?v=18"></script>
 <script src="js/shared/04-auth-headers.js?v=18"></script>
@@ -1209,12 +1209,11 @@
                 ? window.DubbingApp.api.normalizeApiBaseUrl()
                 : String(window.APP_CONFIG && window.APP_CONFIG.API_BASE || '').replace(/\/$/, '');
             if (!apiBase) return;
-            const res = await fetch(apiBase + '/api/voices/premium');
-            const json = await res.json().catch(() => ({}));
-            const data = (res.ok && Array.isArray(json.voices)) ? json.voices : [];
-            const error = res.ok ? null : (json.error || 'voices_unavailable');
-            if (typeof renderPremiumVoicesGrid === 'function') { renderPremiumVoicesGrid(error || !data ? [] : data); return; }
-            if (error || !data || data.length === 0) { voicesContainer.innerHTML = '<div style="padding:10px;color:#9ca3af;font-size:0.85rem;width:100%;text-align:center;">No voices available</div>'; return; }
+            const data = (typeof window.fetchSharedPremiumVoices === 'function')
+                ? await window.fetchSharedPremiumVoices(apiBase)
+                : [];
+            if (typeof renderPremiumVoicesGrid === 'function') { renderPremiumVoicesGrid(data); return; }
+            if (!data || data.length === 0) { voicesContainer.innerHTML = '<div style="padding:10px;color:#9ca3af;font-size:0.85rem;width:100%;text-align:center;">No voices available</div>'; return; }
             const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
             voicesContainer.innerHTML = data.map(voice => {
                 const url = esc(voice.sample_url), name = esc(voice.name), engine = esc(voice.engine||'');
@@ -1269,18 +1268,18 @@
             .catch(function () {});
     })();
 </script>
-<script src="js/languages.js?v=20260818cache"></script>
+<script src="js/languages.js?v=20260818share"></script>
 <script src="js/src-lang-picker.js?v=20260714c"></script>
 <!-- Dubbing UI modules (order matters) -->
 <script src="js/dubbing/01-state.js?v=17"></script>
-<script src="js/dubbing/16-lang-picker.js?v=20260717f"></script>
+<script src="js/dubbing/16-lang-picker.js?v=20260818share"></script>
 <script src="js/dubbing/17-dub-lang-context.js?v=1"></script>
 <script src="js/dubbing/02-api-config.js?v=20260817sec"></script>
 <script src="js/dubbing/03-api-fetch.js?v=21"></script>
 <script src="js/dubbing/05-voice-payload.js?v=16"></script>
-<script src="js/dubbing/06-voice-html.js?v=20260818tri"></script>
-<script src="js/dubbing/07-voice-api.js?v=21"></script>
-<script src="js/dubbing/08-voice-save-modal.js?v=20260717a"></script>
+<script src="js/dubbing/06-voice-html.js?v=20260818share"></script>
+<script src="js/dubbing/07-voice-api.js?v=22"></script>
+<script src="js/dubbing/08-voice-save-modal.js?v=20260818share"></script>
 <script src="js/dubbing/09-voice-recorder.js?v=20260621"></script>
 <script src="js/dubbing/04-job-status.js?v=20260817sec"></script>
 <script src="js/dubbing/18-stream-player.js?v=1"></script>

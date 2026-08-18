@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/logo.css">
-    <link rel="stylesheet" href="css/brand-theme.css">
+    <link rel="stylesheet" href="css/brand-theme.css?v=20260818font">
     <link rel="stylesheet" href="css/theme.css">
     <script>
       (function () {
@@ -74,7 +74,7 @@
 
         .page-title { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 18px; }
 
-        /* Usage strip â€” ElevenLabs style */
+        /* Usage strip — ElevenLabs style */
         .usage-strip {
             display: grid;
             grid-template-columns: 1.2fr 1fr;
@@ -271,7 +271,7 @@
     <div class="usage-strip" id="usageStrip">
         <div class="usage-card">
             <h4>Credits</h4>
-            <div class="usage-meta" id="usageCreditsLabel">â€” credits remaining</div>
+            <div class="usage-meta" id="usageCreditsLabel">— credits remaining</div>
             <div class="usage-bar-track"><div class="usage-bar-fill" id="usageCreditsBar"></div></div>
         </div>
         <div class="usage-card">
@@ -307,7 +307,7 @@
 
     <p class="hint-line">
         <strong>1 credit = 1 source character</strong>,
-        billed at 1.4â€” to cover ElevenLabs plus Modal GPU with a small margin.
+        billed at 1.4— to cover ElevenLabs plus Modal GPU with a small margin.
         Retail is <strong>$0.10 per 1,000 credits</strong>
         (~$0.14 per 1,000 source characters).
         Free includes <strong>2,000</strong> credits.
@@ -319,7 +319,7 @@
 
 <script src="js/shared/theme.js?v=2"></script>
 <script src="js/config.js?v=20260714"></script>
-<script src="js/shared/01-api-base.js?v=22"></script>
+<script src="js/shared/01-api-base.js?v=23"></script>
 <script src="js/shared/02-toast.js?v=21"></script>
 <script src="js/shared/03-jwt.js?v=18"></script>
 <script src="js/shared/04-auth-headers.js?v=18"></script>
@@ -342,7 +342,7 @@
             loadAndRenderPricingPackages();
         }
         document.getElementById('toggleYearly')?.addEventListener('click', () => {
-            if (typeof showToast === 'function') showToast('Yearly billing coming soon â€” use credit packs for now');
+            if (typeof showToast === 'function') showToast('Yearly billing coming soon — use credit packs for now');
         });
         setTimeout(() => {
             const headers = window.getApiAuthHeaders ? window.getApiAuthHeaders() : null;

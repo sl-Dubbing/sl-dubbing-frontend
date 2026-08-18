@@ -122,6 +122,9 @@
         // # raise — رفع خطأ للم caller
         throw new Error(msg);
       }
+      if (typeof global.invalidateSharedUserVoiceClones === 'function') {
+        global.invalidateSharedUserVoiceClones(headers['X-User-Id']);
+      }
 
       // # block — معالجة صوت/استنساخ
       global.currentSampleUrl = url;
