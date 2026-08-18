@@ -20,10 +20,7 @@
 	let newKeyPlain = $state<string | null>(null);
 	let keyName = $state('');
 
-	const MIN_CREDITS = 1300;
-	const creditsNum = $derived(
-		typeof $auth.user?.credits === 'number' ? $auth.user.credits : Number($auth.user?.credits) || 0
-	);
+	const MAX_KEYS = 2;
 
 	onMount(() => {
 		const unsub = auth.subscribe((s) => {
@@ -50,8 +47,8 @@
 	}
 
 	function openCreate() {
-		if (creditsNum < MIN_CREDITS) {
-			showToast('Need 1,300 credits', 'error');
+		if (keys.length >= MAX_KEYS) {
+			showToast('Maximum of 2 API keys per account', 'error');
 			return;
 		}
 		keyName = '';
@@ -60,11 +57,17 @@
 
 	async function createKey() {
 		creating = true;
+		const name = keyName.trim() || 'My API Key';
+		if (keys.some((k) => String(k.name || '').trim().toLowerCase() === name.toLowerCase())) {
+			showToast('Each API key needs a different name.', 'error');
+			creating = false;
+			return;
+		}
 		try {
 			const res = await apiFetch('/api/developer/keys', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name: keyName.trim() || 'My API Key' })
+				body: JSON.stringify({ name })
 			});
 			const data = await parseJsonSafe<{
 				key?: string;
@@ -139,6 +142,7 @@
 				<button class="btn-primary" type="button" onclick={openCreate}>Create new API key</button>
 			{/if}
 		</div>
+		<p class="hint">First key requires any credit pack of $9 or more. You can create up to two keys, each with a different name.</p>
 
 		{#if !$auth.user}
 			<p><a href="/login">Sign in</a></p>
@@ -206,7 +210,7 @@
 			onkeydown={onModalKey}
 		>
 			<h2 id="create-key-title">Create new API key</h2>
-			<input bind:value={keyName} maxlength="80" placeholder="Name" />
+			<input bind:value={keyName} maxlength="80" placeholder="Unique name" />
 			<div class="actions">
 				<button type="button" onclick={closeModal}>Cancel</button>
 				<button class="btn-primary" type="button" disabled={creating} onclick={createKey}>
@@ -251,6 +255,12 @@
 	h1 {
 		font-size: 1.7rem;
 		margin: 0;
+	}
+	.hint {
+		color: var(--text-muted);
+		font-size: 0.9rem;
+		margin: -8px 0 18px;
+		max-width: 46rem;
 	}
 	table {
 		width: 100%;
