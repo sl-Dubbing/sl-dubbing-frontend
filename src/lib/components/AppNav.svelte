@@ -24,8 +24,8 @@
 	}
 
 	function onTheme() {
-		const r = cycleThemeMode();
-		showToast(`Theme: ${r.mode}`, 'info');
+		const mode = cycleThemeMode();
+		showToast(`Theme: ${mode}`, 'info');
 	}
 
 	async function onLogout() {

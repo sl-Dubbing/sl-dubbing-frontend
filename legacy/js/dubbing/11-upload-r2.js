@@ -42,8 +42,12 @@
         // # شرط — فرع منطقي
         if (e.lengthComputable) {
           // # block — رفع أو تخزين ملف
-          const pct = Math.round((e.loaded / e.total) * 100);
-          DubbingApp.ui.updateDubbingProgressBarUi('Uploading File...', 10 + pct * 0.4);
+          const pct = (e.loaded / e.total);
+          const shown = DubbingApp.ui.uploadRatioToProgressPercent
+            ? DubbingApp.ui.uploadRatioToProgressPercent(pct)
+            : Math.round(pct * 18);
+          if (DubbingApp.state) DubbingApp.state.progressPercentMonotonic = shown;
+          DubbingApp.ui.updateDubbingProgressBarUi('Uploading File...', shown);
         }
       };
       xhr.onload = () =>
@@ -108,7 +112,12 @@
         opts.onProgress(ratio, Math.round(ratio * file.size), file.size);
         return;
       }
-      DubbingApp.ui.updateDubbingProgressBarUi(progressLabel, 10 + ratio * 40);
+      DubbingApp.ui.updateDubbingProgressBarUi(
+        progressLabel,
+        DubbingApp.ui.uploadRatioToProgressPercent
+          ? DubbingApp.ui.uploadRatioToProgressPercent(ratio)
+          : Math.round(ratio * 18),
+      );
     };
     if (file.size < MULTIPART_THRESHOLD_BYTES) {
       const response = await fetch(`${DubbingApp.api.normalizeApiBaseUrl()}/api/upload-url`, {

@@ -74,7 +74,7 @@
 
         .page-title { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 18px; }
 
-        /* Usage strip ù ElevenLabs style */
+        /* Usage strip ‚Äî ElevenLabs style */
         .usage-strip {
             display: grid;
             grid-template-columns: 1.2fr 1fr;
@@ -271,7 +271,7 @@
     <div class="usage-strip" id="usageStrip">
         <div class="usage-card">
             <h4>Credits</h4>
-            <div class="usage-meta" id="usageCreditsLabel">ù credits remaining</div>
+            <div class="usage-meta" id="usageCreditsLabel">‚Äî credits remaining</div>
             <div class="usage-bar-track"><div class="usage-bar-fill" id="usageCreditsBar"></div></div>
         </div>
         <div class="usage-card">
@@ -307,7 +307,7 @@
 
     <p class="hint-line">
         <strong>1 credit = 1 source character</strong>,
-        billed at 1.4ù to cover ElevenLabs plus Modal GPU with a small margin.
+        billed at 1.4‚Äî to cover ElevenLabs plus Modal GPU with a small margin.
         Retail is <strong>$0.10 per 1,000 credits</strong>
         (~$0.14 per 1,000 source characters).
         Free includes <strong>2,000</strong> credits.
@@ -320,7 +320,7 @@
 <script src="js/shared/theme.js?v=2"></script>
 <script src="js/config.js?v=20260714"></script>
 <script src="js/shared/01-api-base.js?v=18"></script>
-<script src="js/shared/02-toast.js?v=17"></script>
+<script src="js/shared/02-toast.js?v=21"></script>
 <script src="js/shared/03-jwt.js?v=18"></script>
 <script src="js/shared/04-auth-headers.js?v=18"></script>
 <script src="js/shared/06-guest-menu.js?v=17"></script>
@@ -342,7 +342,7 @@
             loadAndRenderPricingPackages();
         }
         document.getElementById('toggleYearly')?.addEventListener('click', () => {
-            if (typeof showToast === 'function') showToast('Yearly billing coming soon ù use credit packs for now');
+            if (typeof showToast === 'function') showToast('Yearly billing coming soon ‚Äî use credit packs for now');
         });
         setTimeout(() => {
             const headers = window.getApiAuthHeaders ? window.getApiAuthHeaders() : null;

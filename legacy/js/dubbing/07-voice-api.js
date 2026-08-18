@@ -74,6 +74,7 @@
         // # block — معالجة صوت/استنساخ
         sample_url: data.sample_url,
         name: data.name || 'My Voice',
+        elevenlabs_voice_id: data.elevenlabs_voice_id || '',
       };
       const opt = document.getElementById('voiceOptSaved');
       // # شرط — فرع منطقي
@@ -104,6 +105,7 @@
     const opt = document.getElementById('voiceOptSaved');
     global.usingSavedVoice = true;
     global.selectedSample = profile.sample_url;
+    global.selectedElevenLabsVoiceId = (profile.elevenlabs_voice_id || '').trim();
     // # block — معالجة صوت/استنساخ
     global.voiceMode = 'clone';
     // # شرط — فرع منطقي

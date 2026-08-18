@@ -12,9 +12,13 @@ body {
 }
 
 body {
-	font-family: var(--font-display, 'Segoe UI', ui-sans-serif, system-ui, sans-serif);
+	font-family: var(--font-ui, "Inter", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif);
+	font-size: 16px;
+	font-weight: 400;
+	letter-spacing: 0.01em;
 	line-height: 1.5;
 	overflow-x: hidden;
+	-webkit-font-smoothing: antialiased;
 }
 
 .app-shell {
@@ -39,8 +43,8 @@ body {
 
 .page-hero h1 {
 	font-size: clamp(1.8rem, 3vw, 2.4rem);
-	font-weight: 800;
-	letter-spacing: -0.5px;
+	font-weight: 300;
+	letter-spacing: -0.02em;
 	margin: 0 0 8px;
 }
 
@@ -66,7 +70,7 @@ body {
 	border: none;
 	background: var(--primary);
 	color: #fff;
-	font-weight: 700;
+	font-weight: 500;
 	cursor: pointer;
 	text-decoration: none;
 }

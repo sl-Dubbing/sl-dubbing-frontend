@@ -198,7 +198,7 @@
 <script src="js/shared/theme.js?v=2"></script>
 <script src="js/config.js"></script>
 <script src="js/shared/01-api-base.js?v=18"></script>
-<script src="js/shared/02-toast.js?v=17"></script>
+<script src="js/shared/02-toast.js?v=21"></script>
 <script src="js/shared/03-jwt.js?v=18"></script>
 <script src="js/shared/04-auth-headers.js?v=18"></script>
 <script src="js/shared/06-guest-menu.js?v=17"></script>
@@ -210,7 +210,7 @@
 <script src="js/shared/09-credits-fetch.js?v=18"></script>
 <script src="js/shared/12-auth-sync.js?v=18"></script>
 <script src="js/shared/13-connection.js?v=18"></script>
-<script src="js/shared/15-api-errors.js?v=18"></script>
+<script src="js/shared/15-api-errors.js?v=21"></script>
 <script src="js/shared/14-init.js?v=18"></script>
 <script>
 const API = (function () {
@@ -233,9 +233,9 @@ function escHtml(str) {
 }
 
 function fmtDate(value) {
-  if (!value) return 'ù';
+  if (!value) return '‚Äî';
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return 'ù';
+  if (Number.isNaN(d.getTime())) return '‚Äî';
   return d.toISOString().slice(0, 10);
 }
 

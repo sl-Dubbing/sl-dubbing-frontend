@@ -66,6 +66,16 @@
 			const data = await parseJsonSafe<{ success?: boolean; url?: string; checkout_url?: string; error?: string }>(res);
 			const url = data?.url || data?.checkout_url;
 			if (!res.ok || data?.success === false || !url) { showToast(data?.error || 'Checkout failed', 'error'); return; }
+			try {
+				const host = new URL(url).hostname.toLowerCase();
+				if (new URL(url).protocol !== 'https:' || (host !== 'checkout.stripe.com' && host !== 'billing.stripe.com')) {
+					showToast('Checkout failed', 'error');
+					return;
+				}
+			} catch {
+				showToast('Checkout failed', 'error');
+				return;
+			}
 			window.location.href = url;
 		} catch { showToast('Checkout failed', 'error'); } finally { busy = false; }
 	}

@@ -41,6 +41,9 @@
       if (errLower.includes('email_not_verified') || errLower.includes('confirm your email')) {
         return 'Please confirm your email — check your inbox for the verification link.';
       }
+      if (errLower.includes('origin_not_allowed')) {
+        return 'This request must come from glotix.ai. Open the site and try again.';
+      }
       // # return — إرجاع النتيجة
       return err || 'Access denied';
     // # block — فرع شرطي
@@ -66,13 +69,18 @@
       );
     }
     // # guard — شرط رفض أو خروج مبكر
-    if (status === 429) return 'Too many requests — wait a moment and try again';
+    if (status === 429 || errLower === 'rate_limited' || errLower === 'concurrent_job_limit') {
+      if (errLower === 'concurrent_job_limit') {
+        return 'You already have dubbing jobs running. Wait for one to finish, then start another.';
+      }
+      return 'Too many requests — wait a moment and try again';
+    }
     // # guard — شرط رفض أو خروج مبكر
     if (status === 503) {
       // # guard — شرط رفض أو خروج مبكر
       if (errLower.includes('queue') || errLower.includes('redis')) {
         // # block — معالجة أخطاء
-        return 'Server queue unavailable — check Modal API outbox worker / Supabase Postgres';
+        return 'The studio is busy right now. Wait a moment and try again.';
       }
       // # guard — شرط رفض أو خروج مبكر
       if (errLower.includes('database')) return 'Database unavailable — try again later';

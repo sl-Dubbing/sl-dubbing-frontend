@@ -210,7 +210,7 @@
         #mediaModalBody video { max-height: min(70vh, 520px); }
         .tts-text-preview { padding: 16px; background: var(--bg-page); border-radius: 10px; margin-bottom: 14px; color: var(--text-main); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
 
-        /* Voice clones � circle + name (dedicated gallery) */
+        /* Voice clones — circle + name (dedicated gallery) */
         #fileList.clone-gallery {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -331,7 +331,7 @@
         <div class="fm-header">
             <div>
                 <h1>Your Studio Reel</h1>
-                <p>A cinematic shelf of your dubs � hover to preview, click to open.</p>
+                <p>A cinematic shelf of your dubs — hover to preview, click to open.</p>
             </div>
             <div class="view-switcher" role="tablist" aria-label="View mode">
                 <button type="button" id="viewListBtn" title="List view"><i class="fa-solid fa-list"></i> List</button>
@@ -379,7 +379,7 @@
     <div class="redub-modal-backdrop" onclick="closeRedubModal()"></div>
     <div class="redub-modal-card">
         <h3 id="redubModalTitle">Dub in another language</h3>
-        <p>Uses saved stems and transcript � skips upload, separation, and voice cloning. Faster and lower cost.</p>
+        <p>Uses saved stems and transcript — skips upload, separation, and voice cloning. Faster and lower cost.</p>
         <label for="redubLangSelect" style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:6px;">Target language</label>
         <select id="redubLangSelect" class="redub-lang-select"></select>
         <div class="redub-actions">
@@ -400,12 +400,12 @@
     </div>
 </div>
 
-<script src="js/languages.js?v=20260817cdn"></script>
+<script src="js/languages.js?v=20260818cache"></script>
 <script src="js/config.js"></script>
-<!-- shared � ���� ���� ���� �� ��� �� js/shared/ -->
+<!-- shared scripts live in js/shared/ -->
 <script src="js/shared/theme.js?v=2"></script>
 <script src="js/shared/01-api-base.js?v=18"></script>
-<script src="js/shared/02-toast.js?v=17"></script>
+<script src="js/shared/02-toast.js?v=21"></script>
 <script src="js/shared/03-jwt.js?v=18"></script>
 <script src="js/shared/04-auth-headers.js?v=18"></script>
 <script src="js/shared/06-guest-menu.js?v=17"></script>
@@ -417,7 +417,7 @@
 <script src="js/shared/09-credits-fetch.js?v=18"></script>
 <script src="js/shared/12-auth-sync.js?v=18"></script>
 <script src="js/shared/13-connection.js?v=18"></script>
-<script src="js/shared/15-api-errors.js?v=18"></script>
+<script src="js/shared/15-api-errors.js?v=21"></script>
 <script src="js/shared/14-init.js?v=18"></script>
 
 <script>
@@ -499,7 +499,7 @@
                 output_url: item.output_url || '',
                 created_at: item.created_at,
                 name: item.name || 'Generated Audio',
-                text: item.text || '', // ����� ���� �� description
+                text: item.text || '',
                 lang: item.lang || ''
             }));
         } catch (_) { return []; }
@@ -607,7 +607,7 @@
             document.body.appendChild(a);
             a.click();
             a.remove();
-            window.showToast?.('Opening file � save from browser if download did not start', 'info');
+            window.showToast?.('Opening file — save from browser if download did not start', 'info');
         } finally {
             if (btn) btn.classList.remove('loading');
         }
@@ -675,7 +675,7 @@
         renderFiles();
         scheduleHistoryPollingWhileProcessing();
         if (!silent && hasProcessingDubbingFiles() && typeof window.showToast === 'function') {
-            window.showToast('Some videos are still processing � this page will update automatically', 'info');
+            window.showToast('Some videos are still processing — this page will update automatically', 'info');
         }
     }
 
@@ -803,7 +803,7 @@
         } else if (isProcessing) {
             inlinePlayer = `
                 <div style="margin: 8px 0; font-size: 0.85rem; color: #1d4ed8; background: #eff6ff; padding: 6px 10px; border-radius: 6px; display: inline-block;">
-                    <i class="fa-solid fa-circle-notch fa-spin"></i> Dubbing in progress � safe to close or refresh this page.
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Dubbing in progress — safe to close or refresh this page.
                 </div>
             `;
         } else if (isTts && !hasUrl) {
@@ -1120,7 +1120,7 @@
                 : (localStorage.getItem('glotix_ephemeral_dub') === '1' ||
                    localStorage.getItem('glotix_ephemeral_dub') === 'true');
         if (ephemeralDub) {
-            window.showToast?.('Dubbing is session-only � history re-dub is disabled', 'info');
+            window.showToast?.('Dubbing is session-only — history re-dub is disabled', 'info');
             return;
         }
         const f = findFileById(jobId);
@@ -1178,7 +1178,7 @@
             return;
         }
         const btn = document.getElementById('redubStartBtn');
-        if (btn) { btn.disabled = true; btn.textContent = 'Starting�'; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Starting…'; }
         try {
             const res = await fetch(`${API}/api/dub/redub`, {
                 method: 'POST',
@@ -1190,7 +1190,7 @@
                 throw new Error(data.message || data.error || `HTTP ${res.status}`);
             }
             closeRedubModal();
-            window.showToast?.('Fast re-dub started � stems reused, no re-cloning', 'success');
+            window.showToast?.('Fast re-dub started — stems reused, no re-cloning', 'success');
             await loadFilesFromApi();
             if (data.job_id) pollRedubJob(data.job_id);
         } catch (err) {

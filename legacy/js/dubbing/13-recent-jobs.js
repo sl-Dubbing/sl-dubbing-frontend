@@ -428,21 +428,12 @@
         .filter((f) => f.type === 'dubbing')
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       // # شرط — فرع منطقي
-      if (dubFiles.length > 5) {
-        // # block — فرع شرطي
-        const toDelete = dubFiles.slice(5).map((f) => ({ type: f.type, id: String(f.id) }));
-        dubFiles = dubFiles.slice(0, 5);
-        // # HTTP — طلب fetch
-        fetch(`${normalizeApiBaseUrl()}/api/user/files/bulk-delete`, {
-          method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          // # تسلسل JSON للطلب
-          body: JSON.stringify({ items: toDelete }),
-        // # block — طلب HTTP/API
-        }).catch(() => {});
+      if (dubFiles.length > 8) {
+        // # block — display cap only; Cloudflare R2 FIFO prune runs on the API
+        dubFiles = dubFiles.slice(0, 8);
       }
       // # block — parse/serialize JSON
-      const toRender = dubFiles.slice(0, 5);
+      const toRender = dubFiles.slice(0, 8);
       // # شرط — فرع منطقي
       if (toRender.length > 0) {
         renderRecentDubbingJobsGrid(toRender);
@@ -478,7 +469,7 @@
     const alreadyPresent = recentJobsForDownload.some((j) => j.output_url === job.output_url);
     // # guard — شرط رفض أو خروج مبكر
     if (alreadyPresent) return;
-    const updated = [job, ...recentJobsForDownload].slice(0, 5);
+    const updated = [job, ...recentJobsForDownload].slice(0, 8);
     // # block — فرع شرطي
     renderRecentDubbingJobsGrid(updated);
   }

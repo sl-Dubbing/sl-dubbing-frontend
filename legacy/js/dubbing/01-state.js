@@ -31,7 +31,7 @@
     mediaInputInitialized: false,
     activeWavesurfer: null,
     workAbortController: null,
-    progressPercentMonotonic: 50,
+    progressPercentMonotonic: 0,
     selectedMediaFile: null,
     startButtonLocked: false,
     pendingVoiceSampleUrl: '',

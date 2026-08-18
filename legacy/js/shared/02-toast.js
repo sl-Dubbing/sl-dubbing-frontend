@@ -6,6 +6,7 @@
 // 📒 فهرس الدوال — js/shared/02-toast.js
 // ---------------------------------------------------------------------
 //  عرض_رسالة_تنبيه          → showToast
+//  حارس_أخطاء_التشغيل       → installRuntimeErrorGuard
 // =====================================================================
 (function (global) {
   const SL = global.SLShared;
@@ -52,4 +53,31 @@
 
   SL.toast = { showToast };
   global.showToast = showToast;
+
+  // # FN installRuntimeErrorGuard
+  // # AR Catch uncaught errors so the studio never fails silently for the user.
+  // # KW عام,general,security
+  function installRuntimeErrorGuard() {
+    if (global.__glotixRuntimeGuard) return;
+    global.__glotixRuntimeGuard = true;
+    const seen = {};
+    function report(raw) {
+      const key = String(raw || 'error').slice(0, 120);
+      if (seen[key] || Object.keys(seen).length >= 6) return;
+      seen[key] = true;
+      showToast('Something went wrong — try again', 'error');
+    }
+    global.addEventListener('error', function (event) {
+      const msg = String((event && event.message) || '');
+      if (!msg || msg.indexOf('ResizeObserver') !== -1 || msg.indexOf('Script error') === 0) return;
+      report(msg);
+    });
+    global.addEventListener('unhandledrejection', function (event) {
+      const reason = event && event.reason;
+      const msg = reason && reason.message ? String(reason.message) : String(reason || '');
+      if (!msg || msg.indexOf('AbortError') !== -1) return;
+      report(msg);
+    });
+  }
+  installRuntimeErrorGuard();
 })(window);

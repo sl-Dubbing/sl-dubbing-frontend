@@ -194,18 +194,83 @@
     };
   }
 
+  const LANG_CACHE_KEY = 'glotix.languages.catalog.v1';
+  const LANG_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+
+  // # FN _applyLanguageCatalog
+  // # AR Apply a public language catalog to window globals (no user data).
+  // # KW لغة,language,dialect
+  function _applyLanguageCatalog(data) {
+    global.LANGUAGES = sortLanguagesGlobal(data.languages.map(_normalizeRemoteLang));
+    global.SHARED_LANGUAGES = global.LANGUAGES;
+    if (data.flag_country && typeof data.flag_country === 'object') {
+      global.LANG_FLAG_COUNTRY = Object.assign({}, global.LANG_FLAG_COUNTRY, data.flag_country);
+    }
+    global.LANG_CATALOG_META = {
+      source: data.source || 'elevenlabs',
+      model_id: data.model_id || '',
+      count: data.count || global.LANGUAGES.length,
+      synced: true,
+      synced_at: data.synced_at || Date.now(),
+    };
+    global.dispatchEvent?.(new CustomEvent('glotix:languages-ready', { detail: global.LANG_CATALOG_META }));
+    document.dispatchEvent(new CustomEvent('glotix:languages-ready', { detail: global.LANG_CATALOG_META }));
+    return global.LANGUAGES;
+  }
+
+  function _readCachedLanguageCatalog() {
+    try {
+      const raw = sessionStorage.getItem(LANG_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.languages) || !parsed.languages.length) return null;
+      if (Date.now() - Number(parsed.saved_at || 0) > LANG_CACHE_TTL_MS) return null;
+      return parsed;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function _writeCachedLanguageCatalog(data) {
+    try {
+      sessionStorage.setItem(
+        LANG_CACHE_KEY,
+        JSON.stringify({
+          saved_at: Date.now(),
+          languages: data.languages,
+          flag_country: data.flag_country || null,
+          source: data.source,
+          model_id: data.model_id,
+          count: data.count,
+          synced_at: data.synced_at,
+        }),
+      );
+    } catch (_) {
+      /* quota / private mode */
+    }
+  }
+
   /** Pull live catalog from backend (which syncs ElevenLabs /v1/models). */
   // # FN syncLanguagesFromElevenLabs
   // # AR اللغات واللهجات (syncLanguagesFromElevenLabs)
   // # KW لغة,language,dialect
   async function syncLanguagesFromElevenLabs(options) {
     const opts = options || {};
+    if (!opts.refresh) {
+      const cached = _readCachedLanguageCatalog();
+      if (cached) {
+        return _applyLanguageCatalog(cached);
+      }
+    }
     const qs = opts.refresh ? '?refresh=1' : '';
     const url = `${_apiBase()}/api/languages${qs}`;
     // # try — عملية قد تفشل
     try {
       // # HTTP — طلب API
-      const res = await fetch(url, { credentials: 'omit', cache: 'no-store' });
+      const res = await fetch(url, {
+        credentials: 'omit',
+        cache: opts.refresh ? 'no-store' : 'default',
+      });
       // # guard — رفض/خروج
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -213,25 +278,8 @@
       if (!data || !Array.isArray(data.languages) || !data.languages.length) {
         throw new Error('empty languages');
       }
-      global.LANGUAGES = sortLanguagesGlobal(data.languages.map(_normalizeRemoteLang));
-      // # block — parse/serialize JSON
-      global.SHARED_LANGUAGES = global.LANGUAGES;
-      // # شرط
-      if (data.flag_country && typeof data.flag_country === 'object') {
-        global.LANG_FLAG_COUNTRY = Object.assign({}, global.LANG_FLAG_COUNTRY, data.flag_country);
-      }
-      global.LANG_CATALOG_META = {
-        source: data.source || 'elevenlabs',
-        // # block — معالجة أخطاء
-        model_id: data.model_id || '',
-        count: data.count || global.LANGUAGES.length,
-        synced: true,
-        synced_at: data.synced_at || Date.now(),
-      };
-      global.dispatchEvent?.(new CustomEvent('glotix:languages-ready', { detail: global.LANG_CATALOG_META }));
-      // # block — تنفيذ منطق — راجع الأسطر التالية
-      document.dispatchEvent(new CustomEvent('glotix:languages-ready', { detail: global.LANG_CATALOG_META }));
-      return global.LANGUAGES;
+      _writeCachedLanguageCatalog(data);
+      return _applyLanguageCatalog(data);
     } catch (err) {
       console.warn('[languages] ElevenLabs sync skipped — using fallback:', err);
       global.LANG_CATALOG_META = { source: 'fallback', model_id: 'eleven_flash_v2_5', synced: false };

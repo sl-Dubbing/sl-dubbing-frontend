@@ -101,6 +101,14 @@
 		showToast('Copied', 'success');
 	}
 
+	function closeModal() {
+		modalOpen = false;
+	}
+
+	function onModalKey(e: KeyboardEvent) {
+		if (e.key === 'Escape') closeModal();
+	}
+
 	function fmtDate(value?: string) {
 		if (!value) return '—';
 		const d = new Date(value);
@@ -178,12 +186,29 @@
 </section>
 
 {#if modalOpen}
-	<div class="modal-bg" onclick={() => (modalOpen = false)} role="presentation">
-		<div class="modal" onclick={(e) => e.stopPropagation()} role="dialog">
-			<h2>Create new API key</h2>
+	<div
+		class="modal-bg"
+		role="button"
+		tabindex="0"
+		aria-label="Close dialog"
+		onclick={closeModal}
+		onkeydown={(e) => {
+			if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') closeModal();
+		}}
+	>
+		<div
+			class="modal"
+			role="dialog"
+			aria-modal="true"
+			tabindex="-1"
+			aria-labelledby="create-key-title"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={onModalKey}
+		>
+			<h2 id="create-key-title">Create new API key</h2>
 			<input bind:value={keyName} maxlength="80" placeholder="Name" />
 			<div class="actions">
-				<button type="button" onclick={() => (modalOpen = false)}>Cancel</button>
+				<button type="button" onclick={closeModal}>Cancel</button>
 				<button class="btn-primary" type="button" disabled={creating} onclick={createKey}>
 					{creating ? '…' : 'Create'}
 				</button>

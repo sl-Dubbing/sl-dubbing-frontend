@@ -1,7 +1,11 @@
 /* ══════════════════════════════════════════
    brand-theme.css — HeyGen-inspired UI + Glotix gold accent
    Ref: https://app.heygen.com/home
+   Type: ElevenLabs UI scale (Inter + Noto Sans Arabic).
+   Waldenburg is licensed — Inter 300 is the public display substitute.
    ══════════════════════════════════════════ */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap");
 
 :root {
     /* Warm light surfaces (HeyGen light) */
@@ -38,14 +42,131 @@
     --radius-pill: 999px;
     --radius-icon: 18px;
     --transition: 0.22s cubic-bezier(0.32, 0.72, 0, 1);
-    --font-display: "Segoe UI", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-ui: "Inter", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Inter", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+    --text-body: 16px;
+    --text-ui: 15px;
+    --text-button: 14px;
+    --tracking-body: 0.01em;
+    --tracking-display: -0.02em;
+    --leading-body: 1.5;
+    --leading-display: 1.08;
+}
+
+html {
+    font-size: 16px;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea {
+    font-family: var(--font-ui);
 }
 
 body {
     background-color: var(--bg-page) !important;
     background-image: none !important;
     color: var(--text-main);
-    font-family: var(--font-display);
+    font-family: var(--font-ui) !important;
+    font-size: var(--text-body);
+    font-weight: 400;
+    line-height: var(--leading-body);
+    letter-spacing: var(--tracking-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+.hero h1,
+.section-head h2,
+.showcase-text h2,
+.cta-banner h2,
+.page-hero h1,
+.dub-showcase-head h2 {
+    font-family: var(--font-display) !important;
+    font-weight: 300 !important;
+    letter-spacing: var(--tracking-display) !important;
+    line-height: var(--leading-display);
+}
+
+h3,
+h4,
+.tool-card h3,
+.feature-card h3,
+.step-card h3,
+.usecase-tile h4 {
+    font-family: var(--font-display) !important;
+    font-weight: 300 !important;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+}
+
+p,
+li,
+label,
+.hero-lead,
+.section-head p,
+.feature-card p,
+.step-card p,
+.footer-brand p,
+.footer-col a {
+    font-family: var(--font-ui);
+    letter-spacing: var(--tracking-body);
+}
+
+code,
+pre,
+.code-block,
+.key-value,
+.key-prefix,
+.endpoint-row {
+    font-family: var(--font-mono);
+}
+
+.hero h1 {
+    font-size: clamp(2.5rem, 6vw, 3rem) !important;
+}
+
+.hero-lead {
+    font-size: 1.25rem !important;
+    font-weight: 400 !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0 !important;
+}
+
+.section-head h2 {
+    font-size: clamp(2rem, 4vw, 2.25rem) !important;
+}
+
+.menu-btn,
+.dropdown-panel a,
+.dropdown-panel button.menu-item {
+    font-family: var(--font-ui) !important;
+    font-size: var(--text-ui) !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.01em;
+}
+
+.btn-cta,
+.btn-login,
+.btn-secondary,
+.btn-gold {
+    font-family: var(--font-ui) !important;
+    font-size: var(--text-button) !important;
+    font-weight: 500 !important;
+}
+
+.eyebrow,
+.ba-badge {
+    font-family: var(--font-ui) !important;
+    font-size: 0.875rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
 }
 
 /* ── Primary buttons (HeyGen: black / white) ── */
@@ -62,7 +183,10 @@ button.primary-action,
     border: 1px solid var(--primary) !important;
     border-radius: var(--radius-pill) !important;
     box-shadow: none !important;
-    font-weight: 700 !important;
+    font-weight: 500 !important;
+    font-size: var(--text-button) !important;
+    letter-spacing: 0 !important;
+    font-family: var(--font-ui) !important;
     transition:
         transform var(--transition),
         box-shadow var(--transition),

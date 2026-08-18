@@ -6,6 +6,7 @@
 	import { syncAuthSessionAndCreditsToUi, checkApiConnection } from '$lib/stores/auth';
 	import { getSupabase } from '$lib/services/supabase';
 	import { initThemeFromStorage } from '$lib/services/theme';
+	import { showToast } from '$lib/stores/toast';
 	import '$lib/styles/theme.css';
 	import '$lib/styles/brand-theme.css';
 	import '$lib/styles/logo.css';
@@ -20,12 +21,25 @@
 		void syncAuthSessionAndCreditsToUi();
 		void checkApiConnection();
 
+		let reported = false;
+		const onRuntimeError = () => {
+			if (reported) return;
+			reported = true;
+			showToast('Something went wrong — try again', 'error');
+		};
+		window.addEventListener('unhandledrejection', onRuntimeError);
+		window.addEventListener('error', onRuntimeError);
+
 		const supabase = getSupabase();
 		const { data } = supabase?.auth.onAuthStateChange(() => {
 			void syncAuthSessionAndCreditsToUi();
 		}) || { data: null };
 
-		return () => data?.subscription.unsubscribe();
+		return () => {
+			window.removeEventListener('unhandledrejection', onRuntimeError);
+			window.removeEventListener('error', onRuntimeError);
+			data?.subscription.unsubscribe();
+		};
 	});
 </script>
 

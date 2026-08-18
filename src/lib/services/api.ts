@@ -30,18 +30,37 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
 	const { auth = true, retryOn401 = true, headers: initHeaders, ...rest } = options;
 	const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 	const url = path.startsWith('http') ? path : `${apiBase()}${normalizedPath}`;
-	
+	const method = String(rest.method || 'GET').toUpperCase();
+	const idempotent = method === 'GET' || method === 'HEAD';
+
 	const headers = new Headers(initHeaders || {});
 	if (auth) await applyAuthHeaders(headers);
-	let res = await fetch(url, { ...rest, headers });
-	
+
+	async function send(): Promise<Response> {
+		return fetch(url, { ...rest, headers });
+	}
+
+	let res = await send();
+
 	if (auth && retryOn401 && res.status === 401) {
 		await res.text().catch(() => {});
 		if (rest.body instanceof ReadableStream) {
 			console.warn('[apiFetch] Cannot retry 401: request body is a locked stream');
 		} else if (await applyAuthHeaders(headers)) {
-			res = await fetch(url, { ...rest, headers });
+			res = await send();
 		}
+	}
+
+	for (let attempt = 0; attempt < 3; attempt += 1) {
+		const transient =
+			res.status === 429 ||
+			(idempotent && (res.status === 502 || res.status === 503 || res.status === 504));
+		if (!transient) break;
+		const retryAfter = Number.parseInt(res.headers.get('Retry-After') || '0', 10);
+		const waitMs = retryAfter > 0 ? retryAfter * 1000 : 500 * 2 ** attempt;
+		await res.text().catch(() => {});
+		await new Promise((resolve) => setTimeout(resolve, waitMs));
+		res = await send();
 	}
 	return res;
 }

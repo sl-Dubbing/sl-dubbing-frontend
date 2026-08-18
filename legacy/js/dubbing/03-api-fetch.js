@@ -12,11 +12,16 @@
   // # KW عام,general
   async function fetchHttpWithRateLimitRetry(url, options, { retries = 3, baseDelayMs = 500 } = {}) {
     let res;
+    const method = String((options && options.method) || 'GET').toUpperCase();
+    const safeIdempotent = method === 'GET' || method === 'HEAD';
     for (let attempt = 0; attempt <= retries; attempt++) {
       // # HTTP — طلب إلى API
       res = await fetch(url, options);
+      const transient =
+        res.status === 429 ||
+        (safeIdempotent && (res.status === 502 || res.status === 503 || res.status === 504));
       // # guard — شرط رفض أو خروج مبكر
-      if (res.status !== 429 || attempt === retries) return res;
+      if (!transient || attempt === retries) return res;
       const retryAfter = parseInt(res.headers.get('Retry-After') || '0', 10);
       // # block — طلب HTTP/API
       const waitMs = retryAfter > 0 ? retryAfter * 1000 : baseDelayMs * Math.pow(2, attempt);
@@ -30,25 +35,9 @@
   // # AR جلب dubbing job status from supabase table (fetchDubbingJobStatusFromSupabaseTable)
   // # KW مهمة,job,polling,celery,worker,مصادقة,auth,JWT,supabase,حالة,webhook,SSE,status
   async function fetchDubbingJobStatusFromSupabaseTable(jobId) {
-    const supa = typeof global.getSupabase === 'function' ? global.getSupabase() : null;
-    // # guard — شرط رفض أو خروج مبكر
-    if (!supa) return null;
-    // # try — معالجة عملية قد تفشل
-    try {
-      const { data, error } = await supa
-        .from('dubbing_jobs')
-        // # block — معالجة أخطاء
-        .select('status, output_url, error')
-        .eq('id', jobId)
-        .maybeSingle();
-      // # guard — شرط رفض أو خروج مبكر
-      if (error) return null;
-      // # return — إرجاع النتيجة
-      return data;
-    } catch (err) {
-      // # return — إرجاع النتيجة
-      return null;
-    }
+    // # guard — PostgREST public grants revoked; job status is GET /api/job/{id} only.
+    void jobId;
+    return null;
   }
 
   DubbingApp.fetch = {

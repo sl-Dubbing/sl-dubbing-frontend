@@ -216,28 +216,11 @@
         // # block — معالجة أخطاء
         S.workAbortController?.signal || null,
         (jobMeta) => {
-          // # شرط
-          if (DubbingApp.stemPipeline?.applyDubbingStageToProgressUi) {
-            DubbingApp.stemPipeline.applyDubbingStageToProgressUi(jobMeta || {});
-          } else {
-            const apiPct = Number(jobMeta?.progress);
-            // # شرط
-            if (Number.isFinite(apiPct) && apiPct > 0) {
-              S.progressPercentMonotonic = Math.max(
-                S.progressPercentMonotonic,
-                Math.min(94, apiPct),
-              );
-            } else {
-              // # block — تنفيذ منطق — راجع الأسطر التالية
-              S.progressPercentMonotonic = Math.min(94, S.progressPercentMonotonic + 1);
-            }
-            // # block — فرع شرطي
-            DubbingApp.ui.updateDubbingProgressBarUi(
-              'Dubbing in progress...',
-              S.progressPercentMonotonic,
-            );
-          // # block — تنفيذ منطق — راجع الأسطر التالية
-          }
+          DubbingApp.ui.applyServerJobProgressToBar(
+            jobMeta || {},
+            completedRef.count,
+            totalCount,
+          );
         },
       // # block — تنفيذ منطق — راجع الأسطر التالية
       );
@@ -314,7 +297,7 @@
       }
 
       completedRef.count += 1;
-      const nextPct = 50 + (completedRef.count / Math.max(totalCount, 1)) * 50;
+      const nextPct = (completedRef.count / Math.max(totalCount, 1)) * 100;
       // # block — معالجة صوت/استنساخ
       S.progressPercentMonotonic = Math.max(S.progressPercentMonotonic, nextPct);
       // # block — تنفيذ منطق — راجع الأسطر التالية
@@ -387,7 +370,7 @@
     document.getElementById('progressArea')?.style && (document.getElementById('progressArea').style.display = 'block');
     document.getElementById('resultsCard')?.style && (document.getElementById('resultsCard').style.display = 'block');
     DubbingApp.ui.showDubbingCancelButton();
-    S.progressPercentMonotonic = Math.max(S.progressPercentMonotonic || 5, 5);
+    S.progressPercentMonotonic = Math.max(S.progressPercentMonotonic || 0, 0);
     // # block — تحديث واجهة/DOM
     DubbingApp.ui.updateDubbingProgressBarUi('Resuming dubbing in background...', S.progressPercentMonotonic);
     // # block — تحديث واجهة/DOM
