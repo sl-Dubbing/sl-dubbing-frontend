@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com https://*.googleusercontent.com; media-src 'self' blob: https://cdn.glotix.ai; connect-src 'self' https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com https://*.googleusercontent.com https://hatscripts.github.io; media-src 'self' blob: https://cdn.glotix.ai; connect-src 'self' https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>AI Dubbing Credits and Pricing | Glotix</title>
     <meta name="description" content="Glotix credit packs for AI video dubbing and text to speech. One credit is one character before a 1.4x ElevenLabs plus GPU margin. From $9.">
@@ -74,7 +74,7 @@
 
         .page-title { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 18px; }
 
-        /* Usage strip — ElevenLabs style */
+        /* Usage strip ï¿½ ElevenLabs style */
         .usage-strip {
             display: grid;
             grid-template-columns: 1.2fr 1fr;
@@ -271,7 +271,7 @@
     <div class="usage-strip" id="usageStrip">
         <div class="usage-card">
             <h4>Credits</h4>
-            <div class="usage-meta" id="usageCreditsLabel">— credits remaining</div>
+            <div class="usage-meta" id="usageCreditsLabel">ï¿½ credits remaining</div>
             <div class="usage-bar-track"><div class="usage-bar-fill" id="usageCreditsBar"></div></div>
         </div>
         <div class="usage-card">
@@ -307,7 +307,7 @@
 
     <p class="hint-line">
         <strong>1 credit = 1 source character</strong>,
-        billed at 1.4— to cover ElevenLabs plus Modal GPU with a small margin.
+        billed at 1.4ï¿½ to cover ElevenLabs plus Modal GPU with a small margin.
         Retail is <strong>$0.10 per 1,000 credits</strong>
         (~$0.14 per 1,000 source characters).
         Free includes <strong>2,000</strong> credits.
@@ -342,7 +342,7 @@
             loadAndRenderPricingPackages();
         }
         document.getElementById('toggleYearly')?.addEventListener('click', () => {
-            if (typeof showToast === 'function') showToast('Yearly billing coming soon — use credit packs for now');
+            if (typeof showToast === 'function') showToast('Yearly billing coming soon ï¿½ use credit packs for now');
         });
         setTimeout(() => {
             const headers = window.getApiAuthHeaders ? window.getApiAuthHeaders() : null;
