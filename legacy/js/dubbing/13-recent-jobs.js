@@ -379,14 +379,15 @@
           const dlOverlay = `<button type="button" class="dub-download-btn" data-idx="${idx}" title="Download" aria-label="Download"><i class="fa-solid fa-download"></i></button>`;
           // # شرط — فرع منطقي
           if (isAudio) {
-            mediaHtml = `<div class="rjc-audio-wrap">${dlOverlay}${WAVEFORM_SVG}<audio src="${escape(url)}" controls crossorigin="anonymous" preload="none" class="rjc-audio-native"></audio></div>`;
+            mediaHtml = `<div class="rjc-audio-wrap">${dlOverlay}${WAVEFORM_SVG}<audio src="${escape(url)}" controls preload="metadata" class="rjc-audio-native"></audio></div>`;
           // # block — فرع شرطي
           } else {
             // # block — فرع شرطي
             const skelId = `sk-${idx}`;
             const hideSkel = `var s=document.getElementById('${skelId}');if(s)s.remove()`;
-            // # block — preload=none so the grid paints before R2 media bytes
-            mediaHtml = `<div class="rjc-video-wrap"><div class="rjc-skeleton" id="${skelId}"></div>${dlOverlay}<video src="${escape(url)}" controls controlsList="nodownload" crossorigin="anonymous" preload="none" onloadeddata="${hideSkel}" onerror="${hideSkel}"></video></div>`;
+            // # block — #t=0.1 seeks a visible first frame (same pattern as history cinema)
+            const thumbSrc = escape(url) + '#t=0.1';
+            mediaHtml = `<div class="rjc-video-wrap"><div class="rjc-skeleton" id="${skelId}"></div>${dlOverlay}<video src="${thumbSrc}" controls controlsList="nodownload" playsinline preload="metadata" muted onloadeddata="${hideSkel}" onerror="${hideSkel}"></video></div>`;
           }
           // # return — إرجاع النتيجة
           return `<div class="recent-job-card">
