@@ -11,6 +11,8 @@
   let recentDownloadBound = false;
   let recentPollTimer = null;
   const RECENT_JOBS_CACHE_KEY = 'glotix.dubbing.recent.v1';
+  const RECENT_JOBS_HTML_KEY = 'glotix.dubbing.recent.html.v1';
+  let recentLazyObserver = null;
 
   // # FN readRecentJobsCache
   // # AR Instant paint from sessionStorage while /api/user/files loads.
@@ -43,6 +45,67 @@
         JSON.stringify({ ts: Date.now(), jobs: (jobs || []).slice(0, 8) }),
       );
     } catch (_) { /* ignore */ }
+  }
+
+  // # FN writeRecentJobsHtmlCache
+  // # AR Persist rendered grid HTML for early paint before app scripts load.
+  // # KW مهمة,job
+  function writeRecentJobsHtmlCache(html) {
+    // # try — معالجة عملية قد تفشل
+    try {
+      // # guard — شرط رفض أو خروج مبكر
+      if (!html) {
+        sessionStorage.removeItem(RECENT_JOBS_HTML_KEY);
+        return;
+      }
+      sessionStorage.setItem(RECENT_JOBS_HTML_KEY, html);
+    } catch (_) { /* ignore */ }
+  }
+
+  // # FN hydrateLazyRecentVideos
+  // # AR Load R2 video src only when a card is near the viewport.
+  // # KW مهمة,job
+  function hydrateLazyRecentVideos(root) {
+    const scope = root || document.getElementById('recentJobsGrid');
+    // # guard — شرط رفض أو خروج مبكر
+    if (!scope) return;
+    const nodes = scope.querySelectorAll('video.rjc-lazy-video[data-src]');
+    // # guard — شرط رفض أو خروج مبكر
+    if (!nodes.length) return;
+
+    // # FN activate
+    // # KW مهمة,job
+    function activate(video) {
+      const src = video.getAttribute('data-src');
+      // # guard — شرط رفض أو خروج مبكر
+      if (!src || video.getAttribute('src') === src) return;
+      video.setAttribute('src', src);
+      video.removeAttribute('data-src');
+      // # try — معالجة عملية قد تفشل
+      try {
+        video.load();
+      } catch (_) { /* ignore */ }
+    }
+
+    // # guard — no IntersectionObserver → load first two immediately
+    if (typeof IntersectionObserver !== 'function') {
+      Array.from(nodes).slice(0, 2).forEach(activate);
+      return;
+    }
+    // # guard — reuse observer
+    if (recentLazyObserver) recentLazyObserver.disconnect();
+    recentLazyObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          // # شرط — فرع منطقي
+          if (!entry.isIntersecting) return;
+          activate(entry.target);
+          recentLazyObserver.unobserve(entry.target);
+        });
+      },
+      { rootMargin: '200px 0px', threshold: 0.01 },
+    );
+    nodes.forEach((video) => recentLazyObserver.observe(video));
   }
 
   // # FN dubbingJobIsStillProcessing
@@ -385,9 +448,9 @@
             // # block — فرع شرطي
             const skelId = `sk-${idx}`;
             const hideSkel = `var s=document.getElementById('${skelId}');if(s)s.remove()`;
-            // # block — #t=0.1 seeks a visible first frame (same pattern as history cinema)
+            // # block — lazy data-src so the grid paints before R2 bytes
             const thumbSrc = escape(url) + '#t=0.1';
-            mediaHtml = `<div class="rjc-video-wrap"><div class="rjc-skeleton" id="${skelId}"></div>${dlOverlay}<video src="${thumbSrc}" controls controlsList="nodownload" playsinline preload="metadata" muted onloadeddata="${hideSkel}" onerror="${hideSkel}"></video></div>`;
+            mediaHtml = `<div class="rjc-video-wrap"><div class="rjc-skeleton" id="${skelId}"></div>${dlOverlay}<video data-src="${thumbSrc}" class="rjc-lazy-video" controls controlsList="nodownload" playsinline preload="none" muted onloadeddata="${hideSkel}" onerror="${hideSkel}"></video></div>`;
           }
           // # return — إرجاع النتيجة
           return `<div class="recent-job-card">
@@ -421,6 +484,8 @@
     const section = document.getElementById('recentJobsSection');
     // # شرط — فرع منطقي
     if (section) section.style.display = 'block';
+    writeRecentJobsHtmlCache(container.innerHTML);
+    hydrateLazyRecentVideos(container);
   }
 
   // # FN loadAndRenderRecentDubbingJobs
@@ -440,8 +505,9 @@
     }
     const grid = document.getElementById('recentJobsGrid');
     const section = document.getElementById('recentJobsSection');
-    // # block — paint cached cards immediately (feels instant on revisit)
-    if (retryCount === 0 && recentJobsForDownload.length === 0) {
+    // # block — paint/reuse cache immediately (early HTML may already be in the DOM)
+    if (retryCount === 0) {
+      hydrateLazyRecentVideos(grid);
       const cached = readRecentJobsCache();
       if (cached && cached.length) {
         if (section) {
@@ -449,7 +515,15 @@
           section.removeAttribute('aria-hidden');
           section.style.display = '';
         }
-        renderRecentDubbingJobsGrid(cached);
+        if (grid && grid.querySelector('.recent-job-card')) {
+          recentJobsForDownload = cached.filter((job) => {
+            const status = DubbingApp.jobStatus.normalizeDubbingJobStatus(job.status);
+            return status !== 'failed' && status !== 'cancelled' && status !== 'error';
+          });
+          bindRecentDubDownloadButtons();
+        } else {
+          renderRecentDubbingJobsGrid(cached);
+        }
       }
     }
     const headers = getDubbingApiAuthHeaders();
@@ -472,10 +546,17 @@
     }
     // # try — معالجة عملية قد تفشل
     try {
-      // # HTTP — طلب إلى API
-      const res = await fetch(`${normalizeApiBaseUrl()}/api/user/files`, { headers });
-      // # parse — قراءة JSON من الاستجابة
-      const data = await res.json().catch(() => ({}));
+      // # HTTP — reuse early prefetch started while scripts were downloading
+      let data = null;
+      const prefetch = global.__glotixRecentFilesPrefetch;
+      global.__glotixRecentFilesPrefetch = null;
+      if (prefetch && typeof prefetch.then === 'function') {
+        data = await prefetch;
+      }
+      if (!data) {
+        const res = await fetch(`${normalizeApiBaseUrl()}/api/user/files`, { headers });
+        data = await res.json().catch(() => ({}));
+      }
       const files = data.success && Array.isArray(data.files) ? data.files : [];
       // # block — طلب HTTP/API
       let dubFiles = files
@@ -515,6 +596,7 @@
       // # block — فرع شرطي
       } else if (grid) {
         writeRecentJobsCache([]);
+        writeRecentJobsHtmlCache('');
         grid.innerHTML =
           // # block — فرع شرطي
           '<div style="grid-column:1/-1;text-align:center;padding:24px;color:#9ca3af;">No recent dubbing works yet</div>';
