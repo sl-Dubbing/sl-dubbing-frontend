@@ -540,12 +540,13 @@
   }
 
   // # FN handleStartDubbingButtonClick
-  // # AR Step1 extract SRT if empty; Step2 start real dub after user review
-  // # KW تفريغ,asr,srt,مهمة,job
+  // # AR Fast: extract then auto-start; Studio: extract, review, press again to dub
+  // # KW تفريغ,asr,srt,مهمة,job,سرعة
   async function handleStartDubbingButtonClick() {
     // # guard — شرط رفض أو خروج مبكر
     if (S.startButtonLocked) return;
 
+    const quality = String(global.dubbingQuality || 'fast').toLowerCase();
     const segs =
       typeof DubbingApp.srtEditor?.getScriptSegmentsForDub === 'function'
         ? DubbingApp.srtEditor.getScriptSegmentsForDub()
@@ -571,9 +572,12 @@
         return;
       // # block — فرع شرطي
       }
-      await extract();
-      // # return — إرجاع النتيجة (المستخدم يراجع ثم يضغط مجدداً)
-      return;
+      const ok = await extract();
+      // # guard — الاستخراج فشل أو بلا cues
+      if (!ok) return;
+      // # guard — Studio: أوقف هنا لمراجعة النص ثم اضغط Start مجدداً
+      if (quality !== 'fast') return;
+      // # block — Fast: تابع فوراً بعد التفريغ (ما زال يحتاج نصاً لـ ElevenLabs)
     }
 
     // # block — المرحلة الثانية: الدبلجة الحقيقية

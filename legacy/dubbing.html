@@ -840,7 +840,7 @@
             </div>
             <div class="srt-status" id="srtStatus" aria-live="polite"></div>
             <div class="srt-segment-list" id="srtSegmentList">
-                <div class="srt-empty" id="srtEmpty">No cues yet ? Extract script or load an .srt file.</div>
+                <div class="srt-empty" id="srtEmpty">No cues yet — press Start Dubbing (Fast extracts then dubs), or load an .srt file.</div>
             </div>
         </aside>
         <div id="previewArea">
@@ -950,7 +950,7 @@
         </label>
     </div>
 
-    <button id="dubBtn" class="start-btn" style="display:none;">Extract Script</button>
+    <button id="dubBtn" class="start-btn" style="display:none;">Start Dubbing</button>
     <div id="progressArea" class="progress-box">
         <div style="font-weight:600;color:#374151;display:flex;justify-content:space-between;font-size:0.95rem;">
             <span id="statusTxt">Initializing...</span>
@@ -1206,6 +1206,7 @@
                     && !String(window.selectedElevenLabsVoiceId || '').trim()) {
                     window.showToast?.('Fast Dub works best with Default or Premium voice', 'info');
                 }
+                window.DubbingApp?.srtEditor?.syncStartDubbingButtonPhaseUi?.();
             });
         });
     })();
@@ -1374,11 +1375,11 @@
 <script defer src="js/dubbing/10-ui-progress.js?v=100"></script>
 <script defer src="js/dubbing/11-upload-r2.js?v=21"></script>
 <script defer src="js/dubbing/11b-browser-audio-extract.js?v=1"></script>
-<script defer src="js/dubbing/12-start-dubbing.js?v=20260922fast"></script>
+<script defer src="js/dubbing/12-start-dubbing.js?v=20260923fast1"></script>
 <script defer src="js/dubbing/13-recent-jobs.js?v=20260922fast3"></script>
 <script defer src="js/dubbing/17-pending-jobs-resume.js?v=20260818prog"></script>
 <script defer src="js/dubbing/14-media-input.js?v=20260718a"></script>
-<script defer src="js/dubbing/20-srt-editor.js?v=20260922fast"></script>
+<script defer src="js/dubbing/20-srt-editor.js?v=20260923fast1"></script>
 <script defer src="js/dubbing/19-cost-estimate.js?v=20260717b"></script>
 <script defer src="js/dubbing/15-lang-attention.js?v=20"></script>
 <script defer src="js/dubbing/99-init.js?v=20260922fast3"></script>

@@ -307,7 +307,7 @@
 
     <p class="hint-line">
         <strong>1 credit = 1 source character</strong>,
-        billed at 1.4� to cover ElevenLabs plus Modal GPU with a small margin.
+        billed at <strong>1.4x</strong> to cover ElevenLabs plus Modal GPU with a small margin.
         Retail is <strong>$0.10 per 1,000 credits</strong>
         (~$0.14 per 1,000 source characters).
         Free includes <strong>2,000</strong> credits.
@@ -332,7 +332,7 @@
 <script src="js/shared/09-credits-fetch.js?v=18"></script>
 <script src="js/shared/12-auth-sync.js?v=19"></script>
 <script src="js/shared/13-connection.js?v=18"></script>
-<script src="js/shared/17-pricing-packages.js?v=20260818sec"></script>
+<script src="js/shared/17-pricing-packages.js?v=20260923fix"></script>
 <script src="js/shared/18-credit-balance.js?v=20260713"></script>
 <script src="js/shared/14-init.js?v=17"></script>
 
@@ -342,7 +342,7 @@
             loadAndRenderPricingPackages();
         }
         document.getElementById('toggleYearly')?.addEventListener('click', () => {
-            if (typeof showToast === 'function') showToast('Yearly billing coming soon � use credit packs for now');
+            if (typeof showToast === 'function') showToast('Yearly billing coming soon — use credit packs for now');
         });
         setTimeout(() => {
             const headers = window.getApiAuthHeaders ? window.getApiAuthHeaders() : null;

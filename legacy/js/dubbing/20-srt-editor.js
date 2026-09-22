@@ -180,8 +180,8 @@
   }
 
   // # FN syncStartDubbingButtonPhaseUi
-  // # AR Extract Script vs Start Dubbing label from cue count
-  // # KW تفريغ,asr,srt,مهمة,job
+  // # AR Fast shows Start always; Studio keeps Extract then Start Dubbing
+  // # KW تفريغ,asr,srt,مهمة,job,سرعة
   function syncStartDubbingButtonPhaseUi() {
     const dubBtn = document.getElementById('dubBtn');
     // # guard — شرط رفض أو خروج مبكر
@@ -194,6 +194,16 @@
     const n = (S.scriptSegments || []).filter((s) => (String(s.text || '').trim())).length;
     // # block — تحديث واجهة/DOM
     const ready = n > 0;
+    const quality = String(global.dubbingQuality || 'fast').toLowerCase();
+    // # block — Fast: زر واحد يستخرج ثم يبدأ؛ Studio: مرحلتان للمراجعة
+    if (quality === 'fast') {
+      dubBtn.dataset.phase = ready ? 'dub' : 'extract-and-dub';
+      dubBtn.textContent = 'Start Dubbing';
+      dubBtn.title = ready
+        ? 'Start Fast dubbing with the current script'
+        : 'Extract script then start Fast dubbing automatically';
+      return;
+    }
     dubBtn.dataset.phase = ready ? 'dub' : 'extract';
     dubBtn.textContent = ready ? 'Start Dubbing' : 'Extract Script';
     dubBtn.title = ready
@@ -465,7 +475,7 @@
     // # شرط
     if (!S.scriptSegments.length) {
       list.innerHTML =
-        '<div class="srt-empty" id="srtEmpty">No cues yet — press Extract Script / Start, or load an .srt file.</div>';
+        '<div class="srt-empty" id="srtEmpty">No cues yet — press Start Dubbing (Fast extracts then dubs), or load an .srt file.</div>';
       // # guard — رفض/خروج
       if (countEl) countEl.textContent = '0 cues';
       syncStartDubbingButtonPhaseUi();
