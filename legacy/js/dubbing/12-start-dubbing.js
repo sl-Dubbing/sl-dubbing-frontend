@@ -134,7 +134,14 @@
       if (S.srtVideoFileKey) {
         urlData = { file_key: S.srtVideoFileKey };
         DubbingApp.ui.updateDubbingProgressBarUi('Using uploaded video...', 8);
-      } else if (S.videoUploadPromise) {
+      } else if (wantFastAudio && S.srtAudioFileKey) {
+        // # block — Fast wake: enqueue on audio_file_key; do not await background video upload
+        audioFileKey = S.srtAudioFileKey;
+        urlData = { file_key: S.srtAudioFileKey };
+        S.fastPathMode = 'audio-first';
+        DubbingApp.ui.updateDubbingProgressBarUi('Fast path: starting on extracted audio...', 8);
+      } else if (S.videoUploadPromise && !wantFastAudio) {
+        // Studio / lip-sync: video mux needs the full object before POST
         DubbingApp.ui.updateDubbingProgressBarUi('Finishing background video upload...', 12);
         const grant = await S.videoUploadPromise;
         urlData = { file_key: grant.file_key };
@@ -155,14 +162,13 @@
           audioFileKey = audioGrant.file_key;
           S.srtAudioFileKey = audioFileKey;
           S.fastPathMode = 'audio-first';
+          // # block — video stays background; POST uses audio key immediately
           S.videoUploadPromise = DubbingApp.upload.uploadMediaFileResumableToR2(
             file,
             authHeaders,
             { progressLabel: 'Background video upload...' },
           );
-          const videoGrant = await S.videoUploadPromise;
-          urlData = { file_key: videoGrant.file_key };
-          S.srtVideoFileKey = videoGrant.file_key;
+          urlData = { file_key: audioFileKey };
         } else {
           urlData = await DubbingApp.upload.uploadMediaFileResumableToR2(file, authHeaders);
           S.srtVideoFileKey = urlData.file_key;
@@ -182,8 +188,11 @@
       const fileKey = urlData.file_key;
       if (S.fastPathMode !== 'audio-first') {
         S.srtPreviewFileKey = fileKey;
+        S.srtVideoFileKey = fileKey;
+      } else if (!S.srtVideoFileKey) {
+        // # guard — do not stamp the audio object key as the video key
+        S.srtPreviewFileKey = S.srtAudioFileKey || fileKey;
       }
-      S.srtVideoFileKey = fileKey;
       const langArray = Array.from(global.selectedLangs);
       // # block — طلب HTTP/API
       const dubEndpoint = `${normalizeApiBaseUrl()}/api/dub`;

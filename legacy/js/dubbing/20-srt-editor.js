@@ -726,13 +726,15 @@
       const segs = Array.isArray(data.segments) ? data.segments : [];
       rememberSourceScriptSegments(segs);
       renderSrtEditor(segs);
-      setSrtStatus('');
+      // # block — surface ASR engine so Gladia vs Whisper is visible in Fast speed checks
+      const via = String(data.via || '').trim();
+      setSrtStatus(via ? `ASR via ${via}` : '');
       // Keep source-language cues in the UI; literal translate runs when user picks target lang.
       // # شرط — فرع منطقي
       if (segs.length) {
         global.showToast?.(
           // # block — فرع شرطي
-          `Loaded ${segs.length} cue(s)`,
+          via ? `Loaded ${segs.length} cue(s) · ${via}` : `Loaded ${segs.length} cue(s)`,
           'success',
         );
       } else {
