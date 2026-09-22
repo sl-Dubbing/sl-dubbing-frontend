@@ -87,7 +87,7 @@
     }
   }
 
-  const PREMIUM_VOICES_CACHE_KEY = 'glotix.voices.premium.v1';
+  const PREMIUM_VOICES_CACHE_KEY = 'glotix.voices.premium.v2';
   const PREMIUM_VOICES_TTL_MS = 6 * 60 * 60 * 1000;
   const USER_CLONES_CACHE_PREFIX = 'glotix.voices.clones.v1.';
   const USER_CLONES_TTL_MS = 10 * 60 * 1000;

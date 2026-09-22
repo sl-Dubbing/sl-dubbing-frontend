@@ -210,17 +210,29 @@
   }
 
   // # FN ttsTriangleMarkEl
-  // # AR شعار المثلث بدل صور العينات في مربعات اختيار الصوت
+  // # AR Portrait from catalog avatar_url, else Glotix triangle mark.
   // # KW صوت,استنساخ,voice,clone,sample,توليد_صوت,TTS,synthesis
-  function ttsTriangleMarkEl() {
+  function ttsTriangleMarkEl(avatarUrl) {
     const wrap = document.createElement('div');
-    wrap.className = 'v-img-wrapper v-mark-triangle';
     const img = document.createElement('img');
-    img.src = '/logo/glotix_Triangle.svg';
     img.alt = '';
-    img.addEventListener('error', () => {
-      img.src = 'logo/glotix_Triangle.svg';
-    });
+    const portrait = String(avatarUrl || '').trim();
+    if (portrait) {
+      wrap.className = 'v-img-wrapper';
+      img.src = portrait;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.addEventListener('error', () => {
+        wrap.className = 'v-img-wrapper v-mark-triangle';
+        img.src = '/logo/glotix_Triangle.svg';
+      });
+    } else {
+      wrap.className = 'v-img-wrapper v-mark-triangle';
+      img.src = '/logo/glotix_Triangle.svg';
+      img.addEventListener('error', () => {
+        img.src = 'logo/glotix_Triangle.svg';
+      });
+    }
     wrap.appendChild(img);
     return wrap;
   }
@@ -321,7 +333,7 @@
             v.elevenlabs_voice_id || v.eleven_labs_voice_id || '',
           ),
         );
-        card.appendChild(ttsTriangleMarkEl());
+        card.appendChild(ttsTriangleMarkEl(v.avatar_url || v.image_url || ''));
         const nameEl = document.createElement('div');
         // # block — تنفيذ منطق — راجع الأسطر التالية
         nameEl.className = 'v-name';

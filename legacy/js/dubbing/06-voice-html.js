@@ -162,12 +162,19 @@
         // # block — معالجة صوت/استنساخ
         const selected = global.selectedSample === voice.sample_url ? ' selected' : '';
         const voiceId = escapeHtmlForVoiceCardLabels(voice.id || '');
+        const avatarUrl = escapeHtmlForVoiceCardLabels(
+          voice.avatar_url || voice.image_url || '',
+        );
+        const imgSrc = avatarUrl || 'logo/glotix_Triangle.svg';
+        const wrapperClass = avatarUrl
+          ? 'voice-avatar-wrapper'
+          : 'voice-avatar-wrapper voice-mark-triangle';
         // # return — إرجاع النتيجة
         return `
-            <div class="voice-avatar-card${selected}" data-voice-id="${voiceId}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url=""
+            <div class="voice-avatar-card${selected}" data-voice-id="${voiceId}" data-sample-url="${url}" data-sample-text="${sampleText}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url="${avatarUrl}"
                  onclick="onPremiumVoiceCardClick(this)">
-                <div class="voice-avatar-wrapper voice-mark-triangle">
-                    <img src="logo/glotix_Triangle.svg" alt="" loading="lazy" decoding="async">
+                <div class="${wrapperClass}">
+                    <img src="${imgSrc}" alt="" loading="lazy" decoding="async">
                     <div class="voice-play-overlay" onclick="playVoicePreview(event, '${url}', this.parentElement.parentElement)">
                         <i class="fa-solid fa-play"></i>
                     </div>
@@ -265,7 +272,8 @@
     if (!resolvedAvatar && sampleUrl && Array.isArray(S.premiumVoicesCache)) {
       const match = S.premiumVoicesCache.find((v) => v.sample_url === sampleUrl);
       // # شرط — فرع منطقي
-      if (match?.avatar_url) resolvedAvatar = 'logo/glotix_Triangle.svg';
+      if (match?.avatar_url) resolvedAvatar = match.avatar_url;
+      else if (match?.image_url) resolvedAvatar = match.image_url;
       else if (match?.name) {
         resolvedAvatar = 'logo/glotix_Triangle.svg';
       }
@@ -315,7 +323,7 @@
           mode: global.voiceMode || 'clone',
           sampleUrl,
           name: match.name || 'Voice',
-          avatarUrl: 'logo/glotix_Triangle.svg',
+          avatarUrl: match.avatar_url || match.image_url || 'logo/glotix_Triangle.svg',
         // # block — معالجة صوت/استنساخ
         });
         // # return — إرجاع النتيجة
