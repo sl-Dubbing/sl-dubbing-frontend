@@ -3,11 +3,19 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="Cache-Control" content="public, max-age=120, must-revalidate">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com https://*.googleusercontent.com https://hatscripts.github.io; media-src 'self' blob: https://cdn.glotix.ai https://*.supabase.co https://*.r2.cloudflarestorage.com; connect-src 'self' https://api.glotix.ai https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>AI Text to Speech | Same Voices as Video Dubbing | Glotix</title>
     <meta name="description" content="AI text to speech with the same catalog used for video dubbing. Write lines, pick a cloned or stock voice, download natural speech in 55+ languages.">
     <link rel="canonical" href="https://glotix.ai/tts">
+    <link rel="preconnect" href="https://api.glotix.ai" crossorigin>
+    <link rel="preconnect" href="https://cdn.glotix.ai" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://api.glotix.ai">
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/config.js?v=20260530" as="script">
+    <link rel="preload" href="js/languages.js?v=20260922perf" as="script">
     <link rel="alternate" hreflang="en" href="https://glotix.ai/tts">
     <link rel="alternate" hreflang="ar" href="https://glotix.ai/ar">
     <link rel="alternate" hreflang="x-default" href="https://glotix.ai/">
@@ -23,7 +31,8 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/svg+xml" href="/logo/logo_arrow_White.svg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous"></noscript>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/logo.css">
     <link rel="stylesheet" href="css/brand-theme.css?v=20260818font">
@@ -40,7 +49,7 @@
       })();
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" integrity="sha384-tuevtT+97g9yLeuT/m52ejUJbc0hzsN6MPLiQEccySreiGjrcgk2tMBJR7/l6HGM" crossorigin="anonymous"></script>
+    <!-- supabase deferred at bottom with app scripts -->
     <style>
         :root {
             --accent-gold: #fcca69; --accent-yellow: #fcca69; --bg-soft: #eeedea;
@@ -523,40 +532,52 @@
 
 <div id="toasts"></div>
 
-<script src="js/shared/theme.js?v=2"></script>
-<script src="js/config.js?v=20260530"></script>
+<script>
+/* API warm for first visit — starts before deferred scripts execute */
+(function () {
+  try {
+    var api = 'https://api.glotix.ai';
+    window.__glotixWarmHealth = fetch(api + '/health', { credentials: 'omit' }).catch(function () {});
+    window.__glotixWarmLangs = fetch(api + '/api/languages', { credentials: 'omit' }).catch(function () {});
+    window.__glotixWarmVoices = fetch(api + '/api/voices/premium', { credentials: 'omit' }).catch(function () {});
+  } catch (_) {}
+})();
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" integrity="sha384-tuevtT+97g9yLeuT/m52ejUJbc0hzsN6MPLiQEccySreiGjrcgk2tMBJR7/l6HGM" crossorigin="anonymous"></script>
+<script defer src="js/shared/theme.js?v=2"></script>
+<script defer src="js/config.js?v=20260530"></script>
 <!-- shared ? ???? ???? ???? ?? ??? ?? js/shared/ -->
-<script src="js/shared/01-api-base.js?v=24"></script>
-<script src="js/shared/02-toast.js?v=22"></script>
-<script src="js/shared/03-jwt.js?v=18"></script>
-<script src="js/shared/04-auth-headers.js?v=18"></script>
-<script src="js/shared/06-guest-menu.js?v=17"></script>
-<script src="js/shared/07-supabase-client.js?v=17"></script>
-<script src="js/shared/08-credits-helpers.js?v=19"></script>
-<script src="js/shared/10-menu-ui.js?v=22"></script>
-<script src="js/shared/11-menu-actions.js?v=18"></script>
-<script src="js/shared/05-session.js?v=18"></script>
-<script src="js/shared/09-credits-fetch.js?v=18"></script>
-<script src="js/shared/12-auth-sync.js?v=19"></script>
-<script src="js/shared/13-connection.js?v=18"></script>
-<script src="js/shared/15-api-errors.js?v=23"></script>
-<script src="js/shared/16-credits-modal.js?v=19"></script>
-<script src="js/shared/14-init.js?v=18"></script>
-<script src="js/languages.js?v=20260922dialects"></script>
-<script src="js/src-lang-picker.js?v=20260714c"></script>
+<script defer src="js/shared/01-api-base.js?v=20260922perf"></script>
+<script defer src="js/shared/02-toast.js?v=22"></script>
+<script defer src="js/shared/03-jwt.js?v=18"></script>
+<script defer src="js/shared/04-auth-headers.js?v=18"></script>
+<script defer src="js/shared/06-guest-menu.js?v=17"></script>
+<script defer src="js/shared/07-supabase-client.js?v=17"></script>
+<script defer src="js/shared/08-credits-helpers.js?v=19"></script>
+<script defer src="js/shared/10-menu-ui.js?v=22"></script>
+<script defer src="js/shared/11-menu-actions.js?v=18"></script>
+<script defer src="js/shared/05-session.js?v=18"></script>
+<script defer src="js/shared/09-credits-fetch.js?v=18"></script>
+<script defer src="js/shared/12-auth-sync.js?v=19"></script>
+<script defer src="js/shared/13-connection.js?v=18"></script>
+<script defer src="js/shared/15-api-errors.js?v=23"></script>
+<script defer src="js/shared/16-credits-modal.js?v=19"></script>
+<script defer src="js/shared/14-init.js?v=18"></script>
+<script defer src="js/languages.js?v=20260922perf"></script>
+<script defer src="js/src-lang-picker.js?v=20260714c"></script>
 <!-- TTS UI modules (order matters) ? ???? ???? ?? js/tts/01-state.js -->
-<script src="js/tts/01-state.js?v=23"></script>
-<script src="js/tts/02-helpers.js?v=20260818cat"></script>
-<script src="js/tts/03-ui-modes.js?v=18"></script>
-<script src="js/tts/04-player.js?v=20260608c"></script>
-<script src="js/tts/05-stt.js?v=20260922lists"></script>
-<script src="js/tts/06-lang-picker.js?v=20260922lists"></script>
-<script src="js/tts/07-voice.js?v=26"></script>
-<script src="js/tts/11-voice-save-modal.js?v=22"></script>
-<script src="js/tts/08-generate.js?v=20260818a"></script>
-<script src="js/tts/09-recent-works.js?v=20260608c"></script>
-<script src="js/tts/10-input-toolbar.js?v=18"></script>
-<script src="js/tts/99-init.js?v=23"></script>
+<script defer src="js/tts/01-state.js?v=23"></script>
+<script defer src="js/tts/02-helpers.js?v=20260818cat"></script>
+<script defer src="js/tts/03-ui-modes.js?v=18"></script>
+<script defer src="js/tts/04-player.js?v=20260608c"></script>
+<script defer src="js/tts/05-stt.js?v=20260922lists"></script>
+<script defer src="js/tts/06-lang-picker.js?v=20260922lists"></script>
+<script defer src="js/tts/07-voice.js?v=26"></script>
+<script defer src="js/tts/11-voice-save-modal.js?v=22"></script>
+<script defer src="js/tts/08-generate.js?v=20260818a"></script>
+<script defer src="js/tts/09-recent-works.js?v=20260608c"></script>
+<script defer src="js/tts/10-input-toolbar.js?v=18"></script>
+<script defer src="js/tts/99-init.js?v=23"></script>
 
 </body>
 </html>

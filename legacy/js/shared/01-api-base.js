@@ -135,7 +135,16 @@
     const base = String(apiBase || normalizeApiBaseUrl() || '').replace(/\/$/, '');
     if (!base) return [];
     try {
-      const res = await fetch(base + '/api/voices/premium');
+      // Reuse early-warm fetch started from HTML (first visit / cold start)
+      let res;
+      const warm = global.__glotixWarmVoices;
+      if (warm && typeof warm.then === 'function') {
+        global.__glotixWarmVoices = null;
+        res = await warm;
+      } else {
+        res = await fetch(base + '/api/voices/premium');
+      }
+      if (!res || typeof res.json !== 'function') return [];
       const json = await res.json().catch(() => ({}));
       const voices = res.ok && Array.isArray(json.voices) ? json.voices : [];
       if (voices.length) writeSharedPremiumVoicesCache(voices);

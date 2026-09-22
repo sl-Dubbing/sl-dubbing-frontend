@@ -2,9 +2,9 @@
 <html lang="en" dir="ltr">
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <!-- Short cache: soft reload stays fast for users; JS query ?v= still busts after deploys -->
+    <meta http-equiv="Cache-Control" content="public, max-age=120, must-revalidate">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com https://*.googleusercontent.com https://hatscripts.github.io; media-src 'self' blob: https://cdn.glotix.ai https://*.supabase.co https://*.r2.cloudflarestorage.com; connect-src 'self' https://api.glotix.ai https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>AI Video Dubbing Studio | Keep Original Music | Glotix</title>
@@ -12,8 +12,13 @@
     <link rel="canonical" href="https://glotix.ai/dubbing">
     <link rel="preconnect" href="https://api.glotix.ai" crossorigin>
     <link rel="preconnect" href="https://cdn.glotix.ai" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="dns-prefetch" href="https://api.glotix.ai">
     <link rel="dns-prefetch" href="https://cdn.glotix.ai">
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/config.js?v=25" as="script">
+    <link rel="preload" href="js/languages.js?v=20260922perf" as="script">
+    <link rel="preload" href="js/shared/01-api-base.js?v=20260922perf" as="script">
     <link rel="alternate" hreflang="en" href="https://glotix.ai/dubbing">
     <link rel="alternate" hreflang="ar" href="https://glotix.ai/ar">
     <link rel="alternate" hreflang="x-default" href="https://glotix.ai/">
@@ -29,7 +34,8 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/svg+xml" href="/logo/logo_arrow_White.svg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous"></noscript>
     <link rel="stylesheet" href="css/logo.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/brand-theme.css?v=20260818font">
@@ -46,7 +52,7 @@
       })();
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" integrity="sha384-tuevtT+97g9yLeuT/m52ejUJbc0hzsN6MPLiQEccySreiGjrcgk2tMBJR7/l6HGM" crossorigin="anonymous"></script>
+    <!-- supabase deferred with the rest of the app scripts (see bottom) -->
     <style>
         :root {
             --accent-gold: #fcca69; --accent-yellow: #fcca69; --bg-soft: #eeedea;
@@ -1019,7 +1025,9 @@
           }
         }
         var api = 'https://api.glotix.ai';
-        // Warm edge + start files fetch while scripts download
+        // Wake Modal cold start + warm catalogs while deferred scripts download
+        window.__glotixWarmHealth = fetch(api + '/health', { credentials: 'omit' }).catch(function () {});
+        window.__glotixWarmLangs = fetch(api + '/api/languages', { credentials: 'omit' }).catch(function () {});
         window.__glotixWarmVoices = fetch(api + '/api/voices/premium', { credentials: 'omit' }).catch(function () {});
         if (token && uid) {
           window.__glotixRecentFilesPrefetch = fetch(api + '/api/user/files', {
@@ -1141,26 +1149,27 @@
 <div id="toasts"></div>
 <audio id="voicePreviewPlayer" style="display:none;"></audio>
 
-<script src="js/shared/theme.js?v=2"></script>
-<script src="js/config.js?v=25"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" integrity="sha384-tuevtT+97g9yLeuT/m52ejUJbc0hzsN6MPLiQEccySreiGjrcgk2tMBJR7/l6HGM" crossorigin="anonymous"></script>
+<script defer src="js/shared/theme.js?v=2"></script>
+<script defer src="js/config.js?v=25"></script>
 <!-- shared -->
-<script src="js/shared/01-api-base.js?v=24"></script>
-<script src="js/shared/02-toast.js?v=22"></script>
-<script src="js/shared/03-jwt.js?v=18"></script>
-<script src="js/shared/04-auth-headers.js?v=18"></script>
-<script src="js/shared/06-guest-menu.js?v=17"></script>
-<script src="js/shared/07-supabase-client.js?v=17"></script>
-<script src="js/shared/08-credits-helpers.js?v=19"></script>
-<script src="js/shared/10-menu-ui.js?v=22"></script>
-<script src="js/shared/11-menu-actions.js?v=18"></script>
-<script src="js/shared/05-session.js?v=18"></script>
-<script src="js/shared/09-credits-fetch.js?v=18"></script>
-<script src="js/shared/12-auth-sync.js?v=19"></script>
-<script src="js/shared/13-connection.js?v=18"></script>
-<script src="js/shared/15-api-errors.js?v=23"></script>
-<script src="js/shared/16-credits-modal.js?v=20260621e"></script>
-<script src="js/shared/18-credit-balance.js?v=20260713"></script>
-<script src="js/shared/14-init.js?v=18"></script>
+<script defer src="js/shared/01-api-base.js?v=20260922perf"></script>
+<script defer src="js/shared/02-toast.js?v=22"></script>
+<script defer src="js/shared/03-jwt.js?v=18"></script>
+<script defer src="js/shared/04-auth-headers.js?v=18"></script>
+<script defer src="js/shared/06-guest-menu.js?v=17"></script>
+<script defer src="js/shared/07-supabase-client.js?v=17"></script>
+<script defer src="js/shared/08-credits-helpers.js?v=19"></script>
+<script defer src="js/shared/10-menu-ui.js?v=22"></script>
+<script defer src="js/shared/11-menu-actions.js?v=18"></script>
+<script defer src="js/shared/05-session.js?v=18"></script>
+<script defer src="js/shared/09-credits-fetch.js?v=18"></script>
+<script defer src="js/shared/12-auth-sync.js?v=19"></script>
+<script defer src="js/shared/13-connection.js?v=18"></script>
+<script defer src="js/shared/15-api-errors.js?v=23"></script>
+<script defer src="js/shared/16-credits-modal.js?v=20260621e"></script>
+<script defer src="js/shared/18-credit-balance.js?v=20260713"></script>
+<script defer src="js/shared/14-init.js?v=18"></script>
 <script>
     const voiceSelectBtn  = document.getElementById('voiceSelectBtn');
     const voicePanel      = document.getElementById('voiceDropdownPanel');
@@ -1343,31 +1352,31 @@
             .catch(function () {});
     })();
 </script>
-<script src="js/languages.js?v=20260922dialects"></script>
-<script src="js/src-lang-picker.js?v=20260714c"></script>
+<script defer src="js/languages.js?v=20260922perf"></script>
+<script defer src="js/src-lang-picker.js?v=20260714c"></script>
 <!-- Dubbing UI modules (order matters) -->
-<script src="js/dubbing/01-state.js?v=17"></script>
-<script src="js/dubbing/16-lang-picker.js?v=20260818share"></script>
-<script src="js/dubbing/17-dub-lang-context.js?v=1"></script>
-<script src="js/dubbing/02-api-config.js?v=20260817sec"></script>
-<script src="js/dubbing/03-api-fetch.js?v=21"></script>
-<script src="js/dubbing/05-voice-payload.js?v=16"></script>
-<script src="js/dubbing/06-voice-html.js?v=20260922voices"></script>
-<script src="js/dubbing/07-voice-api.js?v=22"></script>
-<script src="js/dubbing/08-voice-save-modal.js?v=20260818share"></script>
-<script src="js/dubbing/09-voice-recorder.js?v=20260621"></script>
-<script src="js/dubbing/04-job-status.js?v=20260817sec"></script>
-<script src="js/dubbing/18-stream-player.js?v=1"></script>
-<script src="js/dubbing/10-ui-progress.js?v=100"></script>
-<script src="js/dubbing/11-upload-r2.js?v=21"></script>
-<script src="js/dubbing/11b-browser-audio-extract.js?v=1"></script>
-<script src="js/dubbing/12-start-dubbing.js?v=20260817a"></script>
-<script src="js/dubbing/13-recent-jobs.js?v=20260922fast3"></script>
-<script src="js/dubbing/17-pending-jobs-resume.js?v=20260818prog"></script>
-<script src="js/dubbing/14-media-input.js?v=20260718a"></script>
-<script src="js/dubbing/20-srt-editor.js?v=11"></script>
-<script src="js/dubbing/19-cost-estimate.js?v=20260717b"></script>
-<script src="js/dubbing/15-lang-attention.js?v=20"></script>
-<script src="js/dubbing/99-init.js?v=20260922fast3"></script>
+<script defer src="js/dubbing/01-state.js?v=17"></script>
+<script defer src="js/dubbing/16-lang-picker.js?v=20260818share"></script>
+<script defer src="js/dubbing/17-dub-lang-context.js?v=1"></script>
+<script defer src="js/dubbing/02-api-config.js?v=20260817sec"></script>
+<script defer src="js/dubbing/03-api-fetch.js?v=21"></script>
+<script defer src="js/dubbing/05-voice-payload.js?v=16"></script>
+<script defer src="js/dubbing/06-voice-html.js?v=20260922voices"></script>
+<script defer src="js/dubbing/07-voice-api.js?v=22"></script>
+<script defer src="js/dubbing/08-voice-save-modal.js?v=20260818share"></script>
+<script defer src="js/dubbing/09-voice-recorder.js?v=20260621"></script>
+<script defer src="js/dubbing/04-job-status.js?v=20260817sec"></script>
+<script defer src="js/dubbing/18-stream-player.js?v=1"></script>
+<script defer src="js/dubbing/10-ui-progress.js?v=100"></script>
+<script defer src="js/dubbing/11-upload-r2.js?v=21"></script>
+<script defer src="js/dubbing/11b-browser-audio-extract.js?v=1"></script>
+<script defer src="js/dubbing/12-start-dubbing.js?v=20260817a"></script>
+<script defer src="js/dubbing/13-recent-jobs.js?v=20260922fast3"></script>
+<script defer src="js/dubbing/17-pending-jobs-resume.js?v=20260818prog"></script>
+<script defer src="js/dubbing/14-media-input.js?v=20260718a"></script>
+<script defer src="js/dubbing/20-srt-editor.js?v=11"></script>
+<script defer src="js/dubbing/19-cost-estimate.js?v=20260717b"></script>
+<script defer src="js/dubbing/15-lang-attention.js?v=20"></script>
+<script defer src="js/dubbing/99-init.js?v=20260922fast3"></script>
 </body>
 </html>

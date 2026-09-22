@@ -318,13 +318,20 @@
     const url = `${_apiBase()}/api/languages${qs}`;
     // # try — عملية قد تفشل
     try {
-      // # HTTP — طلب API
-      const res = await fetch(url, {
-        credentials: 'omit',
-        cache: opts.refresh ? 'no-store' : 'default',
-      });
+      // # HTTP — طلب API (reuse HTML early-warm when present)
+      let res;
+      const warm = !opts.refresh ? global.__glotixWarmLangs : null;
+      if (warm && typeof warm.then === 'function') {
+        global.__glotixWarmLangs = null;
+        res = await warm;
+      } else {
+        res = await fetch(url, {
+          credentials: 'omit',
+          cache: opts.refresh ? 'no-store' : 'default',
+        });
+      }
       // # guard — رفض/خروج
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res || !res.ok) throw new Error(`HTTP ${res && res.status}`);
       const data = await res.json();
       // # guard — رفض/خروج
       if (!data || !Array.isArray(data.languages) || !data.languages.length) {
