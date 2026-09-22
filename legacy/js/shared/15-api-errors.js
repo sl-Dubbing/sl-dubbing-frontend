@@ -19,8 +19,22 @@
     const err = (data && (data.error || data.message)) || '';
     const errLower = String(err).toLowerCase();
 
+    // # guard — provider billing (before session 401 mapping)
+    if (
+      errLower.indexOf('payment_issue') !== -1 ||
+      errLower.indexOf('payment_required') !== -1 ||
+      errLower.indexOf('incomplete payment') !== -1 ||
+      errLower.indexOf('voice provider billing') !== -1
+    ) {
+      return 'Voice provider billing is paused — complete the ElevenLabs invoice to resume TTS. Your Glotix credits were refunded for this attempt.';
+    }
+
     // # guard — شرط رفض أو خروج مبكر
     if (status === 401) {
+      // # guard — raw ElevenLabs 401 leaked into API error string
+      if (errLower.indexOf('elevenlabs') !== -1) {
+        return 'Voice provider authentication failed. Please contact support.';
+      }
       // # guard — شرط رفض أو خروج مبكر
       if (errLower.includes('mismatch')) {
         // # block — فرع شرطي

@@ -62,6 +62,80 @@
     }
   }
 
+  // # FN speechRecognitionLangFromCatalogCode
+  // # AR Map Glotix locale codes (ar-eg) to Web Speech BCP-47 (ar-EG).
+  // # KW تفريغ,ASR,STT,لغة,language,dialect
+  function speechRecognitionLangFromCatalogCode(code) {
+    const raw = String(code || '').trim().toLowerCase();
+    // # guard — شرط رفض أو خروج مبكر
+    if (!raw) return 'ar-SA';
+    const parts = raw.split('-');
+    const base = parts[0] || 'ar';
+    const region = parts[1];
+    // # شرط — فرع منطقي
+    if (region) return `${base}-${region.toUpperCase()}`;
+    const defaults = {
+      ar: 'ar-SA',
+      en: 'en-US',
+      fr: 'fr-FR',
+      es: 'es-ES',
+      de: 'de-DE',
+      it: 'it-IT',
+      pt: 'pt-BR',
+      zh: 'zh-CN',
+      ja: 'ja-JP',
+      ko: 'ko-KR',
+      hi: 'hi-IN',
+      tr: 'tr-TR',
+      ru: 'ru-RU',
+      nl: 'nl-NL',
+      pl: 'pl-PL',
+      uk: 'uk-UA',
+      vi: 'vi-VN',
+      id: 'id-ID',
+      ms: 'ms-MY',
+      fil: 'fil-PH',
+      th: 'th-TH',
+      he: 'he-IL',
+      fa: 'fa-IR',
+      ur: 'ur-PK',
+      bn: 'bn-BD',
+      sw: 'sw-KE',
+    };
+    // # return — إرجاع النتيجة
+    return defaults[base] || base;
+  }
+
+  // # FN populateTtsDictationLangSelect
+  // # AR Keep Voice Typing list in sync with the Generate language catalog.
+  // # KW تفريغ,ASR,STT,لغة,language,dialect
+  function populateTtsDictationLangSelect(preferredCode) {
+    const select = document.getElementById('sttLangSelect');
+    // # guard — شرط رفض أو خروج مبكر
+    if (!select) return;
+    const langs = global.SHARED_LANGUAGES || global.LANGUAGES || [];
+    // # guard — شرط رفض أو خروج مبكر
+    if (!langs.length) return;
+    const previous = select.value;
+    const preferred = speechRecognitionLangFromCatalogCode(
+      preferredCode || global.TtsApp?.state?.currentLangCode || '',
+    );
+    select.replaceChildren();
+    langs.forEach((lang) => {
+      const opt = document.createElement('option');
+      opt.value = speechRecognitionLangFromCatalogCode(lang.code);
+      opt.dataset.code = lang.code;
+      const dialect = String(lang.dialect || '').trim();
+      opt.textContent = dialect
+        ? `${lang.name_en} — ${dialect}`
+        : lang.name_en || lang.code;
+      select.appendChild(opt);
+    });
+    const matchPreferred = Array.from(select.options).find((o) => o.value === preferred);
+    const matchPrevious = Array.from(select.options).find((o) => o.value === previous);
+    select.value = (matchPreferred || matchPrevious || select.options[0])?.value || preferred;
+  }
+
   /** ربط_زر_الإملاء_الصوتي */
   // # FN bindTtsSpeechDictationButton
   // # AR bind tts speech dictation button (bindTtsSpeechDictationButton)
@@ -69,6 +143,10 @@
   function bindTtsSpeechDictationButton() {
     const voiceTypingBtn = document.getElementById('voiceTypingBtn');
     const sttLangSelect = document.getElementById('sttLangSelect');
+    populateTtsDictationLangSelect();
+    document.addEventListener('glotix:languages-ready', () => {
+      populateTtsDictationLangSelect(global.TtsApp?.state?.currentLangCode);
+    });
 
     // # شرط — فرع منطقي
     if (global.SpeechRecognition || global.webkitSpeechRecognition) {
@@ -131,5 +209,9 @@
     }
   }
 
-  TtsApp.stt = { bindTtsSpeechDictationButton, stopTtsSpeechDictation };
+  TtsApp.stt = {
+    bindTtsSpeechDictationButton,
+    stopTtsSpeechDictation,
+    populateTtsDictationLangSelect,
+  };
 })(window);

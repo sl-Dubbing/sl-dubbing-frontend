@@ -137,6 +137,9 @@
     const search = document.getElementById('langMenuSearch');
     // # شرط — فرع منطقي
     if (search) search.value = '';
+
+    // # block — keep Voice Typing list aligned with Generate language
+    TtsApp.stt?.populateTtsDictationLangSelect?.(code);
   }
 
   // ── بناء_قائمة_اللغات — التهيئة الأولى من window.LANGUAGES ──────────
@@ -232,6 +235,7 @@
         global.LANGUAGES?.[0];
       // # شرط
       if (match) selectTtsTargetLanguage(match.code, match.name_en);
+      TtsApp.stt?.populateTtsDictationLangSelect?.(match?.code || code);
     });
   }
 
