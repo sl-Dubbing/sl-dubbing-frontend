@@ -1,4 +1,4 @@
-// # FILE frontend/sl-dubbing-frontend-main/js/dubbing/12-start-dubbing.js
+﻿// # FILE frontend/sl-dubbing-frontend-main/js/dubbing/12-start-dubbing.js
 // # AR واجهة الدبلجة — رفع، Start، polling، أصوات
 // # KW عام,general
 // # CONVENTION — FN/AR/KW + # block كل ~6 أسطر — FUNCTION_INDEX.md DOMAIN_INDEX.md
@@ -193,7 +193,8 @@
       // # block — رفع أو تخزين ملف
       const cinemaList = document.getElementById('cinemaLangs');
       
-      const voicePayload = DubbingApp.voicePayload.buildVoiceConfigPayloadForDubApiRequest();
+      const voicePayload =
+        DubbingApp.voicePayload?.buildVoiceConfigPayloadForDubApiRequest?.() || {};
       const hyperPayload = DubbingApp.hyperLive?.buildHyperLiveStartPayload?.() || {};
       // # block — معالجة صوت/استنساخ
       const mergedVoice = DubbingApp.hyperLive?.mergeHyperLiveIntoVoiceConfig?.(voicePayload) || voicePayload;
@@ -576,3 +577,4 @@
   };
   global.startDubbing = handleStartDubbingButtonClick;
 })(window);
+
