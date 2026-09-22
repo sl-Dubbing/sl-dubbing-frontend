@@ -1,4 +1,4 @@
-// # FILE frontend/sl-dubbing-frontend-main/js/dubbing/99-init.js
+﻿// # FILE frontend/sl-dubbing-frontend-main/js/dubbing/99-init.js
 // # AR وحدة الدبلجة — رفع، بدء مهمة، polling، أصوات
 // # CONVENTION — # FN / # AR فوق كل دالة، # قبل كل خطوة — see FUNCTION_INDEX.md
 // dubbing/99-init.js — Page bootstrap and global exports
@@ -95,10 +95,14 @@
       global.showToast?.('Upload UI failed to start — refresh the page', 'error');
     }
 
-    // # try — أصوات
+    // # try — أصوات (awaitable; never leave a bare rejected promise for the toast guard)
     try {
-      DubbingApp.voice?.fetchUserVoiceClonesFromApi?.();
-      DubbingApp.voice?.fetchSavedVoiceProfileFromApi?.();
+      void Promise.resolve(DubbingApp.voice?.fetchUserVoiceClonesFromApi?.()).catch((err) =>
+        console.warn('[dubbing-init] voice clones failed', err),
+      );
+      void Promise.resolve(DubbingApp.voice?.fetchSavedVoiceProfileFromApi?.()).catch((err) =>
+        console.warn('[dubbing-init] saved voice failed', err),
+      );
     } catch (err) {
       console.warn('[dubbing-init] voice fetch failed', err);
     }
@@ -125,8 +129,14 @@
           recentSection.removeAttribute('aria-hidden');
           recentSection.style.display = '';
         }
-        DubbingApp.pendingJobs?.resumePendingDubJobsIfAny?.();
-        setTimeout(() => DubbingApp.recentJobs?.loadAndRenderRecentDubbingJobs?.(), 1000);
+        void Promise.resolve(DubbingApp.pendingJobs?.resumePendingDubJobsIfAny?.()).catch((err) =>
+          console.warn('[dubbing-init] pending resume failed', err),
+        );
+        setTimeout(() => {
+          void Promise.resolve(DubbingApp.recentJobs?.loadAndRenderRecentDubbingJobs?.()).catch(
+            (err) => console.warn('[dubbing-init] recent jobs failed', err),
+          );
+        }, 1000);
       // # block — تحديث واجهة/DOM
       }
     } catch (err) {
@@ -140,3 +150,4 @@
     bootDubbingPageUi();
   }
 })(window);
+
