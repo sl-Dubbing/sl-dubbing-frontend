@@ -1,4 +1,4 @@
-// # FILE frontend/sl-dubbing-frontend-main/js/shared/02-toast.js
+﻿// # FILE frontend/sl-dubbing-frontend-main/js/shared/02-toast.js
 // # AR وحدات مشتركة — auth، credits، menu
 // # KW عام,general
 // # CONVENTION — FN/AR/KW + # block كل ~6 أسطر — FUNCTION_INDEX.md DOMAIN_INDEX.md
@@ -65,7 +65,17 @@
       const key = String(raw || 'error').slice(0, 120);
       if (seen[key] || Object.keys(seen).length >= 6) return;
       seen[key] = true;
-      showToast('Something went wrong — try again', 'error');
+      // # block — surface a short real reason so Fast/TTS failures are actionable
+      const detail = String(raw || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 140);
+      showToast(
+        detail && detail.toLowerCase() !== 'error'
+          ? `Something went wrong — ${detail}`
+          : 'Something went wrong — try again',
+        'error',
+      );
     }
     global.addEventListener('error', function (event) {
       const msg = String((event && event.message) || '');
@@ -81,3 +91,4 @@
   }
   installRuntimeErrorGuard();
 })(window);
+
