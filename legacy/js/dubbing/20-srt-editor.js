@@ -180,8 +180,8 @@
   }
 
   // # FN syncStartDubbingButtonPhaseUi
-  // # AR Fast shows Start always; Studio keeps Extract then Start Dubbing
-  // # KW تفريغ,asr,srt,مهمة,job,سرعة
+  // # AR Always Start Dubbing — ElevenLabs handles ASR/translate/TTS
+  // # KW مهمة,job,سرعة,ElevenLabs,دبلجة
   function syncStartDubbingButtonPhaseUi() {
     const dubBtn = document.getElementById('dubBtn');
     // # guard — شرط رفض أو خروج مبكر
@@ -190,25 +190,9 @@
     if (dubBtn.getAttribute('aria-disabled') === 'true') return;
     // # guard — أثناء القفل لا تغيّر النص
     if (S.startButtonLocked) return;
-    // # block — لا تستدعِ getScriptSegmentsForDub هنا (تسبب recursion مع syncSegmentsFromDom)
-    const n = (S.scriptSegments || []).filter((s) => (String(s.text || '').trim())).length;
-    // # block — تحديث واجهة/DOM
-    const ready = n > 0;
-    const quality = String(global.dubbingQuality || 'fast').toLowerCase();
-    // # block — Fast: زر واحد يستخرج ثم يبدأ؛ Studio: مرحلتان للمراجعة
-    if (quality === 'fast') {
-      dubBtn.dataset.phase = ready ? 'dub' : 'extract-and-dub';
-      dubBtn.textContent = 'Start Dubbing';
-      dubBtn.title = ready
-        ? 'Start Fast dubbing with the current script'
-        : 'Extract script then start Fast dubbing automatically';
-      return;
-    }
-    dubBtn.dataset.phase = ready ? 'dub' : 'extract';
-    dubBtn.textContent = ready ? 'Start Dubbing' : 'Extract Script';
-    dubBtn.title = ready
-      ? 'Start the dubbing job with the reviewed script'
-      : 'Extract SRT from the media, review cues, then start';
+    dubBtn.dataset.phase = 'dub';
+    dubBtn.textContent = 'Start Dubbing';
+    dubBtn.title = 'Send media + target language to ElevenLabs and deduct site credits';
   }
 
   // # FN setSrtStatus

@@ -273,7 +273,7 @@
             enable_lipsync: !!(mergedVoice.enable_lipsync || global.enableLipsync),
             use_saved_voice: !!(mergedVoice.use_saved_voice || global.usingSavedVoice),
             // # block — معالجة صوت/استنساخ
-            quality: mergedVoice.quality || global.dubbingQuality || 'studio',
+            quality: 'fast',
             video_output: videoOutput,
             // # block — معالجة صوت/استنساخ
             ...hyperPayload,
@@ -540,47 +540,21 @@
   }
 
   // # FN handleStartDubbingButtonClick
-  // # AR Fast: extract then auto-start; Studio: extract, review, press again to dub
-  // # KW تفريغ,asr,srt,مهمة,job,سرعة
+  // # AR One-click: upload already done; send media+target language to ElevenLabs via API (no SRT extract).
+  // # KW مهمة,job,سرعة,ElevenLabs,دبلجة
   async function handleStartDubbingButtonClick() {
     // # guard — شرط رفض أو خروج مبكر
     if (S.startButtonLocked) return;
 
-    const quality = String(global.dubbingQuality || 'fast').toLowerCase();
-    const segs =
-      typeof DubbingApp.srtEditor?.getScriptSegmentsForDub === 'function'
-        ? DubbingApp.srtEditor.getScriptSegmentsForDub()
-        : [];
-    // # شرط — لا سكربت بعد → استخراج أولاً
-    if (!Array.isArray(segs) || segs.length === 0) {
-      // # guard — ملف مطلوب قبل الاستخراج
-      const inputEl = document.getElementById('mediaFile');
-      const file = S.selectedMediaFile || inputEl?.files?.[0];
-      // # guard — رفض/خروج
-      if (!file) {
-        global.showToast?.('Please select a media file', 'error');
-        // # return — إرجاع النتيجة
-        return;
-      // # block — تحديث واجهة/DOM
-      }
-      const extract =
-        DubbingApp.srtEditor?.extractScriptFromMedia || global.extractScriptFromMedia;
-      // # guard — شرط رفض أو خروج مبكر
-      if (typeof extract !== 'function') {
-        global.showToast?.('Script extractor unavailable', 'error');
-        // # return — إرجاع النتيجة
-        return;
-      // # block — فرع شرطي
-      }
-      const ok = await extract();
-      // # guard — الاستخراج فشل أو بلا cues
-      if (!ok) return;
-      // # guard — Studio: أوقف هنا لمراجعة النص ثم اضغط Start مجدداً
-      if (quality !== 'fast') return;
-      // # block — Fast: تابع فوراً بعد التفريغ (ما زال يحتاج نصاً لـ ElevenLabs)
+    const inputEl = document.getElementById('mediaFile');
+    const file = S.selectedMediaFile || inputEl?.files?.[0];
+    // # guard — ملف مطلوب
+    if (!file) {
+      global.showToast?.('Please select a media file', 'error');
+      return;
     }
-
-    // # block — المرحلة الثانية: الدبلجة الحقيقية
+    // # block — ElevenLabs Dubbing API needs target language only (no local Extract Script)
+    global.dubbingQuality = 'fast';
     await startDubbingJobForAllSelectedLanguages();
   }
 
