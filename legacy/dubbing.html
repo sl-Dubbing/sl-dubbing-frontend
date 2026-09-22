@@ -290,7 +290,11 @@
             border-radius: 6px;
             background: var(--bg-card);
             color: var(--text-main);
-            color-scheme: inherit;
+            color-scheme: light;
+            direction: ltr;
+            unicode-bidi: isolate;
+            font-variant-numeric: lining-nums tabular-nums;
+            font-family: ui-monospace, "Cascadia Mono", "Segoe UI", monospace;
         }
         .srt-cue-meta .srt-cue-idx {
             font-size: calc(0.7rem * var(--srt-font-scale, 1));
@@ -1374,7 +1378,7 @@
 <script defer src="js/dubbing/13-recent-jobs.js?v=20260922fast3"></script>
 <script defer src="js/dubbing/17-pending-jobs-resume.js?v=20260818prog"></script>
 <script defer src="js/dubbing/14-media-input.js?v=20260718a"></script>
-<script defer src="js/dubbing/20-srt-editor.js?v=11"></script>
+<script defer src="js/dubbing/20-srt-editor.js?v=20260922nums"></script>
 <script defer src="js/dubbing/19-cost-estimate.js?v=20260717b"></script>
 <script defer src="js/dubbing/15-lang-attention.js?v=20"></script>
 <script defer src="js/dubbing/99-init.js?v=20260922fast3"></script>

@@ -20,6 +20,33 @@
   const SRT_ZOOM_MAX = 1.85;
   const SRT_ZOOM_STEP = 0.1;
 
+  // # FN toAsciiDigits
+  // # AR Convert Eastern/Persian numerals (and Arabic decimal) to ASCII for cue times.
+  // # KW srt,تفريغ
+  function toAsciiDigits(raw) {
+    return String(raw ?? '')
+      .replace(/[\u0660-\u0669]/g, (ch) => String(ch.charCodeAt(0) - 0x0660))
+      .replace(/[\u06f0-\u06f9]/g, (ch) => String(ch.charCodeAt(0) - 0x06f0))
+      .replace(/[\u066b\u066c]/g, '.')
+      .replace(/,/g, '.');
+  }
+
+  // # FN formatCueSecondsAscii
+  // # AR Always paint cue start/end with Western digits (never locale Eastern numerals).
+  // # KW srt,تفريغ
+  function formatCueSecondsAscii(sec) {
+    const n = Number(toAsciiDigits(sec));
+    if (!Number.isFinite(n) || n < 0) return '0.00';
+    return n.toFixed(2);
+  }
+
+  // # FN parseCueSeconds
+  // # KW srt,تفريغ
+  function parseCueSeconds(raw) {
+    const n = parseFloat(toAsciiDigits(raw));
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  }
+
   // # FN applySrtFontScale
   // # AR تطبيق تكبير/تصغير نص قائمة SRT
   // # KW عام,general
@@ -409,8 +436,8 @@
       next.push({
         id: i,
         // # block — تنفيذ منطق — راجع الأسطر التالية
-        start: parseFloat(startEl && startEl.value) || 0,
-        end: parseFloat(endEl && endEl.value) || 0,
+        start: parseCueSeconds(startEl && startEl.value),
+        end: parseCueSeconds(endEl && endEl.value),
         text: text,
         speaker: 0,
       });
@@ -455,13 +482,13 @@
         '<span class="srt-cue-idx">#' +
         (i + 1) +
         '</span>' +
-        '<input data-field="start" type="number" step="0.01" min="0" value="' +
-        // # block — تنفيذ منطق — راجع الأسطر التالية
-        (Number(seg.start) || 0).toFixed(2) +
+        '<input data-field="start" type="text" inputmode="decimal" lang="en" dir="ltr" autocomplete="off" value="' +
+        // # block — Western digits only (type=number shows Eastern digits in ar locale)
+        formatCueSecondsAscii(seg.start) +
         '" title="Start (sec)">' +
         '<span style="color:#9ca3af;font-size:0.7rem;">→</span>' +
-        '<input data-field="end" type="number" step="0.01" min="0" value="' +
-        (Number(seg.end) || 0).toFixed(2) +
+        '<input data-field="end" type="text" inputmode="decimal" lang="en" dir="ltr" autocomplete="off" value="' +
+        formatCueSecondsAscii(seg.end) +
         '" title="End (sec)">' +
         // # block — تنفيذ منطق — راجع الأسطر التالية
         '<button type="button" class="srt-cue-remove" data-remove="' +
@@ -486,6 +513,13 @@
       el.addEventListener('change', syncSegmentsFromDom);
       // # block — تنفيذ منطق — راجع الأسطر التالية
       el.addEventListener('input', syncSegmentsFromDom);
+      // Keep typed times as ASCII digits while editing under Arabic UI locale
+      if (el.getAttribute('data-field') === 'start' || el.getAttribute('data-field') === 'end') {
+        el.addEventListener('blur', () => {
+          el.value = formatCueSecondsAscii(el.value);
+          syncSegmentsFromDom();
+        });
+      }
     });
     list.querySelectorAll('[data-remove]').forEach((btn) => {
       btn.addEventListener('click', () => {
