@@ -80,12 +80,15 @@
     global.addEventListener('error', function (event) {
       const msg = String((event && event.message) || '');
       if (!msg || msg.indexOf('ResizeObserver') !== -1 || msg.indexOf('Script error') === 0) return;
+      // # guard — media CSP / empty source noise (sample previews)
+      if (/no supported source|MEDIA_ERR|NotSupportedError|play\(\)/i.test(msg)) return;
       report(msg);
     });
     global.addEventListener('unhandledrejection', function (event) {
       const reason = event && event.reason;
       const msg = reason && reason.message ? String(reason.message) : String(reason || '');
       if (!msg || msg.indexOf('AbortError') !== -1) return;
+      if (/no supported source|MEDIA_ERR|NotSupportedError|The play\(\) request was interrupted/i.test(msg)) return;
       report(msg);
     });
   }

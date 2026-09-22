@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com https://*.googleusercontent.com https://hatscripts.github.io; media-src 'self' blob: https://cdn.glotix.ai; connect-src 'self' https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.stripe.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.glotix.ai https://*.supabase.co https://glotix.ai https://ui-avatars.com https://*.googleusercontent.com https://hatscripts.github.io; media-src 'self' blob: https://cdn.glotix.ai https://*.supabase.co https://*.r2.cloudflarestorage.com; connect-src 'self' https://api.glotix.ai https://sl-dubbing--glotix-api-serve.modal.run https://*.supabase.co wss://*.supabase.co https://cdn.glotix.ai https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; upgrade-insecure-requests">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>AI Video Dubbing Studio | Keep Original Music | Glotix</title>
     <meta name="description" content="AI video dubbing online: upload a clip, translate dialogue, clone the original speaker, and download a dubbed file with the soundtrack kept in the mix. 55+ languages.">
@@ -1080,7 +1080,7 @@
 <script src="js/config.js"></script>
 <!-- shared -->
 <script src="js/shared/01-api-base.js?v=24"></script>
-<script src="js/shared/02-toast.js?v=21"></script>
+<script src="js/shared/02-toast.js?v=22"></script>
 <script src="js/shared/03-jwt.js?v=18"></script>
 <script src="js/shared/04-auth-headers.js?v=18"></script>
 <script src="js/shared/06-guest-menu.js?v=17"></script>
@@ -1090,7 +1090,7 @@
 <script src="js/shared/11-menu-actions.js?v=18"></script>
 <script src="js/shared/05-session.js?v=18"></script>
 <script src="js/shared/09-credits-fetch.js?v=18"></script>
-<script src="js/shared/12-auth-sync.js?v=18"></script>
+<script src="js/shared/12-auth-sync.js?v=19"></script>
 <script src="js/shared/13-connection.js?v=18"></script>
 <script src="js/shared/15-api-errors.js?v=22"></script>
 <script src="js/shared/16-credits-modal.js?v=20260621e"></script>
@@ -1200,10 +1200,17 @@
         e.stopPropagation();
         document.querySelectorAll('.voice-play-overlay').forEach(o => { o.classList.remove('playing'); o.innerHTML = '<i class="fa-solid fa-play"></i>'; });
         const overlay = cardElement.querySelector('.voice-play-overlay');
-        if (previewPlayer.src === url && !previewPlayer.paused) { previewPlayer.pause(); }
-        else {
-            previewPlayer.src = url; previewPlayer.play(); overlay.classList.add('playing'); overlay.innerHTML = '<i class="fa-solid fa-pause"></i>';
-            previewPlayer.onended = () => { overlay.classList.remove('playing'); overlay.innerHTML = '<i class="fa-solid fa-play"></i>'; };
+        const src = String(url || '').trim();
+        if (!src || !previewPlayer) return;
+        if (previewPlayer.src === src && !previewPlayer.paused) { previewPlayer.pause(); return; }
+        previewPlayer.src = src;
+        if (overlay) { overlay.classList.add('playing'); overlay.innerHTML = '<i class="fa-solid fa-pause"></i>'; }
+        const reset = () => { if (overlay) { overlay.classList.remove('playing'); overlay.innerHTML = '<i class="fa-solid fa-play"></i>'; } };
+        previewPlayer.onended = reset;
+        previewPlayer.onerror = reset;
+        const playPromise = previewPlayer.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(reset);
         }
     }
     async function loadSupabaseVoices() {
@@ -1290,12 +1297,12 @@
 <script src="js/dubbing/11-upload-r2.js?v=21"></script>
 <script src="js/dubbing/11b-browser-audio-extract.js?v=1"></script>
 <script src="js/dubbing/12-start-dubbing.js?v=20260817a"></script>
-<script src="js/dubbing/13-recent-jobs.js?v=20260922fail"></script>
+<script src="js/dubbing/13-recent-jobs.js?v=20260922fast2"></script>
 <script src="js/dubbing/17-pending-jobs-resume.js?v=20260818prog"></script>
 <script src="js/dubbing/14-media-input.js?v=20260718a"></script>
 <script src="js/dubbing/20-srt-editor.js?v=11"></script>
 <script src="js/dubbing/19-cost-estimate.js?v=20260717b"></script>
 <script src="js/dubbing/15-lang-attention.js?v=20"></script>
-<script src="js/dubbing/99-init.js?v=20260922fast"></script>
+<script src="js/dubbing/99-init.js?v=20260922fast2"></script>
 </body>
 </html>

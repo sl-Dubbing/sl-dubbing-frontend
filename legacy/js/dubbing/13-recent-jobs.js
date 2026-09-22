@@ -10,6 +10,40 @@
   let recentJobsForDownload = [];
   let recentDownloadBound = false;
   let recentPollTimer = null;
+  const RECENT_JOBS_CACHE_KEY = 'glotix.dubbing.recent.v1';
+
+  // # FN readRecentJobsCache
+  // # AR Instant paint from sessionStorage while /api/user/files loads.
+  // # KW مهمة,job
+  function readRecentJobsCache() {
+    // # try — معالجة عملية قد تفشل
+    try {
+      const raw = sessionStorage.getItem(RECENT_JOBS_CACHE_KEY);
+      // # guard — شرط رفض أو خروج مبكر
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      // # guard — شرط رفض أو خروج مبكر
+      if (!parsed || !Array.isArray(parsed.jobs)) return null;
+      // # return — إرجاع النتيجة
+      return parsed.jobs;
+    } catch (_) {
+      // # return — إرجاع النتيجة
+      return null;
+    }
+  }
+
+  // # FN writeRecentJobsCache
+  // # AR Cache visible recent works for next visit.
+  // # KW مهمة,job
+  function writeRecentJobsCache(jobs) {
+    // # try — معالجة عملية قد تفشل
+    try {
+      sessionStorage.setItem(
+        RECENT_JOBS_CACHE_KEY,
+        JSON.stringify({ ts: Date.now(), jobs: (jobs || []).slice(0, 8) }),
+      );
+    } catch (_) { /* ignore */ }
+  }
 
   // # FN dubbingJobIsStillProcessing
   // # KW مهمة,job,polling,celery,worker
@@ -345,13 +379,14 @@
           const dlOverlay = `<button type="button" class="dub-download-btn" data-idx="${idx}" title="Download" aria-label="Download"><i class="fa-solid fa-download"></i></button>`;
           // # شرط — فرع منطقي
           if (isAudio) {
-            mediaHtml = `<div class="rjc-audio-wrap">${dlOverlay}${WAVEFORM_SVG}<audio src="${escape(url)}" controls crossorigin="anonymous" preload="metadata" class="rjc-audio-native"></audio></div>`;
+            mediaHtml = `<div class="rjc-audio-wrap">${dlOverlay}${WAVEFORM_SVG}<audio src="${escape(url)}" controls crossorigin="anonymous" preload="none" class="rjc-audio-native"></audio></div>`;
           // # block — فرع شرطي
           } else {
             // # block — فرع شرطي
             const skelId = `sk-${idx}`;
             const hideSkel = `var s=document.getElementById('${skelId}');if(s)s.remove()`;
-            mediaHtml = `<div class="rjc-video-wrap"><div class="rjc-skeleton" id="${skelId}"></div>${dlOverlay}<video src="${escape(url)}" controls controlsList="nodownload" crossorigin="anonymous" preload="metadata" onloadeddata="${hideSkel}" onerror="${hideSkel}"></video></div>`;
+            // # block — preload=none so the grid paints before R2 media bytes
+            mediaHtml = `<div class="rjc-video-wrap"><div class="rjc-skeleton" id="${skelId}"></div>${dlOverlay}<video src="${escape(url)}" controls controlsList="nodownload" crossorigin="anonymous" preload="none" onloadeddata="${hideSkel}" onerror="${hideSkel}"></video></div>`;
           }
           // # return — إرجاع النتيجة
           return `<div class="recent-job-card">
@@ -403,17 +438,30 @@
       return;
     }
     const grid = document.getElementById('recentJobsGrid');
+    const section = document.getElementById('recentJobsSection');
+    // # block — paint cached cards immediately (feels instant on revisit)
+    if (retryCount === 0 && recentJobsForDownload.length === 0) {
+      const cached = readRecentJobsCache();
+      if (cached && cached.length) {
+        if (section) {
+          section.hidden = false;
+          section.removeAttribute('aria-hidden');
+          section.style.display = '';
+        }
+        renderRecentDubbingJobsGrid(cached);
+      }
+    }
     const headers = getDubbingApiAuthHeaders();
     // # guard — شرط رفض أو خروج مبكر
     if (!headers) {
       // # guard — شرط رفض أو خروج مبكر
-      if (retryCount < 6) {
-        setTimeout(() => loadAndRenderRecentDubbingJobs(retryCount + 1), 400);
+      if (retryCount < 8) {
+        setTimeout(() => loadAndRenderRecentDubbingJobs(retryCount + 1), 200);
         // # return — إرجاع النتيجة
         return;
       }
       // # شرط — فرع منطقي
-      if (grid) {
+      if (grid && recentJobsForDownload.length === 0) {
         grid.innerHTML =
           // # block — معالجة أخطاء
           '<div style="grid-column:1/-1;text-align:center;padding:24px;">Sign in to see recent works</div>';
@@ -460,10 +508,12 @@
       const toRender = dubFiles.slice(0, 8);
       // # شرط — فرع منطقي
       if (toRender.length > 0) {
+        writeRecentJobsCache(toRender);
         renderRecentDubbingJobsGrid(toRender);
         scheduleRecentJobsPollingIfNeeded(toRender);
       // # block — فرع شرطي
       } else if (grid) {
+        writeRecentJobsCache([]);
         grid.innerHTML =
           // # block — فرع شرطي
           '<div style="grid-column:1/-1;text-align:center;padding:24px;color:#9ca3af;">No recent dubbing works yet</div>';
@@ -471,7 +521,7 @@
     } catch (err) {
       console.warn('[dubbing] recent jobs load failed', err);
       // # شرط — فرع منطقي
-      if (grid) {
+      if (grid && recentJobsForDownload.length === 0) {
         grid.innerHTML =
           // # block — معالجة أخطاء
           '<div style="grid-column:1/-1;text-align:center;padding:24px;">Could not load recent works</div>';

@@ -144,6 +144,13 @@
         );
       } catch (_) { /* ignore */ }
 
+      // # block — notify studios that auth headers are ready (recent works / voices)
+      try {
+        const detail = { userId: String(session.user.id) };
+        global.dispatchEvent?.(new CustomEvent('glotix:auth-ready', { detail }));
+        document.dispatchEvent(new CustomEvent('glotix:auth-ready', { detail }));
+      } catch (_) { /* ignore */ }
+
       // # block — معالجة أخطاء
       const baseUser = SL.menuUi.buildMenuUserProfileFromSupabaseUser(session.user);
       // # شرط — فرع منطقي

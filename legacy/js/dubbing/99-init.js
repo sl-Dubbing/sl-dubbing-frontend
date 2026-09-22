@@ -124,19 +124,27 @@
         const recentSection = document.getElementById('recentJobsSection');
         // # شرط — فرع منطقي
         if (recentSection) {
-          // # block — تحديث واجهة/DOM
+          // # block — show section immediately with a loading placeholder (feels faster)
           recentSection.hidden = false;
           recentSection.removeAttribute('aria-hidden');
           recentSection.style.display = '';
+          const grid = document.getElementById('recentJobsGrid');
+          if (grid && !grid.innerHTML.trim()) {
+            grid.innerHTML =
+              '<div style="grid-column:1/-1;text-align:center;padding:24px;color:#9ca3af;">Loading recent works…</div>';
+          }
         }
         void Promise.resolve(DubbingApp.pendingJobs?.resumePendingDubJobsIfAny?.()).catch((err) =>
           console.warn('[dubbing-init] pending resume failed', err),
         );
-        setTimeout(() => {
+        const loadRecent = () =>
           void Promise.resolve(DubbingApp.recentJobs?.loadAndRenderRecentDubbingJobs?.()).catch(
             (err) => console.warn('[dubbing-init] recent jobs failed', err),
           );
-        }, 0);
+        loadRecent();
+        // # block — retry once auth headers become ready
+        document.addEventListener('glotix:auth-ready', loadRecent, { once: true });
+        global.addEventListener?.('glotix:auth-ready', loadRecent, { once: true });
       // # block — تحديث واجهة/DOM
       }
     } catch (err) {
