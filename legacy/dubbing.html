@@ -929,7 +929,7 @@
             <button type="button" class="speaker-mode-btn active" data-quality-mode="fast">Fast</button>
             <button type="button" class="speaker-mode-btn" data-quality-mode="studio">Studio</button>
         </div>
-        <span id="qualityModeHint" style="font-size:0.78rem;color:#94a3b8;">Fast = ElevenLabs Flash, no GPU wait</span>
+        <span id="qualityModeHint" style="font-size:0.78rem;color:#94a3b8;">Fast ≈ target &lt;30s on ~8 min when script is ready (Flash + no RoFormer)</span>
     </div>
 
     <div id="speakerModeRow">
@@ -1197,7 +1197,7 @@
                 window.dubbingQuality = btn.getAttribute('data-quality-mode') || 'studio';
                 if (hint) {
                     hint.textContent = window.dubbingQuality === 'fast'
-                        ? 'Fast = ElevenLabs Flash, no stem separation (Default/Premium voice)'
+                        ? 'Fast = Flash TTS + duck bed (no RoFormer). Extract/translate script first for ~30s jobs'
                         : 'Studio keeps music isolation + clone';
                 }
                 if (window.dubbingQuality === 'fast'
