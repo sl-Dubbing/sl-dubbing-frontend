@@ -60,6 +60,16 @@
     { code: 'ar',    flag: '🇸🇦', name_en: 'Arabic',                 name_ar: 'العربية',               base_lang: 'ar', dialect: 'الفصحى',     category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Arabic' },
     { code: 'ar-sa', flag: '🇸🇦', name_en: 'Arabic (Saudi Arabia)',  name_ar: 'العربية السعودية',      base_lang: 'ar', dialect: 'السعودية',  category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Arabic' },
     { code: 'ar-ae', flag: '🇦🇪', name_en: 'Arabic (UAE)',           name_ar: 'العربية الإماراتية',    base_lang: 'ar', dialect: 'الإماراتية', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-eg', flag: '🇪🇬', name_en: 'Arabic (Egypt)',         name_ar: 'العربية المصرية',       base_lang: 'ar', dialect: 'المصرية',    category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Arabic' },
+    { code: 'ar-ma', flag: '🇲🇦', name_en: 'Arabic (Morocco)',       name_ar: 'العربية المغربية',      base_lang: 'ar', dialect: 'المغربية',   category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Arabic' },
+    { code: 'ar-dz', flag: '🇩🇿', name_en: 'Arabic (Algeria)',       name_ar: 'العربية الجزائرية',     base_lang: 'ar', dialect: 'الجزائرية',  category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-tn', flag: '🇹🇳', name_en: 'Arabic (Tunisia)',       name_ar: 'العربية التونسية',      base_lang: 'ar', dialect: 'التونسية',   category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-iq', flag: '🇮🇶', name_en: 'Arabic (Iraq)',          name_ar: 'العربية العراقية',      base_lang: 'ar', dialect: 'العراقية',   category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-jo', flag: '🇯🇴', name_en: 'Arabic (Jordan)',        name_ar: 'العربية الأردنية',      base_lang: 'ar', dialect: 'الأردنية',   category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-lb', flag: '🇱🇧', name_en: 'Arabic (Lebanon)',       name_ar: 'العربية اللبنانية',     base_lang: 'ar', dialect: 'اللبنانية',  category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-kw', flag: '🇰🇼', name_en: 'Arabic (Kuwait)',        name_ar: 'العربية الكويتية',      base_lang: 'ar', dialect: 'الكويتية',   category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-qa', flag: '🇶🇦', name_en: 'Arabic (Qatar)',         name_ar: 'العربية القطرية',       base_lang: 'ar', dialect: 'القطرية',    category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-bh', flag: '🇧🇭', name_en: 'Arabic (Bahrain)',       name_ar: 'العربية البحرينية',     base_lang: 'ar', dialect: 'البحرينية',  category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
     { code: 'bg',    flag: '🇧🇬', name_en: 'Bulgarian',              name_ar: 'البلغارية',             base_lang: 'bg', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Bulgarian' },
     { code: 'zh',    flag: '🇨🇳', name_en: 'Chinese',                name_ar: 'الصينية',               base_lang: 'zh', dialect: '', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Chinese' },
     { code: 'hr',    flag: '🇭🇷', name_en: 'Croatian',               name_ar: 'الكرواتية',             base_lang: 'hr', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Croatian' },
@@ -92,11 +102,19 @@
     { code: 'sk',    flag: '🇸🇰', name_en: 'Slovak',                 name_ar: 'السلوفاكية',            base_lang: 'sk', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Slovak' },
     { code: 'es-es', flag: '🇪🇸', name_en: 'Spanish (Spain)',        name_ar: 'الإسبانية (إسبانيا)',   base_lang: 'es', dialect: 'Castilian Spanish (Spain)', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Spanish' },
     { code: 'es-mx', flag: '🇲🇽', name_en: 'Spanish (Mexico)',       name_ar: 'الإسبانية (المكسيك)',   base_lang: 'es', dialect: 'Mexican Spanish (spoken)', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Spanish' },
+    { code: 'es-ar', flag: '🇦🇷', name_en: 'Spanish (Argentina)',    name_ar: 'الإسبانية (الأرجنتين)', base_lang: 'es', dialect: 'Rioplatense Spanish (spoken)', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Spanish' },
+    { code: 'es-co', flag: '🇨🇴', name_en: 'Spanish (Colombia)',     name_ar: 'الإسبانية (كولومبيا)',  base_lang: 'es', dialect: 'Colombian Spanish (spoken)', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Spanish' },
     { code: 'sv',    flag: '🇸🇪', name_en: 'Swedish',                name_ar: 'السويدية',              base_lang: 'sv', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Swedish' },
     { code: 'ta',    flag: '🇮🇳', name_en: 'Tamil',                  name_ar: 'التاميلية',             base_lang: 'ta', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Tamil' },
+    { code: 'th',    flag: '🇹🇭', name_en: 'Thai',                   name_ar: 'التايلاندية',           base_lang: 'th', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Thai' },
     { code: 'tr',    flag: '🇹🇷', name_en: 'Turkish',                name_ar: 'التركية',               base_lang: 'tr', dialect: '', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Turkish' },
     { code: 'uk',    flag: '🇺🇦', name_en: 'Ukrainian',              name_ar: 'الأوكرانية',            base_lang: 'uk', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Ukrainian' },
+    { code: 'ur',    flag: '🇵🇰', name_en: 'Urdu',                   name_ar: 'الأردية',               base_lang: 'ur', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Urdu' },
     { code: 'vi',    flag: '🇻🇳', name_en: 'Vietnamese',             name_ar: 'الفيتنامية',            base_lang: 'vi', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Vietnamese' },
+    { code: 'he',    flag: '🇮🇱', name_en: 'Hebrew',                 name_ar: 'العبرية',               base_lang: 'he', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Hebrew' },
+    { code: 'fa',    flag: '🇮🇷', name_en: 'Persian',                name_ar: 'الفارسية',              base_lang: 'fa', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Persian' },
+    { code: 'bn',    flag: '🇧🇩', name_en: 'Bengali',                name_ar: 'البنغالية',             base_lang: 'bn', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Bengali' },
+    { code: 'sw',    flag: '🇰🇪', name_en: 'Swahili',                name_ar: 'السواحلية',             base_lang: 'sw', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Swahili' },
   ];
 
   global.LANGUAGES = sortLanguagesGlobal(FALLBACK_LANGUAGES);
@@ -141,7 +159,8 @@
     en: 'us', fil: 'ph', fi: 'fi', fr: 'fr', de: 'de', el: 'gr', hu: 'hu',
     hi: 'in', id: 'id', it: 'it', ja: 'jp', ko: 'kr', ms: 'my', no: 'no',
     pl: 'pl', pt: 'pt', ro: 'ro', ru: 'ru', sk: 'sk', es: 'es', sv: 'se',
-    ta: 'in', tr: 'tr', uk: 'ua', vi: 'vn',
+    ta: 'in', th: 'th', tr: 'tr', uk: 'ua', ur: 'pk', vi: 'vn', he: 'il',
+    fa: 'ir', bn: 'bd', sw: 'ke',
   };
 
   // # FN buildLanguageDropdown
