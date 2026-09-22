@@ -65,7 +65,7 @@
       return (
         (data && data.message) ||
         // # block — معالجة صوت/استنساخ
-        'Voice cloning is available for this job. Saved samples use normal dubbing rates.',
+        'Voice cloning is available for this job. Saved samples use normal dubbing rates.'
       );
     }
     // # guard — شرط رفض أو خروج مبكر

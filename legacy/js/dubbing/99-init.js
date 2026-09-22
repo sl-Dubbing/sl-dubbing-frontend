@@ -136,7 +136,7 @@
           void Promise.resolve(DubbingApp.recentJobs?.loadAndRenderRecentDubbingJobs?.()).catch(
             (err) => console.warn('[dubbing-init] recent jobs failed', err),
           );
-        }, 1000);
+        }, 0);
       // # block — تحديث واجهة/DOM
       }
     } catch (err) {

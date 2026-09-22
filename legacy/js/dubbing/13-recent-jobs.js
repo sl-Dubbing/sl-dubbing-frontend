@@ -322,11 +322,16 @@
     // # guard — شرط رفض أو خروج مبكر
     if (!container) return;
     const escape = DubbingApp.voiceHtml.escapeHtmlForVoiceCardLabels;
-    recentJobsForDownload = jobs || [];
+    const visibleJobs = (jobs || []).filter((job) => {
+      const status = DubbingApp.jobStatus.normalizeDubbingJobStatus(job.status);
+      // # guard — never show failed/cancelled cards in Recent Works
+      return status !== 'failed' && status !== 'cancelled' && status !== 'error';
+    });
+    recentJobsForDownload = visibleJobs;
     bindRecentDubDownloadButtons();
 
     // # block — معالجة صوت/استنساخ
-    container.innerHTML = jobs
+    container.innerHTML = visibleJobs
       .map((job, idx) => {
         const status = DubbingApp.jobStatus.normalizeDubbingJobStatus(job.status);
         const dateLabel = escape(formatCreationDateLabel(job.created_at));
@@ -403,7 +408,7 @@
     if (!headers) {
       // # guard — شرط رفض أو خروج مبكر
       if (retryCount < 6) {
-        setTimeout(() => loadAndRenderRecentDubbingJobs(retryCount + 1), 1500);
+        setTimeout(() => loadAndRenderRecentDubbingJobs(retryCount + 1), 400);
         // # return — إرجاع النتيجة
         return;
       }
@@ -427,6 +432,25 @@
       let dubFiles = files
         .filter((f) => f.type === 'dubbing')
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      // # purge — delete failed/cancelled jobs so they free DB + R2 quota
+      const doomed = dubFiles.filter((f) => {
+        const status = DubbingApp.jobStatus.normalizeDubbingJobStatus(f.status);
+        return status === 'failed' || status === 'cancelled' || status === 'error';
+      });
+      if (doomed.length) {
+        void Promise.allSettled(
+          doomed.map((f) =>
+            fetch(`${normalizeApiBaseUrl()}/api/user/files/dubbing/${encodeURIComponent(f.id)}`, {
+              method: 'DELETE',
+              headers,
+            }),
+          ),
+        ).catch(() => {});
+        dubFiles = dubFiles.filter((f) => {
+          const status = DubbingApp.jobStatus.normalizeDubbingJobStatus(f.status);
+          return status !== 'failed' && status !== 'cancelled' && status !== 'error';
+        });
+      }
       // # شرط — فرع منطقي
       if (dubFiles.length > 8) {
         // # block — display cap only; Cloudflare R2 FIFO prune runs on the API
