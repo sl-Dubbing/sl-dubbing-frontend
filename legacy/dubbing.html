@@ -162,25 +162,15 @@
 
         .dub-media-row {
             display: none;
-            grid-template-columns: minmax(300px, 400px) 1fr;
-            gap: 18px;
+            grid-template-columns: 1fr;
+            gap: 0;
             align-items: stretch;
             margin-bottom: 25px;
             min-height: min(72vh, 640px);
         }
         .dub-media-row.is-visible { display: grid; }
-        .srt-panel {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            height: 100%;
-            max-height: min(72vh, 640px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-        }
+        /* Script (SRT) panel removed — one-click Fast dub only. */
+        .srt-panel { display: none !important; }
         .srt-panel-head {
             display: flex;
             align-items: center;
@@ -819,30 +809,6 @@
     </label>
 
     <div class="dub-media-row" id="dubMediaRow">
-        <aside class="srt-panel" id="srtEditorPanel" aria-label="Script / SRT editor">
-            <div class="srt-panel-head">
-                <h3><i class="fa-regular fa-closed-captioning"></i> Script (SRT)</h3>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div class="srt-zoom-controls" title="Ctrl + mouse wheel to zoom text">
-                        <button type="button" id="srtZoomOutBtn" aria-label="Zoom out">?</button>
-                        <span class="srt-zoom-label" id="srtZoomLabel">100%</span>
-                        <button type="button" id="srtZoomInBtn" aria-label="Zoom in">+</button>
-                    </div>
-                    <span id="srtCueCount" style="font-size:0.75rem;font-weight:700;color:var(--text-muted);">0 cues</span>
-                </div>
-            </div>
-            <div class="srt-actions">
-                <button type="button" id="srtExtractBtn" title="Optional local transcription" style="display:none;" hidden>Extract script</button>
-                <label class="srt-file-btn" for="srtFileInput">Load .srt</label>
-                <input type="file" id="srtFileInput" accept=".srt,text/plain" style="display:none;">
-                <button type="button" id="srtAddCueBtn">Add cue</button>
-                <button type="button" id="srtClearBtn">Clear</button>
-            </div>
-            <div class="srt-status" id="srtStatus" aria-live="polite"></div>
-            <div class="srt-segment-list" id="srtSegmentList">
-                <div class="srt-empty" id="srtEmpty">Optional script panel — press Start Dubbing to send your video to ElevenLabs with the selected language.</div>
-            </div>
-        </aside>
         <div id="previewArea">
             <button type="button" id="replaceMediaBtn" class="replace-media-btn" title="Replace current media" aria-label="Replace current media">
                 <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
