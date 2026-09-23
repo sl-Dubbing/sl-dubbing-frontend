@@ -10,8 +10,13 @@
   let recentJobsForDownload = [];
   let recentDownloadBound = false;
   let recentPollTimer = null;
+  let lastRecentJobsFingerprint = '';
   const RECENT_JOBS_CACHE_KEY = 'glotix.dubbing.recent.v1';
   const RECENT_JOBS_HTML_KEY = 'glotix.dubbing.recent.html.v1';
+  // # block — Poll slowly; full grid redraw every few seconds remounts <video> and looks like a refresh.
+  const RECENT_POLL_MS = 12000;
+  // # block — Jobs stuck in processing past this age are zombie Modal calls; stop polling and purge.
+  const STALE_PROCESSING_MS = 2 * 60 * 60 * 1000;
   let recentLazyObserver = null;
 
   // # FN readRecentJobsCache
@@ -115,17 +120,66 @@
     return ['pending', 'processing', 'queued'].includes(status);
   }
 
+  // # FN dubbingJobIsStaleProcessing
+  // # AR True when a processing card is older than STALE_PROCESSING_MS (zombie job).
+  // # KW مهمة,job,polling
+  function dubbingJobIsStaleProcessing(job) {
+    // # guard — only applies to in-flight statuses
+    if (!dubbingJobIsStillProcessing(job)) return false;
+    const created = new Date(job?.created_at).getTime();
+    // # guard — missing timestamp → treat as stale so polling cannot loop forever
+    if (!created || Number.isNaN(created)) return true;
+    return Date.now() - created > STALE_PROCESSING_MS;
+  }
+
+  // # FN dubbingJobNeedsActivePoll
+  // # AR Fresh in-flight jobs only — stale zombies must not keep refreshing the grid.
+  // # KW مهمة,job,polling
+  function dubbingJobNeedsActivePoll(job) {
+    return dubbingJobIsStillProcessing(job) && !dubbingJobIsStaleProcessing(job);
+  }
+
+  // # FN recentJobsFingerprint
+  // # AR Stable id/status/url signature so unchanged polls skip destroying video DOM.
+  // # KW مهمة,job,polling
+  function recentJobsFingerprint(jobs) {
+    return (jobs || [])
+      .map((job) => {
+        const status = DubbingApp.jobStatus.normalizeDubbingJobStatus(job?.status);
+        return `${job?.id || ''}|${status}|${job?.output_url || ''}`;
+      })
+      .join(';');
+  }
+
+  // # FN updateRecentJobRelativeTimes
+  // # AR Refresh only the "Xh ago" labels without remounting video players.
+  // # KW مهمة,job,polling
+  function updateRecentJobRelativeTimes(jobs) {
+    const container = document.getElementById('recentJobsGrid');
+    // # guard
+    if (!container) return;
+    container.querySelectorAll('.recent-job-ago[data-created-at]').forEach((el) => {
+      const created = el.getAttribute('data-created-at');
+      const label = formatRelativeTimeAgoLabel(created);
+      // # شرط
+      if (label) el.textContent = label;
+    });
+    // Keep download indices aligned even when we skip full render.
+    recentJobsForDownload = jobs || recentJobsForDownload;
+  }
+
   // # FN scheduleRecentJobsPollingIfNeeded
   // # AR schedule recent jobs polling if needed (scheduleRecentJobsPollingIfNeeded)
   // # KW مهمة,job,polling,celery,worker
   function scheduleRecentJobsPollingIfNeeded(jobs) {
     // # guard — شرط رفض أو خروج مبكر
     if (recentPollTimer) clearInterval(recentPollTimer);
-    // # guard — شرط رفض أو خروج مبكر
-    if (!(jobs || []).some(dubbingJobIsStillProcessing)) return;
-    
-    // التعديل: تقليل الوقت إلى 3 ثوانٍ لاستجابة أسرع
-    recentPollTimer = setInterval(() => loadAndRenderRecentDubbingJobs(), 3000);
+    recentPollTimer = null;
+    // # guard — only poll while at least one fresh (non-stale) job is in flight
+    if (!(jobs || []).some(dubbingJobNeedsActivePoll)) return;
+    recentPollTimer = setInterval(() => {
+      void loadAndRenderRecentDubbingJobs(0, { fromPoll: true });
+    }, RECENT_POLL_MS);
   }
 
   // # FN formatRelativeTimeAgoLabel
@@ -414,7 +468,7 @@
 
   // # FN renderRecentDubbingJobsGrid
   // # KW مهمة,job,polling,celery,worker
-  function renderRecentDubbingJobsGrid(jobs) {
+  function renderRecentDubbingJobsGrid(jobs, options = {}) {
     const container = document.getElementById('recentJobsGrid');
     // # guard — شرط رفض أو خروج مبكر
     if (!container) return;
@@ -422,10 +476,26 @@
     const visibleJobs = (jobs || []).filter((job) => {
       const status = DubbingApp.jobStatus.normalizeDubbingJobStatus(job.status);
       // # guard — never show failed/cancelled cards in Recent Works
-      return status !== 'failed' && status !== 'cancelled' && status !== 'error';
+      if (status === 'failed' || status === 'cancelled' || status === 'error') return false;
+      // # guard — hide zombie processing cards (17h+ stuck) so they cannot refresh the grid
+      if (dubbingJobIsStaleProcessing(job)) return false;
+      return true;
     });
     recentJobsForDownload = visibleJobs;
     bindRecentDubDownloadButtons();
+
+    const fingerprint = recentJobsFingerprint(visibleJobs);
+    // # block — Poll path: same jobs → keep <video> nodes alive; only refresh relative times.
+    if (
+      options.skipIfUnchanged &&
+      fingerprint &&
+      fingerprint === lastRecentJobsFingerprint &&
+      container.querySelector('.recent-job-card, .recent-job-status')
+    ) {
+      updateRecentJobRelativeTimes(visibleJobs);
+      return;
+    }
+    lastRecentJobsFingerprint = fingerprint;
 
     // # block — معالجة صوت/استنساخ
     container.innerHTML = visibleJobs
@@ -433,6 +503,9 @@
         const status = DubbingApp.jobStatus.normalizeDubbingJobStatus(job.status);
         const dateLabel = escape(formatCreationDateLabel(job.created_at));
         const timeAgo = formatRelativeTimeAgoLabel(job.created_at);
+        const agoAttr = job.created_at
+          ? ` data-created-at="${escape(String(job.created_at))}"`
+          : '';
         const url = job.output_url || '';
 
         // # شرط — فرع منطقي
@@ -453,13 +526,13 @@
             mediaHtml = `<div class="rjc-video-wrap"><div class="rjc-skeleton" id="${skelId}"></div>${dlOverlay}<video data-src="${thumbSrc}" class="rjc-lazy-video" controls controlsList="nodownload" playsinline preload="none" muted onloadeddata="${hideSkel}" onerror="${hideSkel}"></video></div>`;
           }
           // # return — إرجاع النتيجة
-          return `<div class="recent-job-card">
+          return `<div class="recent-job-card" data-job-id="${escape(String(job.id || idx))}">
             <button type="button" class="rjc-del-btn" data-idx="${idx}" title="Delete this project" aria-label="Delete"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
             ${mediaHtml}
             <div class="recent-job-meta">
               <div class="recent-job-meta-info">
                 <div class="recent-job-date">${dateLabel}</div>
-                ${timeAgo ? `<div class="recent-job-ago">${escape(timeAgo)}</div>` : ''}
+                ${timeAgo ? `<div class="recent-job-ago"${agoAttr}>${escape(timeAgo)}</div>` : ''}
               </div>
               <button type="button" class="rjc-reuse-btn" data-idx="${idx}" title="Reuse this video to dub in another language" aria-label="Reuse">
                 <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Reuse
@@ -470,13 +543,13 @@
         }
 
         // # return — إرجاع النتيجة
-        return `<div class="recent-job-card">
+        return `<div class="recent-job-card" data-job-id="${escape(String(job.id || idx))}">
           <div class="recent-job-status">
             <i class="fa-solid fa-circle-notch fa-spin"></i>
             <span>${escape(status)}</span>
           </div>
           <div class="recent-job-date" style="margin-top:8px;">${dateLabel}</div>
-          ${timeAgo ? `<div class="recent-job-ago">${escape(timeAgo)}</div>` : ''}
+          ${timeAgo ? `<div class="recent-job-ago"${agoAttr}>${escape(timeAgo)}</div>` : ''}
         </div>`;
       })
       .join('');
@@ -490,7 +563,7 @@
 
   // # FN loadAndRenderRecentDubbingJobs
   // # KW مهمة,job,polling,celery,worker
-  async function loadAndRenderRecentDubbingJobs(retryCount = 0) {
+  async function loadAndRenderRecentDubbingJobs(retryCount = 0, options = {}) {
     // Ephemeral dubbing: no Recent Works / history grid (session cinema only).
     // # شرط
     if (DubbingApp.api?.isEphemeralDubbingEnabled?.()) {
@@ -498,6 +571,7 @@
       if (recentPollTimer) clearInterval(recentPollTimer);
       recentPollTimer = null;
       recentJobsForDownload = [];
+      lastRecentJobsFingerprint = '';
       const section = document.getElementById('recentJobsSection');
       // # guard — رفض/خروج
       if (section) section.style.display = 'none';
@@ -506,7 +580,7 @@
     const grid = document.getElementById('recentJobsGrid');
     const section = document.getElementById('recentJobsSection');
     // # block — paint/reuse cache immediately (early HTML may already be in the DOM)
-    if (retryCount === 0) {
+    if (retryCount === 0 && !options.fromPoll) {
       hydrateLazyRecentVideos(grid);
       const cached = readRecentJobsCache();
       if (cached && cached.length) {
@@ -518,7 +592,12 @@
         if (grid && grid.querySelector('.recent-job-card')) {
           recentJobsForDownload = cached.filter((job) => {
             const status = DubbingApp.jobStatus.normalizeDubbingJobStatus(job.status);
-            return status !== 'failed' && status !== 'cancelled' && status !== 'error';
+            return (
+              status !== 'failed' &&
+              status !== 'cancelled' &&
+              status !== 'error' &&
+              !dubbingJobIsStaleProcessing(job)
+            );
           });
           bindRecentDubDownloadButtons();
         } else {
@@ -531,7 +610,7 @@
     if (!headers) {
       // # guard — شرط رفض أو خروج مبكر
       if (retryCount < 8) {
-        setTimeout(() => loadAndRenderRecentDubbingJobs(retryCount + 1), 200);
+        setTimeout(() => loadAndRenderRecentDubbingJobs(retryCount + 1, options), 200);
         // # return — إرجاع النتيجة
         return;
       }
@@ -548,10 +627,13 @@
     try {
       // # HTTP — reuse early prefetch started while scripts were downloading
       let data = null;
-      const prefetch = global.__glotixRecentFilesPrefetch;
-      global.__glotixRecentFilesPrefetch = null;
-      if (prefetch && typeof prefetch.then === 'function') {
-        data = await prefetch;
+      // # guard — poll must hit the API (do not consume one-shot prefetch)
+      if (!options.fromPoll) {
+        const prefetch = global.__glotixRecentFilesPrefetch;
+        global.__glotixRecentFilesPrefetch = null;
+        if (prefetch && typeof prefetch.then === 'function') {
+          data = await prefetch;
+        }
       }
       if (!data) {
         const res = await fetch(`${normalizeApiBaseUrl()}/api/user/files`, { headers });
@@ -562,10 +644,15 @@
       let dubFiles = files
         .filter((f) => f.type === 'dubbing')
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      // # purge — delete failed/cancelled jobs so they free DB + R2 quota
+      // # purge — delete failed/cancelled/stale-processing jobs so they free DB + stop UI refresh
       const doomed = dubFiles.filter((f) => {
         const status = DubbingApp.jobStatus.normalizeDubbingJobStatus(f.status);
-        return status === 'failed' || status === 'cancelled' || status === 'error';
+        return (
+          status === 'failed' ||
+          status === 'cancelled' ||
+          status === 'error' ||
+          dubbingJobIsStaleProcessing(f)
+        );
       });
       if (doomed.length) {
         void Promise.allSettled(
@@ -578,7 +665,12 @@
         ).catch(() => {});
         dubFiles = dubFiles.filter((f) => {
           const status = DubbingApp.jobStatus.normalizeDubbingJobStatus(f.status);
-          return status !== 'failed' && status !== 'cancelled' && status !== 'error';
+          return (
+            status !== 'failed' &&
+            status !== 'cancelled' &&
+            status !== 'error' &&
+            !dubbingJobIsStaleProcessing(f)
+          );
         });
       }
       // # شرط — فرع منطقي
@@ -591,12 +683,17 @@
       // # شرط — فرع منطقي
       if (toRender.length > 0) {
         writeRecentJobsCache(toRender);
-        renderRecentDubbingJobsGrid(toRender);
+        renderRecentDubbingJobsGrid(toRender, {
+          skipIfUnchanged: Boolean(options.fromPoll),
+        });
         scheduleRecentJobsPollingIfNeeded(toRender);
       // # block — فرع شرطي
       } else if (grid) {
         writeRecentJobsCache([]);
         writeRecentJobsHtmlCache('');
+        lastRecentJobsFingerprint = '';
+        if (recentPollTimer) clearInterval(recentPollTimer);
+        recentPollTimer = null;
         grid.innerHTML =
           // # block — فرع شرطي
           '<div style="grid-column:1/-1;text-align:center;padding:24px;color:#9ca3af;">No recent dubbing works yet</div>';
