@@ -115,7 +115,7 @@
     const sampleText = resolveSelectedVoiceSampleTextFromDom();
     const usingSaved = !!global.usingSavedVoice;
     const mode = readSelectedVoiceModeFromDomElements();
-    let quality = String(global.dubbingQuality || 'studio').toLowerCase();
+    let quality = String(global.dubbingQuality || 'fast').toLowerCase();
     const elevenLabsVoiceId = String(global.selectedElevenLabsVoiceId || '').trim();
     // # block — معالجة صوت/استنساخ
     const cpuSite = !!(global.APP_CONFIG && global.APP_CONFIG.CPU_SITE_MODE);
