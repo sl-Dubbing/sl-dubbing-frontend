@@ -1201,12 +1201,39 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
-        loadFilesFromApi().catch(() => {
+        const showLoadError = () => {
             const list = document.getElementById('fileList');
             if (list) {
                 list.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><div class="empty-title">Could not load files</div><p>Check your connection and sign in again.</p></div>`;
             }
-        });
+        };
+        // # block — first paint may race Supabase session; retry until auth headers exist
+        const bootHistory = async () => {
+            try {
+                await loadFilesFromApi({ silent: true });
+            } catch (_) {
+                showLoadError();
+            }
+            let attempts = 0;
+            const timer = setInterval(async () => {
+                attempts += 1;
+                const headers =
+                    typeof window.getApiAuthHeaders === 'function'
+                        ? window.getApiAuthHeaders()
+                        : null;
+                if (headers) {
+                    clearInterval(timer);
+                    try {
+                        await loadFilesFromApi({ silent: true });
+                    } catch (_) {
+                        showLoadError();
+                    }
+                    return;
+                }
+                if (attempts >= 24) clearInterval(timer);
+            }, 250);
+        };
+        bootHistory();
     });
 </script>
 </body>
