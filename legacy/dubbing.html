@@ -17,7 +17,7 @@
     <link rel="dns-prefetch" href="https://cdn.glotix.ai">
     <link rel="preload" href="css/style.css" as="style">
     <link rel="preload" href="js/config.js?v=25" as="script">
-    <link rel="preload" href="js/languages.js?v=20260922perf" as="script">
+    <link rel="preload" href="js/languages.js?v=20260924qwen" as="script">
     <link rel="preload" href="js/shared/01-api-base.js?v=20260922perf" as="script">
     <link rel="alternate" hreflang="en" href="https://glotix.ai/dubbing">
     <link rel="alternate" hreflang="ar" href="https://glotix.ai/ar">
@@ -823,7 +823,7 @@
         <div class="dropdown-btn lang-btn src-lang-btn" id="srcLangTrigger" onclick="toggleSrcLangDropdown(event)" style="position:relative;">
             <span style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
                 <span id="srcLangFlag"><i class="fa-solid fa-globe" style="font-size:1.1rem;color:#6b7280;"></i></span>
-                <span id="srcLangLabel" style="font-weight:500;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Select video language *</span>
+                <span id="srcLangLabel" style="font-weight:500;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Auto-detect source</span>
             </span>
             <span class="brand-chevron arrow" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
             <div class="lang-dropdown" onclick="event.stopPropagation()">
@@ -894,7 +894,7 @@
             <button type="button" class="speaker-mode-btn active" data-quality-mode="fast">Fast</button>
             <button type="button" class="speaker-mode-btn" data-quality-mode="studio">Studio</button>
         </div>
-        <span id="qualityModeHint" style="font-size:0.78rem;color:#94a3b8;">Dubbing runs on ElevenLabs with your target language</span>
+        <span id="qualityModeHint" style="font-size:0.78rem;color:#94a3b8;">Fast uses Glotix Qwen TTS; Studio uses higher-quality synthesis</span>
     </div>
 
     <div id="speakerModeRow">
@@ -1094,7 +1094,7 @@
 
         <div class="ba-workflow">
             <span class="ba-step-pill"><i class="fa-solid fa-upload" style="margin-right:6px;opacity:0.7;"></i> 1. Upload video or audio</span>
-            <span class="ba-step-pill"><i class="fa-solid fa-language" style="margin-right:6px;opacity:0.7;"></i> 2. Pick source ? target language</span>
+            <span class="ba-step-pill"><i class="fa-solid fa-language" style="margin-right:6px;opacity:0.7;"></i> 2. Pick source → target language</span>
             <span class="ba-step-pill"><i class="fa-solid fa-clone" style="margin-right:6px;opacity:0.7;"></i> 3. Choose voice clone or premium voice</span>
             <span class="ba-step-pill"><i class="fa-solid fa-download" style="margin-right:6px;opacity:0.7;"></i> 4. Download from My Files</span>
         </div>
@@ -1322,8 +1322,8 @@
             .catch(function () {});
     })();
 </script>
-<script defer src="js/languages.js?v=20260922perf"></script>
-<script defer src="js/src-lang-picker.js?v=20260714c"></script>
+<script defer src="js/languages.js?v=20260924qwen"></script>
+<script defer src="js/src-lang-picker.js?v=20260924auto"></script>
 <!-- Dubbing UI modules (order matters) -->
 <script defer src="js/dubbing/01-state.js?v=17"></script>
 <script defer src="js/dubbing/16-lang-picker.js?v=20260818share"></script>

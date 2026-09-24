@@ -59,16 +59,20 @@
   }
 
   // # FN applyServerJobProgressToBar
-  // # AR Advance the bar from GPU/API progress without a 50% floor; never go backwards.
+  // # AR Map API pipeline 0–99 onto the post-upload bar; multi-lang uses done/total.
   // # KW مهمة,job,polling,حالة,status
   function applyServerJobProgressToBar(jobMeta, completedCount, totalCount) {
     const total = Math.max(1, Number(totalCount) || 1);
     const done = Math.max(0, Number(completedCount) || 0);
     const apiPct = Number(jobMeta && jobMeta.progress);
-    const jobFrac = Number.isFinite(apiPct)
-      ? Math.min(99, Math.max(0, apiPct)) / 100
-      : 0;
-    const pipelinePct = ((done + jobFrac) / total) * 100;
+    // # block — API progress is already 0–99 pipeline %; do not treat it as 0–1 of one slot.
+    let pipelinePct;
+    if (Number.isFinite(apiPct) && apiPct > 0) {
+      const withinJob = Math.min(99, Math.max(0, apiPct));
+      pipelinePct = ((done + withinJob / 99) / total) * 100;
+    } else {
+      pipelinePct = (done / total) * 100;
+    }
     const mapped =
       UPLOAD_PROGRESS_END + (Math.min(99, pipelinePct) / 99) * (100 - UPLOAD_PROGRESS_END);
     // # block — تحديث واجهة/DOM

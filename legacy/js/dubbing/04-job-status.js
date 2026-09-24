@@ -370,6 +370,22 @@
               status: parsed.status || data?.status,
             // # block — تنفيذ منطق — راجع الأسطر التالية
             };
+            // # guard — Fail fast when GPU never advances past upload (stuck 18% UX).
+            // Do not abort healthy long jobs: only stall when progress stays at 0.
+            const pipelinePct = Number(tickMeta.progress) || 0;
+            const stageName = String(tickMeta.stage || '').trim();
+            if (
+              pipelinePct <= 0 &&
+              !stageName &&
+              Date.now() - started > 3 * 60 * 1000
+            ) {
+              return finish(
+                reject,
+                new Error(
+                  'Dubbing did not start processing. Cancel and try again — if this repeats, contact support.',
+                ),
+              );
+            }
           // # block — فرع شرطي
           } else if (res.status === 404) {
             const supaData = await fetchDubbingJobStatusFromSupabaseTable(id);

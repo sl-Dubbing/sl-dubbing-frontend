@@ -2,10 +2,10 @@
 // # AR JavaScript — languages
 // # KW لغة,language
 // # CONVENTION — FN/AR/KW + # block كل ~6 أسطر — FUNCTION_INDEX.md DOMAIN_INDEX.md
-// js/languages.js — ElevenLabs-synced languages (fallback + live GET /api/languages)
+// js/languages.js — Glotix/Qwen3 language catalog (fallback + live GET /api/languages)
 // Display order = global web convention: English name A–Z (localeCompare 'en'),
 // with stable regional-variant priority inside each language family.
-// After load, syncLanguagesFromElevenLabs() replaces window.LANGUAGES when API responds.
+// After load, syncLanguagesFromElevenLabs() (legacy name) replaces window.LANGUAGES from API.
 (function (global) {
   'use strict';
 
@@ -57,69 +57,79 @@
   global.sortLanguagesGlobal = sortLanguagesGlobal;
 
   const FALLBACK_LANGUAGES = [
-    { code: 'ar',    flag: '🇸🇦', name_en: 'Arabic',                 name_ar: 'العربية',               base_lang: 'ar', dialect: 'الفصحى',     category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Arabic' },
-    { code: 'ar-sa', flag: '🇸🇦', name_en: 'Arabic (Saudi Arabia)',  name_ar: 'العربية السعودية',      base_lang: 'ar', dialect: 'السعودية',  category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Arabic' },
-    { code: 'ar-ae', flag: '🇦🇪', name_en: 'Arabic (UAE)',           name_ar: 'العربية الإماراتية',    base_lang: 'ar', dialect: 'الإماراتية', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-eg', flag: '🇪🇬', name_en: 'Arabic (Egypt)',         name_ar: 'العربية المصرية',       base_lang: 'ar', dialect: 'المصرية',    category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Arabic' },
-    { code: 'ar-ma', flag: '🇲🇦', name_en: 'Arabic (Morocco)',       name_ar: 'العربية المغربية',      base_lang: 'ar', dialect: 'المغربية',   category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Arabic' },
-    { code: 'ar-dz', flag: '🇩🇿', name_en: 'Arabic (Algeria)',       name_ar: 'العربية الجزائرية',     base_lang: 'ar', dialect: 'الجزائرية',  category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-tn', flag: '🇹🇳', name_en: 'Arabic (Tunisia)',       name_ar: 'العربية التونسية',      base_lang: 'ar', dialect: 'التونسية',   category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-iq', flag: '🇮🇶', name_en: 'Arabic (Iraq)',          name_ar: 'العربية العراقية',      base_lang: 'ar', dialect: 'العراقية',   category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-jo', flag: '🇯🇴', name_en: 'Arabic (Jordan)',        name_ar: 'العربية الأردنية',      base_lang: 'ar', dialect: 'الأردنية',   category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-lb', flag: '🇱🇧', name_en: 'Arabic (Lebanon)',       name_ar: 'العربية اللبنانية',     base_lang: 'ar', dialect: 'اللبنانية',  category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-kw', flag: '🇰🇼', name_en: 'Arabic (Kuwait)',        name_ar: 'العربية الكويتية',      base_lang: 'ar', dialect: 'الكويتية',   category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-qa', flag: '🇶🇦', name_en: 'Arabic (Qatar)',         name_ar: 'العربية القطرية',       base_lang: 'ar', dialect: 'القطرية',    category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-bh', flag: '🇧🇭', name_en: 'Arabic (Bahrain)',       name_ar: 'العربية البحرينية',     base_lang: 'ar', dialect: 'البحرينية',  category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'bg',    flag: '🇧🇬', name_en: 'Bulgarian',              name_ar: 'البلغارية',             base_lang: 'bg', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Bulgarian' },
-    { code: 'zh',    flag: '🇨🇳', name_en: 'Chinese',                name_ar: 'الصينية',               base_lang: 'zh', dialect: '', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Chinese' },
-    { code: 'hr',    flag: '🇭🇷', name_en: 'Croatian',               name_ar: 'الكرواتية',             base_lang: 'hr', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Croatian' },
-    { code: 'cs',    flag: '🇨🇿', name_en: 'Czech',                  name_ar: 'التشيكية',              base_lang: 'cs', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Czech' },
-    { code: 'da',    flag: '🇩🇰', name_en: 'Danish',                 name_ar: 'الدنماركية',            base_lang: 'da', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Danish' },
-    { code: 'nl',    flag: '🇳🇱', name_en: 'Dutch',                  name_ar: 'الهولندية',             base_lang: 'nl', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Dutch' },
-    { code: 'en-us', flag: '🇺🇸', name_en: 'English (USA)',          name_ar: 'الإنجليزية الأمريكية',  base_lang: 'en', dialect: 'American English (spoken)', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'English' },
-    { code: 'en-gb', flag: '🇬🇧', name_en: 'English (UK)',           name_ar: 'الإنجليزية البريطانية', base_lang: 'en', dialect: 'British English (spoken)',  category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'English' },
-    { code: 'en-au', flag: '🇦🇺', name_en: 'English (Australia)',    name_ar: 'الإنجليزية الأسترالية', base_lang: 'en', dialect: 'Australian English (spoken)', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'English' },
-    { code: 'en-ca', flag: '🇨🇦', name_en: 'English (Canada)',       name_ar: 'الإنجليزية الكندية',    base_lang: 'en', dialect: 'Canadian English (spoken)', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'English' },
-    { code: 'fil',   flag: '🇵🇭', name_en: 'Filipino',               name_ar: 'الفلبينية',             base_lang: 'fil', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Filipino' },
-    { code: 'fi',    flag: '🇫🇮', name_en: 'Finnish',                name_ar: 'الفنلندية',             base_lang: 'fi', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Finnish' },
-    { code: 'fr-fr', flag: '🇫🇷', name_en: 'French (France)',        name_ar: 'الفرنسية (فرنسا)',      base_lang: 'fr', dialect: 'Parisian French (spoken)', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'French' },
-    { code: 'fr-ca', flag: '🇨🇦', name_en: 'French (Canada)',        name_ar: 'الفرنسية (كندا)',       base_lang: 'fr', dialect: 'Canadian French (Québécois)', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'French' },
-    { code: 'de',    flag: '🇩🇪', name_en: 'German',                 name_ar: 'الألمانية',             base_lang: 'de', dialect: '', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'German' },
-    { code: 'el',    flag: '🇬🇷', name_en: 'Greek',                  name_ar: 'اليونانية',             base_lang: 'el', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Greek' },
-    { code: 'hu',    flag: '🇭🇺', name_en: 'Hungarian',              name_ar: 'المجرية',               base_lang: 'hu', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Hungarian' },
-    { code: 'hi',    flag: '🇮🇳', name_en: 'Hindi',                  name_ar: 'الهندية',               base_lang: 'hi', dialect: '', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Hindi' },
-    { code: 'id',    flag: '🇮🇩', name_en: 'Indonesian',             name_ar: 'الإندونيسية',           base_lang: 'id', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Indonesian' },
-    { code: 'it',    flag: '🇮🇹', name_en: 'Italian',                name_ar: 'الإيطالية',             base_lang: 'it', dialect: '', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Italian' },
-    { code: 'ja',    flag: '🇯🇵', name_en: 'Japanese',               name_ar: 'اليابانية',             base_lang: 'ja', dialect: '', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Japanese' },
-    { code: 'ko',    flag: '🇰🇷', name_en: 'Korean',                 name_ar: 'الكورية',               base_lang: 'ko', dialect: '', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Korean' },
-    { code: 'ms',    flag: '🇲🇾', name_en: 'Malay',                  name_ar: 'الماليزية',             base_lang: 'ms', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Malay' },
-    { code: 'no',    flag: '🇳🇴', name_en: 'Norwegian',              name_ar: 'النرويجية',             base_lang: 'no', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Norwegian' },
-    { code: 'pl',    flag: '🇵🇱', name_en: 'Polish',                 name_ar: 'البولندية',             base_lang: 'pl', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Polish' },
-    { code: 'pt-br', flag: '🇧🇷', name_en: 'Portuguese (Brazil)',    name_ar: 'البرتغالية (البرازيل)', base_lang: 'pt', dialect: 'Brazilian Portuguese (spoken)', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Portuguese' },
-    { code: 'pt-pt', flag: '🇵🇹', name_en: 'Portuguese (Portugal)',  name_ar: 'البرتغالية (البرتغال)', base_lang: 'pt', dialect: 'European Portuguese (spoken)', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Portuguese' },
-    { code: 'ro',    flag: '🇷🇴', name_en: 'Romanian',               name_ar: 'الرومانية',             base_lang: 'ro', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Romanian' },
-    { code: 'ru',    flag: '🇷🇺', name_en: 'Russian',                name_ar: 'الروسية',               base_lang: 'ru', dialect: '', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Russian' },
-    { code: 'sk',    flag: '🇸🇰', name_en: 'Slovak',                 name_ar: 'السلوفاكية',            base_lang: 'sk', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Slovak' },
-    { code: 'es-es', flag: '🇪🇸', name_en: 'Spanish (Spain)',        name_ar: 'الإسبانية (إسبانيا)',   base_lang: 'es', dialect: 'Castilian Spanish (Spain)', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Spanish' },
-    { code: 'es-mx', flag: '🇲🇽', name_en: 'Spanish (Mexico)',       name_ar: 'الإسبانية (المكسيك)',   base_lang: 'es', dialect: 'Mexican Spanish (spoken)', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Spanish' },
-    { code: 'es-ar', flag: '🇦🇷', name_en: 'Spanish (Argentina)',    name_ar: 'الإسبانية (الأرجنتين)', base_lang: 'es', dialect: 'Rioplatense Spanish (spoken)', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Spanish' },
-    { code: 'es-co', flag: '🇨🇴', name_en: 'Spanish (Colombia)',     name_ar: 'الإسبانية (كولومبيا)',  base_lang: 'es', dialect: 'Colombian Spanish (spoken)', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Spanish' },
-    { code: 'sv',    flag: '🇸🇪', name_en: 'Swedish',                name_ar: 'السويدية',              base_lang: 'sv', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Swedish' },
-    { code: 'ta',    flag: '🇮🇳', name_en: 'Tamil',                  name_ar: 'التاميلية',             base_lang: 'ta', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Tamil' },
-    { code: 'th',    flag: '🇹🇭', name_en: 'Thai',                   name_ar: 'التايلاندية',           base_lang: 'th', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Thai' },
-    { code: 'tr',    flag: '🇹🇷', name_en: 'Turkish',                name_ar: 'التركية',               base_lang: 'tr', dialect: '', category: 'ElevenLabs', popular: true,  supports_clone: true, group: 'Turkish' },
-    { code: 'uk',    flag: '🇺🇦', name_en: 'Ukrainian',              name_ar: 'الأوكرانية',            base_lang: 'uk', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Ukrainian' },
-    { code: 'ur',    flag: '🇵🇰', name_en: 'Urdu',                   name_ar: 'الأردية',               base_lang: 'ur', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Urdu' },
-    { code: 'vi',    flag: '🇻🇳', name_en: 'Vietnamese',             name_ar: 'الفيتنامية',            base_lang: 'vi', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Vietnamese' },
-    { code: 'he',    flag: '🇮🇱', name_en: 'Hebrew',                 name_ar: 'العبرية',               base_lang: 'he', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Hebrew' },
-    { code: 'fa',    flag: '🇮🇷', name_en: 'Persian',                name_ar: 'الفارسية',              base_lang: 'fa', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Persian' },
-    { code: 'bn',    flag: '🇧🇩', name_en: 'Bengali',                name_ar: 'البنغالية',             base_lang: 'bn', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Bengali' },
-    { code: 'sw',    flag: '🇰🇪', name_en: 'Swahili',                name_ar: 'السواحلية',             base_lang: 'sw', dialect: '', category: 'ElevenLabs', popular: false, supports_clone: true, group: 'Swahili' },
+    { code: 'ar',    flag: '🇸🇦', name_en: 'Arabic',                 name_ar: 'العربية',               base_lang: 'ar', dialect: 'الفصحى',     category: 'Glotix', popular: true,  supports_clone: true, group: 'Arabic' },
+    { code: 'ar-sa', flag: '🇸🇦', name_en: 'Arabic (Saudi Arabia)',  name_ar: 'العربية السعودية',      base_lang: 'ar', dialect: 'السعودية',  category: 'Glotix', popular: true,  supports_clone: true, group: 'Arabic' },
+    { code: 'ar-ae', flag: '🇦🇪', name_en: 'Arabic (UAE)',           name_ar: 'العربية الإماراتية',    base_lang: 'ar', dialect: 'الإماراتية', category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-eg', flag: '🇪🇬', name_en: 'Arabic (Egypt)',         name_ar: 'العربية المصرية',       base_lang: 'ar', dialect: 'المصرية',    category: 'Glotix', popular: true,  supports_clone: true, group: 'Arabic' },
+    { code: 'ar-ma', flag: '🇲🇦', name_en: 'Arabic (Morocco)',       name_ar: 'العربية المغربية',      base_lang: 'ar', dialect: 'المغربية',   category: 'Glotix', popular: true,  supports_clone: true, group: 'Arabic' },
+    { code: 'ar-dz', flag: '🇩🇿', name_en: 'Arabic (Algeria)',       name_ar: 'العربية الجزائرية',     base_lang: 'ar', dialect: 'الجزائرية',  category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-tn', flag: '🇹🇳', name_en: 'Arabic (Tunisia)',       name_ar: 'العربية التونسية',      base_lang: 'ar', dialect: 'التونسية',   category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-iq', flag: '🇮🇶', name_en: 'Arabic (Iraq)',          name_ar: 'العربية العراقية',      base_lang: 'ar', dialect: 'العراقية',   category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-jo', flag: '🇯🇴', name_en: 'Arabic (Jordan)',        name_ar: 'العربية الأردنية',      base_lang: 'ar', dialect: 'الأردنية',   category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-lb', flag: '🇱🇧', name_en: 'Arabic (Lebanon)',       name_ar: 'العربية اللبنانية',     base_lang: 'ar', dialect: 'اللبنانية',  category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-kw', flag: '🇰🇼', name_en: 'Arabic (Kuwait)',        name_ar: 'العربية الكويتية',      base_lang: 'ar', dialect: 'الكويتية',   category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-qa', flag: '🇶🇦', name_en: 'Arabic (Qatar)',         name_ar: 'العربية القطرية',       base_lang: 'ar', dialect: 'القطرية',    category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar-bh', flag: '🇧🇭', name_en: 'Arabic (Bahrain)',       name_ar: 'العربية البحرينية',     base_lang: 'ar', dialect: 'البحرينية',  category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'bg',    flag: '🇧🇬', name_en: 'Bulgarian',              name_ar: 'البلغارية',             base_lang: 'bg', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Bulgarian' },
+    { code: 'zh',    flag: '🇨🇳', name_en: 'Chinese',                name_ar: 'الصينية',               base_lang: 'zh', dialect: '', category: 'Glotix', popular: true,  supports_clone: true, group: 'Chinese' },
+    { code: 'hr',    flag: '🇭🇷', name_en: 'Croatian',               name_ar: 'الكرواتية',             base_lang: 'hr', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Croatian' },
+    { code: 'cs',    flag: '🇨🇿', name_en: 'Czech',                  name_ar: 'التشيكية',              base_lang: 'cs', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Czech' },
+    { code: 'da',    flag: '🇩🇰', name_en: 'Danish',                 name_ar: 'الدنماركية',            base_lang: 'da', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Danish' },
+    { code: 'nl',    flag: '🇳🇱', name_en: 'Dutch',                  name_ar: 'الهولندية',             base_lang: 'nl', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Dutch' },
+    { code: 'en-us', flag: '🇺🇸', name_en: 'English (USA)',          name_ar: 'الإنجليزية الأمريكية',  base_lang: 'en', dialect: 'American English (spoken)', category: 'Glotix', popular: true,  supports_clone: true, group: 'English' },
+    { code: 'en-gb', flag: '🇬🇧', name_en: 'English (UK)',           name_ar: 'الإنجليزية البريطانية', base_lang: 'en', dialect: 'British English (spoken)',  category: 'Glotix', popular: true,  supports_clone: true, group: 'English' },
+    { code: 'en-au', flag: '🇦🇺', name_en: 'English (Australia)',    name_ar: 'الإنجليزية الأسترالية', base_lang: 'en', dialect: 'Australian English (spoken)', category: 'Glotix', popular: false, supports_clone: true, group: 'English' },
+    { code: 'en-ca', flag: '🇨🇦', name_en: 'English (Canada)',       name_ar: 'الإنجليزية الكندية',    base_lang: 'en', dialect: 'Canadian English (spoken)', category: 'Glotix', popular: false, supports_clone: true, group: 'English' },
+    { code: 'fil',   flag: '🇵🇭', name_en: 'Filipino',               name_ar: 'الفلبينية',             base_lang: 'fil', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Filipino' },
+    { code: 'fi',    flag: '🇫🇮', name_en: 'Finnish',                name_ar: 'الفنلندية',             base_lang: 'fi', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Finnish' },
+    { code: 'fr-fr', flag: '🇫🇷', name_en: 'French (France)',        name_ar: 'الفرنسية (فرنسا)',      base_lang: 'fr', dialect: 'Parisian French (spoken)', category: 'Glotix', popular: true,  supports_clone: true, group: 'French' },
+    { code: 'fr-ca', flag: '🇨🇦', name_en: 'French (Canada)',        name_ar: 'الفرنسية (كندا)',       base_lang: 'fr', dialect: 'Canadian French (Québécois)', category: 'Glotix', popular: false, supports_clone: true, group: 'French' },
+    { code: 'de',    flag: '🇩🇪', name_en: 'German',                 name_ar: 'الألمانية',             base_lang: 'de', dialect: '', category: 'Glotix', popular: true,  supports_clone: true, group: 'German' },
+    { code: 'el',    flag: '🇬🇷', name_en: 'Greek',                  name_ar: 'اليونانية',             base_lang: 'el', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Greek' },
+    { code: 'hu',    flag: '🇭🇺', name_en: 'Hungarian',              name_ar: 'المجرية',               base_lang: 'hu', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Hungarian' },
+    { code: 'hi',    flag: '🇮🇳', name_en: 'Hindi',                  name_ar: 'الهندية',               base_lang: 'hi', dialect: '', category: 'Glotix', popular: true,  supports_clone: true, group: 'Hindi' },
+    { code: 'id',    flag: '🇮🇩', name_en: 'Indonesian',             name_ar: 'الإندونيسية',           base_lang: 'id', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Indonesian' },
+    { code: 'it',    flag: '🇮🇹', name_en: 'Italian',                name_ar: 'الإيطالية',             base_lang: 'it', dialect: '', category: 'Glotix', popular: true,  supports_clone: true, group: 'Italian' },
+    { code: 'ja',    flag: '🇯🇵', name_en: 'Japanese',               name_ar: 'اليابانية',             base_lang: 'ja', dialect: '', category: 'Glotix', popular: true,  supports_clone: true, group: 'Japanese' },
+    { code: 'ko',    flag: '🇰🇷', name_en: 'Korean',                 name_ar: 'الكورية',               base_lang: 'ko', dialect: '', category: 'Glotix', popular: true,  supports_clone: true, group: 'Korean' },
+    { code: 'ms',    flag: '🇲🇾', name_en: 'Malay',                  name_ar: 'الماليزية',             base_lang: 'ms', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Malay' },
+    { code: 'no',    flag: '🇳🇴', name_en: 'Norwegian',              name_ar: 'النرويجية',             base_lang: 'no', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Norwegian' },
+    { code: 'pl',    flag: '🇵🇱', name_en: 'Polish',                 name_ar: 'البولندية',             base_lang: 'pl', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Polish' },
+    { code: 'pt-br', flag: '🇧🇷', name_en: 'Portuguese (Brazil)',    name_ar: 'البرتغالية (البرازيل)', base_lang: 'pt', dialect: 'Brazilian Portuguese (spoken)', category: 'Glotix', popular: true,  supports_clone: true, group: 'Portuguese' },
+    { code: 'pt-pt', flag: '🇵🇹', name_en: 'Portuguese (Portugal)',  name_ar: 'البرتغالية (البرتغال)', base_lang: 'pt', dialect: 'European Portuguese (spoken)', category: 'Glotix', popular: false, supports_clone: true, group: 'Portuguese' },
+    { code: 'ro',    flag: '🇷🇴', name_en: 'Romanian',               name_ar: 'الرومانية',             base_lang: 'ro', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Romanian' },
+    { code: 'ru',    flag: '🇷🇺', name_en: 'Russian',                name_ar: 'الروسية',               base_lang: 'ru', dialect: '', category: 'Glotix', popular: true,  supports_clone: true, group: 'Russian' },
+    { code: 'sk',    flag: '🇸🇰', name_en: 'Slovak',                 name_ar: 'السلوفاكية',            base_lang: 'sk', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Slovak' },
+    { code: 'es-es', flag: '🇪🇸', name_en: 'Spanish (Spain)',        name_ar: 'الإسبانية (إسبانيا)',   base_lang: 'es', dialect: 'Castilian Spanish (Spain)', category: 'Glotix', popular: true,  supports_clone: true, group: 'Spanish' },
+    { code: 'es-mx', flag: '🇲🇽', name_en: 'Spanish (Mexico)',       name_ar: 'الإسبانية (المكسيك)',   base_lang: 'es', dialect: 'Mexican Spanish (spoken)', category: 'Glotix', popular: true,  supports_clone: true, group: 'Spanish' },
+    { code: 'es-ar', flag: '🇦🇷', name_en: 'Spanish (Argentina)',    name_ar: 'الإسبانية (الأرجنتين)', base_lang: 'es', dialect: 'Rioplatense Spanish (spoken)', category: 'Glotix', popular: false, supports_clone: true, group: 'Spanish' },
+    { code: 'es-co', flag: '🇨🇴', name_en: 'Spanish (Colombia)',     name_ar: 'الإسبانية (كولومبيا)',  base_lang: 'es', dialect: 'Colombian Spanish (spoken)', category: 'Glotix', popular: false, supports_clone: true, group: 'Spanish' },
+    { code: 'sv',    flag: '🇸🇪', name_en: 'Swedish',                name_ar: 'السويدية',              base_lang: 'sv', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Swedish' },
+    { code: 'ta',    flag: '🇮🇳', name_en: 'Tamil',                  name_ar: 'التاميلية',             base_lang: 'ta', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Tamil' },
+    { code: 'th',    flag: '🇹🇭', name_en: 'Thai',                   name_ar: 'التايلاندية',           base_lang: 'th', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Thai' },
+    { code: 'tr',    flag: '🇹🇷', name_en: 'Turkish',                name_ar: 'التركية',               base_lang: 'tr', dialect: '', category: 'Glotix', popular: true,  supports_clone: true, group: 'Turkish' },
+    { code: 'uk',    flag: '🇺🇦', name_en: 'Ukrainian',              name_ar: 'الأوكرانية',            base_lang: 'uk', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Ukrainian' },
+    { code: 'ur',    flag: '🇵🇰', name_en: 'Urdu',                   name_ar: 'الأردية',               base_lang: 'ur', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Urdu' },
+    { code: 'vi',    flag: '🇻🇳', name_en: 'Vietnamese',             name_ar: 'الفيتنامية',            base_lang: 'vi', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Vietnamese' },
+    { code: 'he',    flag: '🇮🇱', name_en: 'Hebrew',                 name_ar: 'العبرية',               base_lang: 'he', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Hebrew' },
+    { code: 'fa',    flag: '🇮🇷', name_en: 'Persian',                name_ar: 'الفارسية',              base_lang: 'fa', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Persian' },
+    { code: 'bn',    flag: '🇧🇩', name_en: 'Bengali',                name_ar: 'البنغالية',             base_lang: 'bn', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Bengali' },
+    { code: 'sw',    flag: '🇰🇪', name_en: 'Swahili',                name_ar: 'السواحلية',             base_lang: 'sw', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Swahili' },
   ];
 
   global.LANGUAGES = sortLanguagesGlobal(FALLBACK_LANGUAGES);
   global.SHARED_LANGUAGES = global.LANGUAGES;
-  global.LANG_CATALOG_META = { source: 'fallback', model_id: 'eleven_flash_v2_5', synced: false };
+  global.LANG_CATALOG_META = { source: 'fallback', model_id: 'qwen3-tts', synced: false };
+
+  const QWEN_NATIVE_BASES = new Set(['zh', 'cmn', 'en', 'ja', 'ko', 'de', 'fr', 'ru', 'pt', 'es', 'it']);
+
+  // # FN ttsModeForBase
+  // # AR native = Qwen language_type; clone_auto = Auto + voice clone (ar/hi/nl/…).
+  // # KW لغة,language,توليد_صوت,TTS
+  function ttsModeForBase(base) {
+    return QWEN_NATIVE_BASES.has(String(base || '').toLowerCase()) ? 'native' : 'clone_auto';
+  }
+  global.ttsModeForBase = ttsModeForBase;
 
   const SHARED_TARGET_LANG_KEY = 'glotix.target_lang';
 
@@ -191,7 +201,8 @@
       display_name: lang.name_en,
       display_name_ar: lang.name_ar,
       flag: lang.flag,
-      category: lang.category || 'ElevenLabs',
+      category: lang.category || 'Glotix',
+      tts_mode: lang.tts_mode || ttsModeForBase(lang.base_lang),
       supports_clone: !!lang.supports_clone,
       is_arabic_dialect: lang.base_lang === 'ar' && lang.code !== 'ar',
       is_msa: lang.code === 'ar',
@@ -201,7 +212,7 @@
   global.getLanguagesByCategory = function () {
     const groups = {};
     for (const lang of global.LANGUAGES) {
-      const cat = lang.group || lang.category || 'ElevenLabs';
+      const cat = lang.group || lang.category || 'Glotix';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(lang);
     }
@@ -238,7 +249,9 @@
       name_ar: l.name_ar || nameEn,
       base_lang: base,
       dialect: l.dialect || '',
-      category: l.category || 'ElevenLabs',
+      category: l.category || 'Glotix',
+      engine: l.engine || 'qwen3',
+      tts_mode: l.tts_mode || ttsModeForBase(base),
       popular: !!l.popular,
       // # block — معالجة صوت/استنساخ
       supports_clone: l.supports_clone !== false,
@@ -246,7 +259,7 @@
     };
   }
 
-  const LANG_CACHE_KEY = 'glotix.languages.catalog.v1';
+  const LANG_CACHE_KEY = 'glotix.languages.catalog.v2';
   const LANG_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
   // # FN _applyLanguageCatalog
@@ -259,8 +272,8 @@
       global.LANG_FLAG_COUNTRY = Object.assign({}, global.LANG_FLAG_COUNTRY, data.flag_country);
     }
     global.LANG_CATALOG_META = {
-      source: data.source || 'elevenlabs',
-      model_id: data.model_id || '',
+      source: data.source || 'glotix-qwen3',
+      model_id: data.model_id || 'qwen3-tts',
       count: data.count || global.LANGUAGES.length,
       synced: true,
       synced_at: data.synced_at || Date.now(),
@@ -302,9 +315,9 @@
     }
   }
 
-  /** Pull live catalog from backend (which syncs ElevenLabs /v1/models). */
+  /** Pull live Glotix/Qwen3 catalog from GET /api/languages (legacy function name kept). */
   // # FN syncLanguagesFromElevenLabs
-  // # AR اللغات واللهجات (syncLanguagesFromElevenLabs)
+  // # AR Sync public language catalog from API (Qwen-honest; name kept for callers).
   // # KW لغة,language,dialect
   async function syncLanguagesFromElevenLabs(options) {
     const opts = options || {};
@@ -340,8 +353,8 @@
       _writeCachedLanguageCatalog(data);
       return _applyLanguageCatalog(data);
     } catch (err) {
-      console.warn('[languages] ElevenLabs sync skipped — using fallback:', err);
-      global.LANG_CATALOG_META = { source: 'fallback', model_id: 'eleven_flash_v2_5', synced: false };
+      console.warn('[languages] catalog sync skipped — using fallback:', err);
+      global.LANG_CATALOG_META = { source: 'fallback', model_id: 'qwen3-tts', synced: false };
       document.dispatchEvent(new CustomEvent('glotix:languages-ready', { detail: global.LANG_CATALOG_META }));
       // # block — معالجة أخطاء
       return global.LANGUAGES;

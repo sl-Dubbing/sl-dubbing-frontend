@@ -180,8 +180,8 @@
   }
 
   // # FN syncStartDubbingButtonPhaseUi
-  // # AR Always Start Dubbing — ElevenLabs handles ASR/translate/TTS
-  // # KW مهمة,job,سرعة,ElevenLabs,دبلجة
+  // # AR Always Start Dubbing — Glotix pipeline (ASR/translate/Qwen TTS)
+  // # KW مهمة,job,سرعة,دبلجة
   function syncStartDubbingButtonPhaseUi() {
     const dubBtn = document.getElementById('dubBtn');
     // # guard — شرط رفض أو خروج مبكر
@@ -192,7 +192,7 @@
     if (S.startButtonLocked) return;
     dubBtn.dataset.phase = 'dub';
     dubBtn.textContent = 'Start Dubbing';
-    dubBtn.title = 'Send media + target language to ElevenLabs and deduct site credits';
+    dubBtn.title = 'Send media + target language through Glotix and deduct site credits';
   }
 
   // # FN setSrtStatus
@@ -673,14 +673,7 @@
       typeof global.getSelectedSourceLanguage === 'function'
         ? global.getSelectedSourceLanguage()
         : '';
-    // # guard — شرط رفض أو خروج مبكر
-    if (!sourceLang) {
-      global.showToast?.('Select original video language first', 'error');
-      // # block — تحديث واجهة/DOM
-      document.getElementById('srcLangTrigger')?.classList.add('invalid', 'active');
-      // # return — إرجاع النتيجة
-      return false;
-    }
+    // # block — Empty source allowed: extract uses ASR language detection.
 
     // # شرط
     if (btn) btn.disabled = true;

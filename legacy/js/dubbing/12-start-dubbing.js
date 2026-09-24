@@ -66,13 +66,7 @@
       typeof global.getSelectedSourceDialect === 'function'
         ? global.getSelectedSourceDialect()
         : '';
-    // # guard — شرط رفض أو خروج مبكر
-    if (!sourceLang) {
-      // # block — تحديث واجهة/DOM
-      document.getElementById('srcLangTrigger')?.classList.add('invalid', 'active');
-      DubbingApp.ui.unlockStartDubbingButton();
-      return global.showToast?.('Select original video language', 'error');
-    }
+    // # block — Empty source = Auto-detect (Gladia/Deepgram detect_language).
     document.getElementById('srcLangTrigger')?.classList.remove('invalid');
 
     DubbingApp.jobStatus.abortActiveDubbingWorkInProgress();
@@ -540,8 +534,8 @@
   }
 
   // # FN handleStartDubbingButtonClick
-  // # AR One-click: upload already done; send media+target language to ElevenLabs via API (no SRT extract).
-  // # KW مهمة,job,سرعة,ElevenLabs,دبلجة
+  // # AR One-click: upload done; send media + target language through Glotix (source may Auto-detect).
+  // # KW مهمة,job,سرعة,دبلجة
   async function handleStartDubbingButtonClick() {
     // # guard — شرط رفض أو خروج مبكر
     if (S.startButtonLocked) return;

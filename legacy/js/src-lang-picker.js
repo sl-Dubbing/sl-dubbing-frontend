@@ -38,10 +38,11 @@
         );
     }
 
-    /** Full source code (e.g. ar-ma) so dialect is preserved for STT + translation */
+    /** Full source code (e.g. ar-ma); empty string = Auto-detect via ASR */
     window.getSelectedSourceLanguage = function getSelectedSourceLanguage() {
         // # return — إرجاع النتيجة
-        return selectedCode || '';
+        if (!selectedCode || selectedCode === 'auto') return '';
+        return selectedCode;
     };
 
     window.getSelectedSourceDialect = function getSelectedSourceDialect() {
@@ -63,13 +64,13 @@
         // # guard — شرط رفض أو خروج مبكر
         if (!flagEl || !labelEl) return;
 
-        // # شرط — فرع منطقي
-        if (!selectedCode || !window.LANGUAGES) {
-            flagEl.innerHTML = '<i class="fa-solid fa-globe" style="font-size:1.1rem;color:#6b7280;"></i>';
-            // # block — تحديث واجهة/DOM
-            labelEl.textContent = 'Select source language *';
-            labelEl.style.color = 'var(--text-muted)';
-            // # return — إرجاع النتيجة
+        // # block — Empty = Auto-detect (ASR detect_language); matches homepage claim.
+        if (!selectedCode || selectedCode === 'auto' || !window.LANGUAGES) {
+            flagEl.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles" style="font-size:1.05rem;color:#6b7280;"></i>';
+            labelEl.textContent = 'Auto-detect source';
+            labelEl.style.color = 'var(--text-main)';
+            document.getElementById('srcLangTrigger')?.classList.remove('invalid');
+            document.getElementById('srcLangTrigger')?.classList.remove('needs-attention');
             return;
         }
 
@@ -96,12 +97,13 @@
     // # AR اللغات واللهجات (selectSrcLanguage)
     // # KW لغة,language,dialect
     function selectSrcLanguage(code) {
-        selectedCode = code;
-        window.selectedSrcLang = code;
+        selectedCode = code === 'auto' ? '' : code;
+        window.selectedSrcLang = selectedCode;
         // # try — معالجة عملية قد تفشل
         try {
             // # localStorage — تخزين محلي
-            localStorage.setItem(STORAGE_KEY, code);
+            if (selectedCode) localStorage.setItem(STORAGE_KEY, selectedCode);
+            else localStorage.removeItem(STORAGE_KEY);
         } catch (_) {}
         // # block — تحديث واجهة/DOM
         updateTriggerUI();
@@ -147,9 +149,13 @@
 
         container.innerHTML =
             (() => {
+                const autoRow =
+                    `<div class="lang-item ${!selectedCode ? 'selected' : ''}" data-code="auto">` +
+                    `<span class="lang-flag-shell" style="--flag-size:22px"><i class="fa-solid fa-wand-magic-sparkles" style="font-size:1rem;color:#6b7280;"></i></span>` +
+                    `<div class="lang-info"><div class="lang-en">Auto-detect</div></div></div>`;
                 // # guard — رفض/خروج
-                if (!filtered.length) {
-                    return '<div class="lang-empty">No results found</div>';
+                if (!filtered.length && f) {
+                    return autoRow + '<div class="lang-empty">No results found</div>';
                 }
                 const sections = [];
                 let cur = null;
@@ -164,7 +170,9 @@
                     cur.items.push(l);
                 // # block — فرع شرطي
                 }
-                return sections
+                return (
+                    autoRow +
+                    sections
                     .map((sec) => {
                         const showHead =
                             sec.items.length > 1 || String(sec.items[0]?.code || '').includes('-');
@@ -188,7 +196,8 @@
                                 .join('')
                         );
                     })
-                    .join('');
+                    .join('')
+                );
             })();
 
         // # block — تنفيذ منطق — راجع الأسطر التالية
