@@ -346,9 +346,11 @@
         });
         setTimeout(() => {
             const headers = window.getApiAuthHeaders ? window.getApiAuthHeaders() : null;
+            const b = document.getElementById('guestBanner');
             if (!headers) {
-                const b = document.getElementById('guestBanner');
                 if (b) b.style.display = 'flex';
+            } else if (b) {
+                b.style.display = 'none';
             }
             if (window.SLShared?.pricingPackages?.refreshUsageStrip) {
                 window.SLShared.pricingPackages.refreshUsageStrip();
