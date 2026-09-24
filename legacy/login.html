@@ -238,6 +238,19 @@ document.getElementById('signupLink')?.addEventListener('click', async function(
         showError('Account created. Sign in with your email and password.');
     } catch (err) { showError(err.message || 'Sign up failed'); }
 });
+
+// # block — /signup and /login?signup=1 should feel like registration, not a 404
+(function highlightSignupMode() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('signup') !== '1') return;
+        const title = document.querySelector('.login-card h1, .auth-card h1, h1');
+        const btn = document.getElementById('loginBtn');
+        if (title) title.textContent = 'Create your account';
+        if (btn) btn.textContent = 'Create account';
+        document.getElementById('email')?.focus();
+    } catch (_) {}
+})();
 </script>
 </body>
 </html>
