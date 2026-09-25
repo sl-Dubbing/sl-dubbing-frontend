@@ -84,6 +84,8 @@
     document.getElementById('cinemaLangs').innerHTML = '';
     S.cinemaResults = {};
     S.progressPercentMonotonic = 0;
+    // # block — User-felt wait clock (shown next to status while job runs).
+    S.dubWaitStartedAtMs = Date.now();
 
     // Voice-clone credit toast removed (UI cleanup)
 

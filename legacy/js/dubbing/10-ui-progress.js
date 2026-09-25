@@ -28,15 +28,57 @@
   }
 
   const UPLOAD_PROGRESS_END = 18;
+  let dubWaitTickerId = null;
+  let lastProgressLabel = '';
+
+  // # FN stopDubWaitTicker
+  // # AR Stop the 1Hz wait clock when the job ends or UI resets.
+  // # KW مهمة,job,حالة,status
+  function stopDubWaitTicker() {
+    if (dubWaitTickerId) {
+      clearInterval(dubWaitTickerId);
+      dubWaitTickerId = null;
+    }
+  }
+
+  // # FN startDubWaitTicker
+  // # AR Tick the status label every second so a stuck % still feels alive.
+  // # KW مهمة,job,حالة,status
+  function startDubWaitTicker() {
+    stopDubWaitTicker();
+    dubWaitTickerId = setInterval(() => {
+      const pct = Number(S.progressPercentMonotonic) || 0;
+      if (!S.dubWaitStartedAtMs || pct <= 0 || pct >= 100) {
+        stopDubWaitTicker();
+        return;
+      }
+      updateDubbingProgressBarUi(lastProgressLabel || 'Dubbing in progress...', pct);
+    }, 1000);
+  }
 
   // # FN updateDubbingProgressBarUi
-  // # AR Draw the status label, percent text, and fill width for one progress snapshot.
+  // # AR Draw status label (+ elapsed wait seconds), percent text, and fill width.
   // # KW عام,general,مهمة,job,حالة,status
   function updateDubbingProgressBarUi(labelText, percent) {
     const shown = Math.max(0, Math.min(100, Number(percent) || 0));
+    // # block — Strip prior · Ns suffix before storing base label for the ticker.
+    const raw = String(labelText || '');
+    lastProgressLabel = raw.replace(/\s*·\s*\d+s\b/g, '').trim();
+    let label = lastProgressLabel;
+    const started = Number(S.dubWaitStartedAtMs) || 0;
+    if (started > 0 && shown > 0 && shown < 100) {
+      const secs = Math.max(0, Math.floor((Date.now() - started) / 1000));
+      if (secs > 0) {
+        label = label ? `${label} · ${secs}s` : `${secs}s`;
+      }
+      if (!dubWaitTickerId) startDubWaitTicker();
+    } else if (shown >= 100 || shown <= 0) {
+      stopDubWaitTicker();
+      if (shown >= 100) S.dubWaitStartedAtMs = 0;
+    }
     // # شرط — فرع منطقي
     if (document.getElementById('statusTxt')) {
-      document.getElementById('statusTxt').innerText = labelText;
+      document.getElementById('statusTxt').innerText = label;
     }
     // # شرط — فرع منطقي
     if (document.getElementById('statusPct')) {
@@ -216,6 +258,8 @@
     if (dlArea) dlArea.style.display = 'none';
     S.cinemaResults = {};
     S.progressPercentMonotonic = 0;
+    S.dubWaitStartedAtMs = 0;
+    stopDubWaitTicker();
     // # شرط — فرع منطقي
     if (!keepSelectedFile) {
       // # block — تحديث واجهة/DOM

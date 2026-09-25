@@ -117,17 +117,8 @@
     const mode = readSelectedVoiceModeFromDomElements();
     let quality = String(global.dubbingQuality || 'fast').toLowerCase();
     const elevenLabsVoiceId = String(global.selectedElevenLabsVoiceId || '').trim();
-    // # block — معالجة صوت/استنساخ
     const cpuSite = !!(global.APP_CONFIG && global.APP_CONFIG.CPU_SITE_MODE);
-    const videoClone = !sample && !usingSaved && mode !== 'default' && !elevenLabsVoiceId;
-    // # guard — Fast Dub cannot isolate music/clone from video; fall back to studio
-    if (quality === 'fast' && videoClone) {
-      quality = 'studio';
-      global.showToast?.(
-        'Fast Dub needs Default/Premium voice — using Studio for voice clone',
-        'info',
-      );
-    }
+    // # block — Fast keeps speech-band clone + sidechain. Quality stays fast.
 
     // # guard — CPU site mode: Edge neural voices, browser stem prep, no GPU clone
     if (cpuSite && !sample && !usingSaved) {
