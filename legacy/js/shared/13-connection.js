@@ -20,7 +20,7 @@
     // # guard — شرط رفض أو خروج مبكر
     if (statusData.redis_ok === false) {
       // # return — إرجاع النتيجة
-      return 'API up — Redis/broker down';
+      return 'API up — queue not ready';
     }
     // # guard — شرط رفض أو خروج مبكر
     if (statusData.redis_ok === true) return 'API + queue OK';
@@ -116,7 +116,7 @@
         brokerHint = formatBrokerStatusLine(statusData);
         // # شرط — فرع منطقي
         if (statusData.redis_ok === false) {
-          console.warn('[API] Redis broker unreachable on server:', statusData.redis_error);
+          console.warn('[API] queue not ready:', statusData.redis_error);
         }
       // # block — فرع شرطي
       }
