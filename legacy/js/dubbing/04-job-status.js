@@ -224,7 +224,7 @@
         if (settled) return;
         sseErrorStreak = 0;
         // # guard — رفض/خروج
-        if (Date.now() - started > 45 * 60 * 1000) {
+        if (Date.now() - started > 4 * 60 * 60 * 1000) {
           // # block — فرع شرطي
           return finish(reject, new Error('Dubbing timed out'));
         }
@@ -316,7 +316,7 @@
         // # guard — شرط رفض أو خروج مبكر
         if (settled) return;
         // # guard — شرط رفض أو خروج مبكر
-        if (Date.now() - started > 45 * 60 * 1000) {
+        if (Date.now() - started > 4 * 60 * 60 * 1000) {
           // # return — إرجاع النتيجة
           return finish(reject, new Error('Dubbing timed out'));
         }
