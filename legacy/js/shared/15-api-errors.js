@@ -83,9 +83,12 @@
       );
     }
     // # guard — شرط رفض أو خروج مبكر
-    if (status === 429 || errLower === 'rate_limited' || errLower === 'concurrent_job_limit') {
+    if (status === 429 || errLower === 'rate_limited' || errLower === 'concurrent_job_limit' || errLower === 'fleet_busy') {
       if (errLower === 'concurrent_job_limit') {
         return 'You already have dubbing jobs running. Wait for one to finish, then start another.';
+      }
+      if (errLower === 'fleet_busy') {
+        return 'The studio is at capacity. Wait for a running dub to finish, then try again.';
       }
       return 'Too many requests — wait a moment and try again';
     }

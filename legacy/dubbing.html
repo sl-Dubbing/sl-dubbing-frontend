@@ -897,7 +897,7 @@
         <span id="qualityModeHint" style="font-size:0.78rem;color:#94a3b8;">Fast uses Glotix Qwen TTS; Studio uses higher-quality synthesis</span>
     </div>
 
-    <div id="speakerModeRow">
+    <div id="speakerModeRow" hidden style="display:none;" aria-hidden="true">
         <span style="font-size:0.85rem;font-weight:600;color:var(--text-muted);white-space:nowrap;">
             <i class="fa-solid fa-users" style="margin-right:6px;color:var(--accent-blue);"></i>Speakers
         </span>
@@ -908,7 +908,7 @@
         </div>
     </div>
 
-    <div id="lipsyncRow">
+    <div id="lipsyncRow" hidden style="display:none;" aria-hidden="true">
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;font-weight:600;color:var(--text-main);">
             <input type="checkbox" id="enableLipsyncToggle" style="width:18px;height:18px;accent-color:var(--accent-blue);">
             <span><i class="fa-solid fa-face-smile" style="margin-right:6px;color:var(--accent-blue);"></i>Lip-sync</span>
@@ -1135,7 +1135,7 @@
 <script defer src="js/shared/09-credits-fetch.js?v=18"></script>
 <script defer src="js/shared/12-auth-sync.js?v=19"></script>
 <script defer src="js/shared/13-connection.js?v=18"></script>
-<script defer src="js/shared/15-api-errors.js?v=23"></script>
+<script defer src="js/shared/15-api-errors.js?v=24"></script>
 <script defer src="js/shared/16-credits-modal.js?v=20260621e"></script>
 <script defer src="js/shared/18-credit-balance.js?v=20260713"></script>
 <script defer src="js/shared/14-init.js?v=18"></script>
@@ -1189,8 +1189,11 @@
     (function initLipsyncToggle() {
         const box = document.getElementById('enableLipsyncToggle');
         if (!box) return;
+        box.checked = false;
+        window.enableLipsync = false;
         box.addEventListener('change', () => {
-            window.enableLipsync = !!box.checked;
+            box.checked = false;
+            window.enableLipsync = false;
         });
     })();
     if (voiceSelectBtn) voiceSelectBtn.addEventListener('click', function(e) {
@@ -1340,12 +1343,12 @@
 <script defer src="js/dubbing/10-ui-progress.js?v=100"></script>
 <script defer src="js/dubbing/11-upload-r2.js?v=21"></script>
 <script defer src="js/dubbing/11b-browser-audio-extract.js?v=1"></script>
-<script defer src="js/dubbing/12-start-dubbing.js?v=20260923eldub1"></script>
+<script defer src="js/dubbing/12-start-dubbing.js?v=20260925fast1"></script>
 <script defer src="js/dubbing/13-recent-jobs.js?v=20260924norefresh1"></script>
 <script defer src="js/dubbing/17-pending-jobs-resume.js?v=20260818prog"></script>
 <script defer src="js/dubbing/14-media-input.js?v=20260718a"></script>
-<script defer src="js/dubbing/20-srt-editor.js?v=20260923eldub1"></script>
-<script defer src="js/dubbing/19-cost-estimate.js?v=20260717b"></script>
+<script defer src="js/dubbing/20-srt-editor.js?v=20260925fast1"></script>
+<script defer src="js/dubbing/19-cost-estimate.js?v=20260925b"></script>
 <script defer src="js/dubbing/15-lang-attention.js?v=20"></script>
 <script defer src="js/dubbing/99-init.js?v=20260922fast3"></script>
 </body>

@@ -567,7 +567,7 @@
     }
 
     const quality = String(global.dubbingQuality || 'fast').toLowerCase();
-    const lipsync = !!global.enableLipsync;
+    const lipsync = false;
     const useFastAudio =
       quality === 'fast' &&
       !lipsync &&

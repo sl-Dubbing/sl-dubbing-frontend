@@ -11,8 +11,8 @@
 // =====================================================================
 (function (global) {
   const DubbingApp = global.DubbingApp || (global.DubbingApp = {});
-  const CHARS_PER_MIN = 1000;
-  const MARKUP = 1.5;
+  const CHARS_PER_MIN = 1100;
+  const MARKUP = 1.4;
 
   // # FN estimateCharacterCostFromDuration
   // # AR تقدير تكلفة الأحرف من مدة الفيديو (بدون عرض UI)

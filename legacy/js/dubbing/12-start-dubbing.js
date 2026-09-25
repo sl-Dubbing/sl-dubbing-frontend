@@ -118,7 +118,8 @@
           global.dubbingQuality ||
           'fast',
       ).toLowerCase();
-      const lipsync = !!global.enableLipsync;
+      // # block — Lip-sync is not in the Modal pipeline. Leaving it on forced a full video upload and a slower job.
+      const lipsync = false;
       const wantFastAudio =
         quality === 'fast' &&
         !lipsync &&
