@@ -1,0 +1,351 @@
+// # FILE frontend/sl-dubbing-frontend-main/js/dubbing/10-ui-progress.js
+// # AR واجهة الدبلجة — رفع، Start، polling، أصوات
+// # KW عام,general
+// # CONVENTION — FN/AR/KW + # block كل ~6 أسطر — FUNCTION_INDEX.md DOMAIN_INDEX.md
+// dubbing/10-ui-progress.js — Progress bar, cinema player, dub button lock, reset UI
+(function (global) {
+  const DubbingApp = global.DubbingApp;
+  const S = DubbingApp.state;
+
+  // # FN lockStartDubbingButton
+  // # AR دالة lockStartDubbingButton (lockStartDubbingButton)
+  // # KW عام,general
+  function lockStartDubbingButton() {
+    S.startButtonLocked = true;
+    const dubBtn = document.getElementById('dubBtn');
+    // # شرط — فرع منطقي
+    if (dubBtn) dubBtn.disabled = true;
+  }
+
+  // # FN unlockStartDubbingButton
+  // # AR دالة unlockStartDubbingButton (unlockStartDubbingButton)
+  // # KW عام,general
+  function unlockStartDubbingButton() {
+    S.startButtonLocked = false;
+    const dubBtn = document.getElementById('dubBtn');
+    // # شرط — فرع منطقي
+    if (dubBtn) dubBtn.disabled = false;
+  }
+
+  const UPLOAD_PROGRESS_END = 18;
+  let dubWaitTickerId = null;
+  let lastProgressLabel = '';
+
+  // # FN stopDubWaitTicker
+  // # AR Stop the 1Hz wait clock when the job ends or UI resets.
+  // # KW مهمة,job,حالة,status
+  function stopDubWaitTicker() {
+    if (dubWaitTickerId) {
+      clearInterval(dubWaitTickerId);
+      dubWaitTickerId = null;
+    }
+  }
+
+  // # FN startDubWaitTicker
+  // # AR Tick the status label every second so a stuck % still feels alive.
+  // # KW مهمة,job,حالة,status
+  function startDubWaitTicker() {
+    stopDubWaitTicker();
+    dubWaitTickerId = setInterval(() => {
+      const pct = Number(S.progressPercentMonotonic) || 0;
+      if (!S.dubWaitStartedAtMs || pct <= 0 || pct >= 100) {
+        stopDubWaitTicker();
+        return;
+      }
+      updateDubbingProgressBarUi(lastProgressLabel || 'Dubbing in progress...', pct);
+    }, 1000);
+  }
+
+  // # FN updateDubbingProgressBarUi
+  // # AR Draw status label (+ elapsed wait seconds), percent text, and fill width.
+  // # KW عام,general,مهمة,job,حالة,status
+  function updateDubbingProgressBarUi(labelText, percent) {
+    const shown = Math.max(0, Math.min(100, Number(percent) || 0));
+    // # block — Strip prior · Ns suffix before storing base label for the ticker.
+    const raw = String(labelText || '');
+    lastProgressLabel = raw.replace(/\s*·\s*\d+s\b/g, '').trim();
+    let label = lastProgressLabel;
+    const started = Number(S.dubWaitStartedAtMs) || 0;
+    if (started > 0 && shown > 0 && shown < 100) {
+      const secs = Math.max(0, Math.floor((Date.now() - started) / 1000));
+      if (secs > 0) {
+        label = label ? `${label} · ${secs}s` : `${secs}s`;
+      }
+      if (!dubWaitTickerId) startDubWaitTicker();
+    } else if (shown >= 100 || shown <= 0) {
+      stopDubWaitTicker();
+      if (shown >= 100) S.dubWaitStartedAtMs = 0;
+    }
+    // # شرط — فرع منطقي
+    if (document.getElementById('statusTxt')) {
+      document.getElementById('statusTxt').innerText = label;
+    }
+    // # شرط — فرع منطقي
+    if (document.getElementById('statusPct')) {
+      document.getElementById('statusPct').innerText = Math.round(shown) + '%';
+    // # block — تحديث واجهة/DOM
+    }
+    // # شرط — فرع منطقي
+    if (document.getElementById('progFill')) {
+      document.getElementById('progFill').style.width = shown + '%';
+    }
+  }
+
+  // # FN uploadRatioToProgressPercent
+  // # AR Map a 0–1 upload ratio onto the 0–18% bar so GPU stages own the rest.
+  // # KW رفع,upload,مهمة,job,حالة,status
+  function uploadRatioToProgressPercent(ratio) {
+    const clamped = Math.max(0, Math.min(1, Number(ratio) || 0));
+    // # return — إرجاع النتيجة
+    return Math.round(clamped * UPLOAD_PROGRESS_END);
+  }
+
+  // # FN applyServerJobProgressToBar
+  // # AR Map API pipeline 0–99 onto the post-upload bar; multi-lang uses done/total.
+  // # KW مهمة,job,polling,حالة,status
+  function applyServerJobProgressToBar(jobMeta, completedCount, totalCount) {
+    const total = Math.max(1, Number(totalCount) || 1);
+    const done = Math.max(0, Number(completedCount) || 0);
+    const apiPct = Number(jobMeta && jobMeta.progress);
+    // # block — API progress is already 0–99 pipeline %; do not treat it as 0–1 of one slot.
+    let pipelinePct;
+    if (Number.isFinite(apiPct) && apiPct > 0) {
+      const withinJob = Math.min(99, Math.max(0, apiPct));
+      pipelinePct = ((done + withinJob / 99) / total) * 100;
+    } else {
+      pipelinePct = (done / total) * 100;
+    }
+    const mapped =
+      UPLOAD_PROGRESS_END + (Math.min(99, pipelinePct) / 99) * (100 - UPLOAD_PROGRESS_END);
+    // # block — تحديث واجهة/DOM
+    S.progressPercentMonotonic = Math.max(
+      S.progressPercentMonotonic || 0,
+      Math.min(99, mapped),
+    );
+    const label =
+      String((jobMeta && (jobMeta.message || jobMeta.stage)) || '').trim() ||
+      'Dubbing in progress...';
+    updateDubbingProgressBarUi(label, S.progressPercentMonotonic);
+  }
+
+  // # FN showDubbingCancelButton
+  // # AR دالة showDubbingCancelButton (showDubbingCancelButton)
+  // # KW عام,general
+  function showDubbingCancelButton() {
+    const btn = document.getElementById('cancelDubBtn');
+    // # شرط
+    if (btn) btn.style.display = 'block';
+  }
+
+  // # FN hideDubbingCancelButton
+  // # AR دالة hideDubbingCancelButton (hideDubbingCancelButton)
+  // # KW عام,general
+  function hideDubbingCancelButton() {
+    const btn = document.getElementById('cancelDubBtn');
+    // # شرط
+    if (btn) {
+      btn.style.display = 'none';
+      btn.disabled = false;
+    }
+  }
+
+  // # FN switchCinemaResultsToLanguage
+  // # KW لغة,language,dialect
+  function switchCinemaResultsToLanguage(langCode) {
+    const data = S.cinemaResults[langCode];
+    // # guard — شرط رفض أو خروج مبكر
+    if (!data || !data.url) return;
+    const rawUrl = String(data.url || '').trim();
+    const allowPlayback =
+      global.SLShared &&
+      global.SLShared.config &&
+      typeof global.SLShared.config.isAllowedPlaybackUrl === 'function' &&
+      global.SLShared.config.isAllowedPlaybackUrl(rawUrl);
+    // # guard — refuse javascript:/foreign hosts in player src
+    if (!allowPlayback) return;
+    const escapeUrl =
+      DubbingApp.voiceHtml && typeof DubbingApp.voiceHtml.escapeHtmlForVoiceCardLabels === 'function'
+        ? DubbingApp.voiceHtml.escapeHtmlForVoiceCardLabels
+        : null;
+    const safeUrl = escapeUrl ? escapeUrl(rawUrl) : '';
+    if (!safeUrl) return;
+    document.querySelectorAll('.side-lang-card').forEach((c) => c.classList.remove('active'));
+    document.getElementById(`side-${langCode}`)?.classList.add('active');
+    document.getElementById('dlArea').style.display = 'block';
+    // # block — تحديث واجهة/DOM
+    document.getElementById('masterDl').href = rawUrl;
+    const isVideo = /\.(mp4|mov|webm)(\?|$)/i.test(rawUrl);
+    // # شرط — فرع منطقي
+    if (isVideo) {
+      document.getElementById('mainPlayer').innerHTML =
+        `<video controls autoplay src="${safeUrl}" style="width:100%;height:100%;object-fit:contain;"></video>`;
+    } else {
+      // Audio-only dubbing result — prefer ultra-low-latency streaming player when available
+      // # block — تحديث واجهة/DOM
+      const mainPlayer = document.getElementById('mainPlayer');
+      // # guard — شرط رفض أو خروج مبكر
+      if (!mainPlayer) return;
+      const streamPlayerAvailable = DubbingApp.streamPlayer && typeof DubbingApp.streamPlayer.playStream === 'function';
+      const looksLikeStream = rawUrl.includes('/api/stream') || rawUrl.includes('?stream=1');
+      // # شرط — فرع منطقي
+      if (streamPlayerAvailable && looksLikeStream) {
+        mainPlayer.innerHTML = `<div id="streamControls" style="display:flex;gap:8px;align-items:center;margin-top:8px;"><button id="stopStreamBtn" class="btn-clear">Stop</button><span id="streamStatus" style="font-weight:600;margin-left:8px;">Playing…</span></div>`;
+        // # block — فرع شرطي
+        const headers = (DubbingApp.api && typeof DubbingApp.api.getDubbingApiAuthHeaders === 'function') ? DubbingApp.api.getDubbingApiAuthHeaders() : {};
+        DubbingApp.streamPlayer.playStream(rawUrl, { headers }).catch((e) => console.error(e));
+        document.getElementById('stopStreamBtn')?.addEventListener('click', () => {
+          DubbingApp.streamPlayer.stop();
+          mainPlayer.innerHTML = '<p id="processingTxt">Processing...</p>';
+        });
+      // # block — تحديث واجهة/DOM
+      } else {
+        // Fallback: use native audio tag for simple playback
+        mainPlayer.innerHTML =
+          `<audio controls autoplay src="${safeUrl}" style="width:100%;margin-top:16px;border-radius:8px;"></audio>`;
+      }
+    }
+  }
+
+  // # FN resetDubbingPageUiState
+  // # KW عام,general
+  function resetDubbingPageUiState(keepSelectedFile) {
+    DubbingApp.jobStatus.abortActiveDubbingWorkInProgress();
+    // # شرط — فرع منطقي
+    if (!keepSelectedFile) {
+      const inputEl = document.getElementById('mediaFile');
+      // # شرط — فرع منطقي
+      if (inputEl) inputEl.value = '';
+      S.selectedMediaFile = null;
+      // # شرط — فرع منطقي
+      if (S.mediaPreviewObjectUrl) {
+        URL.revokeObjectURL(S.mediaPreviewObjectUrl);
+        S.mediaPreviewObjectUrl = null;
+      }
+      const previewArea = document.getElementById('previewArea');
+      // # شرط — فرع منطقي
+      if (previewArea) previewArea.style.display = 'none';
+      // # block — تحديث واجهة/DOM
+      const videoEl = document.getElementById('videoPreview');
+      // # شرط — فرع منطقي
+      if (videoEl) {
+        videoEl.src = '';
+        videoEl.style.display = 'none';
+      }
+      const dubBtn = document.getElementById('dubBtn');
+      // # شرط — فرع منطقي
+      if (dubBtn) dubBtn.style.display = 'none';
+    }
+    unlockStartDubbingButton();
+    updateDubbingProgressBarUi('Ready', 0);
+    const progressArea = document.getElementById('progressArea');
+    // # شرط — فرع منطقي
+    if (progressArea) progressArea.style.display = 'none';
+    // # block — تحديث واجهة/DOM
+    hideDubbingCancelButton();
+    // # block — تحديث واجهة/DOM
+    const resultsCard = document.getElementById('resultsCard');
+    // # شرط — فرع منطقي
+    if (resultsCard) resultsCard.style.display = 'none';
+    const cinemaLangs = document.getElementById('cinemaLangs');
+    // # شرط — فرع منطقي
+    if (cinemaLangs) cinemaLangs.innerHTML = '';
+    const mainPlayer = document.getElementById('mainPlayer');
+    // # شرط — فرع منطقي
+    if (mainPlayer) mainPlayer.innerHTML = '<p id="processingTxt">Processing...</p>';
+    // # block — تحديث واجهة/DOM
+    const dlArea = document.getElementById('dlArea');
+    // # شرط — فرع منطقي
+    if (dlArea) dlArea.style.display = 'none';
+    S.cinemaResults = {};
+    S.progressPercentMonotonic = 0;
+    S.dubWaitStartedAtMs = 0;
+    stopDubWaitTicker();
+    // # شرط — فرع منطقي
+    if (!keepSelectedFile) {
+      // # block — تحديث واجهة/DOM
+      document.getElementById('dropZone')?.classList.remove('has-file', 'is-collapsed');
+      DubbingApp.srtEditor?.showSrtWorkspace?.(false);
+      DubbingApp.mediaInput?.setUploadDropZoneCollapsed?.(false);
+      // # block — تحديث واجهة/DOM
+      const fileNameLine = document.getElementById('selectedFileNameLine');
+      // # شرط — فرع منطقي
+      if (fileNameLine) fileNameLine.style.display = 'none';
+    }
+    // # block — رفع أو تخزين ملف
+    document.getElementById('dubAnotherBtn')?.remove();
+  }
+
+  // # FN appendDubAnotherVideoButtonToUi
+  // # AR دالة appendDubAnotherVideoButtonToUi (appendDubAnotherVideoButtonToUi)
+  // # KW عام,general
+  function appendDubAnotherVideoButtonToUi() {
+    // # guard — شرط رفض أو خروج مبكر
+    if (document.getElementById('dubAnotherBtn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'dubAnotherBtn';
+    btn.className = 'start-btn';
+    btn.style.marginTop = '15px';
+    // # block — تحديث واجهة/DOM
+    btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Dub another video';
+    btn.onclick = () => resetDubbingPageUiState(false);
+    document.getElementById('progressArea')?.insertAdjacentElement('afterend', btn);
+  }
+
+  // # FN showInsufficientCreditsBlockingModal
+  // # AR عرض insufficient credits blocking modal (showInsufficientCreditsBlockingModal)
+  // # KW نقاط,credits,billing,خصم,تنفيذ,local,cloud,modal,parity
+  function showInsufficientCreditsBlockingModal(required, balance) {
+    updateDubbingProgressBarUi('', 0);
+    const progressArea = document.getElementById('progressArea');
+    const resultsCard = document.getElementById('resultsCard');
+    const cinemaLangs = document.getElementById('cinemaLangs');
+    const dubBtn = document.getElementById('dubBtn');
+    // # شرط — فرع منطقي
+    if (progressArea) progressArea.style.display = 'none';
+    // # شرط — فرع منطقي
+    if (resultsCard) resultsCard.style.display = 'none';
+    // # شرط — فرع منطقي
+    if (cinemaLangs) cinemaLangs.innerHTML = '';
+    // # شرط — فرع منطقي
+    if (dubBtn) dubBtn.style.display = 'block';
+    unlockStartDubbingButton();
+
+    // ✅ استدعاء النافذة المشتركة الأنيقة من 16-credits-modal.js (بطريقة object الصحيحة)
+    // # شرط — فرع منطقي
+    if (global.SLShared?.creditsModal?.showInsufficientCreditsModal) {
+      // # block — نقاط/credits
+      global.SLShared.creditsModal.showInsufficientCreditsModal({
+        required,
+        balance,
+        context: 'dubbing',
+      });
+      // # return — إرجاع النتيجة
+      return;
+    // # block — تنفيذ منطق — راجع الأسطر التالية
+    }
+    global.showToast?.('Not enough credits. Please add credits to continue.', 'error');
+  }
+
+  DubbingApp.ui = {
+    lockStartDubbingButton,
+    unlockStartDubbingButton,
+    updateDubbingProgressBarUi,
+    uploadRatioToProgressPercent,
+    applyServerJobProgressToBar,
+    showDubbingCancelButton,
+    hideDubbingCancelButton,
+    switchCinemaResultsToLanguage,
+    resetDubbingPageUiState,
+    appendDubAnotherVideoButtonToUi,
+    showInsufficientCreditsBlockingModal,
+  };
+
+  global.lockDubBtn = lockStartDubbingButton;
+  global.unlockDubBtn = unlockStartDubbingButton;
+  global.updateProgress = updateDubbingProgressBarUi;
+  global.switchCinemaLang = switchCinemaResultsToLanguage;
+  global.resetDubbingState = resetDubbingPageUiState;
+  global.showDubAnotherButton = appendDubAnotherVideoButtonToUi;
+  // ⚠️ تم حذف السطر: global.showInsufficientCreditsModal = showInsufficientCreditsBlockingModal;
+  //    لأنه كان يدهس النافذة المشتركة الأنيقة الموجودة في 16-credits-modal.js
+})(window);
