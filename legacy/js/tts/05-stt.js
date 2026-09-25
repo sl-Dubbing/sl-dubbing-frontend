@@ -68,9 +68,9 @@
   function speechRecognitionLangFromCatalogCode(code) {
     const raw = String(code || '').trim().toLowerCase();
     // # guard — شرط رفض أو خروج مبكر
-    if (!raw) return 'ar-SA';
+    if (!raw) return 'en-US';
     const parts = raw.split('-');
-    const base = parts[0] || 'ar';
+    const base = parts[0] || 'en';
     const region = parts[1];
     // # شرط — فرع منطقي
     if (region) return `${base}-${region.toUpperCase()}`;

@@ -53,7 +53,7 @@
         ? global.getSharedTargetLangCode('')
         : '') ||
       localStorage.getItem(LANG_KEY) ||
-      'ar';
+      'en-us';
     S.currentLangCode = normalizeTtsLangCode(storedLang);
 
     TtsApp.lang.bindTtsLanguageDropdownUi(S.currentLangCode);

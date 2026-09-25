@@ -30,8 +30,8 @@
   };
 
   TtsApp.state = {
-    currentLangCode: 'ar',
-    currentBaseLang: 'ar',
+    currentLangCode: 'en-us',
+    currentBaseLang: 'en',
     currentDialect: '',
     selectedVoiceId: null,
     selectedElevenLabsVoiceId: '',

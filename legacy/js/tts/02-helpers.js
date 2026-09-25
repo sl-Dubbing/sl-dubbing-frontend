@@ -199,7 +199,7 @@
   // # KW توليد_صوت,TTS,synthesis,لغة,language,dialect
   function normalizeTtsLangCode(code) {
     // # guard — شرط رفض أو خروج مبكر
-    if (!code || !global.LANGUAGES) return 'ar';
+    if (!code || !global.LANGUAGES) return 'en-us';
     // # guard — شرط رفض أو خروج مبكر
     if (global.LANGUAGES.some((l) => l.code === code)) return code;
     const base = code.split('-')[0];
@@ -211,7 +211,7 @@
       global.LANGUAGES.find((l) => l.base_lang === base && l.popular) ||
       global.LANGUAGES.find((l) => l.base_lang === base);
     // # return — إرجاع النتيجة
-    return match ? match.code : 'ar';
+    return match ? match.code : 'en-us';
   }
 
   /** تنسيق_الوقت_بالدقائق — مثل 1:05 */
@@ -371,7 +371,7 @@
   // # AR حل/استنتاج tts translation context (resolveTtsTranslationContext)
   // # KW مترجم,ترجمة,translate,translation,LLM,توليد_صوت,TTS,synthesis
   function resolveTtsTranslationContext(text, targetCode, targetBase, targetDialect) {
-    const tgtCode = targetCode || 'ar';
+    const tgtCode = targetCode || 'en-us';
     const tgtBase = _langBaseFromCode(targetBase || tgtCode);
     const detectedBase = detectTextBaseLang(text);
 

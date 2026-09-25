@@ -3,7 +3,7 @@
 // # KW لغة,language
 // # CONVENTION — FN/AR/KW + # block كل ~6 أسطر — FUNCTION_INDEX.md DOMAIN_INDEX.md
 // js/languages.js — Glotix/Qwen3 language catalog (fallback + live GET /api/languages)
-// Display order = global web convention: English name A–Z (localeCompare 'en'),
+// Display order = English first (global default), then English name A–Z,
 // with stable regional-variant priority inside each language family.
 // After load, syncLanguagesFromElevenLabs() (legacy name) replaces window.LANGUAGES from API.
 (function (global) {
@@ -20,8 +20,13 @@
 
   // # FN compareLanguagesGlobal
   // # KW لغة,language,dialect
-  /** Compare for global UI lists (A–Z English group/name + locale priority). */
+  /** Compare for global UI lists: English first, then A–Z group/name. */
   function compareLanguagesGlobal(a, b) {
+    const englishA = String(a?.base_lang || '').toLowerCase() === 'en';
+    const englishB = String(b?.base_lang || '').toLowerCase() === 'en';
+    // # guard — رفض/خروج
+    if (englishA !== englishB) return englishA ? -1 : 1;
+
     const ga = String(a?.group || a?.name_en || '').trim();
     const gb = String(b?.group || b?.name_en || '').trim();
     const byGroup = ga.localeCompare(gb, 'en', { sensitivity: 'base' });
@@ -176,7 +181,7 @@
   // # FN buildLanguageDropdown
   // # AR اللغات واللهجات (buildLanguageDropdown)
   // # KW لغة,language,dialect
-  function buildLanguageDropdown(selectEl, selectedCode = 'ar') {
+  function buildLanguageDropdown(selectEl, selectedCode = 'en-us') {
     // # guard — رفض/خروج
     if (!selectEl || !global.LANGUAGES) return;
     selectEl.innerHTML = '';

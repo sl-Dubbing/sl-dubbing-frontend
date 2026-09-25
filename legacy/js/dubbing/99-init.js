@@ -38,7 +38,7 @@
     try {
       // # شرط — فرع منطقي
       if (typeof global.buildLanguageDropdown === 'function') {
-        global.buildLanguageDropdown(document.getElementById('dubbing-lang-select'), 'ar-eg');
+        global.buildLanguageDropdown(document.getElementById('dubbing-lang-select'), 'en-us');
       }
     } catch (err) {
       console.warn('[dubbing-init] lang dropdown failed', err);
