@@ -628,17 +628,25 @@
       // # HTTP — reuse early prefetch started while scripts were downloading
       let data = null;
       // # guard — poll must hit the API (do not consume one-shot prefetch)
-      if (!options.fromPoll) {
+      if (!options.fromPoll && !global.__glotixUserFilesInflight) {
         const prefetch = global.__glotixRecentFilesPrefetch;
         global.__glotixRecentFilesPrefetch = null;
         if (prefetch && typeof prefetch.then === 'function') {
-          data = await prefetch;
+          global.__glotixUserFilesInflight = prefetch.finally(() => {
+            global.__glotixUserFilesInflight = null;
+          });
         }
       }
-      if (!data) {
-        const res = await fetch(`${normalizeApiBaseUrl()}/api/user/files`, { headers });
-        data = await res.json().catch(() => ({}));
+      // # block — Init, resume, and the grid all asked for the same list.
+      // Three parallel reads on a cold API made the first call fail.
+      if (!global.__glotixUserFilesInflight) {
+        global.__glotixUserFilesInflight = fetch(`${normalizeApiBaseUrl()}/api/user/files`, { headers })
+          .then((res) => res.json().catch(() => ({})))
+          .finally(() => {
+            global.__glotixUserFilesInflight = null;
+          });
       }
+      data = await global.__glotixUserFilesInflight;
       const files = data.success && Array.isArray(data.files) ? data.files : [];
       // # block — طلب HTTP/API
       let dubFiles = files

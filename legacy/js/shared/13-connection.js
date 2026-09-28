@@ -135,32 +135,11 @@
 
     // # شرط — فرع منطقي
     if (authHeaders) {
-      // # try — معالجة عملية قد تفشل
-      try {
-        // # HTTP — طلب إلى API
-        const authRes = await fetch(`${SL.apiBase}/api/user/init`, {
-          method: 'POST',
-          headers: { ...authHeaders, Accept: 'application/json' },
-        // # block — طلب HTTP/API
-        });
-        // # parse — قراءة JSON من الاستجابة
-        const authData = await authRes.json().catch(() => ({}));
-        // # guard — شرط رفض أو خروج مبكر
-        if (authRes.status === 401) {
-          setFailed('Auth failed — sign in again', false);
-          // # return — إرجاع النتيجة
-          return;
-        }
-        // # guard — شرط رفض أو خروج مبكر
-        if (authRes.ok && H.apiResponseIndicatesSuccess(authData)) {
-          setConnected(brokerHint || 'signed in');
-          // # block — فرع شرطي
-          H.dismissConnectionCheckingUi();
-          // # return — إرجاع النتيجة
-          return;
-        }
-      } catch (_) { /* fall through to guest probe */ }
-    // # block — معالجة أخطاء
+      // # block — Credits fetch already POSTs /api/user/init. A second init on
+      // the same page load filled the small database pool and the first call failed.
+      setConnected(brokerHint || 'signed in');
+      H.dismissConnectionCheckingUi();
+      return;
     }
 
     // # try — معالجة عملية قد تفشل

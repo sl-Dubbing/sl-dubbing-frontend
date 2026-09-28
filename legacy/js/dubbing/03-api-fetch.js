@@ -17,9 +17,17 @@
     for (let attempt = 0; attempt <= retries; attempt++) {
       // # HTTP — طلب إلى API
       res = await fetch(url, options);
-      const transient =
+      // # block — Never retry POST. A 429 on /api/dub was sent again and the
+      // user waited through three failures before seeing the real message.
+      const transient = safeIdempotent && (
         res.status === 429 ||
-        (safeIdempotent && (res.status === 502 || res.status === 503 || res.status === 504));
+        res.status === 502 ||
+        res.status === 503 ||
+        res.status === 504 ||
+        res.status === 520 ||
+        res.status === 522 ||
+        res.status === 524
+      );
       // # guard — شرط رفض أو خروج مبكر
       if (!transient || attempt === retries) return res;
       const retryAfter = parseInt(res.headers.get('Retry-After') || '0', 10);

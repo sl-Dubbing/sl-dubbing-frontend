@@ -109,6 +109,9 @@
     // # guard — شرط رفض أو خروج مبكر
     if (status === 400) return err || 'Bad request';
     // # guard — شرط رفض أو خروج مبكر
+    if (status === 520 || status === 522 || status === 524) {
+      return 'The studio is waking up. Wait a few seconds and try again.';
+    }
     if (status >= 500) return err || 'Server error — try again';
     // # return — إرجاع النتيجة
     return err || fallback || 'Request failed';
