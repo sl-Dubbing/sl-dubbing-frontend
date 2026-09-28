@@ -26,7 +26,7 @@
       errLower.indexOf('incomplete payment') !== -1 ||
       errLower.indexOf('voice provider billing') !== -1
     ) {
-      return 'Voice provider billing is paused — complete the ElevenLabs invoice to resume TTS. Your Glotix credits were refunded for this attempt.';
+      return 'Voice service is temporarily unavailable. Please try again.';
     }
 
     // # guard — شرط رفض أو خروج مبكر
@@ -113,6 +113,10 @@
       return 'The studio is waking up. Wait a few seconds and try again.';
     }
     if (status >= 500) return err || 'Server error — try again';
+    // # block — Hide a cancelled vendor name if an older API build still returns it.
+    if (errLower.indexOf('elevenlabs') !== -1) {
+      return 'Voice service is temporarily unavailable. Please try again.';
+    }
     // # return — إرجاع النتيجة
     return err || fallback || 'Request failed';
   }

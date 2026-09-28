@@ -127,8 +127,8 @@
     // # guard — only applies to in-flight statuses
     if (!dubbingJobIsStillProcessing(job)) return false;
     const created = new Date(job?.created_at).getTime();
-    // # guard — missing timestamp → treat as stale so polling cannot loop forever
-    if (!created || Number.isNaN(created)) return true;
+    // # guard — missing timestamp is not a zombie. Deleting it removed a live job.
+    if (!created || Number.isNaN(created)) return false;
     return Date.now() - created > STALE_PROCESSING_MS;
   }
 
@@ -136,6 +136,8 @@
   // # AR Fresh in-flight jobs only — stale zombies must not keep refreshing the grid.
   // # KW مهمة,job,polling
   function dubbingJobNeedsActivePoll(job) {
+    const created = new Date(job?.created_at).getTime();
+    if (!created || Number.isNaN(created)) return false;
     return dubbingJobIsStillProcessing(job) && !dubbingJobIsStaleProcessing(job);
   }
 

@@ -30,7 +30,7 @@
         note.id = 'voiceCloneNote';
         // # block — معالجة صوت/استنساخ
         note.style.cssText = 'font-size:0.72rem;color:#f59e0b;margin-top:4px;display:flex;align-items:center;gap:4px;padding:0 4px;';
-        note.innerHTML = '<i class="fa-solid fa-circle-info"></i> Cloned / premium voices use ElevenLabs Multilingual';
+        note.innerHTML = '<i class="fa-solid fa-circle-info"></i> Cloned and premium voices use the studio voice model';
         document.querySelector('.editor-controls')?.appendChild(note);
       }
       note.style.display = 'flex';
@@ -387,7 +387,7 @@
     card.className = 'v-avatar-card';
     card.id = 'quickVoiceCard';
     // # block — معالجة صوت/استنساخ
-    card.title = 'Fast ElevenLabs Flash TTS';
+    card.title = 'Fast voice';
     card.appendChild(ttsTriangleMarkEl());
     const nameEl = document.createElement('div');
     nameEl.className = 'v-name';

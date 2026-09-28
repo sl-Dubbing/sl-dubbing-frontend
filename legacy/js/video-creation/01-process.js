@@ -256,7 +256,7 @@
       setCostHint(
         'Est. ' +
           total +
-          ' credits — ElevenLabs TTS ' +
+          ' credits — speech ' +
           tts +
           ' + lipsync ' +
           // # block — نقاط/credits
@@ -307,7 +307,7 @@
     if (loading) {
       loading.style.display = 'block';
       // # block — تحديث واجهة/DOM
-      loading.textContent = 'Generating speech (ElevenLabs) and talking video — this may take a minute…';
+      loading.textContent = 'Generating speech and talking video — this may take a minute…';
     }
 
     const imageDataUrl = await new Promise(function (resolve, reject) {

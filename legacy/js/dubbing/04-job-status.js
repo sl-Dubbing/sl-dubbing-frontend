@@ -269,7 +269,9 @@
         sseErrorStreak += 1;
         // # شرط
         if (es.readyState === EventSource.CLOSED && sseErrorStreak >= 3) {
-          finish(reject, new Error('SSE connection lost'));
+          // # block — Poll is still watching the job. Closing SSE must not show a failure.
+          es.close();
+          return;
         // # block — فرع شرطي
         }
       };
@@ -408,7 +410,7 @@
               return finish(
                 reject,
                 // # block — نقاط/credits
-                new Error('Dubbing failed — job not found. Your credits were refunded.'),
+                new Error('This dub could not be found. Check Recent Works before starting again.'),
               // # block — نقاط/credits
               );
             }
