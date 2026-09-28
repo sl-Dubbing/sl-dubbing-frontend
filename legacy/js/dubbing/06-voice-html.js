@@ -19,6 +19,18 @@
       .replace(/"/g, '&quot;');
   }
 
+  function jsStringForInlineHandler(value) {
+    // # block — Single-quoted onclick inside a double-quoted attribute.
+    // &#39; is decoded by HTML before JS runs, so a quote is written as a JS escape.
+    return String(value ?? '')
+      .replace(/[\r\n\\]/g, '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '\\u0027');
+  }
+
   // # FN buildLanguageFlagImgHtml
   // # KW صوت,استنساخ,voice,clone,sample,لغة,language,dialect
   function buildLanguageFlagImgHtml(langCode) {
@@ -64,7 +76,7 @@
              onclick="onPremiumVoiceCardClick(this)" title="Your saved voice — instant dubbing">
             <div class="voice-avatar-wrapper">
                 <div class="voice-save-plus-inner"><i class="fa-solid fa-fingerprint"></i></div>
-                <div class="voice-play-overlay" onclick="playVoicePreview(event, '${url}', this.parentElement.parentElement)">
+                <div class="voice-play-overlay" onclick="playVoicePreview(event, '${jsStringForInlineHandler(profile.sample_url)}', this.parentElement.parentElement)">
                     <i class="fa-solid fa-play"></i>
                 </div>
             </div>
@@ -98,7 +110,7 @@
                  onclick="onPremiumVoiceCardClick(this)" title="Your saved voice">
                 <div class="voice-avatar-wrapper">
                     <div class="voice-save-plus-inner"><i class="fa-solid fa-user"></i></div>
-                    <div class="voice-play-overlay" onclick="playVoicePreview(event, '${url}', this.parentElement.parentElement)">
+                    <div class="voice-play-overlay" onclick="playVoicePreview(event, '${jsStringForInlineHandler(voice.sample_url || '')}', this.parentElement.parentElement)">
                         <i class="fa-solid fa-play"></i>
                     </div>
                 </div>
@@ -175,7 +187,7 @@
                  onclick="onPremiumVoiceCardClick(this)">
                 <div class="${wrapperClass}">
                     <img src="${imgSrc}" alt="" loading="lazy" decoding="async">
-                    <div class="voice-play-overlay" onclick="playVoicePreview(event, '${url}', this.parentElement.parentElement)">
+                    <div class="voice-play-overlay" onclick="playVoicePreview(event, '${jsStringForInlineHandler(voice.sample_url || '')}', this.parentElement.parentElement)">
                         <i class="fa-solid fa-play"></i>
                     </div>
                 </div>

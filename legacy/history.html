@@ -470,6 +470,10 @@
         return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    function safeDomId(value) {
+        return String(value ?? '').replace(/[^A-Za-z0-9_-]/g, '');
+    }
+
     function isVideoUrl(url) {
         if (!url) return false;
         if (/^data:video\//i.test(url)) return true;
@@ -723,16 +727,16 @@
         const initial = cloneInitialLetter(name);
 
         const actions = `
-            ${hasUrl ? `<button type="button" class="btn-action" title="Preview" onclick="openCloneAudioPreview('${escapeHtml(id)}')"><i class="fa-solid fa-play"></i></button>` : ''}
-            ${hasUrl ? `<button type="button" class="btn-action" title="Download" onclick="downloadMediaFile('${escapeHtml(id)}', this)"><i class="fa-solid fa-download"></i></button>` : ''}
-            <button type="button" class="btn-action danger" title="Delete sample" onclick="deleteSingleFile('${escapeHtml(id)}')"><i class="fa-solid fa-trash"></i></button>
+            ${hasUrl ? `<button type="button" class="btn-action" title="Preview" onclick="openCloneAudioPreview('${safeDomId(id)}')"><i class="fa-solid fa-play"></i></button>` : ''}
+            ${hasUrl ? `<button type="button" class="btn-action" title="Download" onclick="downloadMediaFile('${safeDomId(id)}', this)"><i class="fa-solid fa-download"></i></button>` : ''}
+            <button type="button" class="btn-action danger" title="Delete sample" onclick="deleteSingleFile('${safeDomId(id)}')"><i class="fa-solid fa-trash"></i></button>
         `;
 
         return `
-            <div class="file-item clone-card" data-id="${escapeHtml(id)}" data-type="clone">
+            <div class="file-item clone-card" data-id="${safeDomId(id)}" data-type="clone">
                 <div class="clone-avatar-wrap">
                     <div class="clone-avatar" aria-hidden="true">${escapeHtml(initial)}</div>
-                    ${hasUrl ? `<button type="button" class="clone-play-fab" onclick="openCloneAudioPreview('${escapeHtml(id)}')" title="Preview sample"><i class="fa-solid fa-play"></i></button>` : ''}
+                    ${hasUrl ? `<button type="button" class="clone-play-fab" onclick="openCloneAudioPreview('${safeDomId(id)}')" title="Preview sample"><i class="fa-solid fa-play"></i></button>` : ''}
                 </div>
                 <div class="clone-name">${escapeHtml(name)}</div>
                 <div class="clone-meta"><i class="fa-regular fa-clock"></i> ${formatDate(f.created_at)}</div>
@@ -787,7 +791,7 @@
             thumbClass = 'video-thumb';
         } else { thumbInner = iconHTML; }
 
-        const playOverlay = (hasUrl && isVideoUrl(url)) ? `<div class="play-overlay" onclick="openMediaPlayer('${f.id}')"><span class="pulse-ring"><i class="fa-solid fa-play"></i></span></div>` : '';
+        const playOverlay = (hasUrl && isVideoUrl(url)) ? `<div class="play-overlay" onclick="openMediaPlayer('${safeDomId(f.id)}')"><span class="pulse-ring"><i class="fa-solid fa-play"></i></span></div>` : '';
 
         let typeBadge = '';
         if (isDubbing) typeBadge = `<span class="type-badge dubbing">Dubbing</span>`;
@@ -817,17 +821,17 @@
         }
 
         const actions = `
-            ${f.redub_available && isDubbing && !isProcessing ? `<button type="button" class="btn-action redub" title="Dub in another language" onclick="openRedubModal('${escapeHtml(String(f.id))}')"><i class="fa-solid fa-pen"></i></button>` : ''}
-            ${hasUrl && isVideoUrl(url) ? `<button type="button" class="btn-action" title="Play Video" onclick="openMediaPlayer('${f.id}')"><i class="fa-solid fa-play"></i></button>` : ''}
-            ${hasUrl ? `<button type="button" class="btn-action" title="Download" onclick="downloadMediaFile('${f.id}', this)"><i class="fa-solid fa-download"></i></button>` : ''}
-            <button type="button" class="btn-action danger" title="Delete" onclick="deleteSingleFile('${f.id}')"><i class="fa-solid fa-trash"></i></button>
+            ${f.redub_available && isDubbing && !isProcessing ? `<button type="button" class="btn-action redub" title="Dub in another language" onclick="openRedubModal('${safeDomId(f.id)}')"><i class="fa-solid fa-pen"></i></button>` : ''}
+            ${hasUrl && isVideoUrl(url) ? `<button type="button" class="btn-action" title="Play Video" onclick="openMediaPlayer('${safeDomId(f.id)}')"><i class="fa-solid fa-play"></i></button>` : ''}
+            ${hasUrl ? `<button type="button" class="btn-action" title="Download" onclick="downloadMediaFile('${safeDomId(f.id)}', this)"><i class="fa-solid fa-download"></i></button>` : ''}
+            <button type="button" class="btn-action danger" title="Delete" onclick="deleteSingleFile('${safeDomId(f.id)}')"><i class="fa-solid fa-trash"></i></button>
         `;
 
         const showCheckbox = f.type !== 'clone';
 
         return `
-            <div class="file-item${isSelected ? ' selected' : ''}" data-id="${f.id}" data-type="${f.type}">
-                ${showCheckbox ? `<input type="checkbox" class="item-checkbox" data-id="${f.id}" ${isSelected ? 'checked' : ''}>` : ''}
+            <div class="file-item${isSelected ? ' selected' : ''}" data-id="${safeDomId(f.id)}" data-type="${safeDomId(f.type)}">
+                ${showCheckbox ? `<input type="checkbox" class="item-checkbox" data-id="${safeDomId(f.id)}" ${isSelected ? 'checked' : ''}>` : ''}
                 <div class="file-thumb ${thumbClass}">
                     ${thumbInner}
                     ${playOverlay}

@@ -1275,10 +1275,12 @@
             if (!data || data.length === 0) { voicesContainer.innerHTML = '<div style="padding:10px;color:#9ca3af;font-size:0.85rem;width:100%;text-align:center;">No voices available</div>'; return; }
             const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
             voicesContainer.innerHTML = data.map(voice => {
-                const url = esc(voice.sample_url), name = esc(voice.name), engine = esc(voice.engine||'');
+                const rawUrl = String(voice.sample_url || '');
+            const url = esc(rawUrl), name = esc(voice.name), engine = esc(voice.engine||'');
+            const jsUrl = rawUrl.replace(/[\r\n\\]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '\\u0027');
                 const elevenId = esc(voice.elevenlabs_voice_id || voice.eleven_labs_voice_id || '');
                 const sel = window.selectedSample === voice.sample_url ? ' selected' : '';
-                return `<div class="voice-avatar-card${sel}" data-sample-url="${url}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url="" onclick="onPremiumVoiceCardClick(this)"><div class="voice-avatar-wrapper voice-mark-triangle"><img src="logo/glotix_Triangle.svg" alt="" loading="lazy" decoding="async"><div class="voice-play-overlay" onclick="playVoicePreview(event,'${url}',this.parentElement.parentElement)"><i class="fa-solid fa-play"></i></div></div><span class="voice-name-label">${name}</span></div>`;
+                return `<div class="voice-avatar-card${sel}" data-sample-url="${url}" data-name="${name}" data-engine="${engine}" data-elevenlabs-voice-id="${elevenId}" data-avatar-url="" onclick="onPremiumVoiceCardClick(this)"><div class="voice-avatar-wrapper voice-mark-triangle"><img src="logo/glotix_Triangle.svg" alt="" loading="lazy" decoding="async"><div class="voice-play-overlay" onclick="playVoicePreview(event,'${jsUrl}',this.parentElement.parentElement)"><i class="fa-solid fa-play"></i></div></div><span class="voice-name-label">${name}</span></div>`;
             }).join('');
         } catch (err) { if (typeof renderPremiumVoicesGrid === 'function') renderPremiumVoicesGrid([]); else voicesContainer.innerHTML = ''; }
     }
@@ -1336,7 +1338,7 @@
 <script defer src="js/dubbing/02-api-config.js?v=20260817sec"></script>
 <script defer src="js/dubbing/03-api-fetch.js?v=20260928pace"></script>
 <script defer src="js/dubbing/05-voice-payload.js?v=20260924fast1"></script>
-<script defer src="js/dubbing/06-voice-html.js?v=20260922voices"></script>
+<script defer src="js/dubbing/06-voice-html.js?v=20260928guard"></script>
 <script defer src="js/dubbing/07-voice-api.js?v=22"></script>
 <script defer src="js/dubbing/08-voice-save-modal.js?v=20260818share"></script>
 <script defer src="js/dubbing/09-voice-recorder.js?v=20260621"></script>
