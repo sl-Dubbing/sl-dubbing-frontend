@@ -25,7 +25,7 @@
     <meta name="twitter:title" content="Glotix | AI Video Dubbing">
     <meta name="twitter:description" content="AI video dubbing and text to speech. Keep the original soundtrack.">
     <script type="application/ld+json">
-    {"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://glotix.ai/#org","name":"Glotix","url":"https://glotix.ai/","logo":"https://glotix.ai/logo/glotix_Full_Black.svg"},{"@type":"SoftwareApplication","@id":"https://glotix.ai/#app","name":"Glotix","applicationCategory":"MultimediaApplication","operatingSystem":"Web","url":"https://glotix.ai/","inLanguage":["en","ar"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"AI video dubbing and text-to-speech studio. Isolates dialogue, translates, clones the speaker, and remixes speech over the original music."},{"@type":"WebSite","@id":"https://glotix.ai/#website","url":"https://glotix.ai/","name":"Glotix","inLanguage":"en","publisher":{"@id":"https://glotix.ai/#org"},"potentialAction":{"@type":"SearchAction","target":"https://glotix.ai/dubbing","query-input":"required name=search_term_string"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the best AI video dubbing tool that keeps the original music?","acceptedAnswer":{"@type":"Answer","text":"Glotix is an AI video dubbing studio that isolates dialogue from the soundtrack, translates the script, synthesizes new speech with optional voice cloning, and mixes it back over the original music and effects."}},{"@type":"Question","name":"What is AI dubbing?","acceptedAnswer":{"@type":"Answer","text":"AI dubbing replaces spoken dialogue in a video with speech in another language. Glotix transcribes, translates, synthesizes a new vocal, and mixes it over the original soundtrack."}},{"@type":"Question","name":"Is Glotix an AI music generator?","acceptedAnswer":{"@type":"Answer","text":"No. Glotix keeps the music already in your file. It replaces spoken dialogue only. It does not compose new songs."}},{"@type":"Question","name":"How does Glotix compare to other dubbing websites?","acceptedAnswer":{"@type":"Answer","text":"Glotix focuses on dialogue replacement rather than replacing the whole mix. You upload a clip, pick a target language, optionally clone the original speaker, and download a dubbed file with the instrumental bed intact."}},{"@type":"Question","name":"Does Glotix include text to speech?","acceptedAnswer":{"@type":"Answer","text":"Yes. The same voice catalog used in Dubbing Studio is available in Text to Speech, including cloned voices saved to your account."}}]}]}
+    {"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://glotix.ai/#org","name":"Glotix","url":"https://glotix.ai/","logo":"https://glotix.ai/logo/glotix_Full_Black.svg"},{"@type":"SoftwareApplication","@id":"https://glotix.ai/#app","name":"Glotix","applicationCategory":"MultimediaApplication","operatingSystem":"Web","url":"https://glotix.ai/","inLanguage":["en","ar"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"AI video dubbing and text-to-speech studio. Isolates dialogue, translates, clones the speaker, and remixes speech over the original music."},{"@type":"WebSite","@id":"https://glotix.ai/#website","url":"https://glotix.ai/","name":"Glotix","inLanguage":"en","publisher":{"@id":"https://glotix.ai/#org"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the best AI video dubbing tool that keeps the original music?","acceptedAnswer":{"@type":"Answer","text":"Glotix is an AI video dubbing studio that isolates dialogue from the soundtrack, translates the script, synthesizes new speech with optional voice cloning, and mixes it back over the original music and effects."}},{"@type":"Question","name":"What is AI dubbing?","acceptedAnswer":{"@type":"Answer","text":"AI dubbing replaces spoken dialogue in a video with speech in another language. Glotix transcribes, translates, synthesizes a new vocal, and mixes it over the original soundtrack."}},{"@type":"Question","name":"Is Glotix an AI music generator?","acceptedAnswer":{"@type":"Answer","text":"No. Glotix keeps the music already in your file. It replaces spoken dialogue only. It does not compose new songs."}},{"@type":"Question","name":"How does Glotix compare to other dubbing websites?","acceptedAnswer":{"@type":"Answer","text":"Glotix focuses on dialogue replacement rather than replacing the whole mix. You upload a clip, pick a target language, optionally clone the original speaker, and download a dubbed file with the instrumental bed intact."}},{"@type":"Question","name":"Does Glotix include text to speech?","acceptedAnswer":{"@type":"Answer","text":"Yes. The same voice catalog used in Dubbing Studio is available in Text to Speech, including cloned voices saved to your account."}}]}]}
     </script>
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -161,6 +161,8 @@
             box-shadow: 0 1px 0 rgba(10,10,10,0.02);
             transition: var(--transition);
             overflow: hidden;
+            color: inherit;
+            text-decoration: none;
         }
         .tool-card::after { display: none; }
         /* Custom index icons (PNG already includes triangle art) */
@@ -559,7 +561,9 @@
                 <hr class="menu-divider">
                 <a href="/"><i class="fas fa-home"></i> Home</a>
                 <a href="/dubbing"><i class="fas fa-film"></i> Dubbing Studio</a>
+                <a href="/ai-dubbing"><i class="fas fa-book-open"></i> AI Dubbing</a>
                 <a href="/tts"><i class="fas fa-microphone"></i> Text to Speech</a>
+                <a href="/ar"><i class="fas fa-language"></i> العربية</a>
                 <hr class="menu-divider">
                 <a href="/history"><i class="fas fa-folder-open"></i> My Files (History)</a>
                 <a href="/developer" class="menu-item" style="background:#f0f9ff;color:#0284c7;border:1px solid #bae6fd;"><i class="fas fa-code"></i> Developer API</a>
@@ -578,16 +582,16 @@
     </section>
 
     <div class="tools-row">
-        <div class="tool-card tts" onclick="location.href='/tts'">
+        <a class="tool-card tts" href="/tts">
             <span class="ico ico--asset"><img src="icon-index/1.png?v=2" alt="" width="72" height="72" decoding="async"></span>
             <h3>Text to Speech</h3>
             <span class="go">Open <i class="fas fa-arrow-right"></i></span>
-        </div>
-        <div class="tool-card dub" onclick="location.href='/dubbing'">
+        </a>
+        <a class="tool-card dub" href="/dubbing">
             <span class="ico ico--asset"><img src="icon-index/2.png?v=2" alt="" width="72" height="72" decoding="async"></span>
             <h3>Video dubbing</h3>
             <span class="go">Open <i class="fas fa-arrow-right"></i></span>
-        </div>
+        </a>
     </div>
 
     <!-- ???????????????? Features ???????????????? -->
