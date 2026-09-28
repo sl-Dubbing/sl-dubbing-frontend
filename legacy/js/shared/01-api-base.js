@@ -80,7 +80,7 @@
       if (host === 'cdn.glotix.ai') return true;
       if (host === 'glotix.ai' || host === 'www.glotix.ai') return true;
       if (host.endsWith('.modal.run') && host.includes('sl-dubbing')) return true;
-      if (host.endsWith('.r2.cloudflarestorage.com')) return true;
+      if (host.endsWith('.r2.cloudflarestorage.com') || host.endsWith('.r2.dev')) return true;
       return false;
     } catch (_) {
       return false;

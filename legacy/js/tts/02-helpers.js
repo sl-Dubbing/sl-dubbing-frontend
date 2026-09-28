@@ -267,7 +267,7 @@
     return String(
       cfg.API_BASE ||
         global.API_BASE ||
-        'https://sl-dubbing--glotix-api-serve.modal.run',
+        'https://api.glotix.ai',
     )
       .replace(/\/$/, '')
       .replace(/([^:]\/)\/+/g, '$1');

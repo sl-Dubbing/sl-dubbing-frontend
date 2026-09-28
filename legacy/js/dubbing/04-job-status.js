@@ -281,7 +281,7 @@
 
   // # FN pollDubbingJobUntilComplete
   // # KW مهمة,job,polling,celery,worker,حالة,webhook,SSE,status
-  function pollDubbingJobUntilComplete(jobId, signal, onProgressTick) {
+  function pollDubbingJobUntilComplete(jobId, signal, onProgressTick, intervalMs) {
     const id = String(jobId || '').trim();
     // # guard — شرط رفض أو خروج مبكر
     if (!id) {
@@ -484,7 +484,9 @@
       // # block — فرع شرطي
       };
 
-      timer = setInterval(tick, 3000);
+      // # block — With SSE open, a 3s poll doubled Supabase reads through Cloudflare.
+      const every = Number(intervalMs) >= 1000 ? Number(intervalMs) : 3000;
+      timer = setInterval(tick, every);
       tick();
     });
   }
@@ -555,7 +557,7 @@
     );
     // # block — تنفيذ منطق — راجع الأسطر التالية
     const pollResult = asSettled(
-      pollDubbingJobUntilComplete(jobId, linked, onProgressTick),
+      pollDubbingJobUntilComplete(jobId, linked, onProgressTick, 8000),
       'poll',
     );
 
