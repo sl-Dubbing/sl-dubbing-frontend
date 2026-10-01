@@ -10,7 +10,12 @@
   const STORAGE_KEY = global.LANG_STORAGE_KEY || 'selected_langs';
   let langSearchDebounceTimer = null;
   let searchBound = false;
-  let selected = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '["en-us"]'));
+  // # guard — Saved ar-eg/ar-sa… selections collapse to the single Arabic entry.
+  let selected = new Set(
+    JSON.parse(localStorage.getItem(STORAGE_KEY) || '["en-us"]').map((code) =>
+      /^ar[-_]/i.test(String(code || '')) ? 'ar' : code,
+    ),
+  );
   global.selectedLangs = selected;
 
   // # FN _getFlagImg

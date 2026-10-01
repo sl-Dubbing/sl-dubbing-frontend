@@ -11,7 +11,7 @@
 
   /** Preferred locale rank inside a language family (lower = earlier). */
   const LOCALE_PRIORITY = {
-    ar: { ar: 0, 'ar-sa': 1, 'ar-ae': 2 },
+    ar: { ar: 0 },
     en: { 'en-us': 0, 'en-gb': 1, 'en-au': 2, 'en-ca': 3 },
     es: { 'es-es': 0, 'es-mx': 1 },
     fr: { 'fr-fr': 0, 'fr-ca': 1 },
@@ -62,19 +62,7 @@
   global.sortLanguagesGlobal = sortLanguagesGlobal;
 
   const FALLBACK_LANGUAGES = [
-    { code: 'ar',    flag: '🇸🇦', name_en: 'Arabic',                 name_ar: 'العربية',               base_lang: 'ar', dialect: 'الفصحى',     category: 'Glotix', popular: true,  supports_clone: true, group: 'Arabic' },
-    { code: 'ar-sa', flag: '🇸🇦', name_en: 'Arabic (Saudi Arabia)',  name_ar: 'العربية السعودية',      base_lang: 'ar', dialect: 'السعودية',  category: 'Glotix', popular: true,  supports_clone: true, group: 'Arabic' },
-    { code: 'ar-ae', flag: '🇦🇪', name_en: 'Arabic (UAE)',           name_ar: 'العربية الإماراتية',    base_lang: 'ar', dialect: 'الإماراتية', category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-eg', flag: '🇪🇬', name_en: 'Arabic (Egypt)',         name_ar: 'العربية المصرية',       base_lang: 'ar', dialect: 'المصرية',    category: 'Glotix', popular: true,  supports_clone: true, group: 'Arabic' },
-    { code: 'ar-ma', flag: '🇲🇦', name_en: 'Arabic (Morocco)',       name_ar: 'العربية المغربية',      base_lang: 'ar', dialect: 'المغربية',   category: 'Glotix', popular: true,  supports_clone: true, group: 'Arabic' },
-    { code: 'ar-dz', flag: '🇩🇿', name_en: 'Arabic (Algeria)',       name_ar: 'العربية الجزائرية',     base_lang: 'ar', dialect: 'الجزائرية',  category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-tn', flag: '🇹🇳', name_en: 'Arabic (Tunisia)',       name_ar: 'العربية التونسية',      base_lang: 'ar', dialect: 'التونسية',   category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-iq', flag: '🇮🇶', name_en: 'Arabic (Iraq)',          name_ar: 'العربية العراقية',      base_lang: 'ar', dialect: 'العراقية',   category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-jo', flag: '🇯🇴', name_en: 'Arabic (Jordan)',        name_ar: 'العربية الأردنية',      base_lang: 'ar', dialect: 'الأردنية',   category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-lb', flag: '🇱🇧', name_en: 'Arabic (Lebanon)',       name_ar: 'العربية اللبنانية',     base_lang: 'ar', dialect: 'اللبنانية',  category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-kw', flag: '🇰🇼', name_en: 'Arabic (Kuwait)',        name_ar: 'العربية الكويتية',      base_lang: 'ar', dialect: 'الكويتية',   category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-qa', flag: '🇶🇦', name_en: 'Arabic (Qatar)',         name_ar: 'العربية القطرية',       base_lang: 'ar', dialect: 'القطرية',    category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
-    { code: 'ar-bh', flag: '🇧🇭', name_en: 'Arabic (Bahrain)',       name_ar: 'العربية البحرينية',     base_lang: 'ar', dialect: 'البحرينية',  category: 'Glotix', popular: false, supports_clone: true, group: 'Arabic' },
+    { code: 'ar',    flag: '🇸🇦', name_en: 'Arabic',                 name_ar: 'العربية',               base_lang: 'ar', dialect: '',     category: 'Glotix', popular: true,  supports_clone: true, group: 'Arabic' },
     { code: 'bg',    flag: '🇧🇬', name_en: 'Bulgarian',              name_ar: 'البلغارية',             base_lang: 'bg', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Bulgarian' },
     { code: 'zh',    flag: '🇨🇳', name_en: 'Chinese',                name_ar: 'الصينية',               base_lang: 'zh', dialect: '', category: 'Glotix', popular: true,  supports_clone: true, group: 'Chinese' },
     { code: 'hr',    flag: '🇭🇷', name_en: 'Croatian',               name_ar: 'الكرواتية',             base_lang: 'hr', dialect: '', category: 'Glotix', popular: false, supports_clone: true, group: 'Croatian' },
@@ -138,15 +126,24 @@
 
   const SHARED_TARGET_LANG_KEY = 'glotix.target_lang';
 
+  // # FN collapseArabicDialect
+  // # AR Arabic ships as one language; saved dialect codes (ar-eg, ar-sa…) map to ar.
+  // # KW لغة,language,dialect
+  function collapseArabicDialect(code) {
+    const value = String(code || '').trim();
+    return /^ar[-_]/i.test(value) ? 'ar' : value;
+  }
+  global.collapseArabicDialect = collapseArabicDialect;
+
   // # FN getSharedTargetLangCode
   // # AR Last target language shared by Dubbing Studio and Text to Speech.
   // # KW لغة,language,dialect
   function getSharedTargetLangCode(fallback) {
     try {
       const shared = localStorage.getItem(SHARED_TARGET_LANG_KEY);
-      if (shared) return shared;
+      if (shared) return collapseArabicDialect(shared);
       const ttsOnly = localStorage.getItem('glotix_tts_lang');
-      if (ttsOnly) return ttsOnly;
+      if (ttsOnly) return collapseArabicDialect(ttsOnly);
     } catch (_) {
       /* ignore */
     }
@@ -271,7 +268,9 @@
   // # AR Apply a public language catalog to window globals (no user data).
   // # KW لغة,language,dialect
   function _applyLanguageCatalog(data) {
-    global.LANGUAGES = sortLanguagesGlobal(data.languages.map(_normalizeRemoteLang));
+    // # guard — A CDN-cached catalog can still list ar-* dialects; drop them.
+    const languages = data.languages.filter((l) => !/^ar[-_]/i.test(String(l?.code || '')));
+    global.LANGUAGES = sortLanguagesGlobal(languages.map(_normalizeRemoteLang));
     global.SHARED_LANGUAGES = global.LANGUAGES;
     if (data.flag_country && typeof data.flag_country === 'object') {
       global.LANG_FLAG_COUNTRY = Object.assign({}, global.LANG_FLAG_COUNTRY, data.flag_country);

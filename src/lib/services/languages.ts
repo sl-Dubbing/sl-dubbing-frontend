@@ -17,19 +17,7 @@ export type Language = {
 };
 
 const FALLBACK: Language[] = [
-	['ar', '🇸🇦', 'Arabic', 'ar', 'Modern Standard Arabic'],
-	['ar-sa', '🇸🇦', 'Arabic (Saudi Arabia)', 'ar', 'Saudi Arabic'],
-	['ar-ae', '🇦🇪', 'Arabic (UAE)', 'ar', 'Emirati Arabic'],
-	['ar-eg', '🇪🇬', 'Arabic (Egypt)', 'ar', 'Egyptian Arabic'],
-	['ar-ma', '🇲🇦', 'Arabic (Morocco)', 'ar', 'Moroccan Arabic'],
-	['ar-dz', '🇩🇿', 'Arabic (Algeria)', 'ar', 'Algerian Arabic'],
-	['ar-tn', '🇹🇳', 'Arabic (Tunisia)', 'ar', 'Tunisian Arabic'],
-	['ar-iq', '🇮🇶', 'Arabic (Iraq)', 'ar', 'Iraqi Arabic'],
-	['ar-jo', '🇯🇴', 'Arabic (Jordan)', 'ar', 'Jordanian Arabic'],
-	['ar-lb', '🇱🇧', 'Arabic (Lebanon)', 'ar', 'Lebanese Arabic'],
-	['ar-kw', '🇰🇼', 'Arabic (Kuwait)', 'ar', 'Kuwaiti Arabic'],
-	['ar-qa', '🇶🇦', 'Arabic (Qatar)', 'ar', 'Qatari Arabic'],
-	['ar-bh', '🇧🇭', 'Arabic (Bahrain)', 'ar', 'Bahraini Arabic'],
+	['ar', '🇸🇦', 'Arabic', 'ar', ''],
 	['bg', '🇧🇬', 'Bulgarian', 'bg', ''],
 	['zh', '🇨🇳', 'Chinese', 'zh', ''],
 	['hr', '🇭🇷', 'Croatian', 'hr', ''],
