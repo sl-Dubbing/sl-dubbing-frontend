@@ -546,7 +546,7 @@
         .side-lang-card:hover { background: #4b5563; color: #e5e7eb; }
         .side-lang-card.active { background: #ffffff; color: #111827; font-weight: 600; border-color: #fff; }
         .dl-corner { position: absolute; top: 15px; right: 15px; z-index: 100; display: none; }
-        .dl-icon-btn { background: rgba(255,255,255,0.9); color: #111827; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem; transition: 0.2s; backdrop-filter: blur(5px); }
+        .dl-icon-btn { background: rgba(255,255,255,0.9); color: #111827; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem; transition: 0.2s; backdrop-filter: blur(5px); border: none; padding: 0; cursor: pointer; }
         .dl-icon-btn:hover { background: #fff; transform: scale(1.05); }
         .overlay, .sidebar { display: none !important; }
         @media (max-width: 800px) {
@@ -930,7 +930,7 @@
         <div class="cinema-results">
             <div class="cinema-player">
                 <div id="dlArea" class="dl-corner">
-                    <a id="masterDl" href="#" target="_blank" class="dl-icon-btn" title="Download"><i class="fa-solid fa-download"></i></a>
+                    <button type="button" id="masterDl" class="dl-icon-btn" title="Download"><i class="fa-solid fa-download"></i></button>
                 </div>
                 <div id="mainPlayer" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;">
                     <i class="fa-solid fa-circle-notch fa-spin fa-2x" style="color:#6b7280;margin-bottom:15px;"></i>
@@ -1344,11 +1344,11 @@
 <script defer src="js/dubbing/09-voice-recorder.js?v=20260621"></script>
 <script defer src="js/dubbing/04-job-status.js?v=20260928edge"></script>
 <script defer src="js/dubbing/18-stream-player.js?v=1"></script>
-<script defer src="js/dubbing/10-ui-progress.js?v=100"></script>
+<script defer src="js/dubbing/10-ui-progress.js?v=20261003dl"></script>
 <script defer src="js/dubbing/11-upload-r2.js?v=21"></script>
 <script defer src="js/dubbing/11b-browser-audio-extract.js?v=1"></script>
 <script defer src="js/dubbing/12-start-dubbing.js?v=20261002clone1"></script>
-<script defer src="js/dubbing/13-recent-jobs.js?v=20260928clean"></script>
+<script defer src="js/dubbing/13-recent-jobs.js?v=20261003dl"></script>
 <script defer src="js/dubbing/17-pending-jobs-resume.js?v=20260818prog"></script>
 <script defer src="js/dubbing/14-media-input.js?v=20260718a"></script>
 <script defer src="js/dubbing/20-srt-editor.js?v=20260925fast1"></script>

@@ -173,7 +173,12 @@
     document.getElementById(`side-${langCode}`)?.classList.add('active');
     document.getElementById('dlArea').style.display = 'block';
     // # block — تحديث واجهة/DOM
-    document.getElementById('masterDl').href = rawUrl;
+    const masterDl = document.getElementById('masterDl');
+    if (masterDl) {
+      const ext = /\.(mp4|mov|webm)(\?|$)/i.test(rawUrl) ? 'mp4' : 'mp3';
+      masterDl.dataset.url = rawUrl;
+      masterDl.dataset.name = `glotix-${langCode || 'dub'}.${ext}`;
+    }
     const isVideo = /\.(mp4|mov|webm)(\?|$)/i.test(rawUrl);
     // # شرط — فرع منطقي
     if (isVideo) {
@@ -339,6 +344,22 @@
     appendDubAnotherVideoButtonToUi,
     showInsufficientCreditsBlockingModal,
   };
+
+  const masterDownload = document.getElementById('masterDl');
+  if (masterDownload && !masterDownload.dataset.bound) {
+    masterDownload.dataset.bound = '1';
+    masterDownload.addEventListener('click', async () => {
+      const url = masterDownload.dataset.url || '';
+      if (!url) return;
+      masterDownload.disabled = true;
+      const ok = await DubbingApp.recentJobs?.downloadDubbingFile?.(
+        url,
+        masterDownload.dataset.name || 'glotix-dub.mp4'
+      );
+      masterDownload.disabled = false;
+      if (!ok) global.showToast?.('Download failed', 'error');
+    });
+  }
 
   global.lockDubBtn = lockStartDubbingButton;
   global.unlockDubBtn = unlockStartDubbingButton;

@@ -738,7 +738,11 @@
     renderRecentDubbingJobsGrid(updated);
   }
 
-  DubbingApp.recentJobs = { loadAndRenderRecentDubbingJobs, prependCompletedJobToGrid };
+  DubbingApp.recentJobs = {
+    loadAndRenderRecentDubbingJobs,
+    prependCompletedJobToGrid,
+    downloadDubbingFile,
+  };
   global.getRelativeTime = formatRelativeTimeAgoLabel;
   global.renderRecentJobs = renderRecentDubbingJobsGrid;
   global.loadRecentDubbingJobs = loadAndRenderRecentDubbingJobs;
