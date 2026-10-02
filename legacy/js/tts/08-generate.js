@@ -13,7 +13,102 @@
   const S = TtsApp.state;
   const { normalizeTtsApiBaseUrl, resolveTtsTranslationContext } = TtsApp.helpers;
 
-  /** توليد_الصوت_من_API — POST /api/tts/quick */
+  let livePcmCtx = null;
+
+  function pcmToWavBlob(chunks, sampleRate) {
+    let length = 0;
+    chunks.forEach((chunk) => {
+      length += chunk.byteLength;
+    });
+    const pcm = new Uint8Array(length);
+    let offset = 0;
+    chunks.forEach((chunk) => {
+      pcm.set(chunk, offset);
+      offset += chunk.byteLength;
+    });
+    const even = pcm.length - (pcm.length % 2);
+    const dataLen = even;
+    const header = new ArrayBuffer(44);
+    const view = new DataView(header);
+    const write = (pos, text) => {
+      for (let i = 0; i < text.length; i++) view.setUint8(pos + i, text.charCodeAt(i));
+    };
+    write(0, 'RIFF');
+    view.setUint32(4, 36 + dataLen, true);
+    write(8, 'WAVE');
+    write(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    write(36, 'data');
+    view.setUint32(40, dataLen, true);
+    return new Blob([header, pcm.subarray(0, even)], { type: 'audio/wav' });
+  }
+
+  // # FN playLivePcmStream
+  // # AR Play 24 kHz PCM as it arrives, then keep a WAV for replay and download.
+  async function playLivePcmStream(res) {
+    if (livePcmCtx) {
+      try { await livePcmCtx.close(); } catch (_) { /* replaced */ }
+      livePcmCtx = null;
+    }
+    const sampleRate = 24000;
+    const ctx = new AudioContext({ sampleRate });
+    livePcmCtx = ctx;
+    if (ctx.state === 'suspended') await ctx.resume();
+    TtsApp.ui.showTtsPlayerModeUi();
+    const reader = res.body.getReader();
+    let nextAt = ctx.currentTime + 0.05;
+    let pending = new Uint8Array(0);
+    const collected = [];
+    let started = false;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (value && value.byteLength) {
+        collected.push(value);
+        const merged = new Uint8Array(pending.length + value.byteLength);
+        merged.set(pending, 0);
+        merged.set(value, pending.length);
+        const even = merged.length - (merged.length % 2);
+        const pcm = merged.subarray(0, even);
+        pending = merged.slice(even);
+        if (pcm.length >= 2) {
+          const samples = pcm.length / 2;
+          const buffer = ctx.createBuffer(1, samples, sampleRate);
+          const channel = buffer.getChannelData(0);
+          const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength);
+          for (let i = 0; i < samples; i++) channel[i] = view.getInt16(i * 2, true) / 32768;
+          const source = ctx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(ctx.destination);
+          const when = Math.max(nextAt, ctx.currentTime + 0.02);
+          source.start(when);
+          nextAt = when + buffer.duration;
+          if (!started) {
+            started = true;
+            global.showToast?.('Audio started', 'success');
+          }
+        }
+      }
+      if (done) break;
+    }
+    const wavUrl = URL.createObjectURL(pcmToWavBlob(collected, sampleRate));
+    if (S.currentAudio && typeof S.currentAudio.pause === 'function') {
+      try { S.currentAudio.pause(); } catch (_) { /* live context already played */ }
+    }
+    const audio = new Audio(wavUrl);
+    audio._blobUrl = wavUrl;
+    audio._downloadUrl = wavUrl;
+    audio._rawDownloadUrl = wavUrl;
+    S.currentAudio = audio;
+    TtsApp.recent.loadAndRenderRecentTtsWorks();
+  }
+
+  /** توليد_الصوت_من_API — POST /api/tts/stream أو /api/tts/quick */
   // # FN generateTtsAudioFromApi
   // # KW توليد_صوت,TTS,synthesis
   async function generateTtsAudioFromApi() {
@@ -70,8 +165,10 @@
       // # block — خطوة ترجمة (مترجم)
       );
 
+      const useStream = global.voiceMode !== 'quick' && S.selectedVoiceId !== 'quick_edge';
+      const path = useStream ? '/api/tts/stream' : '/api/tts/quick';
       // # HTTP — طلب إلى API
-      const res = await fetch(`${API}/api/tts/quick`, {
+      const res = await fetch(`${API}${path}`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
         // # تسلسل JSON للطلب
@@ -95,6 +192,20 @@
         }),
       // # block — معالجة صوت/استنساخ
       });
+
+      const streamType = res.headers.get('content-type') || '';
+      if (useStream && res.ok && streamType.includes('glotix-pcm')) {
+        await playLivePcmStream(res);
+        TtsApp.voiceSave?.maybePromptVoiceSaveAfterTtsSuccess?.(text);
+        return;
+      }
+      if (useStream && res.ok && streamType.includes('audio/mpeg')) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        TtsApp.player.playTtsAudioFromApiUrl(url);
+        global.showToast?.('Audio ready!', 'success');
+        return;
+      }
 
       let data = {};
       // # try — معالجة عملية قد تفشل
@@ -127,7 +238,7 @@
       if (!res.ok || !data.success) {
         // # شرط — فرع منطقي
         if (typeof global.logApiRequestFailure === 'function') {
-          global.logApiRequestFailure('POST /api/tts/quick', `${API}/api/tts/quick`, res, data);
+          global.logApiRequestFailure(`POST ${path}`, `${API}${path}`, res, data);
         }
         const msg =
           // # block — توليد صوت TTS
