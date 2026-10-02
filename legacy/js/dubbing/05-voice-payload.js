@@ -118,7 +118,7 @@
     let quality = String(global.dubbingQuality || 'fast').toLowerCase();
     const elevenLabsVoiceId = String(global.selectedElevenLabsVoiceId || '').trim();
     const cpuSite = !!(global.APP_CONFIG && global.APP_CONFIG.CPU_SITE_MODE);
-    // # block — Fast keeps speech-band clone + sidechain. Quality stays fast.
+    // # block — Fast keeps speech-band clone + sidechain for catalog voices only.
 
     // # guard — CPU site mode: Edge neural voices, browser stem prep, no GPU clone
     if (cpuSite && !sample && !usingSaved) {
@@ -170,15 +170,15 @@
       // # block — معالجة صوت/استنساخ
       };
     }
-    // # guard — شرط رفض أو خروج مبكر
-    if (mode === 'default' || (quality === 'fast' && !sample)) {
+    // # guard — Default Voice only. Fast must not rewrite Voice Clone into default.
+    if (mode === 'default' || !mode) {
       // # return — إرجاع النتيجة
       return {
         voice_mode: 'default',
         // # block — معالجة صوت/استنساخ
         speaker_mode: (global.speakerMode || 'auto'),
         enable_lipsync: !!global.enableLipsync,
-        quality,
+        quality: 'fast',
         ...(elevenLabsVoiceId ? { elevenlabs_voice_id: elevenLabsVoiceId } : {}),
       };
     }
@@ -188,7 +188,8 @@
       clone_source: 'video',
       speaker_mode: (global.speakerMode || 'auto'),
       enable_lipsync: !!global.enableLipsync,
-      quality,
+      // Studio RoFormer: clone from isolated vocals, mix onto music without the original speaker.
+      quality: 'studio',
     };
   }
 

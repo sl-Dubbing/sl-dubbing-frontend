@@ -270,7 +270,7 @@
             enable_lipsync: !!(mergedVoice.enable_lipsync || global.enableLipsync),
             use_saved_voice: !!(mergedVoice.use_saved_voice || global.usingSavedVoice),
             // # block — معالجة صوت/استنساخ
-            quality: 'fast',
+            quality: mergedVoice.quality || 'fast',
             video_output: videoOutput,
             // # block — معالجة صوت/استنساخ
             ...hyperPayload,
