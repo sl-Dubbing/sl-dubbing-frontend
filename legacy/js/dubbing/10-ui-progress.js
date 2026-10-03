@@ -122,9 +122,10 @@
       S.progressPercentMonotonic || 0,
       Math.min(99, mapped),
     );
-    const label =
-      String((jobMeta && (jobMeta.message || jobMeta.stage)) || '').trim() ||
-      'Dubbing in progress...';
+    const rawLabel = String((jobMeta && (jobMeta.message || jobMeta.stage)) || '').trim();
+    const label = rawLabel.startsWith('LIVE_AUDIO')
+      ? 'Speaking'
+      : rawLabel || 'Dubbing in progress...';
     updateDubbingProgressBarUi(label, S.progressPercentMonotonic);
   }
 

@@ -8,32 +8,52 @@
   const S = DubbingApp.state;
   const { normalizeApiBaseUrl, getDubbingApiAuthHeaders } = DubbingApp.api;
   const { fetchHttpWithRateLimitRetry } = DubbingApp.fetch;
-  let liveDubPreviewUrl = '';
+  let liveDubCtx = null;
+  let liveDubOrigin = 0;
+  const liveDubHeard = new Set();
+
+  function stopLiveDubPreview() {
+    const orphan = document.getElementById('liveDubAudio');
+    if (orphan) orphan.remove();
+    if (liveDubCtx) {
+      liveDubCtx.close().catch(() => {});
+      liveDubCtx = null;
+    }
+  }
 
   // # FN playLiveDubPreview
-  // # AR Play the first dubbed line while the rest of the job is still generating.
-  function playLiveDubPreview(message) {
+  // # AR Play each dubbed line on the video timeline. No extra player and no URL in the status.
+  async function playLiveDubPreview(message) {
     const text = String(message || '');
-    const marker = 'LIVE_AUDIO ';
-    const at = text.indexOf(marker);
-    if (at < 0) return;
-    const url = text.slice(at + marker.length).trim().split(/\s/)[0];
-    if (!url.startsWith('https://') || url === liveDubPreviewUrl) return;
-    liveDubPreviewUrl = url;
-    const host = document.getElementById('mainPlayer');
-    if (!host) return;
-    let audio = document.getElementById('liveDubAudio');
-    if (!audio) {
-      audio = document.createElement('audio');
-      audio.id = 'liveDubAudio';
-      audio.controls = true;
-      audio.autoplay = true;
-      audio.style.width = '100%';
-      audio.style.marginBottom = '8px';
-      host.prepend(audio);
+    const marked = text.match(/LIVE_AUDIO\s+([0-9.]+)\s+(https:\S+)/);
+    const plain = text.match(/LIVE_AUDIO\s+(https:\S+)/);
+    const startSec = marked ? Number(marked[1]) : 0;
+    const url = marked ? marked[2] : plain && plain[1];
+    if (!url || liveDubHeard.has(url)) return;
+    liveDubHeard.add(url);
+    const orphan = document.getElementById('liveDubAudio');
+    if (orphan) orphan.remove();
+    const video = document.getElementById('videoPreview');
+    if (video) {
+      video.muted = true;
+      if (video.paused) {
+        try { video.currentTime = 0; } catch (_) { /* not seekable yet */ }
+        video.play().catch(() => {});
+      }
     }
-    audio.src = url;
-    audio.play().catch(() => {});
+    if (!liveDubCtx) {
+      liveDubCtx = new AudioContext();
+      liveDubOrigin = liveDubCtx.currentTime + 0.2;
+    }
+    if (liveDubCtx.state === 'suspended') await liveDubCtx.resume();
+    const response = await fetch(url);
+    if (!response.ok) return;
+    const decoded = await liveDubCtx.decodeAudioData(await response.arrayBuffer());
+    const source = liveDubCtx.createBufferSource();
+    source.buffer = decoded;
+    source.connect(liveDubCtx.destination);
+    const when = Math.max(liveDubCtx.currentTime + 0.05, liveDubOrigin + (Number.isFinite(startSec) ? startSec : 0));
+    source.start(when);
   }
 
   // # FN startDubbingJobForAllSelectedLanguages
@@ -414,6 +434,7 @@
           // Guard: if backend returns URL under a non-standard field name, extractMediaOutputUrlFromJobPayload
           // returns '' and switchCinemaResultsToLanguage silently bails — surface the failure explicitly.
           // # block — تنفيذ منطق — راجع الأسطر التالية
+          stopLiveDubPreview();
           const outputUrl = DubbingApp.jobStatus.extractMediaOutputUrlFromJobPayload(job)
             // # block — تنفيذ منطق — راجع الأسطر التالية
             || job.dubbed_url || job.file_url || job.result_url || '';
