@@ -10,6 +10,7 @@
   const { fetchHttpWithRateLimitRetry } = DubbingApp.fetch;
   let liveDubCtx = null;
   let liveDubOrigin = 0;
+  let liveDubNextAt = 0;
   const liveDubHeard = new Set();
 
   function stopLiveDubPreview() {
@@ -19,18 +20,16 @@
       liveDubCtx.close().catch(() => {});
       liveDubCtx = null;
     }
+    liveDubNextAt = 0;
   }
 
   // # FN playLiveDubPreview
-  // # AR Play each dubbed line on the video timeline. No extra player and no URL in the status.
+  // # AR Schedule every dubbed line already published. Later polls must not drop earlier lines.
   async function playLiveDubPreview(message) {
     const text = String(message || '');
-    const marked = text.match(/LIVE_AUDIO\s+([0-9.]+)\s+(https:\S+)/);
-    const plain = text.match(/LIVE_AUDIO\s+(https:\S+)/);
-    const startSec = marked ? Number(marked[1]) : 0;
-    const url = marked ? marked[2] : plain && plain[1];
-    if (!url || liveDubHeard.has(url)) return;
-    liveDubHeard.add(url);
+    if (!text.includes('LIVE_AUDIO')) return;
+    const found = [...text.matchAll(/([0-9]+(?:\.[0-9]+)?)\s+(https:\S+)/g)];
+    if (!found.length) return;
     const orphan = document.getElementById('liveDubAudio');
     if (orphan) orphan.remove();
     const video = document.getElementById('videoPreview');
@@ -43,17 +42,26 @@
     }
     if (!liveDubCtx) {
       liveDubCtx = new AudioContext();
-      liveDubOrigin = liveDubCtx.currentTime + 0.2;
+      liveDubOrigin = liveDubCtx.currentTime + 0.15;
+      liveDubNextAt = liveDubOrigin;
     }
     if (liveDubCtx.state === 'suspended') await liveDubCtx.resume();
-    const response = await fetch(url);
-    if (!response.ok) return;
-    const decoded = await liveDubCtx.decodeAudioData(await response.arrayBuffer());
-    const source = liveDubCtx.createBufferSource();
-    source.buffer = decoded;
-    source.connect(liveDubCtx.destination);
-    const when = Math.max(liveDubCtx.currentTime + 0.05, liveDubOrigin + (Number.isFinite(startSec) ? startSec : 0));
-    source.start(when);
+    for (const match of found) {
+      const startSec = Number(match[1]);
+      const url = match[2];
+      if (!url || liveDubHeard.has(url)) continue;
+      liveDubHeard.add(url);
+      const response = await fetch(url);
+      if (!response.ok) continue;
+      const decoded = await liveDubCtx.decodeAudioData(await response.arrayBuffer());
+      const source = liveDubCtx.createBufferSource();
+      source.buffer = decoded;
+      source.connect(liveDubCtx.destination);
+      const slot = liveDubOrigin + (Number.isFinite(startSec) ? startSec : 0);
+      const when = Math.max(liveDubCtx.currentTime + 0.05, slot, liveDubNextAt);
+      source.start(when);
+      liveDubNextAt = when + decoded.duration;
+    }
   }
 
   // # FN startDubbingJobForAllSelectedLanguages
