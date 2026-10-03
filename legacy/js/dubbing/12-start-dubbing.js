@@ -13,6 +13,30 @@
   let liveDubNextAt = 0;
   const liveDubHeard = new Set();
 
+  function ensureBottomCinema() {
+    const top = document.getElementById('videoPreview');
+    if (top && !top.paused) top.pause();
+    const host = document.getElementById('mainPlayer');
+    if (!host) return top;
+    let video = document.getElementById('liveCinemaVideo');
+    if (!video) {
+      const src = top && (top.currentSrc || top.src);
+      if (!src) return null;
+      host.innerHTML = '';
+      video = document.createElement('video');
+      video.id = 'liveCinemaVideo';
+      video.controls = true;
+      video.muted = true;
+      video.src = src;
+      video.style.width = '100%';
+      video.style.height = '100%';
+      video.style.objectFit = 'contain';
+      host.appendChild(video);
+      video.play().catch(() => {});
+    }
+    return video;
+  }
+
   function stopLiveDubPreview() {
     const orphan = document.getElementById('liveDubAudio');
     if (orphan) orphan.remove();
@@ -32,18 +56,11 @@
     if (!found.length) return;
     const orphan = document.getElementById('liveDubAudio');
     if (orphan) orphan.remove();
-    const video = document.getElementById('videoPreview');
-    if (video) {
-      video.muted = true;
-      if (video.paused) {
-        try { video.currentTime = 0; } catch (_) { /* not seekable yet */ }
-        video.play().catch(() => {});
-      }
-    }
+    const video = ensureBottomCinema();
     if (!liveDubCtx) {
       liveDubCtx = new AudioContext();
-      liveDubOrigin = liveDubCtx.currentTime + 0.15;
-      liveDubNextAt = liveDubOrigin;
+      liveDubOrigin = liveDubCtx.currentTime + 0.15 - (video ? video.currentTime : 0);
+      liveDubNextAt = liveDubCtx.currentTime + 0.05;
     }
     if (liveDubCtx.state === 'suspended') await liveDubCtx.resume();
     for (const match of found) {
@@ -442,16 +459,14 @@
           // Guard: if backend returns URL under a non-standard field name, extractMediaOutputUrlFromJobPayload
           // returns '' and switchCinemaResultsToLanguage silently bails — surface the failure explicitly.
           // # block — تنفيذ منطق — راجع الأسطر التالية
-          stopLiveDubPreview();
           const outputUrl = DubbingApp.jobStatus.extractMediaOutputUrlFromJobPayload(job)
-            // # block — تنفيذ منطق — راجع الأسطر التالية
             || job.dubbed_url || job.file_url || job.result_url || '';
-          // # block — معالجة صوت/استنساخ
           DubbingApp.jobStatus.applyExtractedVocalsUrlFromJobStatus(job);
           DubbingApp.pendingJobs?.clearPendingDubJob?.(jobId);
 
           // # شرط — فرع منطقي
           if (!outputUrl) {
+            stopLiveDubPreview();
             item.innerHTML = `${DubbingApp.voiceHtml.buildLanguageFlagImgHtml(langCode)} ${langInfo?.name_en} <i class="fa-solid fa-triangle-exclamation"></i>`;
             // # block — معالجة صوت/استنساخ
             global.showToast?.(`${langInfo?.name_en || langCode}: completed but no media URL returned`, 'error');
@@ -615,6 +630,7 @@
   DubbingApp.startFlow = {
     startDubbingJobForAllSelectedLanguages,
     handleStartDubbingButtonClick,
+    stopLiveDubPreview,
   };
   global.startDubbing = handleStartDubbingButtonClick;
 })(window);
