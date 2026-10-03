@@ -186,6 +186,7 @@
             // # block — معالجة صوت/استنساخ
             progress: parsed.progress || data?.progress,
             status: parsed.status || data?.status,
+            message: String(data?.message || ''),
           });
         }
         // # شرط
@@ -370,6 +371,7 @@
               stage: parsed.stage || data?.stage,
               progress: parsed.progress || data?.progress,
               status: parsed.status || data?.status,
+              message: String(data?.message || ''),
             // # block — تنفيذ منطق — راجع الأسطر التالية
             };
             // # block — A cold worker can sit at 0% for several minutes. Telling

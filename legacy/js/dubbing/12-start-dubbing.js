@@ -8,6 +8,33 @@
   const S = DubbingApp.state;
   const { normalizeApiBaseUrl, getDubbingApiAuthHeaders } = DubbingApp.api;
   const { fetchHttpWithRateLimitRetry } = DubbingApp.fetch;
+  let liveDubPreviewUrl = '';
+
+  // # FN playLiveDubPreview
+  // # AR Play the first dubbed line while the rest of the job is still generating.
+  function playLiveDubPreview(message) {
+    const text = String(message || '');
+    const marker = 'LIVE_AUDIO ';
+    const at = text.indexOf(marker);
+    if (at < 0) return;
+    const url = text.slice(at + marker.length).trim().split(/\s/)[0];
+    if (!url.startsWith('https://') || url === liveDubPreviewUrl) return;
+    liveDubPreviewUrl = url;
+    const host = document.getElementById('mainPlayer');
+    if (!host) return;
+    let audio = document.getElementById('liveDubAudio');
+    if (!audio) {
+      audio = document.createElement('audio');
+      audio.id = 'liveDubAudio';
+      audio.controls = true;
+      audio.autoplay = true;
+      audio.style.width = '100%';
+      audio.style.marginBottom = '8px';
+      host.prepend(audio);
+    }
+    audio.src = url;
+    audio.play().catch(() => {});
+  }
 
   // # FN startDubbingJobForAllSelectedLanguages
   // # KW مهمة,job,polling,celery,worker,لغة,language,dialect
@@ -380,6 +407,7 @@
                 Object.keys(S.cinemaResults).length,
                 langArray.length,
               );
+              playLiveDubPreview(jobMeta && jobMeta.message);
             },
           );
 
