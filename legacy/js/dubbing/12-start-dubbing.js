@@ -1,4 +1,4 @@
-﻿// # FILE frontend/sl-dubbing-frontend-main/js/dubbing/12-start-dubbing.js
+// # FILE frontend/sl-dubbing-frontend-main/js/dubbing/12-start-dubbing.js
 // # AR واجهة الدبلجة — رفع، Start، polling، أصوات
 // # KW عام,general
 // # CONVENTION — FN/AR/KW + # block كل ~6 أسطر — FUNCTION_INDEX.md DOMAIN_INDEX.md
@@ -9,9 +9,7 @@
   const { normalizeApiBaseUrl, getDubbingApiAuthHeaders } = DubbingApp.api;
   const { fetchHttpWithRateLimitRetry } = DubbingApp.fetch;
   let liveDubCtx = null;
-  let liveDubOrigin = 0;
   let liveDubNextAt = 0;
-  const liveDubHeard = new Set();
 
   function ensureBottomCinema() {
     const top = document.getElementById('videoPreview');
@@ -32,8 +30,8 @@
       video.style.height = '100%';
       video.style.objectFit = 'contain';
       host.appendChild(video);
-      video.play().catch(() => {});
     }
+    video.pause();
     return video;
   }
 
@@ -48,37 +46,15 @@
   }
 
   // # FN playLiveDubPreview
-  // # AR Schedule every dubbed line already published. Later polls must not drop earlier lines.
+  // # AR Keep the bottom picture ready. The user presses play on that video; no hidden speaker.
   async function playLiveDubPreview(message) {
     const text = String(message || '');
     if (!text.includes('LIVE_AUDIO')) return;
-    const found = [...text.matchAll(/([0-9]+(?:\.[0-9]+)?)\s+(https:\S+)/g)];
-    if (!found.length) return;
-    const orphan = document.getElementById('liveDubAudio');
-    if (orphan) orphan.remove();
-    const video = ensureBottomCinema();
-    if (!liveDubCtx) {
-      liveDubCtx = new AudioContext();
-      liveDubOrigin = liveDubCtx.currentTime + 0.15 - (video ? video.currentTime : 0);
-      liveDubNextAt = liveDubCtx.currentTime + 0.05;
-    }
-    if (liveDubCtx.state === 'suspended') await liveDubCtx.resume();
-    for (const match of found) {
-      const startSec = Number(match[1]);
-      const url = match[2];
-      if (!url || liveDubHeard.has(url)) continue;
-      liveDubHeard.add(url);
-      const response = await fetch(url);
-      if (!response.ok) continue;
-      const decoded = await liveDubCtx.decodeAudioData(await response.arrayBuffer());
-      const source = liveDubCtx.createBufferSource();
-      source.buffer = decoded;
-      source.connect(liveDubCtx.destination);
-      const slot = liveDubOrigin + (Number.isFinite(startSec) ? startSec : 0);
-      const when = Math.max(liveDubCtx.currentTime + 0.05, slot, liveDubNextAt);
-      source.start(when);
-      liveDubNextAt = when + decoded.duration;
-    }
+    // # block — A hidden AudioContext used to speak each line during mux, with no visible player.
+    stopLiveDubPreview();
+    const top = document.getElementById('videoPreview');
+    if (top && !top.paused) top.pause();
+    ensureBottomCinema();
   }
 
   // # FN startDubbingJobForAllSelectedLanguages

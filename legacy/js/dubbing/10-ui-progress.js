@@ -184,21 +184,18 @@
     // # شرط — فرع منطقي
     if (isVideo) {
       const live = document.getElementById('liveCinemaVideo');
-      const at = live && Number.isFinite(live.currentTime) ? live.currentTime : 0;
       const host = document.getElementById('mainPlayer');
       if (live && host) {
         live.muted = false;
+        live.autoplay = false;
+        live.pause();
         live.src = rawUrl;
-        live.onloadedmetadata = () => {
-          const duration = Number.isFinite(live.duration) ? live.duration : at;
-          live.currentTime = Math.min(at, Math.max(0, duration - 0.05));
-          live.play().finally(() => DubbingApp.startFlow?.stopLiveDubPreview?.());
-        };
+        live.onloadedmetadata = null;
       } else if (host) {
         host.innerHTML =
-          `<video id="liveCinemaVideo" controls autoplay src="${safeUrl}" style="width:100%;height:100%;object-fit:contain;"></video>`;
-        DubbingApp.startFlow?.stopLiveDubPreview?.();
+          `<video id="liveCinemaVideo" controls playsinline src="${safeUrl}" style="width:100%;height:100%;object-fit:contain;"></video>`;
       }
+      DubbingApp.startFlow?.stopLiveDubPreview?.();
     } else {
       // Audio-only dubbing result — prefer ultra-low-latency streaming player when available
       // # block — تحديث واجهة/DOM
@@ -221,7 +218,7 @@
       } else {
         // Fallback: use native audio tag for simple playback
         mainPlayer.innerHTML =
-          `<audio controls autoplay src="${safeUrl}" style="width:100%;margin-top:16px;border-radius:8px;"></audio>`;
+          `<audio controls src="${safeUrl}" style="width:100%;margin-top:16px;border-radius:8px;"></audio>`;
       }
     }
   }
