@@ -13,9 +13,9 @@
   /**
    * COGS (Aug 2026): ElevenLabs Flash $0.05/1k, Multilingual $0.10/1k,
    * Modal A10G $0.000306/s ≈ $0.013/1k chars at 1100 chars/min.
-   * CHAR_CREDIT_MARKUP=1.4 → ~20–30% over vendor+GPU. Retail $0.10 / 1k credits.
+   * CHAR_CREDIT_MARKUP=1.4. Retail $0.15 / 1k credits (Studio GPU was a loss at $0.10).
    * 1 credit ≈ 1 source character before markup; billed ceil(chars × 1.4).
-   * Free = 2,000 character credits (INITIAL_CHARACTER_CREDITS).
+   * Free = 2,000 character credits (~1 min). Starter after Free = 90k ≈ 58 min. Do not cut that floor.
    */
   const DEFAULT_CHARACTER_PACKS = {
     price_char_free: {
@@ -35,7 +35,7 @@
     },
     price_char_starter: {
       credits: 90000,
-      amount_cents: 900,
+      amount_cents: 1350,
       name: 'Starter',
       tier: 'starter',
       chars_label: '90k credits',
@@ -49,7 +49,7 @@
     },
     price_char_creator: {
       credits: 220000,
-      amount_cents: 2200,
+      amount_cents: 3300,
       name: 'Creator',
       tier: 'creator',
       popular: true,
@@ -64,7 +64,7 @@
     },
     price_char_pro: {
       credits: 990000,
-      amount_cents: 9900,
+      amount_cents: 14850,
       name: 'Pro',
       tier: 'pro',
       chars_label: '990k credits',
@@ -78,7 +78,7 @@
     },
     price_char_scale: {
       credits: 3300000,
-      amount_cents: 33000,
+      amount_cents: 49500,
       name: 'Scale',
       tier: 'scale',
       chars_label: '3.3M credits',
@@ -92,7 +92,7 @@
     },
     price_char_business: {
       credits: 9900000,
-      amount_cents: 99000,
+      amount_cents: 148500,
       name: 'Business',
       tier: 'business',
       chars_label: '9.9M credits',
@@ -106,7 +106,7 @@
     },
   };
 
-  const USD_PER_1K = 0.1;
+  const USD_PER_1K = 0.15;
   const CUSTOM_MIN_USD = 5;
   let _pricingMeta = {
     usd_per_1k_credits: USD_PER_1K,
@@ -335,7 +335,10 @@
               (p) => p.tier === pack.tier || p.credits === pack.credits,
             ) || {};
           // # block — نقاط/credits
-          const cents = pack.amount_cents != null ? pack.amount_cents : fallback.amount_cents || 0;
+          const cents = Math.max(
+            pack.amount_cents != null ? Number(pack.amount_cents) : 0,
+            fallback.amount_cents || 0,
+          );
           const dollars = (cents / 100).toFixed(0);
           const popular = pack.popular || fallback.popular;
           const name = pack.name || fallback.name || 'Pack';
@@ -512,7 +515,10 @@
         // Ensure Upgrade uses the real Stripe price id from the object key.
         tier: pack.tier || fallback.tier,
         credits: pack.credits != null ? pack.credits : fallback.credits,
-        amount_cents: pack.amount_cents != null ? pack.amount_cents : fallback.amount_cents,
+        amount_cents: Math.max(
+          pack.amount_cents != null ? Number(pack.amount_cents) : 0,
+          fallback.amount_cents || 0,
+        ),
         name: pack.name || fallback.name,
         features: pack.features || fallback.features,
         includes: pack.includes || fallback.includes,
@@ -541,7 +547,11 @@
       // # شرط
       if (data.success) {
         // # شرط
-        if (data.usd_per_1k_credits != null) _pricingMeta.usd_per_1k_credits = data.usd_per_1k_credits;
+        if (data.usd_per_1k_credits != null) {
+          const rate = Number(data.usd_per_1k_credits);
+          _pricingMeta.usd_per_1k_credits =
+            Number.isFinite(rate) && rate > USD_PER_1K ? rate : USD_PER_1K;
+        }
         // # شرط
         if (data.custom_min_cents != null) _pricingMeta.custom_min_cents = data.custom_min_cents;
         // # شرط

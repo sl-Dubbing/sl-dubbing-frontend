@@ -57,6 +57,36 @@
     overflow: visible;
 }
 
+.logo:not(.logo-sm) .logo-lockup {
+    padding-bottom: 12px;
+}
+
+.logo:not(.logo-sm) .logo-wordmark::after {
+    content: "BETA";
+    position: absolute;
+    left: 0;
+    top: 100%;
+    margin-top: 2px;
+    z-index: 3;
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    line-height: 1;
+    color: #b45309;
+    pointer-events: none;
+}
+
+html[data-theme="dark"] .logo:not(.logo-sm) .logo-wordmark::after {
+    color: #fcca69;
+}
+
+@media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) .logo:not(.logo-sm) .logo-wordmark::after {
+        color: #fcca69;
+    }
+}
+
 /* ── Brand arrow mark (works on light + dark; gold triangle) ── */
 .logo-mark {
     height: 42px;

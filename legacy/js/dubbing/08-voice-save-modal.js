@@ -11,8 +11,8 @@
 
   // # نصوص نافذة بعد نجاح استنساخ المقطع
   const AFTER_CLONE_MODAL_COPY = {
-    title: 'Save this cloned voice?',
-    text: 'Cloning finished successfully. Do you want to save this voice to your library? Enter a name and tap Save. Next time you pick this sample, dubbing will be faster.',
+    title: 'Save this voice sample?',
+    text: 'Your dub is ready. Save this sample to your library so the next job can skip re-cloning.',
     confirm: 'Save to my library',
   };
   // # نصوص نافذة intent — حفظ بعد نجاح الاستنساخ
@@ -141,6 +141,13 @@
     const url = (sampleUrl || '').trim();
     // # guard — رفض/خروج
     if (!shouldOfferVoiceSaveAfterCloneSuccess(url)) return false;
+    // # guard — Do not overlay Save Sample while Processing is still on screen.
+    const progressArea = document.getElementById('progressArea');
+    const stillProcessing =
+      progressArea &&
+      progressArea.style.display !== 'none' &&
+      (Number(S.progressPercentMonotonic) || 0) < 100;
+    if (stillProcessing) return false;
     // # guard — رفض/خروج
     if (S.voiceSaveModalShownForUrl === url) return false;
 

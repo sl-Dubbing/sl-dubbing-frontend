@@ -277,6 +277,8 @@
       // # block — معالجة صوت/استنساخ
       const mergedVoice = DubbingApp.hyperLive?.mergeHyperLiveIntoVoiceConfig?.(voicePayload) || voicePayload;
       const sampleUrl = (mergedVoice.sample_url || '').trim();
+      let completedCloneSampleUrl = '';
+      let completedCloneSampleText = '';
       const sampleText = (mergedVoice.sample_text || '').trim();
       const scriptSegments =
         typeof DubbingApp.srtEditor?.getScriptSegmentsForDub === 'function'
@@ -492,7 +494,7 @@
             // # شرط — فرع منطقي
             if (cinemaList && item.parentNode === cinemaList) cinemaList.prepend(item);
             // # block — معالجة صوت/استنساخ
-            const cloneSampleUrl =
+            completedCloneSampleUrl =
               job.sample_url ||
               job.extracted_vocals_url ||
               job.vocals_url ||
@@ -502,17 +504,9 @@
               S.pendingRecordedSampleUrl ||
               // # block — معالجة صوت/استنساخ
               sampleUrl ||
+              completedCloneSampleUrl ||
               '';
-            const cloneSampleText = job.ref_text || sampleText;
-            // # شرط
-            if (S.voiceSaveIntentActive && !S.voiceSaveIntentFulfilled) {
-              // # block — معالجة صوت/استنساخ
-              await DubbingApp.voiceSave?.tryFulfillVoiceSaveIntent?.(cloneSampleUrl, cloneSampleText);
-            // # block — معالجة صوت/استنساخ
-            } else {
-              // # block — معالجة صوت/استنساخ
-              DubbingApp.voiceSave?.offerVoiceSaveAfterCloneSuccess?.(cloneSampleUrl, cloneSampleText);
-            }
+            completedCloneSampleText = job.ref_text || sampleText || completedCloneSampleText;
             DubbingApp.recentJobs.prependCompletedJobToGrid({
               // # block — معالجة صوت/استنساخ
               output_url: outputUrl,
@@ -579,6 +573,27 @@
       // # block — فرع شرطي
       );
 
+      stopLiveDubPreview();
+      // # block — Batch is finished. Unlock the save prompt even if one language failed.
+      if (Object.keys(S.cinemaResults).length) {
+        S.progressPercentMonotonic = 100;
+        DubbingApp.ui.updateDubbingProgressBarUi('All Done!', 100);
+      }
+      // # block — Save Sample only after every language finished (not mid-TTS / live preview).
+      if (completedCloneSampleUrl || S.pendingRecordedSampleUrl) {
+        const readyUrl = completedCloneSampleUrl || S.pendingRecordedSampleUrl || '';
+        if (S.voiceSaveIntentActive && !S.voiceSaveIntentFulfilled) {
+          await DubbingApp.voiceSave?.tryFulfillVoiceSaveIntent?.(
+            readyUrl,
+            completedCloneSampleText,
+          );
+        } else {
+          DubbingApp.voiceSave?.offerVoiceSaveAfterCloneSuccess?.(
+            readyUrl,
+            completedCloneSampleText,
+          );
+        }
+      }
       // # block — معالجة صوت/استنساخ
       DubbingApp.voiceSave?.notifyVoiceSaveIntentSkippedAfterFailedClone?.();
 

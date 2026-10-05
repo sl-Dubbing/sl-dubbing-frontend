@@ -368,12 +368,16 @@
     const name = cardEl.getAttribute('data-name') || 'Voice';
     const engine = cardEl.getAttribute('data-engine') || '';
     const elevenLabsVoiceId = (cardEl.getAttribute('data-elevenlabs-voice-id') || '').trim();
-    // # block — معالجة صوت/استنساخ
+    const catalog =
+      !cardEl.classList.contains('voice-user-clone-card') &&
+      !cardEl.classList.contains('voice-saved-user-card');
+    const mode = catalog ? 'premium' : 'clone';
+    // # block — Site catalog voices are already cloned. Only a user sample is a new clone.
     global.usingSavedVoice = cardEl.classList.contains('voice-saved-user-card');
     global.selectedSample = sampleUrl;
     global.selectedSampleText = sampleText;
     global.selectedElevenLabsVoiceId = elevenLabsVoiceId;
-    global.voiceMode = 'clone';
+    global.voiceMode = mode;
     global.forceEngine = engine;
     global.selectedCloneSource = cardEl.classList.contains('voice-user-clone-card')
       // # block — معالجة صوت/استنساخ
@@ -383,11 +387,11 @@
         : 'premium';
     // # شرط — فرع منطقي
     if (typeof global.selectVoiceOption === 'function') {
-      global.selectVoiceOption('clone', sampleUrl, cardEl, engine, name);
+      global.selectVoiceOption(mode, sampleUrl, cardEl, engine, name);
     // # block — معالجة صوت/استنساخ
     }
     global.selectedSample = sampleUrl;
-    global.voiceMode = 'clone';
+    global.voiceMode = mode;
     global.usingSavedVoice = cardEl.classList.contains('voice-saved-user-card');
     if (typeof global.persistSharedStudioVoice === 'function') {
       const kind = cardEl.classList.contains('voice-user-clone-card')

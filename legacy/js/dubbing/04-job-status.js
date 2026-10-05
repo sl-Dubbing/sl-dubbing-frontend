@@ -89,6 +89,8 @@
   function maybePromptUserToSaveExtractedVoice(data) {
     // # guard — شرط رفض أو خروج مبكر
     if (!data || typeof data !== 'object') return;
+    // # guard — Progress ticks can carry vocals_url / LIVE_AUDIO. Saving is after the dub is done.
+    if (normalizeDubbingJobStatus(data.status) !== 'completed') return;
     applyExtractedVocalsUrlFromJobStatus(data);
   }
 

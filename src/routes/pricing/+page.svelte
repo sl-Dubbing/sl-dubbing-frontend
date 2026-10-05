@@ -18,11 +18,11 @@
 
 	const FALLBACK_PACKS: Pack[] = [
 		{ id: 'price_char_free', name: 'Free', credits: 2000, amount_cents: 0, free: true },
-		{ id: 'price_char_starter', name: 'Starter', credits: 90000, amount_cents: 900 },
-		{ id: 'price_char_creator', name: 'Creator', credits: 220000, amount_cents: 2200, popular: true },
-		{ id: 'price_char_pro', name: 'Pro', credits: 990000, amount_cents: 9900 },
-		{ id: 'price_char_scale', name: 'Scale', credits: 3300000, amount_cents: 33000 },
-		{ id: 'price_char_business', name: 'Business', credits: 9900000, amount_cents: 99000 },
+		{ id: 'price_char_starter', name: 'Starter', credits: 90000, amount_cents: 1350 },
+		{ id: 'price_char_creator', name: 'Creator', credits: 220000, amount_cents: 3300, popular: true },
+		{ id: 'price_char_pro', name: 'Pro', credits: 990000, amount_cents: 14850 },
+		{ id: 'price_char_scale', name: 'Scale', credits: 3300000, amount_cents: 49500 },
+		{ id: 'price_char_business', name: 'Business', credits: 9900000, amount_cents: 148500 },
 	];
 
 	let packs = $state<Pack[]>([]);
@@ -47,7 +47,18 @@
 			const fromApi: Pack[] = Array.isArray(raw)
 				? raw
 				: Object.entries(raw).map(([id, v]) => ({ ...v, id }));
-			const paid = fromApi.filter((p) => p.id && !String(p.id).startsWith('price_char_'));
+			const paid = fromApi
+				.filter((p) => p.id && !String(p.id).startsWith('price_char_'))
+				.map((p) => {
+					const fallback = FALLBACK_PACKS.find(
+						(f) => (p.tier && f.tier === p.tier) || (p.credits != null && f.credits === p.credits),
+					);
+					return {
+						...p,
+						credits: p.credits ?? fallback?.credits,
+						amount_cents: Math.max(p.amount_cents ?? 0, fallback?.amount_cents ?? 0),
+					};
+				});
 			const free = FALLBACK_PACKS.find((p) => p.free) || FALLBACK_PACKS[0];
 			packs = paid.length ? [free, ...paid] : FALLBACK_PACKS;
 		} catch {

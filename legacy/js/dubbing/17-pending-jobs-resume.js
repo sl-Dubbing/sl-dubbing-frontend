@@ -275,25 +275,15 @@
           // # block — معالجة أخطاء
           created_at: new Date().toISOString(),
         });
-        // # block — معالجة صوت/استنساخ
-        const cloneSampleUrl =
+        completedRef.sampleUrl =
           job.sample_url ||
           job.extracted_vocals_url ||
           job.vocals_url ||
-          // # block — معالجة صوت/استنساخ
           global.lastExtractedVocalsUrl ||
           S.pendingRecordedSampleUrl ||
-          // # block — معالجة صوت/استنساخ
+          completedRef.sampleUrl ||
           '';
-        const cloneSampleText = job.ref_text || '';
-        // # شرط
-        if (S.voiceSaveIntentActive && !S.voiceSaveIntentFulfilled) {
-          await DubbingApp.voiceSave?.tryFulfillVoiceSaveIntent?.(cloneSampleUrl, cloneSampleText);
-        // # block — معالجة صوت/استنساخ
-        } else {
-          DubbingApp.voiceSave?.offerVoiceSaveAfterCloneSuccess?.(cloneSampleUrl, cloneSampleText);
-        // # block — معالجة صوت/استنساخ
-        }
+        completedRef.sampleText = job.ref_text || completedRef.sampleText || '';
       }
 
       completedRef.count += 1;
@@ -377,7 +367,7 @@
     global.showToast?.('Processing continues — your video will appear in History when ready', 'info');
 
     pending.forEach(ensureCinemaSideCard);
-    const completedRef = { count: 0 };
+    const completedRef = { count: 0, sampleUrl: '', sampleText: '' };
     // # parallel — تنفيذ متوازي
     await Promise.all(
       pending.map((entry) => watchOnePendingDubJob(entry, pending.length, completedRef)),
@@ -385,6 +375,19 @@
     );
 
     S.workAbortController = null;
+    if (Object.keys(S.cinemaResults).length) {
+      S.progressPercentMonotonic = 100;
+      DubbingApp.ui.updateDubbingProgressBarUi('All Done!', 100);
+    }
+    const readyUrl = completedRef.sampleUrl || S.pendingRecordedSampleUrl || '';
+    if (readyUrl) {
+      if (S.voiceSaveIntentActive && !S.voiceSaveIntentFulfilled) {
+        await DubbingApp.voiceSave?.tryFulfillVoiceSaveIntent?.(readyUrl, completedRef.sampleText);
+      } else {
+        DubbingApp.voiceSave?.offerVoiceSaveAfterCloneSuccess?.(readyUrl, completedRef.sampleText);
+      }
+    }
+    DubbingApp.voiceSave?.notifyVoiceSaveIntentSkippedAfterFailedClone?.();
 
     // # block — معالجة أخطاء
     DubbingApp.ui.unlockStartDubbingButton();

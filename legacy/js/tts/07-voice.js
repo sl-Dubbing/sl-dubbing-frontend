@@ -56,10 +56,10 @@
     global.selectedSample = sampleUrl || '';
     global.currentSampleText = (sampleText || '').trim();
     global.usingSavedVoice = true;  // Premium voices are system voices — never prompt to save
-    // # block — معالجة صوت/استنساخ
-    global.voiceMode = 'clone';
+    // # block — Catalog samples were cloned once. Do not mark this as a fresh clone.
+    global.voiceMode = 'premium';
     S.customVoiceFile = null;
-    _showVoiceCloneNote(true);
+    _showVoiceCloneNote(false);
     const nameEl = document.getElementById('currentVoiceName');
     // # شرط — فرع منطقي
     if (nameEl) nameEl.textContent = name;
