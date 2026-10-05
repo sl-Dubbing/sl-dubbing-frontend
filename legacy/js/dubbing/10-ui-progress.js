@@ -185,15 +185,32 @@
     if (isVideo) {
       const live = document.getElementById('liveCinemaVideo');
       const host = document.getElementById('mainPlayer');
+      const sourcePreview = document.getElementById('videoPreview');
+      if (sourcePreview) {
+        sourcePreview.pause();
+        sourcePreview.muted = true;
+      }
+      const hold = (video) => {
+        video.autoplay = false;
+        video.muted = false;
+        video.pause();
+        const allow = () => {
+          video.dataset.userPlay = '1';
+        };
+        video.addEventListener('pointerdown', allow);
+        video.addEventListener('play', () => {
+          if (video.dataset.userPlay === '1') return;
+          video.pause();
+        });
+      };
       if (live && host) {
-        live.muted = false;
-        live.autoplay = false;
-        live.pause();
+        hold(live);
         live.src = rawUrl;
-        live.onloadedmetadata = null;
       } else if (host) {
         host.innerHTML =
-          `<video id="liveCinemaVideo" controls playsinline src="${safeUrl}" style="width:100%;height:100%;object-fit:contain;"></video>`;
+          `<video id="liveCinemaVideo" controls playsinline preload="metadata" src="${safeUrl}" style="width:100%;height:100%;object-fit:contain;"></video>`;
+        const created = document.getElementById('liveCinemaVideo');
+        if (created) hold(created);
       }
       DubbingApp.startFlow?.stopLiveDubPreview?.();
     } else {

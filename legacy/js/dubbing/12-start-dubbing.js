@@ -11,28 +11,11 @@
   let liveDubCtx = null;
   let liveDubNextAt = 0;
 
-  function ensureBottomCinema() {
+  function silenceSourcePreview() {
     const top = document.getElementById('videoPreview');
-    if (top && !top.paused) top.pause();
-    const host = document.getElementById('mainPlayer');
-    if (!host) return top;
-    let video = document.getElementById('liveCinemaVideo');
-    if (!video) {
-      const src = top && (top.currentSrc || top.src);
-      if (!src) return null;
-      host.innerHTML = '';
-      video = document.createElement('video');
-      video.id = 'liveCinemaVideo';
-      video.controls = true;
-      video.muted = true;
-      video.src = src;
-      video.style.width = '100%';
-      video.style.height = '100%';
-      video.style.objectFit = 'contain';
-      host.appendChild(video);
-    }
-    video.pause();
-    return video;
+    if (!top) return;
+    top.pause();
+    top.muted = true;
   }
 
   function stopLiveDubPreview() {
@@ -50,11 +33,9 @@
   async function playLiveDubPreview(message) {
     const text = String(message || '');
     if (!text.includes('LIVE_AUDIO')) return;
-    // # block — A hidden AudioContext used to speak each line during mux, with no visible player.
+    // # block — No hidden speaker and no second copy of the source video during the job.
     stopLiveDubPreview();
-    const top = document.getElementById('videoPreview');
-    if (top && !top.paused) top.pause();
-    ensureBottomCinema();
+    silenceSourcePreview();
   }
 
   // # FN startDubbingJobForAllSelectedLanguages
@@ -123,6 +104,7 @@
     S.workAbortController = new AbortController();
     const workSignal = S.workAbortController.signal;
 
+    silenceSourcePreview();
     document.getElementById('dubBtn').style.display = 'none';
     document.getElementById('progressArea').style.display = 'block';
     document.getElementById('resultsCard').style.display = 'block';
